@@ -31,6 +31,9 @@
 
 #include "parse_parameters.hpp"
 
+using std::sin;
+using std::cos;
+
 
 /*! Enforces all particles to lay on the xy plane of size Lx x Ly
  *  Also makes sure periodic boundary conditions are enforced
@@ -61,7 +64,10 @@ public:
   }
   
   //! Enforce constraint
-  void enforce();
+  void enforce(Particle&);
+  
+  //! Rotate velocity vector around normal vector to the plane (z axis)
+  void rotate_velocity(Particle&, double);
     
 private
   

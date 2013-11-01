@@ -25,8 +25,12 @@
 #ifndef __RNG_H__
 #define __RNG_H__
 
+#include <boost/shared_ptr.hpp>
+
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+
+using boost::shared_ptr;
 
 /*! Class handles random numbers in the system */
 class RNG
@@ -55,5 +59,7 @@ private:
   gsl_rng* GSL_RANDOM_GENERATOR;        //!< Pointer which holds the actual random number generator
 
 };
+
+typedef shared_ptr<RNG> RNGPtr;
 
 #endif

@@ -90,5 +90,6 @@ private:
   
 };
 
+typedef shared_ptr<ExternalGravityPotential> ExternalGravityPotentialPtr;
 
 #endif

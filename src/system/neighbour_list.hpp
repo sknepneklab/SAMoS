@@ -75,15 +75,14 @@ public:
     m_old_state.clear();
   }
   
-  //! Check is neighbor list of the given particle needs update
-  //! \param id particle id to check 
+  //! Check is neighbour list of the given particle needs update
+  //! \param p particle to check 
   //! \return true if the list needs update
-  bool need_update(int id)
+  bool need_update(Particle& p)
   {
-    int x = m_system->get_particle(id).x, y = m_system->get_particle(id).y, z = m_system->get_particle(id).z;
-    double dx = m_old_state[id].x - x;
-    double dy = m_old_state[id].y - y;
-    double dz = m_old_state[id].z - z;
+    double dx = m_old_state[id].x - p.x;
+    double dy = m_old_state[id].y - p.y;
+    double dz = m_old_state[id].z - p.z;
     if (dx*dx + dy*dy + dz*dz < 0.25*m_pad*m_pad)
       return false;
     else

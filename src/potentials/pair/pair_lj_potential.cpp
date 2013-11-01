@@ -42,12 +42,12 @@ void PairLJPotential::compute()
     vector<int>& neigh = m_nlist->get_neighbours(i);
     for (j = 0; j < neigh.size(); j++)
     {
+      Particle& pj = m_system->get_particle(neigh[j]);
       if (m_has_pair_params)
       {
         rcut = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["rcut"];
         rcut_sq = rcut*rcut;
       }
-      Particle& pj = m_system->get_particle(neigh[j]);
       double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
       if (periodic)
       {

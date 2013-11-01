@@ -161,5 +161,6 @@ private:
     
 };
 
+typedef shared_ptr<PairLJPotential> PairLJPotentialPtr;
 
 #endif

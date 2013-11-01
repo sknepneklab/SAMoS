@@ -33,6 +33,8 @@
 
 
 using std::sqrt;
+using std::sin;
+using std::cos;
 
 /*! Enforces all particles to be on the surface of a sphere of radius 
  *  R centred at the origin. All velocities will point in the tangent
@@ -62,7 +64,10 @@ public:
   }
   
   //! Enforce constraint
-  void enforce();
+  void enforce(Particle&);
+  
+  //! Rotate velocity vector around normal vector to the sphere
+  void rotate_velocity(Particle&, double);
     
 private
   

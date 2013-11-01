@@ -119,4 +119,6 @@ private:
     
 };
 
+typedef shared_ptr<PairCoulombPotential> PairCoulombPotentialPtr;
+
 #endif

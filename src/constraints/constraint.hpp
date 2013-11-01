@@ -49,8 +49,11 @@ public:
   Constraint(SystemPtr sys, MessengerPtr msg, pairs_type& param) : m_system(sys), m_msg(msg) { }
   
   //! Enforce constraint
-  virtual void enforce() = 0;
-    
+  virtual void enforce(Particle&) = 0;
+  
+  //! Rotate velocity vector around normal vector to the surface
+  virtual void rotate_velocity(Particle&, double) = 0;
+  
 protected:
   
   SystemPtr  m_system;              //!< Pointer to the system object

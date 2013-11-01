@@ -39,13 +39,13 @@ void PairCoulombPotential::compute()
     Particle& pi = m_system->get_particle(i);
     for (j = 0; i+1 < N; j++)
     {
+      Particle& pj = m_system->get_particle(j);
       if (m_has_pair_params)
       {
         alpha = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["alpha"];
         sigma = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["sigma"];
         sigma_sq = sigma*sigma;
       }
-      Particle& pj = m_system->get_particle(j);
       double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
       if (periodic)
       {

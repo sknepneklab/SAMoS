@@ -94,4 +94,6 @@ private:
      
 };
 
+typedef shared_ptr<PairSoftPotential> PairSoftPotentialPtr;
+
 #endif

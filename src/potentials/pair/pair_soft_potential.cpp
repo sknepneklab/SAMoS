@@ -37,11 +37,12 @@ void PairSoftPotential::compute()
   {
     Particle& pi = m_system->get_particle(i);
     ai = pi.get_radius();
-    for (j = 0; i+1 < N; j++)
+    vector<int>& neigh = m_nlist->get_neighbours(i);
+    for (j = 0; j < neigh.size(); j++)
     {
+      Particle& pj = m_system->get_particle(j);
       if (m_has_pair_params)
         k = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["k"];
-      Particle& pj = m_system->get_particle(j);
       aj = pj.get_radius();
       double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
       if (periodic)

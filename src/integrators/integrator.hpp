@@ -44,9 +44,15 @@ public:
   //! \param sys Pointer to a System object containing all particles
   //! \param msg Internal message handler
   //! \param pot Pairwise and external interaction handler
+  //! \param nlist Neighbour list object
   //! \param cons Enforces constraints to the manifold surface
   //! \param param Contains information about all parameters 
-  Integrator(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, ConstraintPtr cons, pairs_type& param) : m_system(sys), m_msg(msg), m_potential(pot), m_constraint(cons), m_params(param)
+  Integrator(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, NeighbourListPtr nlist, ConstraintPtr cons, pairs_type& param) : m_system(sys),
+                                                                                                                                 m_msg(msg),
+                                                                                                                                 m_potential(pot),
+                                                                                                                                 m_nlist(nlist)
+                                                                                                                                 m_constraint(cons),
+                                                                                                                                 m_params(param)
   { 
     if (param.find("dt") == param.end())
     {
@@ -64,10 +70,13 @@ protected:
   SystemPtr m_system;          //!< Pointer to the System object
   MessengerPtr m_msg;          //!< Pointer to the messenger object
   PotentialPtr m_potential;    //!< Pointer to the interaction handler 
+  NeighbourListPtr m_nlist;    //!< Pointer to the neighbour list object
   ConstraintPtr m_constraint;  //!< Pointer to the handler for constraints
   PairData m_params;           //!< Handles specific parameters for a integrator type
   double m_dt;                 //!< time step
   
 };
+
+typedef shard_ptr<Integrator> IntegratorPtr;
 
 #endif
