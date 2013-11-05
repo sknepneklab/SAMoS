@@ -49,6 +49,13 @@ struct Box
 	\param ZLO z-coordinate of the low corner
 	\param ZHI z-coordinate of the high corner	
   */
+  Box(double lx, double ly, double lz) : Lx(lx), Ly(ly), Lz(lz)
+  {
+    assert(Lx >= 0.0 && Ly >= 0.0 && Lz >- 0.0);
+    xlo = -0.5*Lx;  xhi = 0.5*Lx;
+    ylo = -0.5*Ly;  yhi = 0.5*Ly;
+    zlo = -0.5*Lz;  zhi = 0.5*Lz;
+  }
   Box(double XLO, double XHI, double YLO, double YHI, double ZLO, double ZHI) : xlo(XLO), xhi(XHI), ylo(YLO), yhi(YHI), zlo(ZLO), zhi(ZHI) 
   {
     assert(XHI > XLO && YHI > YLO && ZHI > ZLO);

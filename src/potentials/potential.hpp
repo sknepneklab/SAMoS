@@ -80,6 +80,22 @@ public:
     m_msg->msg(Messenger::INFO,"Added external potential : " + name + " to the list of external forces.");
   }
   
+  //! Add pair potential parameters
+  //! \param name Unique name of the potential 
+  //! \param params maps with new potential parameters
+  void add_pair_potential_parameters(const string& name, pairs_type& params)
+  {
+    m_pair_interactions[name].set_pair_parameters(params);
+  }
+  
+  //! Add external potential parameters
+  //! \param name Unique name of the potential 
+  //! \param params maps with new potential parameters
+  void add_external_potential_parameters(const string& name, pairs_type& params)
+  {
+    m_external_potentials[name].set_parameters(params);
+  }
+  
   //! Compute total pair potential energy of a given type (for measurement)
   //! \param type pair potential type
   double compute_pair_potential_energy_of_type(const string& type)

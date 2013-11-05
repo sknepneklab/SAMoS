@@ -62,8 +62,8 @@ public:
                  qi::as_string[keyword["pair_potential"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]  /*! Handles pair potential, such as Lennard-Jones or Coulomb */
                  | qi::as_string[keyword["pair_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles parameters for the pair potentials */
                  | qi::as_string[keyword["external"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]        /*! Handles external potentials */
+                 | qi::as_string[keyword["external_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]  /*! Handles parameters for external potentials */
                  | qi::as_string[keyword["integrator"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles integrators (NVE, NTV, etc.) */
-                 | qi::as_string[keyword["seed"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]            /*! Random number generator seed. */
                  | qi::as_string[keyword["input"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]           /*! Handles input file. */
                  | qi::as_string[keyword["constraint"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles constraints. */
                  | qi::as_string[keyword["run"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]             /*! Execute simulation. */
@@ -71,6 +71,7 @@ public:
                  | qi::as_string[keyword["dump"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]            /*! Handles coordinate dumps. */
                  | qi::as_string[keyword["messages"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]        /*! Handles internal messages. */
                  | qi::as_string[keyword["box"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]             /*! Handles simulation box. */
+                 | qi::as_string[keyword["nlist"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]             /*! Handles neighbour list. */
                  /* to add new command: | qi::as_string[keyword["newcommand"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ] */
                )
                >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&CommandData::attrib_param_complex, phoenix::ref(command_data)) = qi::_1 ]

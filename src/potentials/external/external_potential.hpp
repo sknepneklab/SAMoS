@@ -61,7 +61,7 @@ public:
   double get_potential_energy() { return m_potential_energy; } //!< \return value of the total potential energy
   
   //! Set pair parameters data for pairwise interactions    
-  virtual void set_parameters(int, pairs_type&) = 0;
+  virtual void set_parameters(pairs_type&) = 0;
   
   //! Computes potentials and forces for all particles
   virtual void compute() = 0;

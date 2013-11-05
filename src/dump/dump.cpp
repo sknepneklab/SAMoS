@@ -174,6 +174,8 @@ void Dump::dump(int step)
 {
   if (step < m_start)
     return;
+  if (step % m_freq != 0)
+    return;
   if (m_multi_print)
   {
     string file_name = m_file_name+"_"+lexical_cast<string>(format("%010d") % step)+"."+m_ext;

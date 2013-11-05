@@ -60,10 +60,18 @@ public:
   double get_potential_energy() { return m_potential_energy; } //!< \return value of the total potential energy
   
   //! Set pair parameters data for pairwise interactions    
-  void set_parameters(int type, pairs_type& pair_param)
+  void set_parameters(pairs_type& pair_param)
   {
     map<string,double> param;
     
+    if (pair_param.find("type") == pair_param.end())
+    {
+      m_msg->msg(Messenger::ERROR,"type has not been defined for external gravitational potential.");
+      throw runtime_error("Missing key for external potential parameters.");
+    }
+    
+    int type = lexical_cast<int>(pair_param["type"]);
+        
     if (pair_param.find("g") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"External gravitational potential. Setting g to "+pair_param["g"]+" for particle pair of type "+lexical_cast<string>(type)+".");

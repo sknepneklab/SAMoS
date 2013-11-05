@@ -73,9 +73,24 @@ public:
   }
                                                                                                                 
   //! Set pair parameters data for pairwise interactions    
-  void set_pair_parameters(int type_1, int type_2, pairs_type& pair_param)
+  void set_pair_parameters(pairs_type& pair_param)
   {
     map<string,double> param;
+    
+    int type_1, type_2;
+    
+    if (pair_param.find("type_1") == pair_param.end())
+    {
+      m_msg->msg(Messenger::ERROR,"type_1 has not been defined for pair potential parameters in Coulomb potential.");
+      throw runtime_error("Missing key for pair potential parameters.");
+    }
+    if (pair_param.find("type_2") == pair_param.end())
+    {
+      m_msg->msg(Messenger::ERROR,"type_2 has not been defined for pair potential parameters in Coulomb potential.");
+      throw runtime_error("Missing key for pair potential parameters.");
+    }
+    type_1 = lexical_cast<int>(pair_param["type_1"]);
+    type_2 = lexical_cast<int>(pair_param["type_2"]);
     
     if (pair_param.find("alpha") != pair_param.end())
     {
