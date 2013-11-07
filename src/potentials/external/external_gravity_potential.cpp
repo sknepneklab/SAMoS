@@ -25,7 +25,7 @@
 #include "external_gravity_potential.hpp"
 
 /*! Apply external gravitational potential to all particles */
-void compute()
+void ExternalGravityPotential::compute()
 {
   int N = m_system->size();
   double g = m_g;
@@ -35,7 +35,7 @@ void compute()
   {
     Particle& p = m_system->get_particle(i);
     if (m_has_params)
-      g = m_type_params[p.type]["g"];
+      g = m_type_params[p.get_type()]["g"];
     m_potential_energy += g*p.z;
     p.fz -= g;
   }

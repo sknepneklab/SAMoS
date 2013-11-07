@@ -85,7 +85,7 @@ public:
   //! \param params maps with new potential parameters
   void add_pair_potential_parameters(const string& name, pairs_type& params)
   {
-    m_pair_interactions[name].set_pair_parameters(params);
+    m_pair_interactions[name]->set_pair_parameters(params);
   }
   
   //! Add external potential parameters
@@ -93,7 +93,7 @@ public:
   //! \param params maps with new potential parameters
   void add_external_potential_parameters(const string& name, pairs_type& params)
   {
-    m_external_potentials[name].set_parameters(params);
+    m_external_potentials[name]->set_parameters(params);
   }
   
   //! Compute total pair potential energy of a given type (for measurement)
@@ -105,7 +105,7 @@ public:
       m_msg->msg(Messenger::ERROR,"Trying to compute pair potential of type " + type + " that is not defined for this system.");
       throw runtime_error("Pair potential of type " + type + " not defined.");
     }
-    return m_pair_interactions[type].second->get_potential_energy();
+    return m_pair_interactions[type]->get_potential_energy();
   }
   
   //! Compute total external potential energy of a given type (for measurement)
@@ -117,7 +117,7 @@ public:
       m_msg->msg(Messenger::ERROR,"Trying to compute external potential of type " + type + " that is not defined for this system.");
       throw runtime_error("External potential of type " + type + " not defined.");
     }
-    return m_external_potentials[type].second->get_potential_energy();
+    return m_external_potentials[type]->get_potential_energy();
   }
   
   //! Compute all forces and potentials in the system
@@ -130,7 +130,7 @@ private:
   
   PairPotType m_pair_interactions;    //!< Contains information about all pair interactions
   ExternPotType m_external_potentials;  //!< Contains information about all external forces
-  
+   
 };
 
 typedef shared_ptr<Potential> PotentialPtr;

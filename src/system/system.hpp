@@ -85,7 +85,7 @@ public:
     for (int i = 0; i < this->size(); i++)
     {
       Particle& p = m_particles[i];
-      p.ax = 0.0; p.ay = 0.0; p.az = 0.0;
+      p.fx = 0.0; p.fy = 0.0; p.fz = 0.0;
     }
   }
   

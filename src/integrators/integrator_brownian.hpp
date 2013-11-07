@@ -42,9 +42,10 @@ public:
   //! \param sys Pointer to a System object containing all particles
   //! \param msg Internal message handler
   //! \param pot Pairwise and external interaction handler
+  //! \param nlist Neighbour list object
   //! \param cons Enforces constraints to the manifold surface
   //! \param param Contains information about all parameters 
-  IntegratorBrownian(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, ConstraintPtr cons, pairs_type& param) : Integrator(sys, msg, pot, cons, param)
+  IntegratorBrownian(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, NeighbourListPtr nlist,  ConstraintPtr cons, pairs_type& param) : Integrator(sys, msg, pot, nlist, cons, param)
   { 
     if (param.find("v0") == param.end())
     {
@@ -79,12 +80,12 @@ public:
     if (param.find("seed") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Brownian dynamic integrator. No random number generator seed specified. Using default 0.");
-      m_rng = new RNG(0);
+      m_rng = make_shared<RNG>(0);
     }
     else
     {
       m_msg->msg(Messenger::INFO,"Brownian dynamic integrator. Setting random number generator seed to "+param["seed"]+".");
-      m_rng = new RNG(lexical_cast<int>(param["seed"]));
+      m_rng = make_shared<RNG>(lexical_cast<int>(param["seed"]));
     }
     m_stoch_coeff = m_nu*sqrt(m_dt);
   }
@@ -97,11 +98,11 @@ private:
   RNGPtr  m_rng;          //!< Random number generator 
   double  m_v0;           //!< Magnitude of the active velocity 
   double  m_nu;           //!< Rotational diffusion 
-  double  m_mul           //!< Mobility 
+  double  m_mu;           //!< Mobility 
   double  m_stoch_coeff;  //!< Factor for the stochastic part of the equation of motion (\f$ = \nu \sqrt{dt} \f$)
   
 };
 
-typedef shard_ptr<IntegratorBrownian> IntegratorBrownianPtr;
+typedef shared_ptr<IntegratorBrownian> IntegratorBrownianPtr;
 
 #endif

@@ -65,6 +65,7 @@ public:
   void set_pair_parameters(pairs_type& pair_param)
   {
     map<string,double> param;
+    int type_1, type_2;
     
     if (pair_param.find("type_1") == pair_param.end())
     {

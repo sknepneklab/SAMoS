@@ -25,11 +25,15 @@
 #ifndef __INTEGRATOR_H__
 #define __INTEGRATOR_H__
 
+#include <boost/make_shared.hpp>
+
 #include "system.hpp"
 #include "messenger.hpp"
 #include "potential.hpp"
 #include "constraint.hpp"
 #include "parse_parameters.hpp"
+
+using boost::make_shared;
 
 /*! Integrator class is the base class for handling different numerical 
  *  integrators for integrating equations of motion (e.g., NVE).
@@ -50,20 +54,19 @@ public:
   Integrator(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, NeighbourListPtr nlist, ConstraintPtr cons, pairs_type& param) : m_system(sys),
                                                                                                                                  m_msg(msg),
                                                                                                                                  m_potential(pot),
-                                                                                                                                 m_nlist(nlist)
-                                                                                                                                 m_constraint(cons),
-                                                                                                                                 m_params(param)
+                                                                                                                                 m_nlist(nlist),
+                                                                                                                                 m_constraint(cons)
   { 
     if (param.find("dt") == param.end())
     {
       m_msg->msg(Messenger::ERROR,"Time step for the integrator has not been set.");
       throw runtime_error("Integrator time step not specified.");
     }
-    m_dt = param["dt"];
+    m_dt = lexical_cast<double>(param["dt"]);
   }
   
   //! Propagate system for a time step
-  void integrate();
+  virtual void integrate() = 0;
   
 protected:
   
@@ -72,11 +75,10 @@ protected:
   PotentialPtr m_potential;    //!< Pointer to the interaction handler 
   NeighbourListPtr m_nlist;    //!< Pointer to the neighbour list object
   ConstraintPtr m_constraint;  //!< Pointer to the handler for constraints
-  PairData m_params;           //!< Handles specific parameters for a integrator type
   double m_dt;                 //!< time step
   
 };
 
-typedef shard_ptr<Integrator> IntegratorPtr;
+typedef shared_ptr<Integrator> IntegratorPtr;
 
 #endif

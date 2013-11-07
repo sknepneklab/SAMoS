@@ -28,7 +28,6 @@
 #include <cassert>
 #include <boost/shared_ptr.hpp>
 
-using std::assert;
 using boost::shared_ptr;
 
 //! Simulation box data 

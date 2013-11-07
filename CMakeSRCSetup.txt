@@ -1,0 +1,47 @@
+#* *************************************************************#
+# *  
+# *   Active Particles on Curved Spaces (APCS)
+# *   
+# *   Author: Rastko Sknepnek
+# *  
+# *   Division of Physics
+# *   School of Engineering, Physics and Mathematics
+# *   University of Dundee
+# *   
+# *   (c) 2013
+# *   
+# *   This program cannot be used, copied, or modified without
+# *   explicit permission of the author.
+# * 
+# * ************************************************************* */
+
+#################################
+## Setup include directories and file lists for sub directories
+include_directories($ENV{GSL_DIR}/include
+                    ${APCS_SOURCE_DIR}/src/constraints
+                    ${APCS_SOURCE_DIR}/src/dump
+                    ${APCS_SOURCE_DIR}/src/integrators
+                    ${APCS_SOURCE_DIR}/src/messenger
+                    ${APCS_SOURCE_DIR}/src/parser
+                    ${APCS_SOURCE_DIR}/src/potentials
+                    ${APCS_SOURCE_DIR}/src/potentials/external
+                    ${APCS_SOURCE_DIR}/src/potentials/pair
+                    ${APCS_SOURCE_DIR}/src/system
+                    ${APCS_SOURCE_DIR}/src/utils
+                    )
+
+# list of all sources in various source directories
+#file(GLOB APCS_SRCS ${APCS_SOURCE_DIR}/src/*.cpp ${APCS_SOURCE_DIR}/src/*.hpp)
+file(GLOB INITIAL_CONFIGURATION_BUILDER_SRC ${APCS_SOURCE_DIR}/utils)
+
+#######################
+## Configure the version info header file
+
+
+# handle linux/mac and windows dates differently
+if (NOT WIN32)
+	exec_program("date" OUTPUT_VARIABLE COMPILE_DATE)
+else(NOT WIN32)
+	exec_program("cmd" ARGS "/c date /T" OUTPUT_VARIABLE COMPILE_DATE)
+endif (NOT WIN32)
+

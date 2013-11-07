@@ -24,7 +24,7 @@
 
 #include "dump.hpp"
 
-/! Simple helper function to write an integer.
+//! Simple helper function to write an integer.
 /*! 
  *  \param file file to write to
  *  \param val integer to write
@@ -35,15 +35,13 @@ static void write_int(ofstream &file, unsigned int val)
   file.write((char *)&val, sizeof(unsigned int));
 }
 
-
-
 /*! Construct a specific dump object
  *  \param sys Pointer to a System object
  *  \param msg Handles system wide messages
  *  \param fname Base file name for the output 
  *  \param params list of parameters that control dump (e.g., frequency, output type, etc.)
 */
-Dump::Dump(SystemPrt sys, MessengerPtr msg, const string& fname, pairs_type& params) : m_system(sys), m_msg(msg), m_file_name(fname), m_params(params)
+Dump::Dump(SystemPtr sys, MessengerPtr msg, const string& fname, pairs_type& params) : m_system(sys), m_msg(msg), m_file_name(fname), m_params(params)
 {
   m_type_ext["velocity"] = "vel";
   m_type_ext["xyz"] = "xyz";
@@ -61,7 +59,7 @@ Dump::Dump(SystemPrt sys, MessengerPtr msg, const string& fname, pairs_type& par
     m_msg->msg(Messenger::INFO,"Dump type set to "+params["type"]);
     m_type = params["type"];
   }
-  if (m_type_ext.find(m_type) == m_type_ext.end()
+  if (m_type_ext.find(m_type) == m_type_ext.end())
   {
     m_msg->msg(Messenger::ERROR,"Unsupported dump type "+m_type+".");
     throw runtime_error("Unsupported dump type");
@@ -79,7 +77,7 @@ Dump::Dump(SystemPrt sys, MessengerPtr msg, const string& fname, pairs_type& par
   else
   {
     m_msg->msg(Messenger::INFO,"Dumping will start after "+params["start"]+" time steps.");
-    m_start = lexical_cast<int>(param["start"]);
+    m_start = lexical_cast<int>(params["start"]);
   }
   if (params.find("freq") == params.end())
   {
@@ -94,7 +92,7 @@ Dump::Dump(SystemPrt sys, MessengerPtr msg, const string& fname, pairs_type& par
   if (params.find("multi") == params.end())
   {
     m_msg->msg(Messenger::WARNING,"All time steps will be concatenated to a single file.");
-    m_muti_print = false;
+    m_multi_print = false;
     string file_name = m_file_name+"."+m_ext;
     m_out.open(file_name.c_str()); 
   }
@@ -155,7 +153,7 @@ Dump::Dump(SystemPrt sys, MessengerPtr msg, const string& fname, pairs_type& par
       
       write_int(m_out, 164);
       write_int(m_out, 4);
-      write_int(m_out, m_membrane->get_nvert());
+      write_int(m_out, m_system->size());
       write_int(m_out, 4);
       
       // check for errors
@@ -182,21 +180,16 @@ void Dump::dump(int step)
     m_out.open(file_name.c_str());
   }
   
-  switch (m_type)
-  {
-    case "xyz":
-      this->dump_xyz();
-      break;
-    case "full":
-      this->dump_data();
-      break;
-    case "input":
-      this->dump_input();
-      break;
-    case "velocity":
-      this->dump_velocity();
-      break;
-  }
+  if (m_type == "xyz")
+    this->dump_xyz();
+  else if (m_type == "full")
+    this->dump_data();
+  else if (m_type == "input")
+    this->dump_input();
+  else if (m_type == "velocity")
+    this->dump_velocity();
+  else if (m_type == "dcd")
+    this->dump_dcd();
   
   if (m_multi_print)
     m_out.close();
@@ -264,7 +257,7 @@ void Dump::dump_dcd()
 }
 
 //! Dump particle coordinates in the common XYZ format
-void Dump::dump_xyz();
+void Dump::dump_xyz()
 {
   int N = m_system->size();
   m_out << N << endl;
@@ -272,7 +265,7 @@ void Dump::dump_xyz();
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(i);
-    m_out << format("%3d\t%10.6f\t%10.6f\t%10.6f") % p.type % p.x % p.y % p.z << endl;
+    m_out << format("%3d\t%10.6f\t%10.6f\t%10.6f") % p.get_type() % p.x % p.y % p.z << endl;
   }
 }
 
@@ -352,6 +345,6 @@ void Dump::dump_velocity()
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(i);
-    m_out << format("%12.7e\t%12.7e\t%12.7e\t%12.7e\t12.7e\t12.7e") % (p.x-0.5*scale*p.vx) % (p.y-0.5*scale*p.vy) % (p.z-0.5*scale*p.vz) % scale*p.vx % scale*p.vy % scale*p.vz << endl;
+    m_out << format("%12.7e\t%12.7e\t%12.7e\t%12.7e\t12.7e\t12.7e") % (p.x-0.5*scale*p.vx) % (p.y-0.5*scale*p.vy) % (p.z-0.5*scale*p.vz) % (scale*p.vx) % (scale*p.vy) % (scale*p.vz) << endl;
   }
 }

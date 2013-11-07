@@ -53,7 +53,7 @@ struct IntegratorData
 class integrator_grammar : public qi::grammar<std::string::iterator, qi::space_type>
 {
 public:
-  integrator_grammar(IntegratorData& integrator_data) : potential_grammar::base_type(integrator)
+  integrator_grammar(IntegratorData& integrator_data) : integrator_grammar::base_type(integrator)
   {
     integrator = (
                   qi::as_string[keyword["nve"]][phoenix::bind(&IntegratorData::type, phoenix::ref(integrator_data)) = qi::_1 ]       /*! Handles NVE integrator */

@@ -31,5 +31,6 @@
 #define DEFAULT_LX 10.0
 #define DEFAULT_LY 10.0
 #define DEFAULT_LZ 10.0
+#define PRINT_EVERY 100
 
 #endif

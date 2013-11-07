@@ -47,7 +47,7 @@ struct RunData
 class run_grammar : public qi::grammar<std::string::iterator, qi::space_type>
 {
 public:
-  run_grammar(RunData& run_data) : potential_grammar::base_type(run)
+  run_grammar(RunData& run_data) : run_grammar::base_type(run)
   {
     run =    qi::int_[phoenix::bind(&RunData::steps, phoenix::ref(run_data)) = qi::_1 ]
           >> (qi::eol || qi::eoi);

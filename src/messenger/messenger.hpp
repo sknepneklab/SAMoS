@@ -64,19 +64,20 @@ public:
   };
   
   //! Construct Messenger object
-  Messenger(string&);
+  Messenger(const string&);
   
   //! Destructor
   ~Messenger();
   
   //! Output message
-  void msg(const Messenger::MSG_TYPE&, const string&) const;
+  void msg(const Messenger::MSG_TYPE&, const string&); //const;
   
 private:
   
-  ostream& m_out;       //!< Output stream to which to send output
+  ofstream m_out;      //!< Output stream to which to send output
   string m_file_name;   //!< Messenger file name
   map<const Messenger::MSG_TYPE,string> m_msg_type;  //!< maps message types to appropriate strings
+  bool m_to_terminal;   //!< If true send output to terminal
   
 };
 

@@ -72,7 +72,7 @@ public:
       m_sigma = lexical_cast<double>(param["sigma"]);
     }
     
-    if (m_param.find("rcut") == param.end())
+    if (param.find("rcut") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No cutoff distance (rcut) specified for the Lennard Jones pair potential. Setting it to 3.0.");
       m_rcut = 3.0;
@@ -83,9 +83,9 @@ public:
       m_rcut = lexical_cast<double>(param["rcut"]);
     }
     
-    if (m_rcut < m_nlist.get_cutoff())
-      m_msg->msg(Messenger::WARNING,"Neighbour list cutoff distance (" + lexical_cast<double>(m_nlist.get_cutoff())+
-      "is smaller than the Lennard-Jones cuttof distance ("+lexical_cast<double>(m_rcut)+
+    if (m_rcut < m_nlist->get_cutoff())
+      m_msg->msg(Messenger::WARNING,"Neighbour list cutoff distance (" + lexical_cast<string>(m_nlist->get_cutoff())+
+      "is smaller than the Lennard-Jones cuttof distance ("+lexical_cast<string>(m_rcut)+
       "). Results will not be reliable.");
     
     if (param.find("shifted") != param.end())
@@ -157,9 +157,9 @@ public:
     if (type_1 != type_2)
       m_pair_params[make_pair(type_2,type_1)]["rcut"] = param["rcut"];
     
-    if (param["rcut"] < m_nlist.get_cutoff())
-      m_msg->msg(Messenger::WARNING,"Neighbour list cutoff distance (" + lexical_cast<double>(m_nlist.get_cutoff())+
-      "is smaller than the Lennard-Jones cuttof distance ("+lexical_cast<double>(m_rcut)+
+    if (param["rcut"] < m_nlist->get_cutoff())
+      m_msg->msg(Messenger::WARNING,"Neighbour list cutoff distance (" + lexical_cast<string>(m_nlist->get_cutoff())+
+      "is smaller than the Lennard-Jones cuttof distance ("+lexical_cast<string>(m_rcut)+
       ") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+"). Results will not be reliable.");
     
     m_has_pair_params = true;

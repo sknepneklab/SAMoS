@@ -83,6 +83,7 @@ int main(int argc, char* argv[])
   PotentialData       potential_data;
   IntegratorData      integrator_data;
   ConstraintlData     constraint_data;
+  RunData             run_data;
   pairs_type          parameter_data;   // All parameters for different commands
   
   // Parser grammars
@@ -94,6 +95,7 @@ int main(int argc, char* argv[])
   potential_grammar    potential_parser(potential_data);
   integrator_grammar   integrator_parser(integrator_data);  
   constraint_grammar   constraint_parser(constraint_data);
+  run_grammar          run_parser(run_data);
   key_value_sequence   param_parser;
   
   // Class factories 
@@ -114,9 +116,9 @@ int main(int argc, char* argv[])
   IntegratorPtr integrator; // Handles the integrator
   vector<DumpPtr> dump;     // Handles all different dumps
   
-  bool can_proceed;            // Check if all parts are defined so that the simulation can proceed
   bool periodic;               // If true, use periodic boundary conditions
   bool has_potential = false;  // If false, potential handling object (Potential class) has not be initialized yet
+  int time_step;               // Counts current time step
   
   // flags that ensure that system the simulation is not in a bad state
   std::map<std::string, bool>  defined;
@@ -147,7 +149,7 @@ int main(int argc, char* argv[])
   // Register Brownian dynamics integrator with the integrators class factory
   integrators["brownian"] = boost::factory<IntegratorBrownianPtr>();
   
-  if (argc < 1)
+  if (argc < 2)
   {
     std::cerr << "Usage: " << std::endl;
     std::cerr << "    apcs <file_name>" << std::endl;
@@ -158,7 +160,8 @@ int main(int argc, char* argv[])
   command_file.open(argv[1],std::ifstream::in);
   if (command_file)
   {
-    while (std::getline(command_file, command_line)
+    time_step = 0;
+    while (std::getline(command_file, command_line))
     {
       boost::algorithm::trim(command_line);            // get rid of all leading and trailing white spaces 
       boost::algorithm::to_lower(command_line);        // transform the entire line to lower case (command script is case insensitive)
@@ -213,7 +216,7 @@ int main(int argc, char* argv[])
           {
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), input_parser, qi::space))  // Note that Messenger uses the same parser as the input files parser
             {
-              msg = boost::make_shared<Messenger>(Messenger(input_data.name));
+              msg = boost::shared_ptr<Messenger>(new Messenger(input_data.name));
               msg->msg(Messenger::INFO,"Messages will be sent to "+input_data.name+".");
             }
             else
@@ -228,15 +231,17 @@ int main(int argc, char* argv[])
             {
               if (!defined["messages"])  // If messenger is not defined, send to default messenger defined at the top of this file
               {
-                msg = boost::make_shared<Messenger>(Messenger(DEFAULT_MESSENGER));
-                msg->msg(Messenger::WARNING,"Messenger was not defined prior to the reading in data. If not redefined all messages will be sent to "+DEFAULT_MESSENGER+".");
+                string msg_name = DEFAULT_MESSENGER;
+                msg = boost::shared_ptr<Messenger>(new Messenger(msg_name));
+                msg->msg(Messenger::WARNING,"Messenger was not defined prior to the reading in data. If not redefined all messages will be sent to "+msg_name+".");
               }
               if (!defined["box"])   // Cannot run without a box
               {
                 msg->msg(Messenger::ERROR,"Simulation box has not been defined. Please define it before reading in coordinates.");
                 throw std::runtime_error("Simulation box not defined.");
               }
-              system = boost::make_shared<System>(System(input_data.name,msg,box));
+              sys = boost::make_shared<System>(System(input_data.name,msg,box));
+              sys->set_periodic(periodic);
               msg->msg(Messenger::INFO,"Finished reading system coordinates from "+input_data.name+".");
             }
             else
@@ -258,18 +263,18 @@ int main(int argc, char* argv[])
             if (!defined["nlist"]) // Create a default neighbour list if non has been defined
             {
               msg->msg(Messenger::WARNING,"No neighbour list defined. Some pair potentials (e.g. Lennard-Jones) need it. We are making one with default cutoff and padding.");
-              nlist = boost::make_shared<NeighbourList>(NeighbourList(system,msg,DEFAULT_CUTOFF,DEFAULT_PADDING));
+              nlist = boost::make_shared<NeighbourList>(NeighbourList(sys,msg,DEFAULT_CUTOFF,DEFAULT_PADDING));
             }
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), potential_parser, qi::space))
             {
               if (!has_potential) 
               {
-                pot = boost::make_shared<Potential>(Potential(system,msg));
+                pot = boost::make_shared<Potential>(Potential(sys,msg));
                 has_potential = true;
               }
               if (qi::phrase_parse(potential_data.params.begin(), potential_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                pot->add_pair_potential(potential_data.type, pair_potentials[potential_data.type](system,msg,nlist,parameter_data));
+                pot->add_pair_potential(potential_data.type, pair_potentials[potential_data.type](sys,msg,nlist,parameter_data));
                 msg->msg(Messenger::INFO,"Added "+potential_data.type+" to the list of pair potentials.");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
                   msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for pair potential "+potential_data.type+" is set to "+(*it).second+".");
@@ -301,12 +306,12 @@ int main(int argc, char* argv[])
             {
               if (!has_potential) 
               {
-                pot = boost::make_shared<Potential>(Potential(system,msg));
+                pot = boost::make_shared<Potential>(Potential(sys,msg));
                 has_potential = true;
               }
               if (qi::phrase_parse(external_data.params.begin(), external_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                pot->add_external_potential(external_data.type, external_potentials[external_data.type](system,msg,parameter_data));
+                pot->add_external_potential(external_data.type, external_potentials[external_data.type](sys,msg,parameter_data));
                 msg->msg(Messenger::INFO,"Added "+external_data.type+" to the list of external potentials.");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
                   msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for pair potential "+external_data.type+" is set to "+(*it).second+".");
@@ -337,7 +342,7 @@ int main(int argc, char* argv[])
             {
               if (qi::phrase_parse(constraint_data.params.begin(), constraint_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                constraint = boost::make_shared<Constraint>(constraints[constraint_data.type](system,msg,parameter_data));
+                constraint = boost::shared_ptr<Constraint>(constraints[constraint_data.type](sys,msg,parameter_data));  // dirty workaround shared_ptr and inherited classes
                 msg->msg(Messenger::INFO,"Adding constraint of type "+constraint_data.type+".");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
                   msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for constraint "+constraint_data.type+" is set to "+(*it).second+".");
@@ -370,7 +375,7 @@ int main(int argc, char* argv[])
               double pad = DEFAULT_PADDING;
               if (parameter_data.find("rcut") != parameter_data.end()) rcut = lexical_cast<double>(parameter_data["rcut"]);
               if (parameter_data.find("pad") != parameter_data.end())  pad = lexical_cast<double>(parameter_data["pad"]);
-              nlist = boost::make_shared<NeighbourList>(NeighbourList(system,msg,rcut,pad));
+              nlist = boost::make_shared<NeighbourList>(NeighbourList(sys,msg,rcut,pad));
               msg->msg(Messenger::INFO,"Created neighbour list with cutoff "+lexical_cast<string>(rcut)+" and padding distance "+lexical_cast<string>(pad)+".");
             }
             else
@@ -393,10 +398,10 @@ int main(int argc, char* argv[])
             {
               if (qi::phrase_parse(log_dump_data.params.begin(), log_dump_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                dump.push_back(boost::make_shared<Dump>(Dump(system,msg,log_dump_data.name,parameter_data));
+                dump.push_back(boost::shared_ptr<Dump>(new Dump(sys,msg,log_dump_data.name,parameter_data)));
                 msg->msg(Messenger::INFO,"Adding dump to file "+log_dump_data.name+".");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for dump "+log_dump_data.type+" is set to "+(*it).second+".");
+                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for dump "+log_dump_data.name+" is set to "+(*it).second+".");
               }
               else
               {
@@ -422,19 +427,19 @@ int main(int argc, char* argv[])
             }
             if (!has_potential)
             {
-              msg->msg(Messenger::ERROR,"No potentials has been defined. Please define system using \"pair_potential\" or \"external\" command before adding integrator.");
+              msg->msg(Messenger::ERROR,"No potentials has been defined. Please define them using \"pair_potential\" or \"external\" command before adding integrator.");
               throw std::runtime_error("No potentials defined.");
             }
             if (!defined["constraint"])
             {
-              msg->msg(Messenger::ERROR,"Constraint has not been defined. Please define system using \"constraint\" command before adding integrator.");
+              msg->msg(Messenger::ERROR,"Constraint has not been defined. Please define them using \"constraint\" command before adding integrator.");
               throw std::runtime_error("Constraint not defined.");
             }
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), integrator_parser, qi::space))
             {
               if (qi::phrase_parse(integrator_data.params.begin(), integrator_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                integrator = boost::make_shared<Integrator>(integrators[integrator_data.type](system,msg,pot,nlist,constraint, parameter_data));
+                integrator = boost::shared_ptr<Integrator>(integrators[integrator_data.type](sys,msg,pot,nlist,constraint, parameter_data));
                 msg->msg(Messenger::INFO,"Adding integrator of type "+integrator_data.type+".");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
                   msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for integrator "+integrator_data.type+" is set to "+(*it).second+".");
@@ -455,7 +460,7 @@ int main(int argc, char* argv[])
           {
             if (!defined["pair_potential"])  // We need to have pair potentials defined before we can change their parameters
             {
-              msg->msg(Messenger::ERROR,"No pair potentials have been defined. Please define system using \"pair_potential\" command before modifying any pair parameters.");
+              msg->msg(Messenger::ERROR,"No pair potentials have been defined. Please define them using \"pair_potential\" command before modifying any pair parameters.");
               throw std::runtime_error("No pair potentials defined.");
             }
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), potential_parser, qi::space))
@@ -480,6 +485,78 @@ int main(int argc, char* argv[])
             }
             
           }
+          else if (command_data.command == "external_param")       // parse pair parameters for potential
+          {
+            if (!defined["external"])  // We need to have at least one external potential defined before we can change the parameters
+            {
+              msg->msg(Messenger::ERROR,"No external potentials have been defined. Please define them using \"external\" command before modifying any parameters.");
+              throw std::runtime_error("No pair potentials defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), external_parser, qi::space))
+            {
+              if (qi::phrase_parse(external_data.params.begin(), external_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                pot->add_external_potential_parameters(external_data.type, parameter_data);
+                msg->msg(Messenger::INFO,"Setting new parameters for "+external_data.type+".");
+                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
+                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for external potential "+external_data.type+" is set to "+(*it).second+".");
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse external potential parameters for potential type "+external_data.type+" in line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing external potential parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing external_param command at line : "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing external_param command.");
+            }
+          }
+          else if (command_data.command == "run")       // run actual simulation
+          {
+            if (!defined["input"])  // We need to have system defined before we can run simulation
+            {
+              if (defined["messages"])
+                msg->msg(Messenger::ERROR,"System has not been defined. Please define system using \"input\" command before adding any dump.");
+              else
+                std::cerr << "System has not been defined. Please define system using \"input\" command before adding any dumps." << std::endl;
+              throw std::runtime_error("System not defined.");
+            }
+            if (!has_potential)
+            {
+              msg->msg(Messenger::ERROR,"No potentials has been defined. Please define them using \"pair_potential\" or \"external\" command before running simulation.");
+              throw std::runtime_error("No potentials defined.");
+            }
+            if (!defined["constraint"])
+            {
+              msg->msg(Messenger::ERROR,"Constraint has not been defined. Please define it using \"constraint\" command before running simulation.");
+              throw std::runtime_error("Constraint not defined.");
+            }
+            if (!defined["integrator"])
+            {
+              msg->msg(Messenger::ERROR,"Integrator has not been defined. Please define it using \"integrator\" command before running simulation.");
+              throw std::runtime_error("Integrator not defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), run_parser, qi::space))
+            {
+              msg->msg(Messenger::INFO,"Starting simulation run for "+lexical_cast<string>(run_data.steps)+" steps.");
+              for (int t = 0; t < run_data.steps; t++)
+              {
+                for (vector<DumpPtr>::iterator it_d = dump.begin(); it_d != dump.end(); it_d++)
+                  (*it_d)->dump(time_step);
+                integrator->integrate();
+                time_step++;
+                if (t % PRINT_EVERY == 0)
+                  std::cout << "Time step: " << t <<"/" << run_data.steps << std::endl;
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Could not parse number of run steps in line : "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing number of run steps.");
+            }
+          }
         }
         else
         {
@@ -493,7 +570,7 @@ int main(int argc, char* argv[])
   }
   else
   {
-    std::cerr << "Could not open file : " << arg[1] << " for reading." << std::endl;
+    std::cerr << "Could not open file : " << argv[1] << " for reading." << std::endl;
   }
   
   command_file.close();

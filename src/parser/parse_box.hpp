@@ -60,7 +60,7 @@ public:
             | qi::as_string[keyword["fixed"]][phoenix::bind(&BoxData::type, phoenix::ref(box_data)) = qi::_1 ]          /*! Handles periodic potential */
             /* to add new box type: | qi::as_string[keyword["newboxtype"]][phoenix::bind(&BoxData::type, phoenix::ref(box_data)) = qi::_1 ] */
            )
-           >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&PotentialData::params, phoenix::ref(potential_data)) = qi::_1 ]
+           >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&BoxData::params, phoenix::ref(box_data)) = qi::_1 ]
            >> (qi::eol || qi::eoi);
   }
 

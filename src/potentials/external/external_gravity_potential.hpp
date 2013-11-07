@@ -34,7 +34,7 @@
  *  \f$ V_{grav}\left(r\right) = g z \f$ and the force is \f$ \vec F = - m g \vec e_z \f$,
  *  where \f$ g \f$ is gravitational acceleration.
 */
-class ExternalGravityPotential
+class ExternalGravityPotential : public ExternalPotential
 {
 public:
   
@@ -52,7 +52,7 @@ public:
     else
     {
       m_msg->msg(Messenger::INFO,"Strength of the gravitational potential set to "+param["g"]+".");
-      m_g = lexical_cast<double>param["g"];
+      m_g = lexical_cast<double>(param["g"]);
     }
   }
                                                                                                                 
@@ -75,7 +75,7 @@ public:
     if (pair_param.find("g") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"External gravitational potential. Setting g to "+pair_param["g"]+" for particle pair of type "+lexical_cast<string>(type)+".");
-      param["g"] = lexical_cast<double>pair_param["g"];
+      param["g"] = lexical_cast<double>(pair_param["g"]);
     }
     else
     {

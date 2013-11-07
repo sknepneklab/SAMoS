@@ -69,7 +69,7 @@ public:
   //! Destructor
   ~NeighbourList()
   {
-    for(int i = 0; i < m_list.size(); i++)
+    for(unsigned int i = 0; i < m_list.size(); i++)
       m_list[i].clear();
     m_list.clear();
     m_old_state.clear();
@@ -80,6 +80,7 @@ public:
   //! \return true if the list needs update
   bool need_update(Particle& p)
   {
+    int id = p.get_id();
     double dx = m_old_state[id].x - p.x;
     double dy = m_old_state[id].y - p.y;
     double dz = m_old_state[id].z - p.z;

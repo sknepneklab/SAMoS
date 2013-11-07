@@ -38,7 +38,7 @@ void PairSoftPotential::compute()
     Particle& pi = m_system->get_particle(i);
     ai = pi.get_radius();
     vector<int>& neigh = m_nlist->get_neighbours(i);
-    for (j = 0; j < neigh.size(); j++)
+    for (unsigned int j = 0; j < neigh.size(); j++)
     {
       Particle& pj = m_system->get_particle(j);
       if (m_has_pair_params)

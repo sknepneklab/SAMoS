@@ -36,9 +36,10 @@
 #include "parse_parameters.hpp"
 
 using std::string;
-using std::ofsream;
+using std::ofstream;
 using std::map;
 using std::endl;
+using std::list;
 using boost::format;
 
 /*! Dump class handles output of system's state, such 
@@ -50,7 +51,7 @@ class Dump
 {
 public:
   //! Constructor
-  Dump(SystemPrt, MessengerPtr, const string&, pairs_type&);
+  Dump(SystemPtr, MessengerPtr, const string&, pairs_type&);
   
   //! Destructor
   ~Dump()
@@ -79,7 +80,7 @@ private:
   
   // Auxiliary data structures
   map<string, string> m_type_ext;  //!< Hold extension for a given data type
-  vector<list> m_to_print;       //!< List of quantities to dump (e.g., particle type, id, coordinate, velocity, etc.)
+  vector<string> m_to_print;       //!< List of quantities to dump (e.g., particle type, id, coordinate, velocity, etc.)
   
   
   // private member methods that do actual dumping
@@ -97,6 +98,6 @@ private:
   
 };
 
-typedef shard_ptr<Dump> DumpPtr;
+typedef shared_ptr<Dump> DumpPtr;
 
 #endif

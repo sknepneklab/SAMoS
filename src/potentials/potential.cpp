@@ -22,6 +22,7 @@
  * \brief Definition of Potential class members.
 */ 
 
+#include "potential.hpp"
 
 /*! Iterate over all pair and external potential and compute 
  *  potential energies and forces

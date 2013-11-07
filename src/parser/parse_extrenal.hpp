@@ -53,7 +53,7 @@ struct ExternalData
 class external_grammar : public qi::grammar<std::string::iterator, qi::space_type>
 {
 public:
-  external_grammar(ExternalData& external_data) : potential_grammar::base_type(external)
+  external_grammar(ExternalData& external_data) : external_grammar::base_type(external)
   {
     external = (
                   qi::as_string[keyword["gravity"]][phoenix::bind(&ExternalData::type, phoenix::ref(external_data)) = qi::_1 ]       /*! Handles gravitational potential */

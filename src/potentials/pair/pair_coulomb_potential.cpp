@@ -37,7 +37,7 @@ void PairCoulombPotential::compute()
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
-    for (j = 0; i+1 < N; j++)
+    for (int j = 0; i+1 < N; j++)
     {
       Particle& pj = m_system->get_particle(j);
       if (m_has_pair_params)
@@ -64,8 +64,7 @@ void PairCoulombPotential::compute()
       m_potential_energy += alpha/r + 4.0*fabs(alpha)*inv_r_6*inv_r_6;
       // Handle force
       double r_3 = r*r_sq;
-      double coul_force_factor = alpha/r_3;
-      double force_factor = alpha/r_3 + 48.0*fabs(alpha)*inv_r_6*inv_r_6*inv_r_sq
+      double force_factor = alpha/r_3 + 48.0*fabs(alpha)*inv_r_6*inv_r_6*inv_r_sq;
       pi.fx -= force_factor*dx;
       pi.fy -= force_factor*dy;
       pi.fz -= force_factor*dz;

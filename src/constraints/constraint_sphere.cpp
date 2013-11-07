@@ -22,6 +22,8 @@
  * \brief Implementation of the spherical constraint
  */ 
 
+#include "constraint_sphere.hpp"
+
 /*! Force particle to be confined to the surface of the sphere and
  *  its velocity to be tangent to it. We assume that during the integration 
  *  step particles do not move to much away from the surface and we project 

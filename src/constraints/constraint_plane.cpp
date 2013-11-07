@@ -22,6 +22,8 @@
  * \brief Implementation of the planar constraint
  */ 
 
+#include "constraint_plane.hpp"
+
 /*! Force all particles to be confined to the surface of the xy plane 
  *  by setting z = 0, vz = 0, fz = 0
  *  \param p particle to project onto the sphere
@@ -31,7 +33,6 @@ void ConstraintPlane::enforce(Particle& p)
   bool periodic = m_system->get_periodic();
   double xlo = -0.5*m_lx, xhi = 0.5*m_lx;
   double ylo = -0.5*m_ly, yhi = 0.5*m_ly;
-  double zlo = -0.5*m_lz, zhi = 0.5*m_lz;
   p.z = 0.0;
   p.vz = 0.0;
   p.fz = 0.0;
@@ -42,8 +43,6 @@ void ConstraintPlane::enforce(Particle& p)
     else if (p.x > xhi) p.x -= m_lx;
     if (p.y < ylo) p.y += m_ly;
     else if (p.y > yhi) p.y -= m_ly;
-    if (p.z < zlo) p.z += m_lz;
-    else if (p.z > zhi) p.z -= m_lz;
   }
 }
 

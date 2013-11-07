@@ -1,0 +1,43 @@
+#* *************************************************************#
+# *  
+# *   Active Particles on Curved Spaces (APCS)
+# *   
+# *   Author: Rastko Sknepnek
+# *  
+# *   Division of Physics
+# *   School of Engineering, Physics and Mathematics
+# *   University of Dundee
+# *   
+# *   (c) 2013
+# *   
+# *   This program cannot be used, copied, or modified without
+# *   explicit permission of the author.
+# * 
+# * ************************************************************* */
+
+## Set the option for swithcihng on and off of the static linking
+OPTION(ENABLE_STATIC "Link as many libraries as possible statically, cannot be changed after the first run of CMake" OFF)
+mark_as_advanced(ENABLE_STATIC)
+## Optionally enable documentation build
+find_package(Doxygen)
+if (DOXYGEN_FOUND)
+# get the doxygen version
+exec_program(${DOXYGEN_EXECUTABLE} ${APCS_SOURCE_DIR} ARGS --version OUTPUT_VARIABLE DOXYGEN_VERSION)
+STRING(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+.*" "\\1" DOXYGEN_VERSION_MAJOR "${DOXYGEN_VERSION}")
+STRING(REGEX REPLACE "^[0-9]+\\.([0-9])+\\.[0-9]+.*" "\\1" DOXYGEN_VERSION_MINOR "${DOXYGEN_VERSION}")
+STRING(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" DOXYGEN_VERSION_PATCH "${DOXYGEN_VERSION}")
+
+if (DOXYGEN_VERSION_MAJOR GREATER 0 AND DOXYGEN_VERSION_MINOR GREATER 4 AND DOXYGEN_VERSION_PATCH GREATER 0)
+OPTION(ENABLE_DOXYGEN "Enables building of documentation with doxygen" ON)
+else (DOXYGEN_VERSION_MAJOR GREATER 0 AND DOXYGEN_VERSION_MINOR GREATER 4 AND DOXYGEN_VERSION_PATCH GREATER 0)
+message(STATUS "Doxygen version less than 1.5.5, defaulting ENABLE_DOXYGEN=OFF")
+OPTION(ENABLE_DOXYGEN "Enables building of documentation with doxygen" OFF)
+endif (DOXYGEN_VERSION_MAJOR GREATER 0 AND DOXYGEN_VERSION_MINOR GREATER 4 AND DOXYGEN_VERSION_PATCH GREATER 0)
+
+endif (DOXYGEN_FOUND)
+
+##################################
+## find the threads library
+find_package(Threads)
+
+

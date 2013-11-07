@@ -26,7 +26,7 @@
 
 //! Initialize RNG (GSL)
 //! \param seed initial seed for the random number generator
-RNG::RNG(int seed) : m_seed(seed);
+RNG::RNG(int seed) : m_seed(seed)
 {
   gsl_rng_env_setup();
   GSL_RANDOM_TYPE = gsl_rng_default;

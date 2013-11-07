@@ -28,8 +28,8 @@
 #include <cmath>
 
 #include "system.hpp"
-
 #include "parse_parameters.hpp"
+#include "constraint.hpp"
 
 using std::sin;
 using std::cos;
@@ -49,16 +49,6 @@ public:
   //! \param param parameters that define the manifolds (e.g., sphere radius)
   ConstraintPlane(SystemPtr sys, MessengerPtr msg, pairs_type& param) : Constraint(sys,msg,param)
   { 
-    if (param.find("r") == param.end())
-    {
-      m_msg->msg(Messenger::WARNING,"Spherical constraint. No radius set. Assuming 1.");
-      m_r = 1.0;
-    }
-    else
-    {
-      m_msg->msg(Messenger::INFO,"Spherical constraint. Radius set to "+param["r"]+".");
-      m_r = lexical_cast<double>(param["r"]);
-    }
     m_lx = m_system->get_box()->Lx;
     m_ly = m_system->get_box()->Ly;
   }
@@ -69,7 +59,7 @@ public:
   //! Rotate velocity vector around normal vector to the plane (z axis)
   void rotate_velocity(Particle&, double);
     
-private
+private:
   
   double m_lx;     //!< box size in x direction 
   double m_ly;     //!< box size in y direction 

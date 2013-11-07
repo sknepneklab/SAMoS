@@ -25,6 +25,8 @@
 #ifndef __CONSTRAINT_HPP__
 #define __CONSTRAINT_HPP__
 
+#include "defaults.hpp"
+
 #include "system.hpp"
 
 #include "parse_parameters.hpp"

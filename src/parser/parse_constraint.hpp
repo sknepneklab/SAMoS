@@ -50,7 +50,7 @@ struct ConstraintlData
 class constraint_grammar : public qi::grammar<std::string::iterator, qi::space_type>
 {
 public:
-  constraint_grammar(ConstraintlData& constraint_data) : potential_grammar::base_type(constraint)
+  constraint_grammar(ConstraintlData& constraint_data) : constraint_grammar::base_type(constraint)
   {
     constraint = (
                    qi::as_string[keyword["sphere"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on a sphere */

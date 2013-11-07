@@ -91,21 +91,21 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
       const double r = lexical_cast<double>(s_line[2]);  // read particle radius
       Particle p(id, tp, r);
       p.x = lexical_cast<double>(s_line[3]);
-      if (p.x < m_box->x_lo || p.x > m_box->x_hi)
+      if (p.x < m_box->xlo || p.x > m_box->xhi)
       {
-        m_msg.msg(Messenger::ERROR,"X coordinate of particle "+lexical_cast<string>(p.id)+" is outside simulation box. Please update box size.");
+        m_msg->msg(Messenger::ERROR,"X coordinate of particle "+lexical_cast<string>(p.get_id())+" is outside simulation box. Please update box size.");
         throw runtime_error("Particle outside the box.");
       }
       p.y = lexical_cast<double>(s_line[4]);
-      if (p.y < m_box->y_lo || p.y > m_box->y_hi)
+      if (p.y < m_box->ylo || p.y > m_box->yhi)
       {
-        m_msg.msg(Messenger::ERROR,"Y coordinate of particle "+lexical_cast<string>(p.id)+" is outside simulation box. Please update box size.");
+        m_msg->msg(Messenger::ERROR,"Y coordinate of particle "+lexical_cast<string>(p.get_id())+" is outside simulation box. Please update box size.");
         throw runtime_error("Particle outside the box.");
       }
       p.z = lexical_cast<double>(s_line[5]);
-      if (p.z < m_box->z_lo || p.z > m_box->z_hi)
+      if (p.z < m_box->zlo || p.z > m_box->zhi)
       {
-        m_msg.msg(Messenger::ERROR,"Z coordinate of particle "+lexical_cast<string>(p.id)+" is outside simulation box. Please update box size.");
+        m_msg->msg(Messenger::ERROR,"Z coordinate of particle "+lexical_cast<string>(p.get_id())+" is outside simulation box. Please update box size.");
         throw runtime_error("Particle outside the box.");
       }
       p.vx = lexical_cast<double>(s_line[6]);

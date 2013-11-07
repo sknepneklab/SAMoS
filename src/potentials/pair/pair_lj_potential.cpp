@@ -31,7 +31,7 @@ void PairLJPotential::compute()
   BoxPtr box = m_system->get_box();
   double sigma = m_sigma;
   double eps = m_eps;
-  double rcut = m_rcu;
+  double rcut = m_rcut;
   double sigma_sq = sigma*sigma, rcut_sq = rcut*rcut;
  
   // Reset total potential energy to zero
@@ -40,7 +40,7 @@ void PairLJPotential::compute()
   {
     Particle& pi = m_system->get_particle(i);
     vector<int>& neigh = m_nlist->get_neighbours(i);
-    for (j = 0; j < neigh.size(); j++)
+    for (unsigned int j = 0; j < neigh.size(); j++)
     {
       Particle& pj = m_system->get_particle(neigh[j]);
       if (m_has_pair_params)
@@ -75,10 +75,10 @@ void PairLJPotential::compute()
         {
           double inv_r_cut_sq = sigma_sq/rcut_sq;
           double inv_r_cut_6 = inv_r_cut_sq*inv_r_cut_sq*inv_r_cut_sq;
-          m_potential_energy -= 4.0 * epsilon * inv_r_cut_6 * (inv_r_cut_6 - 1.0);
+          m_potential_energy -= 4.0 * eps * inv_r_cut_6 * (inv_r_cut_6 - 1.0);
         }
         // Handle force
-        double force_factor = 48.0*epsilon*inv_r_6*(inv_r_6 - 0.5)*inv_r_sq;
+        double force_factor = 48.0*eps*inv_r_6*(inv_r_6 - 0.5)*inv_r_sq;
         pi.fx += force_factor*dx;
         pi.fy += force_factor*dy;
         pi.fz += force_factor*dz;

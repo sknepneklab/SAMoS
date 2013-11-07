@@ -28,8 +28,8 @@
 #include <cmath>
 
 #include "system.hpp"
-
 #include "parse_parameters.hpp"
+#include "constraint.hpp"
 
 
 using std::sqrt;
@@ -69,7 +69,7 @@ public:
   //! Rotate velocity vector around normal vector to the sphere
   void rotate_velocity(Particle&, double);
     
-private
+private:
   
   double m_r;     //!< Radius of the confining sphere
   
