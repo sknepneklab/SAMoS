@@ -561,6 +561,7 @@ int main(int argc, char* argv[])
         else
         {
           std::cerr << "Error parsing line : " << current_line << std::endl;
+          std::cerr << "Unknown command : " << command_line << std::endl;
           throw std::runtime_error("Error parsing command script.");
         }
         

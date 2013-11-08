@@ -58,7 +58,7 @@ public:
     integrator = (
                   qi::as_string[keyword["nve"]][phoenix::bind(&IntegratorData::type, phoenix::ref(integrator_data)) = qi::_1 ]       /*! Handles NVE integrator */
                   | qi::as_string[keyword["nvt"]][phoenix::bind(&IntegratorData::type, phoenix::ref(integrator_data)) = qi::_1 ]  /*! Handles NVT integrator */
-                  | qi::as_string[keyword["stochastic"]][phoenix::bind(&IntegratorData::type, phoenix::ref(integrator_data)) = qi::_1 ]    /*! Handles stochastic integrator */
+                  | qi::as_string[keyword["brownian"]][phoenix::bind(&IntegratorData::type, phoenix::ref(integrator_data)) = qi::_1 ]    /*! Handles stochastic integrator */
                   /* to add new integrator: | qi::as_string[keyword["newintegrator"]][phoenix::bind(&IntegratorData::type, phoenix::ref(integrator_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&IntegratorData::params, phoenix::ref(integrator_data)) = qi::_1 ]

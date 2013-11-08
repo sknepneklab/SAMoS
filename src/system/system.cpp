@@ -115,5 +115,6 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
       m_particles.push_back(p);
     }
   }
+  msg->msg(Messenger::INFO,"Read data for "+lexical_cast<string>(m_particles.size())+" particles.");
   inp.close();
 }
