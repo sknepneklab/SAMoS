@@ -49,6 +49,8 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, const string& fname, pairs_type& par
   m_type_ext["input"] = "inp";
   m_type_ext["dcd"] = "dcd";
 
+  m_print_header = false;
+  
   if (params.find("type") == params.end())
   {
     m_msg->msg(Messenger::ERROR,"No dump type specified.");
@@ -100,6 +102,11 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, const string& fname, pairs_type& par
   {
     m_msg->msg(Messenger::INFO,"Each dumped time step will be stored in a separate file labelled by the time step.");
     m_multi_print = true;
+  }
+  if (params.find("header") != params.end())
+  {
+    m_print_header = true;
+    m_msg->msg(Messenger::INFO,"Include info header into the dump file.");
   }
   if (m_type == "dcd")
   {
@@ -273,12 +280,12 @@ void Dump::dump_xyz()
 void Dump::dump_data()
 {
   int N = m_system->size();
-  if (m_params.find("header") != m_params.end())
+  if (m_print_header)
   {
     m_out << "# ";
     if (m_params.find("id") != m_params.end())
       m_out << " id ";
-    if (m_params.find("type") != m_params.end())
+    if (m_params.find("tp") != m_params.end())
       m_out << " type ";
     if (m_params.find("radius") != m_params.end())
       m_out << " radius ";
@@ -297,7 +304,7 @@ void Dump::dump_data()
     Particle& p = m_system->get_particle(i);
     if (m_params.find("id") != m_params.end())
       m_out << format("%5d ") % p.get_id();
-    if (m_params.find("type") != m_params.end())
+    if (m_params.find("tp") != m_params.end())
       m_out << format("%2d ") % p.get_type();
     if (m_params.find("radius") != m_params.end())
       m_out << format("%8.5f ") % p.get_radius();
@@ -317,7 +324,7 @@ void Dump::dump_data()
 void Dump::dump_input()
 {
   int N = m_system->size();
-  if (m_params.find("header") != m_params.end())
+  if (m_print_header)
     m_out << "# id type  radius x y z vx vy vz omega" << endl;
   for (int i = 0; i < N; i++)
   {
@@ -337,7 +344,7 @@ void Dump::dump_velocity()
     m_msg->msg(Messenger::INFO,"Scaling all velocities by "+m_params["scale"]+".");
     scale = lexical_cast<double>(m_params["scale"]);
   }
-  if (m_params.find("header") != m_params.end())
+  if (m_print_header)
   {
     m_out << "# scale a = " << scale << endl;
     m_out << "# x-0.5*a*vx  y-0.5*a*vy z-0.5*a*vz  a*vx  a*vy  a*vz" << endl;
@@ -345,6 +352,6 @@ void Dump::dump_velocity()
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(i);
-    m_out << format("%12.7e\t%12.7e\t%12.7e\t%12.7e\t12.7e\t12.7e") % (p.x-0.5*scale*p.vx) % (p.y-0.5*scale*p.vy) % (p.z-0.5*scale*p.vz) % (scale*p.vx) % (scale*p.vy) % (scale*p.vz) << endl;
+    m_out << format("%12.7e\t%12.7e\t%12.7e\t%12.7e\t%12.7e\t%12.7e") % (p.x-0.5*scale*p.vx) % (p.y-0.5*scale*p.vy) % (p.z-0.5*scale*p.vz) % (scale*p.vx) % (scale*p.vy) % (scale*p.vz) << endl;
   }
 }

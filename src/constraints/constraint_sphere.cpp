@@ -39,8 +39,10 @@ void ConstraintSphere::enforce(Particle& p)
   p.x *= s; p.y *= s; p.z *= s;
   // Compute unit normal
   double nx = p.x/m_r, ny = p.y/m_r, nz = p.z/m_r;
+  // compute v.n
+  double v_dot_n = p.vx*nx + p.vy*ny + p.vz*nz;
   // Compute tangent component of the velocity
-  p.vx -= p.vx*nx; p.vy -= p.vy*ny; p.vz -= p.vz*nz;
+  p.vx -= v_dot_n*nx; p.vy -= v_dot_n*ny; p.vz -= v_dot_n*nz;
 }
 
 /*! Rotate velocity vector of a particle around the normal vector

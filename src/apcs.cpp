@@ -26,6 +26,7 @@
 #include <map>
 #include <string>
 #include <fstream>
+#include <ctime>
 
 #include <boost/functional/factory.hpp>
 #include <boost/function.hpp>
@@ -156,6 +157,11 @@ int main(int argc, char* argv[])
     return -1;
   }
   
+  // Measure execution time
+  std::time_t start_time = std::time(NULL);
+   
+  
+  // Start parsing the configuration file
   int current_line = 1;
   command_file.open(argv[1],std::ifstream::in);
   if (command_file)
@@ -346,6 +352,9 @@ int main(int argc, char* argv[])
                 msg->msg(Messenger::INFO,"Adding constraint of type "+constraint_data.type+".");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
                   msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for constraint "+constraint_data.type+" is set to "+(*it).second+".");
+                // Enforce constraint so we make sure all particles lie on it
+                for (int i = 0; i < sys->size(); i++)
+                  constraint->enforce(sys->get_particle(i));
               }
               else
               {
@@ -541,15 +550,28 @@ int main(int argc, char* argv[])
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), run_parser, qi::space))
             {
               msg->msg(Messenger::INFO,"Starting simulation run for "+lexical_cast<string>(run_data.steps)+" steps.");
+              int nlist_builds = 0;     // Count how many neighbour list builds we had during this run
               for (int t = 0; t < run_data.steps; t++)
               {
                 for (vector<DumpPtr>::iterator it_d = dump.begin(); it_d != dump.end(); it_d++)
                   (*it_d)->dump(time_step);
                 integrator->integrate();
-                time_step++;
+                // Check the neighbour list rebuild only if necessary 
+                if (pot->need_nlist())
+                {
+                  for (int i = 0; i < sys->size(); i++)
+                    if (nlist->need_update(sys->get_particle(i)))
+                    {
+                      nlist->build();
+                      nlist_builds++;
+                      break;
+                    }
+                }
                 if (t % PRINT_EVERY == 0)
-                  std::cout << "Time step: " << t <<"/" << run_data.steps << std::endl;
+                  std::cout << "Time step: " << t <<"/" << run_data.steps << "   cumulative time step : " << time_step<< std::endl;
+                time_step++;
               }
+              msg->msg(Messenger::INFO,"Built neighbour list "+lexical_cast<string>(nlist_builds)+" time. Average number of steps between two builds : "+lexical_cast<string>(static_cast<double>(run_data.steps)/nlist_builds)+".");
             }
             else
             {
@@ -573,6 +595,16 @@ int main(int argc, char* argv[])
   {
     std::cerr << "Could not open file : " << argv[1] << " for reading." << std::endl;
   }
+  
+  // Record time at the end
+  std::time_t end_time = std::time(NULL);
+  int run_time = static_cast<int>(std::difftime(end_time,start_time));
+  int hours = run_time/3600;
+  int minutes = (run_time % 3600)/60;
+  int seconds = (run_time % 3600)%60;
+  
+  msg->msg(Messenger::INFO,"Simulation took "+lexical_cast<string>(hours)+" hours, "+lexical_cast<string>(minutes)+" minutes and "+lexical_cast<string>(seconds)+" seconds ("+lexical_cast<string>(run_time)+" seconds).");
+  msg->msg(Messenger::INFO,"Average "+lexical_cast<string>(static_cast<double>(time_step)/run_time)+" time steps per second.");
   
   command_file.close();
   

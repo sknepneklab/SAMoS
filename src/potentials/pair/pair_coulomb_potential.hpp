@@ -123,6 +123,9 @@ public:
     m_has_pair_params = true;
   }
   
+  //! Returns false since Coulomb potential does not need neighbour list
+  bool need_nlist() { return false; }
+  
   //! Computes potentials and forces for all particles
   void compute();
   

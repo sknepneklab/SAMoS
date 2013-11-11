@@ -67,9 +67,11 @@ public:
   //! Set pair parameters data for pairwise interactions    
   virtual void set_pair_parameters(pairs_type&) = 0;
   
+  //! Returns true if the specific pair potential needs neighbour list
+  virtual bool need_nlist() = 0;
+  
   //! Computes potentials and forces for all particles
   virtual void compute() = 0;
-  
   
 protected:
        

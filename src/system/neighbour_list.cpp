@@ -29,7 +29,8 @@
 void NeighbourList::build()
 {
   int N = m_system->size();
-  double cut2 = m_cut*m_cut;
+  double cut = m_cut+m_pad;
+  double cut2 = cut*cut;
   double d2;
   
   m_old_state.clear();

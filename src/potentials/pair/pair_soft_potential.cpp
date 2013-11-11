@@ -40,7 +40,7 @@ void PairSoftPotential::compute()
     vector<int>& neigh = m_nlist->get_neighbours(i);
     for (unsigned int j = 0; j < neigh.size(); j++)
     {
-      Particle& pj = m_system->get_particle(j);
+      Particle& pj = m_system->get_particle(neigh[j]);
       if (m_has_pair_params)
         k = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["k"];
       aj = pj.get_radius();

@@ -69,12 +69,13 @@ private:
   SystemPtr m_system;           //!< Pointer to the System object
   MessengerPtr m_msg;           //!< Handles system wide messages
   string m_file_name;           //!< Base file name for the output file
-  pairs_type& m_params;         //!< Control parameters
+  pairs_type m_params;          //!< Control parameters
   string m_ext;                 //!< File name extension
   ofstream m_out;               //!< Output file stream with the file
   int m_start;                  //!< First time step of the dump
   int m_freq;                   //!< Frequency with which to dump data
   bool m_multi_print;           //!< Print to multiple files
+  bool m_print_header;          //!< If true, print header line on some file types
   string m_type;                //!< File format for the dump 
   bool m_no_header;             //!< Do not print header in some files
   

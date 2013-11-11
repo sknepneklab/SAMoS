@@ -39,7 +39,7 @@ using std::vector;
 */
 struct PartPos
 {
-  PartPos(double x, double y, double z) : x(z), y(y), z(z) { }
+  PartPos(double x, double y, double z) : x(x), y(y), z(z) { }
   double x, y, z;
 };
 

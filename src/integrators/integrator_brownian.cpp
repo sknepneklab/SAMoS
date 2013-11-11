@@ -56,7 +56,5 @@ void IntegratorBrownian::integrate()
     // Change orientation of the velocity (in the tangent plane) according to eq. (1b)
     double theta = m_stoch_coeff*m_rng->gauss_rng(1.0);
     m_constraint->rotate_velocity(p,theta);
-    if (m_nlist->need_update(p))
-      m_nlist->build();
   }
 }

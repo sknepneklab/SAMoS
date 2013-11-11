@@ -53,7 +53,7 @@ public:
   //! Construct Potential object
   //! \param sys Reference to the System object
   //! \param msg Reference to the system wide messenger
-  Potential(SystemPtr sys, const MessengerPtr msg) : m_system(sys), m_msg(msg) { }
+  Potential(SystemPtr sys, const MessengerPtr msg) : m_system(sys), m_msg(msg), m_need_nlist(false) { }
   
   //! Destructor
   ~Potential()
@@ -68,7 +68,10 @@ public:
   void add_pair_potential(const string& name, PairPotentialPtr pot)
   {
     m_pair_interactions[name] = pot;
+    m_need_nlist = m_need_nlist | pot->need_nlist();
     m_msg->msg(Messenger::INFO,"Added pair potential : " + name + " to the list of pair interactions.");
+    if (pot->need_nlist())
+      m_msg->msg(Messenger::INFO,"Pair potential " + name + " has neighbour list. Neighbour list updates will be performed during the simulation.");
   }
   
   //! Add external potential to the list of all external potentials
@@ -120,6 +123,9 @@ public:
     return m_external_potentials[type]->get_potential_energy();
   }
   
+  //! Returns true if any of the potentials need neighbour list
+  bool need_nlist() { return m_need_nlist; } 
+  
   //! Compute all forces and potentials in the system
   void compute();
   
@@ -130,6 +136,8 @@ private:
   
   PairPotType m_pair_interactions;    //!< Contains information about all pair interactions
   ExternPotType m_external_potentials;  //!< Contains information about all external forces
+  
+  bool m_need_nlist;                  //!< If true, there are potentials that need neighbour list
    
 };
 

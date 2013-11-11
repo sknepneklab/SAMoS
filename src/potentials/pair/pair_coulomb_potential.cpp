@@ -37,7 +37,7 @@ void PairCoulombPotential::compute()
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
-    for (int j = 0; i+1 < N; j++)
+    for (int j = i+1; j < N; j++)
     {
       Particle& pj = m_system->get_particle(j);
       if (m_has_pair_params)
