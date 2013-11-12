@@ -1,0 +1,62 @@
+* *************************************************************
+*  
+*   Active Particles on Curved Spaces (APCS)
+*   
+*   Author: Rastko Sknepnek
+*  
+*   Division of Physics
+*   School of Engineering, Physics and Mathematics
+*   University of Dundee
+*   
+*   (c) 2013
+*   
+*   This program cannot be used, copied, or modified without
+*   explicit permission of the author.
+* 
+* *************************************************************
+
+OS
+
+The code has been developed and tested under Linux. Porting it to
+work on Mac OS X should be straightforward. In principle code should 
+be able to run on Windows as well, but it would require modifying the
+CMake build scripts that are currently only written for Linux.
+
+REQUIREMENTS
+
+* Modern C++ compiler (however, no C++11 features have been used, so something like g++ 4.4 should be fine)
+* Boost libraries (1.48 or newer, in particular Spirit parser)
+* GNU Scientific Library (GSL) - version 1.13 or newer 
+* CMake (2.8 or newer)
+* Doxygen - optional 
+* LaTeX support for Doxygen (for building PDF reference manual) - optional
+* graphviz library (for building UML diagrams in the documentation) - optional 
+
+COMPILING 
+
+1. Unpack code with 
+
+tar xjvf apcs.tar.bz2
+
+2. cd APCS
+3. mkdir build
+4. cd build
+5. ccmake ../
+6. Use the CMake GUI to chose appropriate settings
+7. Hit 'c' a couple of times followed by 'g'
+8. make -j 8  (on a 4-core CPU)
+
+This should build executable called 'apcs'.
+
+RUNNING
+
+The code requires two files to run:
+
+1. conf file containing simulation parameters, force field, integrator type, etc.
+2. data file containing initial position of particles (see utils directory for tool to generate those)
+
+code is executed with 
+
+./apcs conf_file.conf
+
+
