@@ -86,6 +86,7 @@ public:
     {
       Particle& p = m_particles[i];
       p.fx = 0.0; p.fy = 0.0; p.fz = 0.0;
+      p.tau_x = 0.0; p.tau_y = 0.0; p.tau_z = 0.0;
     }
   }
   

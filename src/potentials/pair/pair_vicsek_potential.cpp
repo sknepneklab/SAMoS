@@ -30,12 +30,6 @@ void PairVicsekPotential::compute()
   
   for  (int i = 0; i < N; i++)
   {
-    Particle& p = m_system->get_particle(i);
-    p.tau_x = 0.0; p.tau_y = 0.0; p.tau_z = 0.0;
-  }
-  
-  for  (int i = 0; i < N; i++)
-  {
     Particle& pi = m_system->get_particle(i);
     vector<int>& neigh = m_nlist->get_neighbours(i);
     for (unsigned int j = 0; j < neigh.size(); j++)
