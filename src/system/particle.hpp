@@ -53,6 +53,7 @@ public:
   Particle(int id, int type, double r) : m_id(id), m_type(type), m_r(r) 
   { 
     fx = 0.0; fy = 0.0; fz = 0.0; 
+    tau_x = 0.0; tau_y = 0.0; tau_z = 0.0;
   }
   
   //! Get particle id
@@ -66,7 +67,8 @@ public:
   
   double x, y, z;              //!< Position in the embedding 3d flat space
   double vx, vy, vz;           //!< Components of the particle velocity
-  double fx, fy, fz;           //!< Component of the force acting on the particle 
+  double fx, fy, fz;           //!< Components of the force acting on the particle 
+  double tau_x, tau_y, tau_z;  //!< Components of the vector that handles velocity updates (torque in a sense?)
   double omega;                //!< Angular velocity (in the direction of the normal to the surface)
   
 private:  // Make these attributes immutable 

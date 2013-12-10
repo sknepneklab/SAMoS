@@ -41,6 +41,7 @@ class POVPrint:
   base_hight = 0.7  # fraction of the total vector length that is taken by the cylindrical part 
   vec_scale = 1.0  #vector scale
   colour = [1.0,0.0,0.0]
+  sphere_radius = 3.0
   
   
   def __init__(self,outfilename, vecs):
@@ -61,7 +62,7 @@ class POVPrint:
     self.out.write('#declare Camera_0 = camera { perspective\n')
     self.out.write('                             angle 11\n')
     self.out.write('                             right     x*image_width/image_height\n')
-    self.out.write('                             location  < 0.00, 0.00,-50.0>\n')
+    self.out.write('                             location  < 0.00, 0.00,%f>\n' % (-16.66666*self.sphere_radius))
     self.out.write('                             look_at   < 0.00, 0.00, 0.00>\n')
     self.out.write('                            }\n')
     self.out.write('camera{Camera_0}\n')
@@ -103,12 +104,14 @@ class POVPrint:
       x = (1.0 - self.base_hight)*x1 + self.base_hight*x2
       y = (1.0 - self.base_hight)*y1 + self.base_hight*y2
       z = (1.0 - self.base_hight)*z1 + self.base_hight*z2
-      self.out.write('object {\n')
-      self.out.write('       union {\n')
-      self.out.write('              cylinder { <%f,%f,%f>,<%f,%f,%f>,%f texture { pigment { color rgb<%f,%f,%f>} finish { reflection 0.1 phong 1} } }\n' % (x1,y1,z1,x,y,z,self.base_radius,self.colour[0],self.colour[1],self.colour[2]))
-      self.out.write('              cone { <%f,%f,%f>,%f,<%f,%f,%f>,%f texture { pigment { color rgb<%f,%f,%f>} finish { reflection 0.1 phong 1} } }\n' % (x,y,z,self.base_radius*self.cone_base_radius,x2,y2,z2,0.0,self.colour[0],self.colour[1],self.colour[2]))
-      self.out.write('             }\n')
-      self.out.write('        }\n')
+      hight = sqrt((x2-x1)**2+(y2-y1)**2+(y2-y1)**2)
+      if (hight != 0.0):
+        self.out.write('object {\n')
+        self.out.write('       union {\n')
+        self.out.write('              cylinder { <%f,%f,%f>,<%f,%f,%f>,%f texture { pigment { color rgb<%f,%f,%f>} finish { reflection 0.1 phong 1} } }\n' % (x1,y1,z1,x,y,z,self.base_radius,self.colour[0],self.colour[1],self.colour[2]))
+        self.out.write('              cone { <%f,%f,%f>,%f,<%f,%f,%f>,%f texture { pigment { color rgb<%f,%f,%f>} finish { reflection 0.1 phong 1} } }\n' % (x,y,z,self.base_radius*self.cone_base_radius,x2,y2,z2,0.0,self.colour[0],self.colour[1],self.colour[2]))
+        self.out.write('             }\n')
+        self.out.write('        }\n')
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", type=str, help="Input file with particle velocity field")
@@ -119,6 +122,7 @@ parser.add_argument("-c", "--cone", type=float, default=2.0, help="cone base siz
 parser.add_argument("-H", "--hight", type=float, default=0.7, help="fraction of the arrow in the base (arrow tip will be (1-hight) long) ")
 parser.add_argument("-C", "--colour", type=float, nargs=3, default=[1.0,0.0,0.0], help="arrow colour ")
 parser.add_argument("-S", "--sphere", action='store_true', default=False, help="include glass sphere")
+parser.add_argument("-R", "--sphere_r", type=float, default=3.0, help="radius of sphere for spherical system")
 args = parser.parse_args()
 
 print
@@ -148,6 +152,7 @@ p.base_radius = args.radius
 p.cone_base_radius = args.cone
 p.base_hight = args.hight
 p.colour = args.colour
+p.sphere_radius = args.sphere_r
 p.write(args.sphere)
 
 end = datetime.now()

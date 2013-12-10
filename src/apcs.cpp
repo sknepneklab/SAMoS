@@ -62,8 +62,10 @@
 #include "pair_coulomb_potential.hpp"
 #include "pair_soft_potential.hpp"
 #include "pair_lj_potential.hpp"
+#include "pair_vicsek_potential.hpp"
 #include "potential.hpp"
 #include "integrator_brownian.hpp"
+#include "integrator_vicsek.hpp"
 #include "integrator.hpp"
 
 
@@ -143,12 +145,16 @@ int main(int argc, char* argv[])
   pair_potentials["coulomb"] = boost::factory<PairCoulombPotentialPtr>();
   // Register soft pair potential with the pair potentials class factory
   pair_potentials["soft"] = boost::factory<PairSoftPotentialPtr>();
+  // Register Vicsek alignment pair potential with the pair potentials class factory
+  pair_potentials["vicsek"] = boost::factory<PairVicsekPotentialPtr>();
   
   // Register gravity to the external potential class factory
   external_potentials["gravity"] = boost::factory<ExternalGravityPotentialPtr>();
   
   // Register Brownian dynamics integrator with the integrators class factory
   integrators["brownian"] = boost::factory<IntegratorBrownianPtr>();
+  // Register Vicsek dynamics integrator with the integrators class factory
+  integrators["vicsek"] = boost::factory<IntegratorVicsekPtr>();
   
   if (argc < 2)
   {
