@@ -41,6 +41,7 @@ class POVPrint:
   base_hight = 0.7  # fraction of the total vector length that is taken by the cylindrical part 
   vec_scale = 1.0  #vector scale
   colour = [1.0,0.0,0.0]
+  sphere_colour = [0.0,0.0,1.0]
   sphere_radius = 3.0
   
   
@@ -89,7 +90,7 @@ class POVPrint:
       self.out.write('        }\n')
     self.__write_arrows()
     self.out.close()
-  
+
   def __write_arrows(self):
     for v in self.vecs:
       x1, y1, z1, vx, vy, vz = v
@@ -105,6 +106,7 @@ class POVPrint:
       y = (1.0 - self.base_hight)*y1 + self.base_hight*y2
       z = (1.0 - self.base_hight)*z1 + self.base_hight*z2
       hight = sqrt((x2-x1)**2+(y2-y1)**2+(y2-y1)**2)
+      self.out.write('sphere { <%f,%f,%f>,%f texture { pigment { color rgb<%f,%f,%f>} finish { reflection 0.1 phong 1} } }\n' % (xc,yc,zc,self.cone_base_radius*self.base_radius,self.sphere_colour[0],self.sphere_colour[1],self.sphere_colour[2]))      
       if (hight != 0.0):
         self.out.write('object {\n')
         self.out.write('       union {\n')
