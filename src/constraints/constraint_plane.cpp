@@ -39,10 +39,33 @@ void ConstraintPlane::enforce(Particle& p)
   // Check periodic boundary conditions 
   if (periodic)
   {
-    if (p.x < xlo) p.x += m_lx;
-    else if (p.x > xhi) p.x -= m_lx;
-    if (p.y < ylo) p.y += m_ly;
-    else if (p.y > yhi) p.y -= m_ly;
+    if (p.x <= xlo) p.x += m_lx;
+    else if (p.x >= xhi) p.x -= m_lx;
+    if (p.y <= ylo) p.y += m_ly;
+    else if (p.y >= yhi) p.y -= m_ly;
+  }
+  else // reflective boundary conditions
+  {
+    if (p.x < xlo) 
+    {
+      p.x = xlo;
+      p.vx = -p.vx;
+    }
+    else if (p.x > xhi)
+    {
+      p.x = xhi;
+      p.vx = -p.vx;
+    }
+    if (p.y < ylo) 
+    {
+      p.y = ylo;
+      p.vy = -p.vy;
+    }
+    else if (p.y > yhi)
+    {
+      p.y = yhi;
+      p.vy = -p.vy;
+    }
   }
 }
 

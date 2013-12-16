@@ -53,7 +53,8 @@ public:
   constraint_grammar(ConstraintlData& constraint_data) : constraint_grammar::base_type(constraint)
   {
     constraint = (
-                   qi::as_string[keyword["sphere"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on a sphere */
+                    qi::as_string[keyword["sphere"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on a sphere */
+                  | qi::as_string[keyword["plane"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on a plane */
                    /* to add new constraint: | qi::as_string[keyword["newconstraint"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&ConstraintlData::params, phoenix::ref(constraint_data)) = qi::_1 ]

@@ -51,6 +51,7 @@ public:
   { 
     m_lx = m_system->get_box()->Lx;
     m_ly = m_system->get_box()->Ly;
+    m_msg->msg(Messenger::INFO,"Planar constraint. Setting plane dimensions to lx = "+lexical_cast<string>(m_lx)+" and ly = "+lexical_cast<string>(m_ly)+".");
   }
   
   //! Enforce constraint

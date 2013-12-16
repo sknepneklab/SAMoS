@@ -37,6 +37,7 @@
 void IntegratorBrownian::integrate()
 {
   int N = m_system->size();
+  double inv_v = 1.0;
   // compute forces in the current configuration
   m_potential->compute();
   // iterate over all particles 
@@ -45,7 +46,8 @@ void IntegratorBrownian::integrate()
     Particle& p = m_system->get_particle(i);
     // compute unit length direction of the velocity
     double nx = p.vx, ny = p.vy, nz = p.vz;
-    double inv_v = 1.0/sqrt(nx*nx + ny*ny + nz*nz);
+    double len_n = sqrt(nx*nx + ny*ny + nz*nz);
+    if (len_n > 0.0) inv_v = 1.0/len_n;
     nx *= inv_v;  ny *= inv_v;  nz *= inv_v;
     // Update particle position according to the eq. (1a)
     p.x += m_dt*(m_v0*nx + m_mu*p.fx);

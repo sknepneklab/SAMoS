@@ -29,6 +29,8 @@
 void NeighbourList::build()
 {
   int N = m_system->size();
+  bool periodic = m_system->get_periodic();
+  BoxPtr box = m_system->get_box();
   double cut = m_cut+m_pad;
   double cut2 = cut*cut;
   double d2;
@@ -47,6 +49,15 @@ void NeighbourList::build()
       double dx = pi.x - pj.x;
       double dy = pi.y - pj.y;
       double dz = pi.z - pj.z;
+      if (periodic)
+      {
+        if (dx > box->xhi) dx -= box->Lx;
+        else if (dx < box->xlo) dx += box->Lx;
+        if (dy > box->yhi) dy -= box->Ly;
+        else if (dy < box->ylo) dy += box->Ly;
+        if (dz > box->zhi) dz -= box->Lz;
+        else if (dz < box->zlo) dz += box->Lz;
+      }
       d2 = dx*dx + dy*dy + dz*dz;
       if (d2 < cut2)
         m_list[i].push_back(j);

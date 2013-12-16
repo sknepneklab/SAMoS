@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
   IntegratorPtr integrator; // Handles the integrator
   vector<DumpPtr> dump;     // Handles all different dumps
   
-  bool periodic;               // If true, use periodic boundary conditions
+  bool periodic = false;       // If true, use periodic boundary conditions
   bool has_potential = false;  // If false, potential handling object (Potential class) has not be initialized yet
   int time_step;               // Counts current time step
   
@@ -557,7 +557,7 @@ int main(int argc, char* argv[])
             {
               msg->msg(Messenger::INFO,"Starting simulation run for "+lexical_cast<string>(run_data.steps)+" steps.");
               int nlist_builds = 0;     // Count how many neighbour list builds we had during this run
-              for (int t = 0; t < run_data.steps; t++)
+              for (int t = 0; t <= run_data.steps; t++)
               {
                 for (vector<DumpPtr>::iterator it_d = dump.begin(); it_d != dump.end(); it_d++)
                   (*it_d)->dump(time_step);

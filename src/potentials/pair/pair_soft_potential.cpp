@@ -31,6 +31,7 @@ void PairSoftPotential::compute()
   BoxPtr box = m_system->get_box();
   double k = m_k;
   double ai, aj;
+  double force_factor;
   
   m_potential_energy = 0.0;
   for  (int i = 0; i < N; i++)
@@ -63,7 +64,8 @@ void PairSoftPotential::compute()
         double diff = ai_p_aj - r;
         m_potential_energy += 0.5*k*diff*diff;
         // Handle force
-        double force_factor = k*diff/r;
+        if (r > 0.0) force_factor = k*diff/r;
+        else force_factor = k*diff;
         pi.fx -= force_factor*dx;
         pi.fy -= force_factor*dy;
         pi.fz -= force_factor*dz;

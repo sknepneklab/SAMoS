@@ -92,7 +92,14 @@ public:
   
   //! Set the periodic boundary conditions flag
   //! \param periodic value of the periodic boundary conditions flag
-  void set_periodic(bool periodic) { m_periodic = periodic; }
+  void set_periodic(bool periodic) 
+  { 
+    if (periodic)
+      m_msg->msg(Messenger::INFO,"Periodic flag for the system is set to true.");
+    else
+      m_msg->msg(Messenger::INFO,"Periodic flag for the system is set to false.");
+    m_periodic = periodic; 
+  }
   
 private:
   
