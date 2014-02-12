@@ -57,8 +57,14 @@ public:
   //! Enforce constraint
   void enforce(Particle&);
   
-  //! Rotate velocity vector around normal vector to the plane (z axis)
+  //! Rotate director around normal vector to the plane (z axis)
+  void rotate_director(Particle&, double);
+  
+  //! Rotate velocity around normal vector to the plane (z axis)
   void rotate_velocity(Particle&, double);
+  
+  //! Project torque onto normal vector to the plane (z axis) and return rotation angle change
+  double project_torque(Particle&);
     
 private:
   

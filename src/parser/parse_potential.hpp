@@ -61,7 +61,6 @@ public:
                   | qi::as_string[keyword["debye"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]    /*! Handles Debye-Hueckel potential */
                   | qi::as_string[keyword["morse"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]    /*! Handles Morse potential */
                   | qi::as_string[keyword["soft"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]     /*! Handles soft-core potential */
-                  | qi::as_string[keyword["vicsek"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]     /*! Handles Vicsek alignment "potential" */
                   /* to add new potential: | qi::as_string[keyword["newpotential"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&PotentialData::params, phoenix::ref(potential_data)) = qi::_1 ]

@@ -69,9 +69,31 @@ void ConstraintPlane::enforce(Particle& p)
   }
 }
 
-/*! Rotate velocity vector of a particle around the normal vector (z axis)
+/*! Rotate director of a particle around the normal vector (z axis)
  *  \note This function assumes that the particle has already been
- *  projected onto the plane and that its velocity is also in plane
+ *  projected onto the plane and that its director is also in plane
+ *  \param p Particle whose velocity to rotate
+ *  \param phi angle by which to rotate it
+*/
+void ConstraintPlane::rotate_director(Particle& p, double phi)
+{
+  // Sine and cosine of the rotation angle
+  double c = cos(phi), s = sin(phi);
+  // Rotation matrix around z axis
+  double Rxx = c, Rxy = -s;
+  double Ryx = s, Ryy = c;
+  // Apply rotation matrix
+  double nx = Rxx*p.nx + Rxy*p.ny;
+  double ny = Ryx*p.nx + Ryy*p.ny;
+  double len = sqrt(nx*nx + ny*ny);
+  // Update particle director
+  p.nx = nx/len;
+  p.ny = ny/len;
+}
+
+/*! Rotate velocity of a particle around the normal vector (z axis)
+ *  \note This function assumes that the particle has already been
+ *  projected onto the plane and that its director is also in plane
  *  \param p Particle whose velocity to rotate
  *  \param phi angle by which to rotate it
 */
@@ -85,7 +107,17 @@ void ConstraintPlane::rotate_velocity(Particle& p, double phi)
   // Apply rotation matrix
   double vx = Rxx*p.vx + Rxy*p.vy;
   double vy = Ryx*p.vx + Ryy*p.vy;
-  // Update particle velocity
+  // Update particle director
   p.vx = vx;
   p.vy = vy;
+}
+
+/*! Project particle torque onto the normal vector (z axis). The assumption here is that 
+ *  the particle's director and velocity are all already in the xy plane
+ *  and that it is constrained to the plane.
+ *  \param p Particle whose torque to project
+*/ 
+double ConstraintPlane::project_torque(Particle& p)
+{
+  return p.tau_z;  
 }

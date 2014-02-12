@@ -30,6 +30,7 @@
 #include <stdexcept>
 #include <exception>
 #include <fstream>
+#include <cmath>
 
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
@@ -46,6 +47,7 @@ using std::string;
 using std::runtime_error;
 using std::ifstream;
 using std::exception;
+using std::sqrt;
 using boost::lexical_cast;
 using boost::bad_lexical_cast;
 using boost::split_regex;
@@ -86,6 +88,15 @@ public:
     {
       Particle& p = m_particles[i];
       p.fx = 0.0; p.fy = 0.0; p.fz = 0.0;
+    }
+  }
+  
+  //! Reset all torques to zero
+  void reset_torques()
+  {
+    for (int i = 0; i < this->size(); i++)
+    {
+      Particle& p = m_particles[i];
       p.tau_x = 0.0; p.tau_y = 0.0; p.tau_z = 0.0;
     }
   }

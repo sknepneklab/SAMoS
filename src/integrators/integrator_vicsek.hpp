@@ -42,10 +42,11 @@ public:
   //! \param sys Pointer to a System object containing all particles
   //! \param msg Internal message handler
   //! \param pot Pairwise and external interaction handler
+  //! \param align Pairwise and external alignment handler
   //! \param nlist Neighbour list object
   //! \param cons Enforces constraints to the manifold surface
   //! \param param Contains information about all parameters 
-  IntegratorVicsek(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, NeighbourListPtr nlist,  ConstraintPtr cons, pairs_type& param) : Integrator(sys, msg, pot, nlist, cons, param)
+  IntegratorVicsek(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstraintPtr cons, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, param)
   { 
     if (param.find("eta") == param.end())
     {
@@ -79,6 +80,16 @@ public:
       m_msg->msg(Messenger::INFO,"Vicsek dynamic integrator. Setting random number generator seed to "+param["seed"]+".");
       m_rng = make_shared<RNG>(lexical_cast<int>(param["seed"]));
     }
+    if (param.find("v0") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"No velocity magnitude (v0) specified for Vicsek integrator. Setting it to 1.");
+      m_v0 = 1.0;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Velocity magnitude (v0) for Vicsek integrator is set to "+param["v0"]+".");
+      m_v0 = lexical_cast<double>(param["v0"]);
+    }
   }
   
   //! Propagate system for a time step
@@ -89,6 +100,7 @@ private:
   RNGPtr  m_rng;          //!< Random number generator 
   double  m_eta;          //!< Random noise distribution width
   double  m_mu;           //!< Mobility 
+  double  m_v0;       //!< velocity magnitude
   
 };
 

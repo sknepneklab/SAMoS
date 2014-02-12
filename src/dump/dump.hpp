@@ -96,6 +96,10 @@ private:
   void dump_input();
   //! Dump velocities
   void dump_velocity();
+  //! Dump director 
+  void dump_director();
+  //! Dump XYZV file format for visualization with SimRePlay
+  void dump_xyzv();
   
 };
 

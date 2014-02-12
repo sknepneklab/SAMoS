@@ -38,7 +38,7 @@
 #include "dump.hpp"
 #include "parse_command.hpp"
 #include "parse_constraint.hpp"
-#include "parse_extrenal.hpp"
+#include "parse_external.hpp"
 #include "parse_input.hpp"
 #include "parse_run.hpp"
 #include "parse_potential.hpp"
@@ -48,6 +48,8 @@
 #include "parse_box.hpp"
 #include "parse_integrator.hpp"
 #include "parse_log_dump.hpp"
+#include "parse_align.hpp"
+#include "parse_external_align.hpp"
 #include "constraint.hpp"
 #include "constraint_sphere.hpp"
 #include "constraint_plane.hpp"
@@ -62,17 +64,23 @@
 #include "pair_coulomb_potential.hpp"
 #include "pair_soft_potential.hpp"
 #include "pair_lj_potential.hpp"
-#include "pair_vicsek_potential.hpp"
 #include "potential.hpp"
 #include "integrator_brownian.hpp"
 #include "integrator_vicsek.hpp"
 #include "integrator.hpp"
+#include "aligner.hpp"
+#include "pair_aligner.hpp"
+#include "pair_mf_aligner.hpp"
+#include "pair_vicsek_aligner.hpp"
+#include "external_aligner.hpp"
 
 
-typedef boost::function< ConstraintPtr(SystemPtr, MessengerPtr, pairs_type&) > constraint_factory;                                                 //!< Type that handles all constraints
-typedef boost::function< PairPotentialPtr(SystemPtr, MessengerPtr, NeighbourListPtr, pairs_type&) > pair_potential_factory;                        //!< Type that handles all pair potentials
-typedef boost::function< ExternalPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > external_potential_factory;                                  //!< Type that handles all external potentials
-typedef boost::function< IntegratorPtr(SystemPtr, MessengerPtr, PotentialPtr, NeighbourListPtr, ConstraintPtr, pairs_type&) > integrator_factory;  //!< Type that handles all integrators
+typedef boost::function< ConstraintPtr(SystemPtr, MessengerPtr, pairs_type&) > constraint_factory;                                                             //!< Type that handles all constraints
+typedef boost::function< PairPotentialPtr(SystemPtr, MessengerPtr, NeighbourListPtr, pairs_type&) > pair_potential_factory;                                    //!< Type that handles all pair potentials
+typedef boost::function< ExternalPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > external_potential_factory;                                              //!< Type that handles all external potentials
+typedef boost::function< IntegratorPtr(SystemPtr, MessengerPtr, PotentialPtr, AlignerPtr, NeighbourListPtr, ConstraintPtr, pairs_type&) > integrator_factory;  //!< Type that handles all integrators
+typedef boost::function< PairAlignPtr(SystemPtr, MessengerPtr, NeighbourListPtr, pairs_type&) > pair_aligner_factory;                                          //!< Type that handles all pairwise alignment
+typedef boost::function< ExternalAlignPtr(SystemPtr, MessengerPtr, pairs_type&) > external_aligner_factory;                                                    //!< Type that handles all external alignment
 
 
 int main(int argc, char* argv[])
@@ -87,52 +95,63 @@ int main(int argc, char* argv[])
   IntegratorData      integrator_data;
   ConstraintlData     constraint_data;
   RunData             run_data;
+  AlignData           pair_align_data;
+  ExternalAlignData   external_align_data;
   pairs_type          parameter_data;   // All parameters for different commands
   
   // Parser grammars
-  command_grammar      command_parser(command_data);
-  box_grammar          box_parser(box_data);
-  input_grammar        input_parser(input_data);
-  external_grammar     external_parser(external_data); 
-  log_dump_grammar     log_dump_parser(log_dump_data);
-  potential_grammar    potential_parser(potential_data);
-  integrator_grammar   integrator_parser(integrator_data);  
-  constraint_grammar   constraint_parser(constraint_data);
-  run_grammar          run_parser(run_data);
-  key_value_sequence   param_parser;
+  command_grammar         command_parser(command_data);
+  box_grammar             box_parser(box_data);
+  input_grammar           input_parser(input_data);
+  external_grammar        external_parser(external_data); 
+  log_dump_grammar        log_dump_parser(log_dump_data);
+  potential_grammar       potential_parser(potential_data);
+  integrator_grammar      integrator_parser(integrator_data);  
+  constraint_grammar      constraint_parser(constraint_data);
+  run_grammar             run_parser(run_data);
+  align_grammar           align_parser(pair_align_data);
+  external_align_grammar  external_align_parser(external_align_data);
+  key_value_sequence      param_parser;
   
   // Class factories 
   std::map<std::string, constraint_factory> constraints;
   std::map<std::string, pair_potential_factory> pair_potentials;
   std::map<std::string, external_potential_factory> external_potentials;
   std::map<std::string, integrator_factory> integrators;
+  std::map<std::string, pair_aligner_factory> pair_aligners;
+  std::map<std::string, external_aligner_factory> external_aligners;
   
   std::ifstream command_file;    // File with simulation parameters and controls
   std::string command_line;      // Line from the command file
   
-  MessengerPtr msg;         // Messenger object
-  BoxPtr box;               // Handles simulation box
-  SystemPtr sys;            // System object
-  PotentialPtr pot;         // Handles all potentials
-  ConstraintPtr constraint; // Handles the constraint to the manifold
-  NeighbourListPtr nlist;   // Handles global neighbour list
-  IntegratorPtr integrator; // Handles the integrator
-  vector<DumpPtr> dump;     // Handles all different dumps
+  MessengerPtr msg;                   // Messenger object
+  BoxPtr box;                         // Handles simulation box
+  SystemPtr sys;                      // System object
+  PotentialPtr pot;                   // Handles all potentials
+  ConstraintPtr constraint;           // Handles the constraint to the manifold
+  NeighbourListPtr nlist;             // Handles global neighbour list
+  IntegratorPtr integrator;           // Handles the integrator
+  AlignerPtr    aligner;              // Handles all aligners
+  ExternalAlignPtr external_aligner;  // Handles all external aligners
+  vector<DumpPtr> dump;               // Handles all different dumps
   
   bool periodic = false;       // If true, use periodic boundary conditions
   bool has_potential = false;  // If false, potential handling object (Potential class) has not be initialized yet
-  int time_step;               // Counts current time step
+  bool has_aligner = false;    // If false, pairwise aligners are not defined
+  int time_step = 0;           // Counts current time step
   
   // flags that ensure that system the simulation is not in a bad state
   std::map<std::string, bool>  defined;
-  defined["messages"] = false;       // If false, system has no messenger (set it to default "messages.msg")
-  defined["box"] = false;            // If false, no simulation box defined (cannot run simulation)
-  defined["input"] = false;          // If false, no system object defines (cannot run the simulation)
-  defined["pair_potential"] = false; // If false, no pair potentials have been specified (needs at least one external potential)
-  defined["external"] = false;       // If false, no external potentials have been specified (needs at least one pair potential)
-  defined["constraint"] = false;     // If false, no constraints have been defined (a full 3d simulation with a rather slow neighbour list building algorithm)
-  defined["nlist"] = false;          // If false, system has no neighbour list 
-  defined["integrator"] = false;     // If false, no integrator has been defined (cannot run simulation)
+  defined["messages"] = false;         // If false, system has no messenger (set it to default "messages.msg")
+  defined["box"] = false;              // If false, no simulation box defined (cannot run simulation)
+  defined["input"] = false;            // If false, no system object defines (cannot run the simulation)
+  defined["pair_potential"] = false;   // If false, no pair potentials have been specified (needs at least one external potential)
+  defined["external"] = false;         // If false, no external potentials have been specified (needs at least one pair potential)
+  defined["constraint"] = false;       // If false, no constraints have been defined (a full 3d simulation with a rather slow neighbour list building algorithm)
+  defined["nlist"] = false;            // If false, system has no neighbour list 
+  defined["integrator"] = false;       // If false, no integrator has been defined (cannot run simulation)
+  defined["pair_aligner"] = false;     // If false, no pairwise alignment has been defined
+  defined["external_aligner"] = false; // If false, no external alignment has been defined
     
   // Register spherical constraint with the constraint class factory
   constraints["sphere"] = boost::factory<ConstraintSpherePtr>();
@@ -145,9 +164,7 @@ int main(int argc, char* argv[])
   pair_potentials["coulomb"] = boost::factory<PairCoulombPotentialPtr>();
   // Register soft pair potential with the pair potentials class factory
   pair_potentials["soft"] = boost::factory<PairSoftPotentialPtr>();
-  // Register Vicsek alignment pair potential with the pair potentials class factory
-  pair_potentials["vicsek"] = boost::factory<PairVicsekPotentialPtr>();
-  
+    
   // Register gravity to the external potential class factory
   external_potentials["gravity"] = boost::factory<ExternalGravityPotentialPtr>();
   
@@ -155,6 +172,12 @@ int main(int argc, char* argv[])
   integrators["brownian"] = boost::factory<IntegratorBrownianPtr>();
   // Register Vicsek dynamics integrator with the integrators class factory
   integrators["vicsek"] = boost::factory<IntegratorVicsekPtr>();
+  
+  // Register mean-field (MF) aligner with the pairwise aligner class factory
+  pair_aligners["mf"] = boost::factory<PairMFAlignPtr>();
+  // Register Vicsek aligner with the pairwise aligner class factory
+  pair_aligners["vicsek"] = boost::factory<PairVicsekAlignPtr>();
+  
   
   if (argc < 2)
   {
@@ -172,7 +195,6 @@ int main(int argc, char* argv[])
   command_file.open(argv[1],std::ifstream::in);
   if (command_file)
   {
-    time_step = 0;
     while (std::getline(command_file, command_line))
     {
       boost::algorithm::trim(command_line);            // get rid of all leading and trailing white spaces 
@@ -272,10 +294,11 @@ int main(int argc, char* argv[])
                 std::cerr << "System has not been defined. Please define system using \"input\" command before adding any pair potentials." << std::endl;
               throw std::runtime_error("System not defined.");
             }
-            if (!defined["nlist"]) // Create a default neighbour list if non has been defined
+            if (!defined["nlist"]) // Create a default neighbour list if none has been defined
             {
               msg->msg(Messenger::WARNING,"No neighbour list defined. Some pair potentials (e.g. Lennard-Jones) need it. We are making one with default cutoff and padding.");
               nlist = boost::make_shared<NeighbourList>(NeighbourList(sys,msg,DEFAULT_CUTOFF,DEFAULT_PADDING));
+              defined["nlist"] = true;
             }
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), potential_parser, qi::space))
             {
@@ -392,6 +415,7 @@ int main(int argc, char* argv[])
               if (parameter_data.find("pad") != parameter_data.end())  pad = lexical_cast<double>(parameter_data["pad"]);
               nlist = boost::make_shared<NeighbourList>(NeighbourList(sys,msg,rcut,pad));
               msg->msg(Messenger::INFO,"Created neighbour list with cutoff "+lexical_cast<string>(rcut)+" and padding distance "+lexical_cast<string>(pad)+".");
+              defined["nlist"] = true;
             }
             else
             {
@@ -440,11 +464,13 @@ int main(int argc, char* argv[])
                 std::cerr << "System has not been defined. Please define system using \"input\" command before adding any dumps." << std::endl;
               throw std::runtime_error("System not defined.");
             }
+            /*
             if (!has_potential)
             {
               msg->msg(Messenger::ERROR,"No potentials has been defined. Please define them using \"pair_potential\" or \"external\" command before adding integrator.");
               throw std::runtime_error("No potentials defined.");
             }
+            */
             if (!defined["constraint"])
             {
               msg->msg(Messenger::ERROR,"Constraint has not been defined. Please define them using \"constraint\" command before adding integrator.");
@@ -454,7 +480,7 @@ int main(int argc, char* argv[])
             {
               if (qi::phrase_parse(integrator_data.params.begin(), integrator_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                integrator = boost::shared_ptr<Integrator>(integrators[integrator_data.type](sys,msg,pot,nlist,constraint, parameter_data));
+                integrator = boost::shared_ptr<Integrator>(integrators[integrator_data.type](sys,msg,pot,aligner,nlist,constraint, parameter_data));
                 msg->msg(Messenger::INFO,"Adding integrator of type "+integrator_data.type+".");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
                   msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for integrator "+integrator_data.type+" is set to "+(*it).second+".");
@@ -538,11 +564,13 @@ int main(int argc, char* argv[])
                 std::cerr << "System has not been defined. Please define system using \"input\" command before adding any dumps." << std::endl;
               throw std::runtime_error("System not defined.");
             }
+            /*
             if (!has_potential)
             {
               msg->msg(Messenger::ERROR,"No potentials has been defined. Please define them using \"pair_potential\" or \"external\" command before running simulation.");
               throw std::runtime_error("No potentials defined.");
             }
+            */
             if (!defined["constraint"])
             {
               msg->msg(Messenger::ERROR,"Constraint has not been defined. Please define it using \"constraint\" command before running simulation.");
@@ -563,7 +591,7 @@ int main(int argc, char* argv[])
                   (*it_d)->dump(time_step);
                 integrator->integrate();
                 // Check the neighbour list rebuild only if necessary 
-                if (pot->need_nlist())
+                if ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist()))
                 {
                   for (int i = 0; i < sys->size(); i++)
                     if (nlist->need_update(sys->get_particle(i)))
@@ -583,6 +611,48 @@ int main(int argc, char* argv[])
             {
               msg->msg(Messenger::ERROR,"Could not parse number of run steps in line : "+lexical_cast<string>(current_line)+".");
               throw std::runtime_error("Error parsing number of run steps.");
+            }
+          }
+          else if (command_data.command == "pair_align")       // if command is pair align, parse it and add this pair alignment to the list of pairwise aligners
+          {
+            if (!defined["input"])  // We need to have system defined before we can add any aligners 
+            {
+              if (defined["messages"])
+                msg->msg(Messenger::ERROR,"System has not been defined. Please define system using \"input\" command before adding any pairwise aligners.");
+              else
+                std::cerr << "System has not been defined. Please define system using \"input\" command before adding any pairwise aligners." << std::endl;
+              throw std::runtime_error("System not defined.");
+            }
+            if (!defined["nlist"]) // Create a default neighbour list if non has been defined
+            {
+              msg->msg(Messenger::WARNING,"No neighbour list defined. Some pair aligners (e.g. mf) need it. We are making one with default cutoff and padding.");
+              nlist = boost::make_shared<NeighbourList>(NeighbourList(sys,msg,DEFAULT_CUTOFF,DEFAULT_PADDING));
+              defined["nlist"] = true;
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), align_parser, qi::space))
+            {
+              if (!has_aligner) 
+              {
+                aligner = boost::make_shared<Aligner>(Aligner(sys,msg));
+                has_aligner = true;
+              }
+              if (qi::phrase_parse(pair_align_data.params.begin(), pair_align_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                aligner->add_pair_align(pair_align_data.type, pair_aligners[pair_align_data.type](sys,msg,nlist,parameter_data));
+                msg->msg(Messenger::INFO,"Added "+pair_align_data.type+" to the list of pairwise aligners.");
+                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
+                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for pairwise alignment "+pair_align_data.type+" is set to "+(*it).second+".");
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse pairwise alignment parameters for aligner type "+pair_align_data.type+" in line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing pair aligner parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing pair_potential command at line : "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing pair_potential command.");
             }
           }
         }

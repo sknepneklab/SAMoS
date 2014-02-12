@@ -66,8 +66,14 @@ public:
   //! Enforce constraint
   void enforce(Particle&);
   
-  //! Rotate velocity vector around normal vector to the sphere
+  //! Rotate director around normal vector to the sphere
+  void rotate_director(Particle&, double);
+  
+  //! Rotate velocity around normal vector to the sphere
   void rotate_velocity(Particle&, double);
+  
+  //! Project torque onto normal vector onto the sphere and return rotation angle change
+  double project_torque(Particle&);
     
 private:
   

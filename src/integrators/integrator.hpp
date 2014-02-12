@@ -31,6 +31,7 @@
 #include "messenger.hpp"
 #include "potential.hpp"
 #include "constraint.hpp"
+#include "aligner.hpp" 
 #include "parse_parameters.hpp"
 
 using boost::make_shared;
@@ -48,14 +49,16 @@ public:
   //! \param sys Pointer to a System object containing all particles
   //! \param msg Internal message handler
   //! \param pot Pairwise and external interaction handler
+  //! \param align Pairwise and external alignment handler
   //! \param nlist Neighbour list object
   //! \param cons Enforces constraints to the manifold surface
   //! \param param Contains information about all parameters 
-  Integrator(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, NeighbourListPtr nlist, ConstraintPtr cons, pairs_type& param) : m_system(sys),
-                                                                                                                                 m_msg(msg),
-                                                                                                                                 m_potential(pot),
-                                                                                                                                 m_nlist(nlist),
-                                                                                                                                 m_constraint(cons)
+  Integrator(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist, ConstraintPtr cons, pairs_type& param) : m_system(sys),
+                                                                                                                                                   m_msg(msg),
+                                                                                                                                                   m_potential(pot),
+                                                                                                                                                   m_align(align),
+                                                                                                                                                   m_nlist(nlist),
+                                                                                                                                                   m_constraint(cons)
   { 
     if (param.find("dt") == param.end())
     {
@@ -73,6 +76,7 @@ protected:
   SystemPtr m_system;          //!< Pointer to the System object
   MessengerPtr m_msg;          //!< Pointer to the messenger object
   PotentialPtr m_potential;    //!< Pointer to the interaction handler 
+  AlignerPtr m_align;          //!< Pointer to alignment handler
   NeighbourListPtr m_nlist;    //!< Pointer to the neighbour list object
   ConstraintPtr m_constraint;  //!< Pointer to the handler for constraints
   double m_dt;                 //!< time step

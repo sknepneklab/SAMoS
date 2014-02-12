@@ -241,7 +241,7 @@ IDL_PROPERTY_SUPPORT   = YES
 # member in the group (if any) for the other members of the group. By default 
 # all members of a group must be documented explicitly.
 
-DISTRIBUTE_GROUP_DOC   = NO
+DISTRIBUTE_GROUP_DOC   = YES
 
 # Set the SUBGROUPING tag to YES (the default) to allow class member groups of 
 # the same type (for instance a group of public functions) to be put as a 
@@ -261,21 +261,6 @@ SUBGROUPING            = YES
 
 TYPEDEF_HIDES_STRUCT   = NO
 
-# The SYMBOL_CACHE_SIZE determines the size of the internal cache use to 
-# determine which symbols to keep in memory and which to flush to disk.
-# When the cache is full, less often used symbols will be written to disk.
-# For small to medium size projects (<1000 input files) the default value is 
-# probably good enough. For larger projects a too small cache size can cause 
-# doxygen to be busy swapping symbols to and from disk most of the time 
-# causing a significant performance penality. 
-# If the system has enough physical memory increasing the cache will improve the 
-# performance by keeping more symbols in memory. Note that the value works on 
-# a logarithmic scale so increasing the size by one will rougly double the 
-# memory usage. The cache size is given by this formula: 
-# 2^(16+SYMBOL_CACHE_SIZE). The valid range is 0..9, the default is 0, 
-# corresponding to a cache size of 2^16 = 65536 symbols
-
-SYMBOL_CACHE_SIZE      = 0
 
 #---------------------------------------------------------------------------
 # Build related configuration options

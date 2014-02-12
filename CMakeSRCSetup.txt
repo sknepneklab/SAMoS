@@ -28,6 +28,9 @@ include_directories($ENV{GSL_DIR}/include
                     ${APCS_SOURCE_DIR}/src/potentials/pair
                     ${APCS_SOURCE_DIR}/src/system
                     ${APCS_SOURCE_DIR}/src/utils
+                    ${APCS_SOURCE_DIR}/src/aligner
+                    ${APCS_SOURCE_DIR}/src/aligner/pair
+                    ${APCS_SOURCE_DIR}/src/aligner/external
                     )
 
 # list of all sources in various source directories

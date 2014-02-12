@@ -38,26 +38,31 @@
 **/
 void IntegratorVicsek::integrate()
 {
+  double noise = m_eta*sqrt(m_dt);
   int N = m_system->size();
   // compute forces in the current configuration
-  m_potential->compute();
+  if (m_potential)
+    m_potential->compute();
+  // compute torques in the current configuration
+  if (m_align)
+    m_align->compute();
   // iterate over all particles 
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(i);
     // Update particle velocity 
-    p.vx = p.tau_x + m_mu*p.fx;
-    p.vy = p.tau_y + m_mu*p.fy;
-    p.vz = p.tau_z + m_mu*p.fz;
+    p.vx = m_v0*p.tau_x + m_mu*p.fx;
+    p.vy = m_v0*p.tau_y + m_mu*p.fy;
+    p.vz = m_v0*p.tau_z + m_mu*p.fz;
     // Project everything back to the manifold
     m_constraint->enforce(p);
     // Change orientation of the velocity (in the tangent plane) 
-    double theta = 2.0*m_eta*M_PI*(m_rng->drnd() - 0.5);
+    double theta = 2.0*noise*M_PI*(m_rng->drnd() - 0.5);
     m_constraint->rotate_velocity(p,theta);
     // Update particle position 
-    p.x += p.vx;
-    p.y += p.vy;
-    p.z += p.vz;
+    p.x += m_dt*p.vx;
+    p.y += m_dt*p.vy;
+    p.z += m_dt*p.vz;
     // Project everything back to the manifold
     m_constraint->enforce(p);
   }

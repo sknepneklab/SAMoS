@@ -65,10 +65,21 @@ public:
   //! Get particle radius (size)
   double get_radius() const { return m_r; } //!< \return particle radius (m_r)
   
+  ///@{
   double x, y, z;              //!< Position in the embedding 3d flat space
+  //@}
+  ///@{
   double vx, vy, vz;           //!< Components of the particle velocity
+  //@}
+  ///@{
   double fx, fy, fz;           //!< Components of the force acting on the particle 
-  double tau_x, tau_y, tau_z;  //!< Components of the vector that handles velocity updates (torque in a sense?)
+  //@}
+  ///@{
+  double tau_x, tau_y, tau_z;  //!< Components of the vector that handles director updates (torque in a sense?)
+  //@}
+  ///@{
+  double nx, ny, nz;           //!< Particle direction vector (not necessarily equal to velocity direction)
+  //@}
   double omega;                //!< Angular velocity (in the direction of the normal to the surface)
   
 private:  // Make these attributes immutable 

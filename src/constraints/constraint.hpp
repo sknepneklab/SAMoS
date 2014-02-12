@@ -53,8 +53,14 @@ public:
   //! Enforce constraint
   virtual void enforce(Particle&) = 0;
   
-  //! Rotate velocity vector around normal vector to the surface
+  //! Rotate director around normal vector to the surface
+  virtual void rotate_director(Particle&, double) = 0;
+  
+  //! Rotate velocity around normal vector to the surface
   virtual void rotate_velocity(Particle&, double) = 0;
+  
+  //! Project torque onto normal vector and return rotation angle change
+  virtual double project_torque(Particle&) = 0;
   
 protected:
   

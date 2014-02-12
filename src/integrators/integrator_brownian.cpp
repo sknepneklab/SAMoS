@@ -37,26 +37,29 @@
 void IntegratorBrownian::integrate()
 {
   int N = m_system->size();
-  double inv_v = 1.0;
   // compute forces in the current configuration
-  m_potential->compute();
+  if (m_potential)
+    m_potential->compute();
+  // compute torques in the current configuration
+  if (m_align)
+    m_align->compute();
   // iterate over all particles 
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(i);
-    // compute unit length direction of the velocity
-    double nx = p.vx, ny = p.vy, nz = p.vz;
-    double len_n = sqrt(nx*nx + ny*ny + nz*nz);
-    if (len_n > 0.0) inv_v = 1.0/len_n;
-    nx *= inv_v;  ny *= inv_v;  nz *= inv_v;
+    // Update velocity
+    p.vx = m_v0*p.nx + m_mu*p.fx;
+    p.vy = m_v0*p.ny + m_mu*p.fy;
+    p.vz = m_v0*p.nz + m_mu*p.fz;
     // Update particle position according to the eq. (1a)
-    p.x += m_dt*(m_v0*nx + m_mu*p.fx);
-    p.y += m_dt*(m_v0*ny + m_mu*p.fy);
-    p.z += m_dt*(m_v0*nz + m_mu*p.fz);
+    p.x += m_dt*p.vx;
+    p.y += m_dt*p.vy;
+    p.z += m_dt*p.vz;
     // Project everything back to the manifold
     m_constraint->enforce(p);
     // Change orientation of the velocity (in the tangent plane) according to eq. (1b)
-    double theta = m_stoch_coeff*m_rng->gauss_rng(1.0);
-    m_constraint->rotate_velocity(p,theta);
+    double dtheta = m_dt*m_constraint->project_torque(p) + m_stoch_coeff*m_rng->gauss_rng(1.0);
+    m_constraint->rotate_director(p,dtheta);
+    p.omega = dtheta*m_dt;
   }
 }

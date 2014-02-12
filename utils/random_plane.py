@@ -33,6 +33,7 @@ class Plane:
     self.particles = [Particle(i) for i in range(N)]
     self.__generate_pos()
     self.__generate_vel(v)
+    self.__generate_director()
     
   def __generate_pos(self):
     for i in range(self.N):
@@ -45,23 +46,29 @@ class Plane:
     for p in self.particles:
       phi = uniform(0,2*pi)
       p.v = [vav*cos(phi),vav*sin(phi),0.0]
-   
+  
+  def __generate_director(self):
+    for p in self.particles:
+      phi = uniform(0,2*pi)
+      p.n = [cos(phi),sin(phi),0.0]
+  
   def write(self,outfile):
     gentime = datetime.now()
     out = open(outfile,'w')
     out.write('# Total of %d particles\n' % self.N)
     out.write('# Generated on : %s\n' % str(gentime))
-    out.write('# id  type radius  x   y   z   vx   vy   vz  omega\n')
+    out.write('# id  type radius  x   y   z   vx   vy   vz   nx   ny   nz  omega\n')
     for p in self.particles:
       x, y, z = p.r
       vx, vy, vz = p.v
-      out.write('%d  %d  %f %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,p.omega))
+      nx, ny, nz = p.n
+      out.write('%d  %d  %f %f  %f  %f  %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz,p.omega))
     out.close()
     
 parser = argparse.ArgumentParser()
 parser.add_argument("-x", "--lx", type=float, default=10.0, help="box length in x direction")
 parser.add_argument("-y", "--ly", type=float, default=10.0, help="box length in y direction")
-parser.add_argument("-N", "--npart",  type=int, default=100, help="number of particles")
+parser.add_argument("-f", "--phi",  type=float, default=0.5, help="packing fraction")
 parser.add_argument("-o", "--output", type=str, default='out.dat', help="output file")
 parser.add_argument("-v", "--vavr", type=float, default=1.0, help="average velocity")
 args = parser.parse_args()
@@ -77,14 +84,16 @@ print "\t----------------------------------------------"
 print 
 print "\tLx : ", args.lx
 print "\tLy : ", args.ly
-print "\tNumber of particles : ", args.npart
+N = int(round(args.lx*args.ly*args.phi/pi))
+print "\tPacking fraction : ", args.phi
+print "\tNumber of particles : ", N
 print "\tAverage velocity : ", args.vavr
 print "\tOutput file : ", args.output
 print 
 
 start = datetime.now()
 
-p = Plane(args.lx, args.ly, args.npart, args.vavr)
+p = Plane(args.lx, args.ly, N, args.vavr)
 p.write(args.output)
 
 end = datetime.now()

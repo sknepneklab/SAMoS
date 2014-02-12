@@ -42,10 +42,11 @@ public:
   //! \param sys Pointer to a System object containing all particles
   //! \param msg Internal message handler
   //! \param pot Pairwise and external interaction handler
+  //! \param align Pairwise and external alignment handler
   //! \param nlist Neighbour list object
   //! \param cons Enforces constraints to the manifold surface
   //! \param param Contains information about all parameters 
-  IntegratorBrownian(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, NeighbourListPtr nlist,  ConstraintPtr cons, pairs_type& param) : Integrator(sys, msg, pot, nlist, cons, param)
+  IntegratorBrownian(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstraintPtr cons, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, param)
   { 
     if (param.find("v0") == param.end())
     {

@@ -16,7 +16,7 @@
  * ************************************************************* */
 
 /*!
- * \file messenger.coo
+ * \file messenger.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
  * \date 17-Oct-2013
  * \brief Definition of Messenger class

@@ -26,6 +26,7 @@ class Particle:
     self.r = [0.0,0.0,0.0]
     self.v = [0.0,0.0,0.0]
     self.f = [0.0,0.0,0.0]
+    self.n = [0.0,0.0,0.0]
     self.omega = 0.0
     
   

@@ -46,6 +46,7 @@ class Sphere:
     self.particles = [Particle(i) for i in range(N)]
     self.__generate_pos()
     self.__generate_vel(v)
+    self.__generate_director()
     
   def __generate_pos(self):
     for i in range(self.N):
@@ -66,24 +67,36 @@ class Sphere:
       theta = uniform(0,2*pi)
       v = np.dot(rotation_matrix(axis,theta),v)
       p.v = v
-   
+ 
+  def __generate_director(self):
+    for p in self.particles:
+      axis = np.array(p.r)
+      n = np.array([uniform(-0.5,0.5), uniform(-0.5,0.5), uniform(-0.5,0.5)])
+      n = np.dot(projection_matrix(axis),n)
+      nlen = sqrt(sum(n**2))
+      n *= 1.0/nlen
+      theta = uniform(0,2*pi)
+      n = np.dot(rotation_matrix(axis,theta),n)
+      p.n = n
+ 
   def write(self,outfile):
     gentime = datetime.now()
     out = open(outfile,'w')
     out.write('# Total of %d particles\n' % self.N)
     out.write('# Generated on : %s\n' % str(gentime))
-    out.write('# id  type radius  x   y   z   vx   vy   vz  omega\n')
+    out.write('# id  type radius  x   y   z   vx   vy   vz   nx   ny   nz   omega\n')
     for p in self.particles:
       x, y, z = p.r
       vx, vy, vz = p.v
-      out.write('%d  %d  %f %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,p.omega))
+      nx, ny, nz = p.n
+      out.write('%d  %d  %f %f  %f  %f  %f  %f  %f  %f  %f  %f   %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz,p.omega))
     out.close()
     
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-R", "--radius", type=float, default=10.0, help="sphere radius")
-parser.add_argument("-N", "--npart",  type=int, default=100, help="number of particles")
+parser.add_argument("-f", "--phi",  type=float, default=0.5, help="packing fraction")
 parser.add_argument("-o", "--output", type=str, default='out.dat', help="output file")
 parser.add_argument("-v", "--vavr", type=float, default=1.0, help="average velocity")
 args = parser.parse_args()
@@ -98,14 +111,17 @@ print "\t(c) 2013"
 print "\t----------------------------------------------"
 print 
 print "\tRadius : ", args.radius
-print "\tNumber of particles : ", args.npart
+print "\tPacking fraction : ", args.phi
 print "\tAverage velocity : ", args.vavr
+N=int(round(4.0*args.radius**2*args.phi))
+print "\tTotal number of particles : ", N
 print "\tOutput file : ", args.output
 print 
 
 start = datetime.now()
 
-s = Sphere(args.radius, args.npart, args.vavr)
+
+s = Sphere(args.radius, N, args.vavr)
 s.write(args.output)
 
 end = datetime.now()

@@ -111,7 +111,10 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
       p.vx = lexical_cast<double>(s_line[6]);
       p.vy = lexical_cast<double>(s_line[7]);
       p.vz = lexical_cast<double>(s_line[8]);
-      p.omega = lexical_cast<double>(s_line[9]);
+      p.nx = lexical_cast<double>(s_line[9]);
+      p.ny = lexical_cast<double>(s_line[10]);
+      p.nz = lexical_cast<double>(s_line[11]);
+      p.omega = lexical_cast<double>(s_line[12]);
       m_particles.push_back(p);
     }
   }

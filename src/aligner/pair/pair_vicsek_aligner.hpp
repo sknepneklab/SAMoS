@@ -16,28 +16,27 @@
  * ************************************************************* */
 
 /*!
- * \file pair_vicsek_potential.hpp
+ * \file pair_vicsek_aligner.hpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 10-Dec-2013
- * \brief Declaration of PairVicsekPotential class
+ * \date 30-Jan-2014
+ * \brief Declaration of PairVicsekAlign class
  */ 
 
-#ifndef __PAIR_VICSEK_POTENTIAL_HPP__
-#define __PAIR_VICSEK_POTENTIAL_HPP__
+#ifndef __PAIR_VICSEK_ALIGNER_HPP__
+#define __PAIR_VICSEK_ALIGNER_HPP__
 
 #include <cmath>
 
-#include "pair_potential.hpp"
+#include "pair_aligner.hpp"
 
 using std::make_pair;
 using std::sqrt;
 
-/*! PairVicsekPotential is not really a potential in the strict sense of the word
- *  but is instead an alignment rule that computes the average direction of the 
+/*! PairVicsekAlign is an alignment rule that computes the average direction of the 
  *  velocity averaged over a certain neighbourhood of the particle.
  *  \f$ \langle \vec v_i\rangle = \sum_{\mathrm{j n.n i}} \vec v_j \f$ 
  */
-class PairVicsekPotential : public PairPotential
+class PairVicsekAlign : public PairAlign
 {
 public:
   
@@ -46,17 +45,17 @@ public:
   //! \param msg Pointer to the internal state messenger
   //! \param nlist Pointer to the global neighbour list
   //! \param param Contains information about all parameters (k)
-  PairVicsekPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairPotential(sys, msg, nlist, param)
+  PairVicsekAlign(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairAlign(sys, msg, nlist, param)
   {
-    if (param.find("v0") == param.end())
+    if (param.find("rcut") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"No velocity magnitude (v0) specified for Vicsek pair potential. Setting it to 1.");
-      m_v0 = 1.0;
+      m_msg->msg(Messenger::WARNING,"No cutoff distance (rcut) specified for Vicsek alignment. Setting it to the global neighbour list cutoff.");
+      m_rcut = m_nlist->get_cutoff();
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Velocity magnitude (v0) for Vicsek pair potential is set to "+param["v0"]+".");
-      m_v0 = lexical_cast<double>(param["v0"]);
+      m_msg->msg(Messenger::INFO,"Global cutoff distance (rcut) for Vicsek alignment is set to "+param["rcut"]+".");
+      m_rcut = lexical_cast<double>(param["rcut"]);
     }
   }
                                                                                                                 
@@ -70,16 +69,16 @@ public:
   //! Returns true since Vicsek potential needs neighbour list
   bool need_nlist() { return true; }
   
-  //! Computes potentials and forces for all particles
+  //! Computes "torques"
   void compute();
   
   
 private:
        
-  double m_v0;       //!< velocity magnitude
+  double m_rcut;     //!<  Cutoff distance (has to be less than neighbour list cutoff)
      
 };
 
-typedef shared_ptr<PairVicsekPotential> PairVicsekPotentialPtr;
+typedef shared_ptr<PairVicsekAlign> PairVicsekAlignPtr;
 
 #endif

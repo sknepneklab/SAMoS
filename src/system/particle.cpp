@@ -31,6 +31,7 @@ ostream& operator<<(ostream& out, const Particle& p)
   << format("radius : %15.9e\n") % p.get_radius()            
   << format("(x,y,z) : (%15.9e,%15.9e,%15.9e)\n") % p.x % p.y % p.z
   << format("(vx,vy,vz) : (%15.9e,%15.9e,%15.9e)\n") % p.vx % p.vy % p.vz
+  << format("(nx,ny,nz) : (%15.9e,%15.9e,%15.9e)\n") % p.nx % p.ny % p.nz
   << format("(fx,fy,fz) : (%15.9e,%15.9e,%15.9e)\n") % p.fx % p.fy % p.fz
   << format("omega : %15.9e\n") % p.omega;            
   return out;

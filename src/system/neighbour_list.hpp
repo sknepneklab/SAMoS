@@ -30,6 +30,7 @@
 
 #include "messenger.hpp"
 #include "system.hpp"
+#include "cell_list.hpp"
 
 using std::vector;
 
@@ -39,8 +40,14 @@ using std::vector;
 */
 struct PartPos
 {
+  //! Constructor
+  //! \param x x coordinate of the stored position 
+  //! \param y y coordinate of the stored position 
+  //! \param z z coordinate of the stored position 
   PartPos(double x, double y, double z) : x(x), y(y), z(z) { }
-  double x, y, z;
+  //@{
+  double x, y, z;  //!< Stores actual position 
+  //@}
 };
 
 
@@ -63,6 +70,18 @@ public:
   {
     for (int i = 0; i < m_system->size(); i++)
       m_list.push_back(vector<int>());
+    // Check if box is large enough for cell list
+    if (m_system->get_box()->Lx > 2.0*(cutoff+pad) && m_system->get_box()->Ly > 2.0*(cutoff+pad) && m_system->get_box()->Lz > 2.0*(cutoff+pad))
+    {
+      m_use_cell_list = true;
+      m_cell_list = boost::shared_ptr<CellList>(new CellList(m_system,m_msg,cutoff+pad));
+      m_msg->msg(Messenger::INFO,"Using cell lists for neighbour list builds.");
+    }
+    else
+    {
+      m_use_cell_list = false;
+      m_msg->msg(Messenger::INFO,"Box dimensions are too small to be able to use cell lists. Neighbour list will be built using N^2 algorithm.");
+    }
     this->build();
   }
   
@@ -104,11 +123,17 @@ public:
 private:
   
   SystemPtr m_system;              //!< Pointer to the System object
-  MessengerPtr m_msg;           //!< Handles messages sent to output
-  vector<vector<int> >  m_list;  //!< Holds the list for each particle 
-  vector<PartPos> m_old_state; //!< Coordinates of particles right after the build
-  double m_cut;                //!< List build cutoff distance 
-  double m_pad;                //!< Padding distance (m_cut should be set to potential cutoff + m_pad)
+  MessengerPtr m_msg;              //!< Handles messages sent to output
+  CellListPtr m_cell_list;         //!< Pointer to the cell list
+  vector<vector<int> >  m_list;    //!< Holds the list for each particle 
+  vector<PartPos> m_old_state;     //!< Coordinates of particles right after the build
+  double m_cut;                    //!< List build cutoff distance 
+  double m_pad;                    //!< Padding distance (m_cut should be set to potential cutoff + m_pad)
+  bool m_use_cell_list;            //!< If true, use cell list to speed up neighbour list builds
+  
+  // Actual neighbour list builds
+  void build_nsq();    //!< Build with N^2 algorithm
+  void build_cell();   //!< Build using cells list
   
 };
 
