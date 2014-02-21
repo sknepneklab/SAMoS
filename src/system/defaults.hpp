@@ -34,7 +34,7 @@
 #ifndef NDEBUG
 #define PRINT_EVERY 1
 #else
-#define PRINT_EVERY 100
+#define PRINT_EVERY 10000
 #endif
 
 #endif

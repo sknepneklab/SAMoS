@@ -48,7 +48,7 @@ void PairLJPotential::compute()
         rcut = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["rcut"];
         rcut_sq = rcut*rcut;
       }
-      double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
+      double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
       if (periodic)
       {
         if (dx > box->xhi) dx -= box->Lx;

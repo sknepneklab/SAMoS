@@ -24,6 +24,7 @@
 
 #include "cell_list.hpp"
 
+
 //! Construct cell list
 //! \param sys Pointer to the system object
 //! \param msg Pointer to the messenger object
@@ -61,6 +62,17 @@ CellList::CellList(SystemPtr sys, MessengerPtr msg, double cutoff) : m_system(sy
   m_msg->msg(Messenger::INFO,"Each cell has dimensions ("+lexical_cast<string>(m_wx)+","+lexical_cast<string>(m_wy)+","+lexical_cast<string>(m_wz)+").");
 }
 
+//! Get cell to which given particle belongs
+//! \param p Reference to the particle object
+int CellList::get_cell_idx(const Particle& p)
+{
+  BoxPtr box = m_system->get_box();
+  int i = static_cast<int>((p.x-box->xlo)/m_wx);
+  int j = static_cast<int>((p.y-box->ylo)/m_wy);
+  int k = static_cast<int>((p.z-box->zlo)/m_wz); 
+  return m_ny*m_nz*i + m_nz*j + k;
+}
+
 //! Populate cell list
 void CellList::populate()
 {
@@ -71,5 +83,5 @@ void CellList::populate()
     Particle& p = m_system->get_particle(i);
     this->add_particle(p);
   }
-  m_msg->msg(Messenger::INFO,"Populated cell list.");
+  //m_msg->msg(Messenger::INFO,"Populated cell list.");
 }

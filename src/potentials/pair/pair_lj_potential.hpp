@@ -83,9 +83,9 @@ public:
       m_rcut = lexical_cast<double>(param["rcut"]);
     }
     
-    if (m_rcut < m_nlist->get_cutoff())
+    if (m_rcut > m_nlist->get_cutoff())
       m_msg->msg(Messenger::WARNING,"Neighbour list cutoff distance (" + lexical_cast<string>(m_nlist->get_cutoff())+
-      "is smaller than the Lennard-Jones cuttof distance ("+lexical_cast<string>(m_rcut)+
+      " is smaller than the Lennard-Jones cuttof distance ("+lexical_cast<string>(m_rcut)+
       "). Results will not be reliable.");
     
     if (param.find("shifted") != param.end())

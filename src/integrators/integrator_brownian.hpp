@@ -88,7 +88,7 @@ public:
       m_msg->msg(Messenger::INFO,"Brownian dynamic integrator. Setting random number generator seed to "+param["seed"]+".");
       m_rng = make_shared<RNG>(lexical_cast<int>(param["seed"]));
     }
-    m_stoch_coeff = m_nu*sqrt(m_dt);
+    m_stoch_coeff = sqrt(m_nu*m_dt);
   }
   
   //! Propagate system for a time step

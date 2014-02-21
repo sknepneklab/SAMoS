@@ -67,6 +67,7 @@
 #include "potential.hpp"
 #include "integrator_brownian.hpp"
 #include "integrator_vicsek.hpp"
+#include "integrator_nve.hpp"
 #include "integrator.hpp"
 #include "aligner.hpp"
 #include "pair_aligner.hpp"
@@ -172,6 +173,8 @@ int main(int argc, char* argv[])
   integrators["brownian"] = boost::factory<IntegratorBrownianPtr>();
   // Register Vicsek dynamics integrator with the integrators class factory
   integrators["vicsek"] = boost::factory<IntegratorVicsekPtr>();
+  // Register NVE integrator with the integrators class factory
+  integrators["nve"] = boost::factory<IntegratorNVEPtr>();
   
   // Register mean-field (MF) aligner with the pairwise aligner class factory
   pair_aligners["mf"] = boost::factory<PairMFAlignPtr>();
@@ -584,6 +587,11 @@ int main(int argc, char* argv[])
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), run_parser, qi::space))
             {
               msg->msg(Messenger::INFO,"Starting simulation run for "+lexical_cast<string>(run_data.steps)+" steps.");
+              // Precompute forces and torques
+              if (pot)
+                pot->compute();
+              if (aligner)
+                aligner->compute();
               int nlist_builds = 0;     // Count how many neighbour list builds we had during this run
               for (int t = 0; t <= run_data.steps; t++)
               {

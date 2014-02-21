@@ -45,13 +45,7 @@ public:
   CellList(SystemPtr, MessengerPtr, double); 
   
   //! Get cell to which given particle belongs
-  int get_cell_idx(const Particle& p)
-  {
-    int i = static_cast<int>((p.x-m_system->get_box()->xlo)/m_wx);
-    int j = static_cast<int>((p.y-m_system->get_box()->ylo)/m_wy);
-    int k = static_cast<int>((p.z-m_system->get_box()->zlo)/m_wz); 
-    return m_ny*m_nz*i + m_nz*j + k;
-  }
+  int get_cell_idx(const Particle&);
   
   //! Return total number of cells
   int get_size() { return m_size; }

@@ -28,7 +28,7 @@
 */
 void NeighbourList::build()
 {
-  if (m_use_cell_list) 
+ if (m_use_cell_list) 
     this->build_cell();
   else
     this->build_nsq();
@@ -75,7 +75,7 @@ void NeighbourList::build_nsq()
     }
     m_old_state.push_back(PartPos(pi.x,pi.y,pi.z));
   }
-  m_msg->msg(Messenger::INFO, "Rebuilt neighbour list (N^2 algorithm).");
+  //m_msg->msg(Messenger::INFO, "Rebuilt neighbour list (N^2 algorithm).");
 }
 
 //! Build neighbour list using cell list
@@ -129,5 +129,5 @@ void NeighbourList::build_cell()
     }
     m_old_state.push_back(PartPos(pi.x,pi.y,pi.z));
   }
-  m_msg->msg(Messenger::INFO, "Rebuilt neighbour list (using cell list).");
+  //m_msg->msg(Messenger::INFO, "Rebuilt neighbour list (using cell list).");
 }
