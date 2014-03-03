@@ -69,12 +69,14 @@ void PairMFAlign::compute()
       }
     }
   }
+  m_potential_energy = 0.0;
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
     pi.tau_x +=  m_B[i].z*pi.ny - m_B[i].y*pi.nz;
     pi.tau_y += -m_B[i].z*pi.nx + m_B[i].x*pi.nz;
     pi.tau_z +=  m_B[i].y*pi.nx - m_B[i].x*pi.ny;  
+    m_potential_energy += sqrt(pi.tau_x*pi.tau_x + pi.tau_y*pi.tau_y + pi.tau_z*pi.tau_z);  // Hm... Is this one OK???
     //std::cout << i << "  " << pi.tau_x << "  " << pi.tau_y << "  " << pi.tau_z << std::endl;
   }
 }

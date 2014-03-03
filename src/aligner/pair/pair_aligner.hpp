@@ -59,7 +59,10 @@ public:
                                                                                           m_nlist(nlist),
                                                                                           m_has_pair_params(false)
                                                                                           { }
-                                                                                                                
+   
+  //! Get the total potential energy
+  double get_potential_energy() { return m_potential_energy; } //!< \return value of the total potential energy 
+   
   //! Set pair parameters data for pairwise alignment    
   virtual void set_pair_parameters(pairs_type&) = 0;
   
@@ -76,6 +79,7 @@ protected:
   NeighbourListPtr m_nlist;        //!< Handles NeighbourList object
   PairAlignData m_pair_params;     //!< Handles specific parameters for a given pair
   bool m_has_pair_params;          //!< Flag that controls if pair parameters are set
+  double m_potential_energy;       //!< Total potential energy (\note Need some thinking on how to properly define it)
     
 };
 

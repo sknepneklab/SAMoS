@@ -99,6 +99,18 @@ public:
     m_external_align[name]->set_parameters(params);
   }
   
+  //! Compute total pair alignment energy of a given type (for measurement)
+  //! \param type pair alignment type
+  double compute_pair_alignment_energy_of_type(const string& type)
+  {
+    if (m_pair_align.find(type) == m_pair_align.end())
+    {
+      m_msg->msg(Messenger::ERROR,"Trying to compute pair alignment of type " + type + " that is not defined for this system.");
+      throw runtime_error("Pair alignment of type " + type + " not defined.");
+    }
+    return m_pair_align[type]->get_potential_energy();
+  }
+  
   //! Returns true if any of the potentials need neighbour list
   bool need_nlist() { return m_need_nlist; } 
   

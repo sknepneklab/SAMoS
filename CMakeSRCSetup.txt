@@ -20,6 +20,7 @@
 include_directories($ENV{GSL_DIR}/include
                     ${APCS_SOURCE_DIR}/src/constraints
                     ${APCS_SOURCE_DIR}/src/dump
+                    ${APCS_SOURCE_DIR}/src/log
                     ${APCS_SOURCE_DIR}/src/integrators
                     ${APCS_SOURCE_DIR}/src/messenger
                     ${APCS_SOURCE_DIR}/src/parser

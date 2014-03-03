@@ -80,6 +80,13 @@ public:
   //! Get the value of periodic boundary conditions flag
   bool get_periodic() { return m_periodic; }
   
+  //! Set current time step
+  //! \param step current time step
+  void set_step(int step) { m_time_step = step; }
+  
+  //! Get current time step
+  int get_step() { return m_time_step; }  //!< \return current time step
+  
   //! Reset all forces to zero
   void reset_forces()
   {
@@ -118,6 +125,7 @@ private:
   MessengerPtr m_msg;                   //!< Handles messages sent to output
   BoxPtr m_box;                         //!< Simulation box object
   bool m_periodic;                      //!< If true, we use periodic boundary conditions 
+  int m_time_step;                      //!< Current time step
   
 };
 

@@ -36,6 +36,7 @@
 #include "defaults.hpp"
 #include "messenger.hpp"
 #include "dump.hpp"
+#include "logger.hpp"
 #include "parse_command.hpp"
 #include "parse_constraint.hpp"
 #include "parse_external.hpp"
@@ -135,6 +136,7 @@ int main(int argc, char* argv[])
   AlignerPtr    aligner;              // Handles all aligners
   ExternalAlignPtr external_aligner;  // Handles all external aligners
   vector<DumpPtr> dump;               // Handles all different dumps
+  vector<LoggerPtr> log;              // Handles all different logs
   
   bool periodic = false;       // If true, use periodic boundary conditions
   bool has_potential = false;  // If false, potential handling object (Potential class) has not be initialized yet
@@ -457,6 +459,35 @@ int main(int argc, char* argv[])
               throw std::runtime_error("Error parsing dump line.");
             }
           }
+          else if (command_data.command == "log")   // parse dump commands by adding list of logs
+          {
+            if (!defined["input"])  // We need to have system defined before we can add any logs
+            {
+              if (defined["messages"])
+                msg->msg(Messenger::ERROR,"System has not been defined. Please define system using \"input\" command before adding any logs.");
+              else
+                std::cerr << "System has not been defined. Please define system using \"input\" command before adding any logs." << std::endl;
+              throw std::runtime_error("System not defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), log_dump_parser, qi::space))
+            {
+              if (qi::phrase_parse(log_dump_data.params.begin(), log_dump_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                log.push_back(boost::shared_ptr<Logger>(new Logger(sys,msg,pot,aligner,log_dump_data.name,parameter_data)));
+                msg->msg(Messenger::INFO,"Adding logger to file "+log_dump_data.name+".");
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse parameters for log "+log_dump_data.name+" at line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing log parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing log command as line "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing log line.");
+            }
+          }
           else if (command_data.command == "integrator")   // parse integrator command and construct integrator object
           {
             if (!defined["input"])  // We need to have system defined before we can add the integrator
@@ -595,8 +626,11 @@ int main(int argc, char* argv[])
               int nlist_builds = 0;     // Count how many neighbour list builds we had during this run
               for (int t = 0; t <= run_data.steps; t++)
               {
+                sys->set_step(time_step);
                 for (vector<DumpPtr>::iterator it_d = dump.begin(); it_d != dump.end(); it_d++)
                   (*it_d)->dump(time_step);
+                for (vector<LoggerPtr>::iterator it_l = log.begin(); it_l != log.end(); it_l++)
+                  (*it_l)->log();
                 integrator->integrate();
                 // Check the neighbour list rebuild only if necessary 
                 if ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist()))
