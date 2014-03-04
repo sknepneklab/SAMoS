@@ -41,6 +41,7 @@
 #include "log.hpp"
 #include "log_step.hpp"
 #include "log_velocity.hpp"
+#include "log_vec_velocity.hpp"
 #include "log_pair_eng.hpp"
 #include "log_pair_align.hpp"
 

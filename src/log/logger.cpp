@@ -43,6 +43,7 @@ Logger::Logger(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr ali
   // List of known log types
   m_logger["step"] = boost::make_shared<LogStep>(LogStep(sys, msg, pot, align));
   m_logger["velocity"] = boost::make_shared<LogVelocity>(LogVelocity(sys, msg, pot, align));
+  m_logger["vec_velocity"] = boost::make_shared<LogVecVelocity>(LogVecVelocity(sys, msg, pot, align));
   m_logger["soft_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"soft")); 
   m_logger["lj_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"lj")); 
   m_logger["coulomb_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"coulomb")); 
