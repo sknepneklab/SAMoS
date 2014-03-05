@@ -397,7 +397,9 @@ void Dump::dump_xyzv()
   int N = m_system->size();
   if (m_params.find("scale") != m_params.end())
   {
+#ifndef NDEBUG
     m_msg->msg(Messenger::INFO,"Scaling all director vectors by "+m_params["scale"]+".");
+#endif
     scale = lexical_cast<double>(m_params["scale"]);
   }
   m_out << N << endl;

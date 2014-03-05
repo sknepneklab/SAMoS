@@ -42,6 +42,8 @@ void IntegratorNVE::integrate()
     p.vz += dt_2*p.fz;
     // Project everything back to the manifold
     m_constraint->enforce(p);
+    // Update angular velocity
+    p.omega += dt_2*m_constraint->project_torque(p);
   }
   // update position
   for (int i = 0; i < N; i++)
@@ -65,6 +67,9 @@ void IntegratorNVE::integrate()
     p.z += dz;
     // Project everything back to the manifold
     m_constraint->enforce(p);
+    // Change orientation of the director (in the tangent plane) according to eq. (1b)
+    double dtheta = m_dt*p.omega;
+    m_constraint->rotate_director(p,dtheta);
   }
   // compute forces in the current configuration
   if (m_potential)
@@ -101,5 +106,7 @@ void IntegratorNVE::integrate()
     }
     // Project everything back to the manifold
     m_constraint->enforce(p);
+    // Update angular velocity
+    p.omega += dt_2*m_constraint->project_torque(p);
   }
 }

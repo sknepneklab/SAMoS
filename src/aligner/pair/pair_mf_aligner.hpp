@@ -81,7 +81,6 @@ public:
       m_msg->msg(Messenger::INFO,"Global cutoff distance (rcut) for MF alignment is set to "+param["rcut"]+".");
       m_rcut = lexical_cast<double>(param["rcut"]);
     }
-    m_B.resize(sys->size());
   }
                                                                                                                 
   //! Set pair parameters data for pairwise alignment    
@@ -106,7 +105,7 @@ public:
     if (pair_param.find("J") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"MF pairwise alignment. Setting coupling constant to "+pair_param["J"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
-      param["J"] = lexical_cast<double>(pair_param["J"]);
+      param["J"] = lexical_cast<double>(pair_param["j"]);
     }
     else
     {
@@ -146,7 +145,6 @@ private:
        
   double m_J;       //!< Coupling constant
   double m_rcut;    //!< Cutoff distance (has to be less than neighbour list cutoff)
-  vector<Vec> m_B;  //!< Holds components of the mean field B (needed since we use Newton's 3d law)
      
 };
 

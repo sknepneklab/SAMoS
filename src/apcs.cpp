@@ -203,7 +203,7 @@ int main(int argc, char* argv[])
     while (std::getline(command_file, command_line))
     {
       boost::algorithm::trim(command_line);            // get rid of all leading and trailing white spaces 
-      boost::algorithm::to_lower(command_line);        // transform the entire line to lower case (command script is case insensitive)
+      //boost::algorithm::to_lower(command_line);        // transform the entire line to lower case (command script is case insensitive)
       // skip empty and comment lines and start parsing real commands
       if (command_line.size() > 0 && command_line[0] != '#')
       {

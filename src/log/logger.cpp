@@ -50,7 +50,7 @@ Logger::Logger(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr ali
   m_logger["mf_align"] = boost::make_shared<LogPairAlign>(LogPairAlign(sys, msg, pot, align,"mf")); 
   // ------------------------------------------------------------------
     
-  m_msg->msg(Messenger::INFO,"Added logger. Logged quantities will be sent to"+file_name+".");
+  m_msg->msg(Messenger::INFO,"Added logger. Logged quantities will be sent to "+file_name+".");
   m_out.open(m_file_name.c_str()); 
   
   // Always log step

@@ -80,7 +80,7 @@ public:
   ///@{
   double nx, ny, nz;           //!< Particle direction vector (not necessarily equal to velocity direction)
   //@}
-  double omega;                //!< Angular velocity (in the direction of the normal to the surface)
+  double omega;                //!< Magnitude of the angular velocity (in the direction of the normal to the surface)
   
 private:  // Make these attributes immutable 
   

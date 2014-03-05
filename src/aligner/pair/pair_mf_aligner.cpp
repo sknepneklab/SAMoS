@@ -32,17 +32,10 @@ void PairMFAlign::compute()
   double J = m_J;
   double rcut = m_rcut;
   
-  // Reset MF vector B
-  for  (int i = 0; i < N; i++)
-  {
-    m_B[i].x = 0.0;  m_B[i].y = 0.0;  m_B[i].z = 0.0; 
-  }
-  
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
     vector<int>& neigh = m_nlist->get_neighbours(i);
-    double n_neigh = static_cast<double>(neigh.size());
     for (unsigned int j = 0; j < neigh.size(); j++)
     {
       Particle& pj = m_system->get_particle(neigh[j]);
@@ -64,8 +57,15 @@ void PairMFAlign::compute()
       double r_sq = dx*dx + dy*dy + dz*dz;
       if (r_sq <= rcut*rcut)
       {
-        m_B[i].x += J/n_neigh*pj.nx;  m_B[i].y += J/n_neigh*pj.ny;  m_B[i].z += J/n_neigh*pj.nz;
-        m_B[j].x += J/n_neigh*pi.nx;  m_B[j].y += J/n_neigh*pi.ny;  m_B[j].z += J/n_neigh*pi.nz;
+        double tau_x = pi.ny*pj.nz - pi.nz*pj.ny;
+        double tau_y = pi.nz*pj.nx - pi.nx*pj.nz;
+        double tau_z = pi.nx*pj.ny - pi.ny*pj.nx;
+        pi.tau_x +=  J*tau_x;
+        pi.tau_y +=  J*tau_y;
+        pi.tau_z +=  J*tau_z;
+        pj.tau_x += -J*tau_x;
+        pj.tau_y += -J*tau_y;
+        pj.tau_z += -J*tau_z;
       }
     }
   }
@@ -73,10 +73,6 @@ void PairMFAlign::compute()
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
-    pi.tau_x +=  m_B[i].z*pi.ny - m_B[i].y*pi.nz;
-    pi.tau_y += -m_B[i].z*pi.nx + m_B[i].x*pi.nz;
-    pi.tau_z +=  m_B[i].y*pi.nx - m_B[i].x*pi.ny;  
     m_potential_energy += sqrt(pi.tau_x*pi.tau_x + pi.tau_y*pi.tau_y + pi.tau_z*pi.tau_z);  // Hm... Is this one OK???
-    //std::cout << i << "  " << pi.tau_x << "  " << pi.tau_y << "  " << pi.tau_z << std::endl;
   }
 }
