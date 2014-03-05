@@ -16,14 +16,14 @@
  * ************************************************************* */
 
 /*!
- * \file pair_mf_aligner.hpp
+ * \file pair_polar_aligner.hpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
  * \date 17-Jan-2014
- * \brief Declaration of PairMFAlign class
+ * \brief Declaration of PairPolarAlign class
  */ 
 
-#ifndef __PAIR_MF_ALIGN_HPP__
-#define __PAIR_MF_ALIGN_HPP__
+#ifndef __PAIR_POLAR_ALIGN_HPP__
+#define __PAIR_POLAR_ALIGN_HPP__
 
 #include <cmath>
 #include <vector>
@@ -34,23 +34,14 @@ using std::make_pair;
 using std::sqrt;
 using std::vector;
 
-//! Auxiliary data structure holding three vector components
-struct Vec
-{
-  //@{
-  double x, y, z; //!< Three coordinates of the vector
-  //@}
-};
 
-
-/*! PairMFAlign implements the "mean-field" type alignment between neighbouring particles.
- *  Alignment is given via mean-field like expression. For all particles within the cutoff
- *  distance \f$ r_{cut} \left(\leq r_{nl}\right) \f$ (\f$ r_{nl} \f$) being neighbour list
- *  cutoff distance we compute \f$ \vec B_i = J \sum_j \vec n_j \f$, where \f$ J \f$ is the 
- *  coupling constant and \f$ \vec n_j \f$ is director of j-th neighbour. Torque on i-th
- *  particle is then computed as \f$ \vec\tau = \vec n_i \times B_i \f$
+/*! PairPolarAlign implements the "polar" type alignment between neighbouring particles.
+ *  For all particles within the cutoff distance \f$ r_{cut} \left(\leq r_{nl}\right) \f$
+ *  (\f$ r_{nl} \f$ being neighbour list cutoff distance) we compute torque on the particle as
+ *  \f$ \vec \tau_i = 2 J \sum_j \vec n_i\times\vec n_j\right \f$,
+ *  where \f$ J \f$ is the coupling constant and \f$ \vec n_j \f$ is director of j-th neighbour. 
  */
-class PairMFAlign : public PairAlign
+class PairPolarAlign : public PairAlign
 {
 public:
   
@@ -59,26 +50,26 @@ public:
   //! \param msg Pointer to the internal state messenger
   //! \param nlist Pointer to the global neighbour list
   //! \param param Contains information about all parameters (J and cutoff distance)
-  PairMFAlign(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairAlign(sys, msg, nlist, param)
+  PairPolarAlign(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairAlign(sys, msg, nlist, param)
   {
     if (param.find("J") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"No coupling constant (J) specified for MF alignment. Setting it to 1.");
+      m_msg->msg(Messenger::WARNING,"No coupling constant (J) specified for polar alignment. Setting it to 1.");
       m_J = 1.0;
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Global coupling constant (J) for MF alignment is set to "+param["J"]+".");
+      m_msg->msg(Messenger::INFO,"Global coupling constant (J) for polar alignment is set to "+param["J"]+".");
       m_J = lexical_cast<double>(param["J"]);
     }
     if (param.find("rcut") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"No cutoff distance (rcut) specified for MF alignment. Setting it to the global neighbour list cutoff.");
+      m_msg->msg(Messenger::WARNING,"No cutoff distance (rcut) specified for polar alignment. Setting it to the global neighbour list cutoff.");
       m_rcut = m_nlist->get_cutoff();
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Global cutoff distance (rcut) for MF alignment is set to "+param["rcut"]+".");
+      m_msg->msg(Messenger::INFO,"Global cutoff distance (rcut) for polar alignment is set to "+param["rcut"]+".");
       m_rcut = lexical_cast<double>(param["rcut"]);
     }
   }
@@ -91,12 +82,12 @@ public:
     
     if (pair_param.find("type_1") == pair_param.end())
     {
-      m_msg->msg(Messenger::ERROR,"type_1 has not been defined for pairwise alignment in MF aligner.");
+      m_msg->msg(Messenger::ERROR,"type_1 has not been defined for pairwise alignment in polar aligner.");
       throw runtime_error("Missing key for pair alignment parameters.");
     }
     if (pair_param.find("type_2") == pair_param.end())
     {
-      m_msg->msg(Messenger::ERROR,"type_2 has not been defined for pairwise alignment in MF aligner.");
+      m_msg->msg(Messenger::ERROR,"type_2 has not been defined for pairwise alignment in polar aligner.");
       throw runtime_error("Missing key for pair potential parameters.");
     }
     type_1 = lexical_cast<int>(pair_param["type_1"]);
@@ -104,22 +95,22 @@ public:
     
     if (pair_param.find("J") != pair_param.end())
     {
-      m_msg->msg(Messenger::INFO,"MF pairwise alignment. Setting coupling constant to "+pair_param["J"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      m_msg->msg(Messenger::INFO,"Polar pairwise alignment. Setting coupling constant to "+pair_param["J"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["J"] = lexical_cast<double>(pair_param["j"]);
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"MF pairwise alignment. Using default strength ("+lexical_cast<string>(m_J)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      m_msg->msg(Messenger::INFO,"Polar pairwise alignment. Using default strength ("+lexical_cast<string>(m_J)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["J"] = m_J;
     }
     if (pair_param.find("rcut") != pair_param.end())
     {
-      m_msg->msg(Messenger::INFO,"MF pairwise alignment. Setting cutoff distance to "+pair_param["rcut"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      m_msg->msg(Messenger::INFO,"Polar pairwise alignment. Setting cutoff distance to "+pair_param["rcut"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["rcut"] = lexical_cast<double>(pair_param["rcut"]);
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"MF pairwise alignment. Using default cutoff distance ("+lexical_cast<string>(m_rcut)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      m_msg->msg(Messenger::INFO,"Polar pairwise alignment. Using default cutoff distance ("+lexical_cast<string>(m_rcut)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["rcut"] = m_rcut;
     }    
         
@@ -134,7 +125,7 @@ public:
     m_has_pair_params = true;
   }
   
-  //! Returns true since MF alignment needs neighbour list
+  //! Returns true since polar alignment needs neighbour list
   bool need_nlist() { return true; }
   
   //! Computes "torques"
@@ -148,6 +139,6 @@ private:
      
 };
 
-typedef shared_ptr<PairMFAlign> PairMFAlignPtr;
+typedef shared_ptr<PairPolarAlign> PairPolarAlignPtr;
 
 #endif

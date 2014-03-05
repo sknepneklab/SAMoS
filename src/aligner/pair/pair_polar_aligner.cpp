@@ -16,15 +16,15 @@
  * ************************************************************* */
 
 /*!
- * \file pair_soft_potential.cpp
+ * \file pair_polar_aligner.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 31-Oct-2013
- * \brief Implementation of PairSoftPotential class
+ * \date 17-Jan-2014
+ * \brief Implementation of PairPolarAlign class
  */ 
 
-#include "pair_mf_aligner.hpp"
+#include "pair_polar_aligner.hpp"
 
-void PairMFAlign::compute()
+void PairPolarAlign::compute()
 {
   int N = m_system->size();
   bool periodic = m_system->get_periodic();

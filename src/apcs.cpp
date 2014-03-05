@@ -72,7 +72,8 @@
 #include "integrator.hpp"
 #include "aligner.hpp"
 #include "pair_aligner.hpp"
-#include "pair_mf_aligner.hpp"
+#include "pair_polar_aligner.hpp"
+#include "pair_nematic_aligner.hpp"
 #include "pair_vicsek_aligner.hpp"
 #include "external_aligner.hpp"
 
@@ -178,8 +179,10 @@ int main(int argc, char* argv[])
   // Register NVE integrator with the integrators class factory
   integrators["nve"] = boost::factory<IntegratorNVEPtr>();
   
-  // Register mean-field (MF) aligner with the pairwise aligner class factory
-  pair_aligners["mf"] = boost::factory<PairMFAlignPtr>();
+  // Register polar aligner with the pairwise aligner class factory
+  pair_aligners["polar"] = boost::factory<PairPolarAlignPtr>();
+  // Register nematic aligner with the pairwise aligner class factory
+  pair_aligners["nematic"] = boost::factory<PairNematicAlignPtr>();
   // Register Vicsek aligner with the pairwise aligner class factory
   pair_aligners["vicsek"] = boost::factory<PairVicsekAlignPtr>();
   
