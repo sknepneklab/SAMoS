@@ -29,7 +29,7 @@ void PairNematicAlign::compute()
   int N = m_system->size();
   bool periodic = m_system->get_periodic();
   BoxPtr box = m_system->get_box();
-  double J = m_J;
+  double J = 2.0*m_J;  // factor of 2 comes form the expansion of sin(2x) = 2sin(x)cos(x)
   double rcut = m_rcut;
   
   for  (int i = 0; i < N; i++)
@@ -41,7 +41,7 @@ void PairNematicAlign::compute()
       Particle& pj = m_system->get_particle(neigh[j]);
       if (m_has_pair_params)
       {
-        J = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["J"];
+        J = 2.0*m_pair_params[make_pair(pi.get_type(),pj.get_type())]["J"];
         rcut = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["rcut"];
       }
       double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
