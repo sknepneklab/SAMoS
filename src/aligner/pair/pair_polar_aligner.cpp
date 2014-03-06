@@ -32,6 +32,7 @@ void PairPolarAlign::compute()
   double J = m_J;
   double rcut = m_rcut;
   
+  m_potential_energy = 0.0;
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
@@ -66,13 +67,8 @@ void PairPolarAlign::compute()
         pj.tau_x += -J*tau_x;
         pj.tau_y += -J*tau_y;
         pj.tau_z += -J*tau_z;
+        m_potential_energy += -2.0*J*(pi.nx*pj.nx + pi.ny*pj.ny + pi.nz*pj.nz);  // 2.0 needed since we only use half of the neighbour list
       }
     }
-  }
-  m_potential_energy = 0.0;
-  for  (int i = 0; i < N; i++)
-  {
-    Particle& pi = m_system->get_particle(i);
-    m_potential_energy += sqrt(pi.tau_x*pi.tau_x + pi.tau_y*pi.tau_y + pi.tau_z*pi.tau_z);  // Hm... Is this one OK???
   }
 }
