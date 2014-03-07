@@ -30,7 +30,10 @@
 #include "integrator.hpp"
 #include "rng.hpp"
 
+#define SIGN(X) ( (X) >= 0.0 ? 1.0 : -1.0 )
+
 using std::sqrt;
+using std::fabs;
 
 /*! IntegratorNVE class handles NVE dynamics. 
  *  \note No activity. Pure MD.
@@ -55,6 +58,12 @@ public:
       m_limit = lexical_cast<double>(param["limit"]);;
       m_has_limit = true;
     }
+    if (param.find("angle_limit") != param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"NVE integrator has limit on the maximum rotation of the director. It is set to "+param["angle_limit"]+".");
+      m_theta_limit = lexical_cast<double>(param["angle_limit"]);;
+      m_has_theta_limit = true;
+    }
   }
   
   //! Propagate system for a time step
@@ -62,8 +71,10 @@ public:
   
 private:
 
-  double  m_limit;        //!< If set, maximum amount particle is allowed to be displaced
-  bool    m_has_limit;    //!< Flag that determines if maximum particle displacement has been set
+  double  m_limit;              //!< If set, maximum amount particle is allowed to be displaced
+  double  m_theta_limit;        //!< If set, maximum angular displacement of the director
+  bool    m_has_limit;          //!< Flag that determines if maximum particle displacement has been set
+  bool    m_has_theta_limit;    //!< Flag that determines if maximum angular displacement of the particle has been set
   
 };
 
