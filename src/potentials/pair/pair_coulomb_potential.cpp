@@ -33,6 +33,15 @@ void PairCoulombPotential::compute()
   double alpha = m_alpha;
   double sigma_sq = sigma*sigma;
   
+  if (m_system->compute_per_particle_energy())
+  {
+    for  (int i = 0; i < N; i++)
+    {
+      Particle& p = m_system->get_particle(i);
+      p.set_pot_energy("coulomb",0.0);
+    }
+  }
+  
   m_potential_energy = 0.0;
   for  (int i = 0; i < N; i++)
   {
@@ -61,7 +70,8 @@ void PairCoulombPotential::compute()
       double inv_r_sq = sigma_sq/r_sq;
       double inv_r_6  = inv_r_sq*inv_r_sq*inv_r_sq;
       // Handle potential 
-      m_potential_energy += alpha/r + 4.0*fabs(alpha)*inv_r_6*inv_r_6;
+      double potential_energy = alpha/r + 4.0*fabs(alpha)*inv_r_6*inv_r_6;
+      m_potential_energy += potential_energy;
       // Handle force
       double r_3 = r*r_sq;
       double force_factor = alpha/r_3 + 48.0*fabs(alpha)*inv_r_6*inv_r_6*inv_r_sq;
@@ -72,6 +82,11 @@ void PairCoulombPotential::compute()
       pj.fx += force_factor*dx;
       pj.fy += force_factor*dy;
       pj.fz += force_factor*dz;
+      if (m_system->compute_per_particle_energy())
+      {
+        pi.add_pot_energy("coulomb",potential_energy);
+        pj.add_pot_energy("coulomb",potential_energy);
+      }
     }
   }
 }

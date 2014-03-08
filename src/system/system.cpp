@@ -120,4 +120,5 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   }
   msg->msg(Messenger::INFO,"Read data for "+lexical_cast<string>(m_particles.size())+" particles.");
   inp.close();
+  this->disable_per_particle_eng();
 }

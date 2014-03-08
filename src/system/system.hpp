@@ -119,6 +119,15 @@ public:
     m_periodic = periodic; 
   }
   
+  //! Enable per particle energy tracking
+  void enable_per_particle_eng() { m_compute_per_particle_eng = true; }
+  
+  //! disable per particle energy tracking
+  void disable_per_particle_eng() { m_compute_per_particle_eng = false; }
+  
+  //! Compute per particle energy 
+  bool compute_per_particle_energy() { return m_compute_per_particle_eng; }
+  
 private:
   
   vector<Particle> m_particles;         //!< Contains all particle in the system 
@@ -126,6 +135,7 @@ private:
   BoxPtr m_box;                         //!< Simulation box object
   bool m_periodic;                      //!< If true, we use periodic boundary conditions 
   int m_time_step;                      //!< Current time step
+  bool m_compute_per_particle_eng;      //!< If true, compute per particle potential and alignment energy (we need to be able to turn it on and off since it is slow - STL map in the inner loop!)
   
 };
 

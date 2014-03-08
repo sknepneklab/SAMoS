@@ -33,6 +33,15 @@ void PairSoftPotential::compute()
   double ai, aj;
   double force_factor;
   
+  if (m_system->compute_per_particle_energy())
+  {
+    for  (int i = 0; i < N; i++)
+    {
+      Particle& p = m_system->get_particle(i);
+      p.set_pot_energy("soft",0.0);
+    }
+  }
+  
   m_potential_energy = 0.0;
   for  (int i = 0; i < N; i++)
   {
@@ -62,7 +71,8 @@ void PairSoftPotential::compute()
       {
         // Handle potential 
         double diff = ai_p_aj - r;
-        m_potential_energy += 0.5*k*diff*diff;
+        double pot_eng = 0.5*k*diff*diff;
+        m_potential_energy += pot_eng;
         // Handle force
         if (r > 0.0) force_factor = k*diff/r;
         else force_factor = k*diff;
@@ -73,6 +83,11 @@ void PairSoftPotential::compute()
         pj.fx += force_factor*dx;
         pj.fy += force_factor*dy;
         pj.fz += force_factor*dz;
+        if (m_system->compute_per_particle_energy())
+        {
+          pi.add_pot_energy("soft",pot_eng);
+          pj.add_pot_energy("soft",pot_eng);
+        }
       }
     }
   }

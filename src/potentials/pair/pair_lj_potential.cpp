@@ -34,6 +34,15 @@ void PairLJPotential::compute()
   double rcut = m_rcut;
   double sigma_sq = sigma*sigma, rcut_sq = rcut*rcut;
  
+  if (m_system->compute_per_particle_energy())
+  {
+    for  (int i = 0; i < N; i++)
+    {
+      Particle& p = m_system->get_particle(i);
+      p.set_pot_energy("lj",0.0);
+    }
+  }
+
   // Reset total potential energy to zero
   m_potential_energy = 0.0;
   for  (int i = 0; i < N; i++)
@@ -70,13 +79,14 @@ void PairLJPotential::compute()
         double inv_r_sq = sigma_sq/r_sq;
         double inv_r_6  = inv_r_sq*inv_r_sq*inv_r_sq;
         // Handle potential 
-        m_potential_energy += 4.0*eps*inv_r_6*(inv_r_6 - 1.0);
+        double potential_energy = 4.0*eps*inv_r_6*(inv_r_6 - 1.0);
         if (m_shifted)
         {
           double inv_r_cut_sq = sigma_sq/rcut_sq;
           double inv_r_cut_6 = inv_r_cut_sq*inv_r_cut_sq*inv_r_cut_sq;
-          m_potential_energy -= 4.0 * eps * inv_r_cut_6 * (inv_r_cut_6 - 1.0);
+          potential_energy -= 4.0 * eps * inv_r_cut_6 * (inv_r_cut_6 - 1.0);
         }
+        m_potential_energy += potential_energy;
         // Handle force
         double force_factor = 48.0*eps*inv_r_6*(inv_r_6 - 0.5)*inv_r_sq;
         pi.fx += force_factor*dx;
@@ -86,6 +96,11 @@ void PairLJPotential::compute()
         pj.fx -= force_factor*dx;
         pj.fy -= force_factor*dy;
         pj.fz -= force_factor*dz;
+        if (m_system->compute_per_particle_energy())
+        {
+          pi.add_pot_energy("lj",potential_energy);
+          pj.add_pot_energy("lj",potential_energy);
+        }
       }
     }
   }

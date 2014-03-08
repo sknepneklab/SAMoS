@@ -100,6 +100,8 @@ private:
   void dump_director();
   //! Dump XYZV file format for visualization with SimRePlay
   void dump_xyzv();
+  //! Dump XYZC file format for visualization with SimRePlay
+  void dump_xyzc();
   
 };
 

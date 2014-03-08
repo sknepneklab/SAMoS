@@ -41,8 +41,9 @@ class POVPrint:
   base_hight = 0.7  # fraction of the total vector length that is taken by the cylindrical part 
   vec_scale = 1.0  #vector scale
   colour = [1.0,0.0,0.0]
-  sphere_colour = [0.0,0.0,1.0]
-  sphere_radius = 3.0
+  sphere_colour = [1.0,1.0,1.0]
+  sphere_radius = 10.0
+  particle_radius = 0.5
   
   
   def __init__(self,outfilename, vecs):
@@ -60,6 +61,36 @@ class POVPrint:
     self.out.write('#include "golds.inc"\n')
     self.out.write('#include "stones.inc"\n')
     self.out.write('#include "woods.inc"\n')
+    self.out.write('#declare ParticleSolid = texture\n') 
+    self.out.write('                     {\n')
+    self.out.write('                       pigment\n') 
+    self.out.write('                       {\n')
+    self.out.write('                         color rgb<%f,%f,%f>\n' % (self.sphere_colour[0],self.sphere_colour[1],self.sphere_colour[2]))
+    self.out.write('                      }\n')
+    self.out.write('                       finish\n')
+    self.out.write('                       { \n')
+    self.out.write('                         reflection 0.05\n')
+    self.out.write('                         specular 0.05 \n')
+    self.out.write('                         ambient 0.5 \n')
+    self.out.write('                         diffuse 0.5 \n')
+    self.out.write('                         //roughness 0.02\n')
+    self.out.write('                       }\n')
+    self.out.write('                     }\n\n')
+    self.out.write('#declare ArrowSolid = texture\n') 
+    self.out.write('                     {\n')
+    self.out.write('                       pigment\n') 
+    self.out.write('                       {\n')
+    self.out.write('                         color rgb<%f,%f,%f>\n' % (self.colour[0],self.colour[1],self.colour[2]))
+    self.out.write('                       }\n')
+    self.out.write('                       finish\n')
+    self.out.write('                       { \n')
+    self.out.write('                         reflection 0.05\n')
+    self.out.write('                         specular 0.05 \n')
+    self.out.write('                         ambient 0.5 \n')
+    self.out.write('                         diffuse 0.5 \n')
+    self.out.write('                         //roughness 0.02\n')
+    self.out.write('                       }\n')
+    self.out.write('                     }\n\n')
     self.out.write('#declare Camera_0 = camera { perspective\n')
     self.out.write('                             angle 11\n')
     self.out.write('                             right     x*image_width/image_height\n')
@@ -106,12 +137,13 @@ class POVPrint:
       y = (1.0 - self.base_hight)*y1 + self.base_hight*y2
       z = (1.0 - self.base_hight)*z1 + self.base_hight*z2
       hight = sqrt((x2-x1)**2+(y2-y1)**2+(y2-y1)**2)
-      self.out.write('sphere { <%f,%f,%f>,%f texture { pigment { color rgb<%f,%f,%f>} finish { reflection 0.1 phong 1} } }\n' % (xc,yc,zc,self.cone_base_radius*self.base_radius,self.sphere_colour[0],self.sphere_colour[1],self.sphere_colour[2]))      
+      if self.particle_radius > 0:
+        self.out.write('sphere { <%f,%f,%f>,%f texture {ParticleSolid}}\n' % (xc,yc,zc,self.particle_radius))      
       if (hight != 0.0):
         self.out.write('object {\n')
         self.out.write('       union {\n')
-        self.out.write('              cylinder { <%f,%f,%f>,<%f,%f,%f>,%f texture { pigment { color rgb<%f,%f,%f>} finish { reflection 0.1 phong 1} } }\n' % (x1,y1,z1,x,y,z,self.base_radius,self.colour[0],self.colour[1],self.colour[2]))
-        self.out.write('              cone { <%f,%f,%f>,%f,<%f,%f,%f>,%f texture { pigment { color rgb<%f,%f,%f>} finish { reflection 0.1 phong 1} } }\n' % (x,y,z,self.base_radius*self.cone_base_radius,x2,y2,z2,0.0,self.colour[0],self.colour[1],self.colour[2]))
+        self.out.write('              cylinder { <%f,%f,%f>,<%f,%f,%f>,%f texture { ArrowSolid } }\n' % (x1,y1,z1,x,y,z,self.base_radius))
+        self.out.write('              cone { <%f,%f,%f>,%f,<%f,%f,%f>,%f texture { ArrowSolid } }\n' % (x,y,z,self.base_radius*self.cone_base_radius,x2,y2,z2,0.0))
         self.out.write('             }\n')
         self.out.write('        }\n')
 
@@ -119,10 +151,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", type=str, help="Input file with particle velocity field")
 parser.add_argument("-o", "--output", type=str, default="out.pov", help="Output file (POV-Ray scene script)")
 parser.add_argument("-s", "--scale", type=float, default=1.0, help="velocity scale")
-parser.add_argument("-r", "--radius", type=float, default=0.05, help="arrow base radius")
+parser.add_argument("-r", "--base_radius", type=float, default=0.05, help="arrow base radius")
+parser.add_argument("-p", "--particle_radius", type=float, default=0.5, help="radius of each particle")
 parser.add_argument("-c", "--cone", type=float, default=2.0, help="cone base size (multiple of arrow base radius)")
 parser.add_argument("-H", "--hight", type=float, default=0.7, help="fraction of the arrow in the base (arrow tip will be (1-hight) long) ")
-parser.add_argument("-C", "--colour", type=float, nargs=3, default=[1.0,0.0,0.0], help="arrow colour ")
+parser.add_argument("-C", "--cone_colour", type=float, nargs=3, default=[1.0,0.0,0.0], help="arrow colour ")
+parser.add_argument("-P", "--particle_colour", type=float, nargs=3, default=[1.0,1.0,1.0], help="particle colour ")
 parser.add_argument("-S", "--sphere", action='store_true', default=False, help="include glass sphere")
 parser.add_argument("-R", "--sphere_r", type=float, default=3.0, help="radius of sphere for spherical system")
 args = parser.parse_args()
@@ -139,10 +173,12 @@ print
 print "\tInput : ", args.input
 print "\tOutput : ", args.output
 print "\tScale velocity : ", args.scale
-print "\tBase arrow radius : ", args.radius
-print "\tCone base radius : ", args.radius*args.cone
+print "\tBase arrow radius : ", args.base_radius
+print "\tCone base radius : ", args.base_radius*args.cone
 print "\tArrow base fraction : ", args.hight
-print "\tArrow colour : ", args.colour
+print "\tArrow colour : ", args.cone_colour
+print "\tParticle colour : ", args.particle_colour
+print "\tParticle radius : ", args.particle_radius
 print 
 
 start = datetime.now()
@@ -150,12 +186,15 @@ start = datetime.now()
 v = Velocity(args.input)
 p = POVPrint(args.output,v.vecs)
 p.vec_scale = args.scale
-p.base_radius = args.radius
+p.base_radius = args.base_radius
 p.cone_base_radius = args.cone
 p.base_hight = args.hight
-p.colour = args.colour
+p.colour = args.cone_colour
 p.sphere_radius = args.sphere_r
+p.particle_radius = args.particle_radius
+p.sphere_colour = args.particle_colour
 p.write(args.sphere)
+
 
 end = datetime.now()
 

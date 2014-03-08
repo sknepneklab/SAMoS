@@ -32,6 +32,15 @@ void PairNematicAlign::compute()
   double J = 2.0*m_J;  // factor of 2 comes form the expansion of sin(2x) = 2sin(x)cos(x)
   double rcut = m_rcut;
   
+  if (m_system->compute_per_particle_energy())
+  {
+    for  (int i = 0; i < N; i++)
+    {
+      Particle& p = m_system->get_particle(i);
+      p.set_align_energy("nematic",0.0);
+    }
+  }
+  
   m_potential_energy = 0.0;
   for  (int i = 0; i < N; i++)
   {
@@ -68,7 +77,13 @@ void PairNematicAlign::compute()
         pj.tau_x += -J*ni_dot_nj*tau_x;
         pj.tau_y += -J*ni_dot_nj*tau_y;
         pj.tau_z += -J*ni_dot_nj*tau_z;
-        m_potential_energy += -2.0*J*(2.0*ni_dot_nj*ni_dot_nj - 1.0); // (cos(2x) = 2cos^2(x) - 1; factor 2.0 needed since we only use half of the neighbour list
+        double potential_energy = -2.0*J*(2.0*ni_dot_nj*ni_dot_nj - 1.0); // (cos(2x) = 2cos^2(x) - 1; factor 2.0 needed since we only use half of the neighbour list
+        m_potential_energy += potential_energy;
+        if (m_system->compute_per_particle_energy())
+        {
+          pi.add_align_energy("nematic",potential_energy);
+          pj.add_align_energy("nematic",potential_energy);
+        }
       }
     }
   }

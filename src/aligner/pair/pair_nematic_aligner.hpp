@@ -37,7 +37,7 @@ using std::vector;
 /*! PairNematicAlign implements the "nematic" type alignment between neighbouring particles.
  *  For all particles within the cutoff distance \f$ r_{cut} \left(\leq r_{nl}\right) \f$
  *  (\f$ r_{nl} \f$ being neighbour list cutoff distance) we compute torque on the particle as
- *  \f$ \vec \tau_i = 2 J \sum_j \left(\vec n_i\cdot\vec n_j\right)\vec n_i\times\vec n_j\right \f$,
+ *  \f$ \vec \tau_i = 2 J \sum_j \left(\vec n_i\cdot\vec n_j\right)\vec n_i\times\vec n_j \f$,
  *  where \f$ J \f$ is the coupling constant and \f$ \vec n_j \f$ is director of j-th neighbour. 
  */
 class PairNematicAlign : public PairAlign

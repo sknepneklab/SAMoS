@@ -27,11 +27,15 @@
 
 #include <iostream>
 #include <list>
+#include <map>
+#include <string>
 
 #include <boost/format.hpp>
 
 using std::ostream;
 using boost::format;
+using std::map;
+using std::string;
 
 const int NUM_PART_ATTRIB = 10;  //!< Number of particle attributes
 
@@ -65,6 +69,58 @@ public:
   //! Get particle radius (size)
   double get_radius() const { return m_r; } //!< \return particle radius (m_r)
   
+  //! Return potential energy of a given type
+  //! \param type potential energy type to return 
+  double get_pot_energy(const string& type)
+  {
+    if (m_pot_eng.find(type) != m_pot_eng.end())
+      return m_pot_eng[type];
+    else
+      return 0.0;      
+  }
+  
+  //! Set value of the potential energy of a given type
+  //! \param type potential energy type (such as "soft")
+  //! \param val value
+  void set_pot_energy(const string& type, double val)
+  {
+    m_pot_eng[type] = val;
+  }
+  
+  //! Add value of the potential energy of a given type
+  //! \param type potential energy type (such as "soft")
+  //! \param val value
+  void add_pot_energy(const string& type, double val)
+  {
+    m_pot_eng[type] += val;
+  }
+  
+  //! Return alignment potential energy of a given type
+  //! \param type alignment potential energy type to return 
+  double get_align_energy(const string& type)
+  {
+    if (m_align_eng.find(type) != m_align_eng.end())
+      return m_align_eng[type];
+    else
+      return 0.0;      
+  }
+  
+  //! Set value of the alignment potential energy of a given type
+  //! \param type alignment potential energy type (such as "polar")
+  //! \param val value
+  void set_align_energy(const string& type, double val)
+  {
+    m_align_eng[type] = val;
+  }
+  
+  //! Add value of the alignment potential energy of a given type
+  //! \param type alignment potential energy type (such as "polar")
+  //! \param val value
+  void add_align_energy(const string& type, double val)
+  {
+    m_align_eng[type] += val;
+  }
+  
   ///@{
   double x, y, z;              //!< Position in the embedding 3d flat space
   //@}
@@ -87,6 +143,8 @@ private:  // Make these attributes immutable
   int m_id;                //!< Unique id
   int m_type;              //!< Particle type
   double m_r;              //!< Particle radius 
+  map<string,double> m_pot_eng;   //!< Holds current value of the potential energy of a given type 
+  map<string,double> m_align_eng; //!< Holds alignment potential energy of a given type
     
 };
 
