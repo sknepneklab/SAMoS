@@ -21,18 +21,8 @@ from datetime import *
 from random import uniform 
 from math import *
 import argparse
+from read_data import *
 
-class Velocity:
-  
-  def __init__(self,filename):
-    inp = open(filename,'r')
-    lines = inp.readlines()
-    self.vecs = []
-    for line in lines:
-      l = line.strip()
-      if line[0] != '#':
-        self.vecs.append(map(float,l.split()))
-    inp.close()
 
 class POVPrint:
   
@@ -46,13 +36,28 @@ class POVPrint:
   particle_radius = 0.5
   
   
-  def __init__(self,outfilename, vecs):
+  def __init__(self,outfilename, data, to_plot='velocity'):
     self.outfilename = outfilename
-    self.vecs = vecs
+    if not (data.keys.has_key('x') and data.keys.has_key('y') and data.keys.has_key('z')):
+      raise Exception('Missing coordinates in the input data file.')
+    if to_plot.lower() == 'velocity':
+      if not (data.keys.has_key('vx') and data.keys.has_key('vy') and data.keys.has_key('vz')):
+        raise Exception('Missing velocities in the input data file.')
+      else:
+        self.to_plot = ['vx','vy','vz']
+    elif to_plot.lower() == 'director':
+      if not (data.keys.has_key('nx') and data.keys.has_key('ny') and data.keys.has_key('nz')):
+        raise Exception('Missing directors in the input data file.')
+      else:
+        self.to_plot = ['nx','ny','nz']
+    else:
+      raise Exception('Unknown plot type.')
+    self.data = data
   
   def write(self,glass=True):
     self.out = open(self.outfilename,'w')
     self.out.write('global_settings{ assumed_gamma 1.0 }\n')
+    #self.out.write('global_settings{ max_trace_level 30.0 }\n')
     self.out.write('#default{ finish{ ambient 0.1 diffuse 0.9 }}\n')
     self.out.write('#include "colors.inc"\n')
     self.out.write('#include "textures.inc"\n')
@@ -65,7 +70,7 @@ class POVPrint:
     self.out.write('                     {\n')
     self.out.write('                       pigment\n') 
     self.out.write('                       {\n')
-    self.out.write('                         color rgb<%f,%f,%f>\n' % (self.sphere_colour[0],self.sphere_colour[1],self.sphere_colour[2]))
+    self.out.write('                         color rgb<%f,%f,%f,0.15>\n' % (self.sphere_colour[0],self.sphere_colour[1],self.sphere_colour[2]))
     self.out.write('                      }\n')
     self.out.write('                       finish\n')
     self.out.write('                       { \n')
@@ -73,7 +78,7 @@ class POVPrint:
     self.out.write('                         specular 0.05 \n')
     self.out.write('                         ambient 0.5 \n')
     self.out.write('                         diffuse 0.5 \n')
-    self.out.write('                         //roughness 0.02\n')
+    self.out.write('                         //roughness 1.0\n')
     self.out.write('                       }\n')
     self.out.write('                     }\n\n')
     self.out.write('#declare ArrowSolid = texture\n') 
@@ -108,12 +113,9 @@ class POVPrint:
     self.out.write('                 scale 2 }\n')
     self.out.write('       } // end of sky_sphere\n')
     if glass:
-      x = self.vecs[0][0]+0.5*self.vecs[0][3]
-      y = self.vecs[0][1]+0.5*self.vecs[0][4]
-      z = self.vecs[0][2]+0.5*self.vecs[0][5]
-      R = sqrt(x*x + y*y + z*z) - 0.5*self.base_radius
+      R = self.sphere_radius
       self.out.write('sphere { <0,0,0>,%f\n' % R)
-      self.out.write('         pigment { rgbf <0.8,0.9,1,0.95> } // A blue-tinted glass\n')
+      self.out.write('         pigment { rgbf <0.8,0.9,1,0.9> } // A blue-tinted glass\n')
       self.out.write('         finish { phong 0.9 phong_size 40  // A highlight\n')
       self.out.write('                  reflection 0.2  // Glass reflects a bit\n')
       self.out.write('                }\n')
@@ -123,32 +125,28 @@ class POVPrint:
     self.out.close()
 
   def __write_arrows(self):
-    for v in self.vecs:
-      x1, y1, z1, vx, vy, vz = v
-      x2, y2, z2 = x1+vx, y1+vy, z1+vz
-      xc, yc, zc = 0.5*(x1+x2), 0.5*(y1+y2), 0.5*(z1+z2)
-      x1 = xc - 0.5*self.vec_scale*vx
-      y1 = yc - 0.5*self.vec_scale*vy
-      z1 = zc - 0.5*self.vec_scale*vz
-      x2 = xc + 0.5*self.vec_scale*vx
-      y2 = yc + 0.5*self.vec_scale*vy
-      z2 = zc + 0.5*self.vec_scale*vz
-      x = (1.0 - self.base_hight)*x1 + self.base_hight*x2
-      y = (1.0 - self.base_hight)*y1 + self.base_hight*y2
-      z = (1.0 - self.base_hight)*z1 + self.base_hight*z2
+    X, Y, Z = self.data.data[self.data.keys['x']], self.data.data[self.data.keys['y']], self.data.data[self.data.keys['z']]
+    VX, VY, VZ = self.data.data[self.data.keys[self.to_plot[0]]], self.data.data[self.data.keys[self.to_plot[1]]], self.data.data[self.data.keys[self.to_plot[2]]]
+    for (x,y,z,vx,vy,vz) in zip(X,Y,Z,VX,VY,VZ):
+      vvx, vvy, vvz = self.vec_scale*vx, self.vec_scale*vy, self.vec_scale*vz
+      x1, y1, z1 = x - 0.5*vvx, y - 0.5*vvy, z - 0.5*vvz 
+      x2, y2, z2 = x + 0.5*vvx, y + 0.5*vvy, z + 0.5*vvz 
+      cx = (1.0 - self.base_hight)*x1 + self.base_hight*x2
+      cy = (1.0 - self.base_hight)*y1 + self.base_hight*y2
+      cz = (1.0 - self.base_hight)*z1 + self.base_hight*z2
       hight = sqrt((x2-x1)**2+(y2-y1)**2+(y2-y1)**2)
       if self.particle_radius > 0:
-        self.out.write('sphere { <%f,%f,%f>,%f texture {ParticleSolid}}\n' % (xc,yc,zc,self.particle_radius))      
+        self.out.write('sphere { <%f,%f,%f>,%f material {texture {ParticleSolid} interior { ior 1.0 } } }\n' % (x,y,z,self.particle_radius))      
       if (hight != 0.0):
         self.out.write('object {\n')
         self.out.write('       union {\n')
-        self.out.write('              cylinder { <%f,%f,%f>,<%f,%f,%f>,%f texture { ArrowSolid } }\n' % (x1,y1,z1,x,y,z,self.base_radius))
-        self.out.write('              cone { <%f,%f,%f>,%f,<%f,%f,%f>,%f texture { ArrowSolid } }\n' % (x,y,z,self.base_radius*self.cone_base_radius,x2,y2,z2,0.0))
+        self.out.write('              cylinder { <%f,%f,%f>,<%f,%f,%f>,%f texture { ArrowSolid } }\n' % (x1,y1,z1,cx,cy,cz,self.base_radius))
+        self.out.write('              cone { <%f,%f,%f>,%f,<%f,%f,%f>,%f texture { ArrowSolid } }\n' % (cx,cy,cz,self.base_radius*self.cone_base_radius,x2,y2,z2,0.0))
         self.out.write('             }\n')
         self.out.write('        }\n')
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--input", type=str, help="Input file with particle velocity field")
+parser.add_argument("-i", "--input", type=str, help="Input file with particle data")
 parser.add_argument("-o", "--output", type=str, default="out.pov", help="Output file (POV-Ray scene script)")
 parser.add_argument("-s", "--scale", type=float, default=1.0, help="velocity scale")
 parser.add_argument("-r", "--base_radius", type=float, default=0.05, help="arrow base radius")
@@ -159,6 +157,7 @@ parser.add_argument("-C", "--cone_colour", type=float, nargs=3, default=[1.0,0.0
 parser.add_argument("-P", "--particle_colour", type=float, nargs=3, default=[1.0,1.0,1.0], help="particle colour ")
 parser.add_argument("-S", "--sphere", action='store_true', default=False, help="include glass sphere")
 parser.add_argument("-R", "--sphere_r", type=float, default=3.0, help="radius of sphere for spherical system")
+parser.add_argument("-T", "--to_plot", type=str, default='director', help="type of output quantity (velocity or director)")
 args = parser.parse_args()
 
 print
@@ -179,12 +178,13 @@ print "\tArrow base fraction : ", args.hight
 print "\tArrow colour : ", args.cone_colour
 print "\tParticle colour : ", args.particle_colour
 print "\tParticle radius : ", args.particle_radius
+print "\tOutput particle : ", args.to_plot
 print 
 
 start = datetime.now()
 
-v = Velocity(args.input)
-p = POVPrint(args.output,v.vecs)
+data = ReadData(args.input)
+p = POVPrint(args.output,data,args.to_plot)
 p.vec_scale = args.scale
 p.base_radius = args.base_radius
 p.cone_base_radius = args.cone
