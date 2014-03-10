@@ -23,8 +23,7 @@ import argparse
 from read_data import *
 from math import *
 from glob import glob
-from numpy import histogram, cross, mean, std
-from numpy.linalg import norm
+import numpy as np
 from datetime import *
 
 parser = argparse.ArgumentParser()
@@ -32,6 +31,7 @@ parser.add_argument("-o", "--output", type=str, default='hist.dir', help="veloci
 parser.add_argument("-i", "--input", type=str, help="base name of the input files")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
 parser.add_argument("-t", "--time", type=str, default='time_seq.dat', help="record time sequence of the order parameter")
+parser.add_argument("-T", "--type", type=str, default='sphere', help="system type (plane or sphere)")
 args = parser.parse_args()
 
 print
@@ -47,6 +47,7 @@ print "\tInput files : ", args.input
 print "\tOutput files : ", args.output
 print "\tSkip frames : ", args.skip
 print "\tStore OP time sequence in : ", args.time
+print "\tSystem type : ", args.type
 print
 
 start = datetime.now()
@@ -60,22 +61,30 @@ idx = 0
 for f in files:
   print "Processing file : ", f
   data = ReadData(f)
+  timestep = int(f.split('_')[-1].split('.')[0])
   
   if data.has_header:
-    v = [0,0,0]
-    for (x, y, z, nx, ny, nz) in zip(data.data[data.keys['x']],data.data[data.keys['y']],data.data[data.keys['z']],data.data[data.keys['nx']],data.data[data.keys['ny']],data.data[data.keys['nz']]):
-      ln = sqrt(x*x+y*y+z*z)
-      lnn = sqrt(nx*nx + ny*ny + nz*nz)
-      v = map(lambda x, y: x + y, v, cross([x/ln,y/ln,z/ln],[nx/lnn,ny/lnn,nz/lnn]))
-    time_file.write('%d  %f  %f  %f  %f\n' % (idx, norm(v)/data.N, v[0]/data.N, v[1]/data.N, v[2]/data.N))
-  idx += 1
-  op.append(norm(v)/data.N)
+    vx, vy, vz = np.array(data.data[data.keys['vx']]), np.array(data.data[data.keys['vy']]), np.array(data.data[data.keys['vz']])
+    v = np.vstack((vx,vy,vz)).transpose()
+    if args.type == "sphere":
+      x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
+      r = np.vstack((x,y,z)).transpose()
+      len_r = np.apply_along_axis(np.linalg.norm,1,r).reshape((len(r),1))
+      len_v = np.apply_along_axis(np.linalg.norm,1,v).reshape((len(v),1))
+      r = r/len_r
+      v = v/len_v
+      loc_op = np.cross(r,v)
+      mean_loc_op = np.linalg.norm(np.apply_along_axis(sum,0,loc_op))/data.N
+    else:
+      mean_loc_op = np.linalg.norm(np.apply_along_axis(sum,0,v))/data.N
+    time_file.write('%d  %f\n' % (timestep,mean_loc_op))
+    op.append(mean_loc_op)
 
 time_file.close()
 
 out = open(args.output,'w')
 out.write('#  op  std_error\n')
-out.write('%f  %f\n' % (mean(op), std((op))/sqrt(len(op)-1)))
+out.write('%f  %f\n' % (np.mean(op), np.std((op))/sqrt(len(op)-1)))
 out.close()
 
 end = datetime.now()
