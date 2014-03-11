@@ -21,8 +21,19 @@ from datetime import *
 from random import uniform 
 from math import *
 import argparse
+import numpy as np
 from read_data import *
 
+def rotation_matrix(axis,theta):
+    axis = axis/sqrt(np.dot(axis,axis))
+    a = cos(theta/2)
+    b,c,d = -axis*sin(theta/2)
+    return np.array([[a*a+b*b-c*c-d*d, 2*(b*c-a*d), 2*(b*d+a*c)],
+                     [2*(b*c+a*d), a*a+c*c-b*b-d*d, 2*(c*d-a*b)],
+                     [2*(b*d-a*c), 2*(c*d+a*b), a*a+d*d-b*b-c*c]])
+
+def rotate(v,n,phi):
+    return np.dot(rotation_matrix(n,phi),v)
 
 class POVPrint:
   
@@ -31,9 +42,10 @@ class POVPrint:
   base_hight = 0.7  # fraction of the total vector length that is taken by the cylindrical part 
   vec_scale = 1.0  #vector scale
   colour = [1.0,0.0,0.0]
-  sphere_colour = [1.0,1.0,1.0]
+  sphere_colour = [1.0,1.0,1.0,1.0]
   sphere_radius = 10.0
   particle_radius = 0.5
+  camera_angle = 45.0
   
   
   def __init__(self,outfilename, data, to_plot='velocity'):
@@ -57,7 +69,7 @@ class POVPrint:
   def write(self,glass=True):
     self.out = open(self.outfilename,'w')
     self.out.write('global_settings{ assumed_gamma 1.0 }\n')
-    #self.out.write('global_settings{ max_trace_level 30.0 }\n')
+    self.out.write('global_settings{ ambient_light rgb<1,1,1> }\n')
     self.out.write('#default{ finish{ ambient 0.1 diffuse 0.9 }}\n')
     self.out.write('#include "colors.inc"\n')
     self.out.write('#include "textures.inc"\n')
@@ -70,15 +82,15 @@ class POVPrint:
     self.out.write('                     {\n')
     self.out.write('                       pigment\n') 
     self.out.write('                       {\n')
-    self.out.write('                         color rgb<%f,%f,%f,0.15>\n' % (self.sphere_colour[0],self.sphere_colour[1],self.sphere_colour[2]))
+    self.out.write('                         color rgb<%f,%f,%f,%f>\n' % (self.sphere_colour[0],self.sphere_colour[1],self.sphere_colour[2],self.sphere_colour[3]))
     self.out.write('                      }\n')
     self.out.write('                       finish\n')
     self.out.write('                       { \n')
-    self.out.write('                         reflection 0.05\n')
+    self.out.write('                         reflection 0.01\n')
     self.out.write('                         specular 0.05 \n')
     self.out.write('                         ambient 0.5 \n')
     self.out.write('                         diffuse 0.5 \n')
-    self.out.write('                         //roughness 1.0\n')
+    self.out.write('                         roughness 0.1\n')
     self.out.write('                       }\n')
     self.out.write('                     }\n\n')
     self.out.write('#declare ArrowSolid = texture\n') 
@@ -89,22 +101,24 @@ class POVPrint:
     self.out.write('                       }\n')
     self.out.write('                       finish\n')
     self.out.write('                       { \n')
-    self.out.write('                         reflection 0.05\n')
-    self.out.write('                         specular 0.05 \n')
-    self.out.write('                         ambient 0.5 \n')
+    self.out.write('                         reflection 0.0\n')
+    self.out.write('                         specular 0.2 \n')
+    self.out.write('                         ambient 0.9 \n')
     self.out.write('                         diffuse 0.5 \n')
-    self.out.write('                         //roughness 0.02\n')
+    self.out.write('                         roughness 0.05\n')
     self.out.write('                       }\n')
     self.out.write('                     }\n\n')
+    cam_pos, light_pos = self.__camera_pos(16.66666*self.sphere_radius, self.camera_angle)
     self.out.write('#declare Camera_0 = camera { perspective\n')
-    self.out.write('                             angle 11\n')
+    self.out.write('                             angle 10\n')
     self.out.write('                             right     x*image_width/image_height\n')
-    self.out.write('                             location  < 0.00, 0.00,%f>\n' % (-16.66666*self.sphere_radius))
+    self.out.write('                             location  < %f, %f, %f>\n' % (cam_pos[0],cam_pos[1],cam_pos[2]))
     self.out.write('                             look_at   < 0.00, 0.00, 0.00>\n')
     self.out.write('                            }\n')
     self.out.write('camera{Camera_0}\n')
-    self.out.write('light_source{<1500, 500,-2500> color White}\n')
-    self.out.write('sky_sphere{ pigment{ gradient <0,1,0>\n')
+    self.out.write('light_source{<%f, %f,%f> color White }\n' % (light_pos[0],light_pos[1],light_pos[2]))
+    self.out.write('light_source{<%f, %f,%f> color rgb<0.8,0.8,0.8> }\n' % (-light_pos[0],-light_pos[1],-light_pos[2]))
+    self.out.write('sky_sphere{ pigment{ gradient <1,0,1>\n')
     self.out.write('                 color_map{ [0   color rgb<1,1,1>         ]//White\n')
     self.out.write('                            [0.4 color rgb<0.14,0.14,0.56>]//~Navy\n')
     self.out.write('                            [0.6 color rgb<0.14,0.14,0.56>]//~Navy\n')
@@ -115,7 +129,7 @@ class POVPrint:
     if glass:
       R = self.sphere_radius
       self.out.write('sphere { <0,0,0>,%f\n' % R)
-      self.out.write('         pigment { rgbf <0.8,0.9,1,0.9> } // A blue-tinted glass\n')
+      self.out.write('         pigment { rgbf <0.8,1.0,0.95,0.92> } // A blue-tinted glass\n')
       self.out.write('         finish { phong 0.9 phong_size 40  // A highlight\n')
       self.out.write('                  reflection 0.2  // Glass reflects a bit\n')
       self.out.write('                }\n')
@@ -123,6 +137,26 @@ class POVPrint:
       self.out.write('        }\n')
     self.__write_arrows()
     self.out.close()
+
+  def __camera_pos(self, dist, angle):
+    X, Y, Z = self.data.data[self.data.keys['x']], self.data.data[self.data.keys['y']], self.data.data[self.data.keys['z']]
+    VX, VY, VZ = self.data.data[self.data.keys[self.to_plot[0]]], self.data.data[self.data.keys[self.to_plot[1]]], self.data.data[self.data.keys[self.to_plot[2]]]
+    omega = np.zeros(3)
+    for (x,y,z,vx,vy,vz) in zip(X,Y,Z,VX,VY,VZ):
+      r = np.array([x,y,z])/np.linalg.norm([x,y,z])
+      v = np.array([vx,vy,vz])/np.linalg.norm([vx,vy,vz])
+      o = np.cross(r,v)
+      o /= np.linalg.norm(o)
+      omega += o
+    omega /= len(X) 
+    omega /= np.linalg.norm(omega)
+    ez = np.array([0,1,0])
+    n = np.cross(omega,ez)
+    n /= np.linalg.norm(n)
+    cam_pos = dist*rotate(omega,n,radians(angle))
+    light = np.array([-1500, 500,-2500])
+    light_pos = rotate(light,n,radians(angle))
+    return [cam_pos, light_pos]
 
   def __write_arrows(self):
     X, Y, Z = self.data.data[self.data.keys['x']], self.data.data[self.data.keys['y']], self.data.data[self.data.keys['z']]
@@ -154,10 +188,11 @@ parser.add_argument("-p", "--particle_radius", type=float, default=0.5, help="ra
 parser.add_argument("-c", "--cone", type=float, default=2.0, help="cone base size (multiple of arrow base radius)")
 parser.add_argument("-H", "--hight", type=float, default=0.7, help="fraction of the arrow in the base (arrow tip will be (1-hight) long) ")
 parser.add_argument("-C", "--cone_colour", type=float, nargs=3, default=[1.0,0.0,0.0], help="arrow colour ")
-parser.add_argument("-P", "--particle_colour", type=float, nargs=3, default=[1.0,1.0,1.0], help="particle colour ")
+parser.add_argument("-P", "--particle_colour", type=float, nargs=4, default=[1.0,1.0,1.0,1.0], help="particle colour ")
 parser.add_argument("-S", "--sphere", action='store_true', default=False, help="include glass sphere")
 parser.add_argument("-R", "--sphere_r", type=float, default=3.0, help="radius of sphere for spherical system")
 parser.add_argument("-T", "--to_plot", type=str, default='director', help="type of output quantity (velocity or director)")
+parser.add_argument("-a", "--angle", type=float, default=50, help="camera angle (in degrees)")
 args = parser.parse_args()
 
 print
@@ -179,6 +214,7 @@ print "\tArrow colour : ", args.cone_colour
 print "\tParticle colour : ", args.particle_colour
 print "\tParticle radius : ", args.particle_radius
 print "\tOutput particle : ", args.to_plot
+print "\tCamera angle : ", args.angle
 print 
 
 start = datetime.now()
@@ -193,6 +229,7 @@ p.colour = args.cone_colour
 p.sphere_radius = args.sphere_r
 p.particle_radius = args.particle_radius
 p.sphere_colour = args.particle_colour
+p.camera_angle = args.angle
 p.write(args.sphere)
 
 
