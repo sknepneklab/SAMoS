@@ -23,6 +23,8 @@ from read_data import *
 from datetime import *
 from random import uniform 
 from math import *
+import numpy as np
+from vtktools import *
 import argparse
 
 class PotEnergy:
@@ -156,6 +158,7 @@ parser.add_argument("-k", "--k", type=float, default=1.0, help="soft potential s
 parser.add_argument("-R", "--sphere_r", type=float, default=10.0, help="radius of sphere for spherical system")
 parser.add_argument("-L", "--low_colour", type=float, nargs=3, default=[0.0,0.0,1.0], help="lowest energy colour")
 parser.add_argument("-H", "--hi_colour", type=float, nargs=3, default=[1.0,0.0,0.0], help="highest energy colour")
+parser.add_argument("-c", "--connectivity", type=str, default=None, help="Connectivity file (xyzl format produced by stripack)")
 args = parser.parse_args()
 
 print
@@ -171,21 +174,54 @@ print "\tInput : ", args.input
 print "\tOutput : ", args.output
 print "\tLow colour : ", args.low_colour
 print "\tHi colour : ", args.hi_colour
+if args.connectivity != None:
+  print "\tConnectivity file : ", args.connectivity
 print 
 
 start = datetime.now()
 
+print "Reading data..."
 data = ReadData(args.input)
 pot_eng = PotEnergy(data)
+
+print "Computing harmonic potential energy..."
 engs = pot_eng.compute_harmonic(args.k)
 
+print "Generating POV Ray output..."
 p = POVPrint(args.output+'.pov',data,engs)
 p.sphere_radius = args.sphere_r
 p.hi_colour = args.hi_colour
 p.low_colour = args.low_colour
 
+print "Generating XYZC output..."
 xyzc = XYZCPrint(args.output+'.xyzc',data,engs)
 xyzc.write()
+
+print "Generating VTU output..."
+x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
+vtk_writer = VTK_XML_Serial_Unstructured()
+
+nneigh = []
+if args.connectivity != None:
+  nneigh = [0 for i in range(data.N)]
+  print "Generating connectivities..."
+  con = open(args.connectivity,'r')
+  edges = [f for f in map(lambda x: int(x.strip()), con.readlines()) if f != -1]
+  edge_pairs = zip(edges[::2],edges[1::2])
+  for (i,j) in edge_pairs:
+    nneigh[i-1] += 0.5
+    nneigh[j-1] += 0.5
+  
+if len(nneigh) == 0:
+  vtk_writer.snapshot(args.output+'.vtu',x,y,z,energies=engs)
+else:
+  vtk_writer.snapshot(args.output+'.vtu',x,y,z,energies=engs,nneigh=nneigh)
+
+print "Generating XYZ file for SRTIPACK triangulation..."
+out = open(args.output+'.xyz','w')
+for (xx,yy,zz) in zip(x,y,z):
+  out.write('%f  %f  %f\n' % (xx,yy,zz))
+out.close()
 
 print "Lowest energy : ", min(engs)
 print "Highest energy : ", max(engs)

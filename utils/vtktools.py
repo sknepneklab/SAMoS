@@ -45,7 +45,7 @@ class VTK_XML_Serial_Unstructured:
         return string
 
     def snapshot(self, fileName, x,y,z, vx=[], vy=[], vz=[], nx=[], \
-            ny=[], nz=[], radii=[], colors=[]):
+            ny=[], nz=[], radii=[], colors=[], energies=[], nneigh=[]):
         """
         ARGUMENTS:
         fileName        file name and/or path/filename
@@ -61,6 +61,8 @@ class VTK_XML_Serial_Unstructured:
         radii           optional array of particle radii
         colors          optional array of scalars to use to set particle colors 
                         The exact colors will depend on the color map you set up in Paraview.
+        energies        optional array of energies assigned to each particle
+        nneigh          optional array of total number of neighbors for each particle
         """
         import xml.dom.minidom
         #import xml.dom.ext # python 2.5 and later        
@@ -194,6 +196,30 @@ class VTK_XML_Serial_Unstructured:
             string = self.array_to_string(colors)
             color_Data = doc.createTextNode(string)
             colorNode.appendChild(color_Data)
+
+        if len(energies) > 0:
+            # Particle colors
+            energyNode= doc.createElementNS("VTK", "DataArray")
+            energyNode.setAttribute("Name", "energies")
+            energyNode.setAttribute("type", "Float32")
+            energyNode.setAttribute("format", "ascii")
+            point_data.appendChild(energyNode)
+
+            string = self.array_to_string(energies)
+            energy_Data = doc.createTextNode(string)
+            energyNode.appendChild(energy_Data)
+
+        if len(nneigh) > 0:
+            # Particle colors
+            neighNode= doc.createElementNS("VTK", "DataArray")
+            neighNode.setAttribute("Name", "nneigh")
+            neighNode.setAttribute("type", "Float32")
+            neighNode.setAttribute("format", "ascii")
+            point_data.appendChild(neighNode)
+
+            string = self.array_to_string(nneigh)
+            neigh_Data = doc.createTextNode(string)
+            neighNode.appendChild(neigh_Data)
 
         #### Cell data (dummy) ####
         cell_data = doc.createElementNS("VTK", "CellData")
