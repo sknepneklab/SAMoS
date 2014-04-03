@@ -59,6 +59,9 @@ p1 = args.p1
 p2 = args.p2
 
 
+out.write('# Interparticle distance between : %d and %d\n' % (p1,p2))
+out.write('# timestep dist n1_dot_n2  v1_dot_v2\n')  
+
 idx = 0
 for f in files:
   print "Processing file : ", f
