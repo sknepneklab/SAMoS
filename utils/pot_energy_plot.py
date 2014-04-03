@@ -45,7 +45,7 @@ class PotEnergy:
       for (x1,y1,z1,a1) in zip(X,Y,Z,A):
         dx, dy, dz = x1-x0, y1-y0, z1-z0
         if self.box != None:
-          lx, ly, lz = box
+          lx, ly, lz = self.box
           if (dx > 0.5*lx): dx -= lx
           elif (dx < -0.5*lx): dx += lx
           if (dy > 0.5*ly): dy -= ly
@@ -159,6 +159,7 @@ parser.add_argument("-R", "--sphere_r", type=float, default=10.0, help="radius o
 parser.add_argument("-L", "--low_colour", type=float, nargs=3, default=[0.0,0.0,1.0], help="lowest energy colour")
 parser.add_argument("-H", "--hi_colour", type=float, nargs=3, default=[1.0,0.0,0.0], help="highest energy colour")
 parser.add_argument("-c", "--connectivity", type=str, default=None, help="Connectivity file (xyzl format produced by stripack)")
+parser.add_argument("-l", "--box_size", type=float, default=None, help="Size of the simulation box")
 args = parser.parse_args()
 
 print
@@ -176,13 +177,19 @@ print "\tLow colour : ", args.low_colour
 print "\tHi colour : ", args.hi_colour
 if args.connectivity != None:
   print "\tConnectivity file : ", args.connectivity
+if args.box_size != None:
+  print "\tBox size : ", args.box_size
 print 
 
 start = datetime.now()
 
 print "Reading data..."
 data = ReadData(args.input)
-pot_eng = PotEnergy(data)
+if args.box_size == None:
+  pot_eng = PotEnergy(data)
+else:
+  L = args.box_size
+  pot_eng = PotEnergy(data,box=[L,L,L])
 
 print "Computing harmonic potential energy..."
 engs = pot_eng.compute_harmonic(args.k)
