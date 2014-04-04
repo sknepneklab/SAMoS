@@ -29,6 +29,7 @@ from vtktools import *
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", type=str, help="input file")
 parser.add_argument("-o", "--output", type=str, help="output file")
+parser.add_argument("-d", "--distance", type=str, default=None, help="file with interparticle distances")
 args = parser.parse_args()
 
 print
@@ -42,6 +43,8 @@ print "\t----------------------------------------------"
 print
 print "\tInput files : ", args.input
 print "\tOutput files : ", args.output
+if args.distance != None:
+  print "\tReading distances to 0th particle from : ", args.distance
 print
 
 start = datetime.now()
@@ -51,6 +54,14 @@ has_v = False
 has_n = False
 
 data = ReadData(args.input)
+
+dist = []
+if args.distance != None:
+  distinp = open(args.distance,'r')
+  dist = distinp.readlines()
+  dist = map(lambda x: x.strip(),dist)
+  dist = map(float,dist)
+  distinp.close()
 
 if not (data.keys.has_key('x') and data.keys.has_key('y') and data.keys.has_key('z')):
   raise "Particle coordinate not specified in the input data."
@@ -82,7 +93,10 @@ if (data.keys.has_key('nx') or data.keys.has_key('ny') or data.keys.has_key('nz'
 r = np.ones(len(x))  
   
 if has_v and has_n:
-  vtk_writer.snapshot(args.output, x, y, z, vx=vx, vy=vy, vz=vz, nx=nx, ny=ny, nz=nz,radii=r)
+  if len(dist) > 0:
+    vtk_writer.snapshot(args.output, x, y, z, vx=vx, vy=vy, vz=vz, nx=nx, ny=ny, nz=nz,radii=r,dist=dist)
+  else:
+    vtk_writer.snapshot(args.output, x, y, z, vx=vx, vy=vy, vz=vz, nx=nx, ny=ny, nz=nz,radii=r)
 elif has_v:
   vtk_writer.snapshot(args.output, x, y, z, vx=vx, vy=vy, vz=vz,radii=r)
 elif has_n:

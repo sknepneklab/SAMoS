@@ -45,7 +45,7 @@ class VTK_XML_Serial_Unstructured:
         return string
 
     def snapshot(self, fileName, x,y,z, vx=[], vy=[], vz=[], nx=[], \
-            ny=[], nz=[], radii=[], colors=[], energies=[], nneigh=[]):
+            ny=[], nz=[], radii=[], colors=[], energies=[], nneigh=[], dist=[]):
         """
         ARGUMENTS:
         fileName        file name and/or path/filename
@@ -63,6 +63,7 @@ class VTK_XML_Serial_Unstructured:
                         The exact colors will depend on the color map you set up in Paraview.
         energies        optional array of energies assigned to each particle
         nneigh          optional array of total number of neighbors for each particle
+        dist            optional array of absolute distance to the seed (0th) particle
         """
         import xml.dom.minidom
         #import xml.dom.ext # python 2.5 and later        
@@ -210,7 +211,7 @@ class VTK_XML_Serial_Unstructured:
             energyNode.appendChild(energy_Data)
 
         if len(nneigh) > 0:
-            # Particle colors
+            # Particle number of neighbours
             neighNode= doc.createElementNS("VTK", "DataArray")
             neighNode.setAttribute("Name", "nneigh")
             neighNode.setAttribute("type", "Float32")
@@ -220,6 +221,18 @@ class VTK_XML_Serial_Unstructured:
             string = self.array_to_string(nneigh)
             neigh_Data = doc.createTextNode(string)
             neighNode.appendChild(neigh_Data)
+
+        if len(dist) > 0:
+            # Particle distance
+            distNode = doc.createElementNS("VTK", "DataArray")
+            distNode.setAttribute("Name", "dist")
+            distNode.setAttribute("type", "Float32")
+            distNode.setAttribute("format", "ascii")
+            point_data.appendChild(distNode)
+
+            string = self.array_to_string(dist)
+            dist_Data = doc.createTextNode(string)
+            distNode.appendChild(dist_Data)
 
         #### Cell data (dummy) ####
         cell_data = doc.createElementNS("VTK", "CellData")
