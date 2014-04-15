@@ -24,8 +24,9 @@ from math import *
 from glob import glob
 import numpy as np
 from datetime import *
-from vtktools import *
-
+import vtk
+from vtk import *
+ 
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", type=str, help="base name of the input files")
 parser.add_argument("-o", "--output", type=str, default='trajXXX.dat', help="particle trajectory (XXXX is particle number)")
@@ -53,6 +54,9 @@ files = sorted(glob(args.input+'*.dat'))[args.skip:]
 
 out = open(args.output+'.dat','w')
 pid = args.id
+
+Points = vtk.vtkPoints()
+Lines = vtk.vtkCellArray()
 
 
 xx = []
@@ -88,11 +92,44 @@ for f in files:
     nnz.append(nz[pid])
     out.write('%f %f %f %f  %f  %f  %f\n' % (x[pid],y[pid],z[pid],len_v[pid],vx[pid],vy[pid],vz[pid]))
 
+Velocities = vtk.vtkDoubleArray()
+Velocities.SetNumberOfComponents(3)
+Velocities.SetName("Velocity")
+
+Directors = vtk.vtkDoubleArray()
+Directors.SetNumberOfComponents(3)
+Directors.SetName("Directors")
+
+for (x,y,z,vx,vy,vz,nx,ny,nz) in zip(xx,yy,zz,vvx,vvy,vvz,nnx,nny,nnz):
+  Points.InsertNextPoint(x,y,z)
+  Velocities.InsertNextTuple3(vx,vy,vz)
+  Directors.InsertNextTuple3(nx,ny,nz)
+
+Line = vtk.vtkLine()
+for i in range(len(xx)-1):
+  Line.GetPointIds().SetId(0,i)
+  Line.GetPointIds().SetId(1,i+1)
+  Lines.InsertNextCell(Line)
+
+polydata = vtk.vtkPolyData()
+polydata.SetPoints(Points)
+polydata.SetLines(Lines)
+
+polydata.GetPointData().AddArray(Velocities)
+polydata.GetPointData().AddArray(Directors)
+
+polydata.Modified()
+writer = vtk.vtkXMLPolyDataWriter()
+writer.SetFileName(args.output+'.vtp')
+writer.SetInputData(polydata)
+writer.SetDataModeToAscii()
+writer.Write()
+
 out.close()
 
-vtk_writer = VTK_XML_Serial_Unstructured()
+#vtk_writer = VTK_XML_Serial_Unstructured()
 
-vtk_writer.snapshot(args.output+'.vtu',xx,yy,zz,vx=vvx,vy=vvy,vz=vvz,nx=nnx,ny=nny,nz=nnz)
+#vtk_writer.snapshot(args.output+'.vtu',xx,yy,zz,vx=vvx,vy=vvy,vz=vvz,nx=nnx,ny=nny,nz=nnz)
 
 
 end = datetime.now()

@@ -24,8 +24,9 @@ from datetime import *
 from random import uniform 
 from math import *
 import numpy as np
-from vtktools import *
 import argparse
+import vtk
+from vtk import *
 
 class PotEnergy:
   
@@ -160,6 +161,7 @@ parser.add_argument("-L", "--low_colour", type=float, nargs=3, default=[0.0,0.0,
 parser.add_argument("-H", "--hi_colour", type=float, nargs=3, default=[1.0,0.0,0.0], help="highest energy colour")
 parser.add_argument("-c", "--connectivity", type=str, default=None, help="Connectivity file (xyzl format produced by stripack)")
 parser.add_argument("-l", "--box_size", type=float, default=None, help="Size of the simulation box")
+parser.add_argument("-C", "--bond_cutoff", type=float, default=0.0, help="bond length cutoff distance")
 args = parser.parse_args()
 
 print
@@ -179,6 +181,7 @@ if args.connectivity != None:
   print "\tConnectivity file : ", args.connectivity
 if args.box_size != None:
   print "\tBox size : ", args.box_size
+print "\tBond cutoff distance : ", args.bond_cutoff
 print 
 
 start = datetime.now()
@@ -204,9 +207,58 @@ print "Generating XYZC output..."
 xyzc = XYZCPrint(args.output+'.xyzc',data,engs)
 xyzc.write()
 
-print "Generating VTU output..."
-x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
-vtk_writer = VTK_XML_Serial_Unstructured()
+print "Generating VTP output..."
+xx, yy, zz = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
+
+Points = vtk.vtkPoints()
+Lines = vtk.vtkCellArray()
+
+PotEngs = vtk.vtkDoubleArray()
+PotEngs.SetNumberOfComponents(1)
+PotEngs.SetName("PotEng")
+
+i = 0
+for (x,y,z) in zip(xx,yy,zz):
+  Points.InsertNextPoint(x,y,z)
+  PotEngs.InsertNextValue(engs[i])
+  i += 1
+
+
+polydata = vtk.vtkPolyData()
+polydata.SetPoints(Points)
+polydata.GetPointData().SetScalars(PotEngs)
+
+if args.bond_cutoff != 0:
+  print "Computing particle connectivity network..."
+  Lengths = vtk.vtkDoubleArray()
+  Lengths.SetNumberOfComponents(1)
+  Lengths.SetName("BondLen")
+  Line = vtk.vtkLine()
+  for i in range(xx.size):
+    xi, yi, zi = xx[i], yy[i], zz[i]
+    for j in range(i+1,xx.size):
+      xj, yj, zj = xx[j], yy[j], zz[j]
+      dx, dy, dz = xi-xj, yi-yj, zi-zj
+      d = sqrt(dx*dx + dy*dy + dz*dz)
+      if d <= args.bond_cutoff:
+        Line.GetPointIds().SetId(0,i)
+        Line.GetPointIds().SetId(1,j)
+        Lines.InsertNextCell(Line)
+        Lengths.InsertNextValue(d)
+
+polydata.SetLines(Lines)
+
+
+if args.bond_cutoff != 0:
+  polydata.GetCellData().SetScalars(Lengths)
+
+
+polydata.Modified()
+writer = vtk.vtkXMLPolyDataWriter()
+writer.SetFileName(args.output+'.vtp')
+writer.SetInputData(polydata)
+writer.SetDataModeToAscii()
+writer.Write()
 
 nneigh = []
 if args.connectivity != None:
@@ -218,16 +270,11 @@ if args.connectivity != None:
   for (i,j) in edge_pairs:
     nneigh[i-1] += 0.5
     nneigh[j-1] += 0.5
-  
-if len(nneigh) == 0:
-  vtk_writer.snapshot(args.output+'.vtu',x,y,z,energies=engs)
-else:
-  vtk_writer.snapshot(args.output+'.vtu',x,y,z,energies=engs,nneigh=nneigh)
 
 print "Generating XYZ file for SRTIPACK triangulation..."
 out = open(args.output+'.xyz','w')
-for (xx,yy,zz) in zip(x,y,z):
-  out.write('%f  %f  %f\n' % (xx,yy,zz))
+for (x,y,z) in zip(xx,yy,zz):
+  out.write('%f  %f  %f\n' % (x,y,z))
 out.close()
 
 print "Lowest energy : ", min(engs)
