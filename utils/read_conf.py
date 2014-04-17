@@ -25,7 +25,7 @@ class Attribute:
     ln = attrib.split('=')
     self.name = ln[0]
     if len(ln) > 1:
-      self.val = ln[1]
+      self.val = ln[1].strip()
     else:
       self.val = None
 
