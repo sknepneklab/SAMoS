@@ -25,6 +25,7 @@ from math import *
 from glob import glob
 import numpy as np
 from datetime import *
+from op import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-o", "--output", type=str, default='hist.dir', help="velocity histogram")
@@ -62,23 +63,14 @@ for f in files:
   print "Processing file : ", f
   data = ReadData(f)
   timestep = int(f.split('_')[-1].split('.')[0])
-  
-  if data.has_header:
-    vx, vy, vz = np.array(data.data[data.keys['vx']]), np.array(data.data[data.keys['vy']]), np.array(data.data[data.keys['vz']])
-    v = np.vstack((vx,vy,vz)).transpose()
-    if args.type == "sphere":
-      x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
-      r = np.vstack((x,y,z)).transpose()
-      len_r = np.apply_along_axis(np.linalg.norm,1,r).reshape((len(r),1))
-      len_v = np.apply_along_axis(np.linalg.norm,1,v).reshape((len(v),1))
-      r = r/len_r
-      v = v/len_v
-      loc_op = np.cross(r,v)
-      mean_loc_op = np.linalg.norm(np.apply_along_axis(sum,0,loc_op))/data.N
-    else:
-      mean_loc_op = np.linalg.norm(np.apply_along_axis(sum,0,v))/data.N
-    time_file.write('%d  %f\n' % (timestep,mean_loc_op))
-    op.append(mean_loc_op)
+  frame_op = OP(data,args.type)
+  loc_op = frame_op.compute()
+  if args.type == "sphere":
+    mean_loc_op = np.linalg.norm(np.apply_along_axis(sum,0,loc_op))/data.N
+  else:
+    mean_loc_op = np.linalg.norm(loc_op)
+  time_file.write('%d  %f\n' % (timestep,mean_loc_op))
+  op.append(mean_loc_op)
 
 time_file.close()
 
