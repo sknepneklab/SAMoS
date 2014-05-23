@@ -22,7 +22,7 @@
 from read_data import *
 from op import *
 from inertia import *
-
+from glob import glob
 from datetime import *
 from random import uniform 
 from math import *
@@ -102,6 +102,7 @@ parser.add_argument("-o", "--output", type=str, default="out", help="Output file
 parser.add_argument("-k", "--k", type=float, default=1.0, help="soft potential strength")
 parser.add_argument("-R", "--sphere_r", type=float, default=10.0, help="radius of sphere for spherical system")
 parser.add_argument("-n", "--bin", type=int, default=25, help="number of bins for angle average")
+parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
 args = parser.parse_args()
 
 print
@@ -118,53 +119,78 @@ print "\tOutput : ", args.output
 print "\tSpring constant : ", args.k
 print "\tRadius of the sphere : ", args.sphere_r
 print "\tNumber of angle average bins : ", args.bin
+print "\tSkip frames : ", args.skip
 print 
 
 
 start = datetime.now()
 
-print "Reading data..."
-data = ReadData(args.input)
-
-inertia = Inertia(data)
-I = inertia.compute()   # Compute moment of inertia
-direction = I[1][:,0]   # Presumably largest component is along z-axis
-
+files = sorted(glob(args.input+'*.dat'))[args.skip:]
+#print "Reading data..."
+#data = ReadData(args.input)
 
 ez = np.array([0,0,1])  # lab frame z-axis
 
-# rotate the system such that the principal direction of the moment of inertia
-# corresponding to the largest eiqenvalue align with the lab z axis
-axis = np.cross(direction,ez)
-axis = axis/np.linalg.norm(axis)
-rot_angle = acos(np.dot(direction,ez))
+tot_avg_theta = [0 for i in range(args.bin+1)]
+tot = 0
+for f in files:
+  print "Processing file : ", f
+  data = ReadData(f)
+  inertia = Inertia(data)
+  I = inertia.compute()   # Compute moment of inertia
+  direction = I[1][:,0]   # Presumably largest component is along z-axis
 
+  # rotate the system such that the principal direction of the moment of inertia
+  # corresponding to the largest eiqenvalue align with the lab z axis
+  axis = np.cross(direction,ez)
+  axis = axis/np.linalg.norm(axis)
+  rot_angle = acos(np.dot(direction,ez))
+  x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
+  r = np.column_stack((x,y,z))
+  n = np.empty(np.shape(r))
+  n[:,0] = axis[0]
+  n[:,1] = axis[1]
+  n[:,2] = axis[2]
+  vrot = rotate_vectorial(r,n,rot_angle)
+  ptsnew = appendSpherical_np(vrot)
+  print "Computing potential energy..."
+  eng = compute_energy(vrot,args.k)
+  print "Computing angular average..."
+  theta = ptsnew[:,4]
+  t_max, t_min = max(theta), min(theta)
+  dtheta = (t_max-t_min)/args.bin
 
-x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
-r = np.column_stack((x,y,z))
-n = np.empty(np.shape(r))
-n[:,0] = axis[0]
-n[:,1] = axis[1]
-n[:,2] = axis[2]
-vrot = rotate_vectorial(r,n,rot_angle)
-ptsnew = appendSpherical_np(vrot)
-print "Computing potential energy..."
-eng = compute_energy(vrot,args.k)
-print "Computing angular average..."
-theta = ptsnew[:,4]
-t_max, t_min = max(theta), min(theta)
-dtheta = (t_max-t_min)/args.bin
+#print "max(theta) = ", degrees(t_max)
+#print "min(theta) = ", degrees(t_min)
+#print "dtheta = ", degrees(dtheta)
 
-print "max(theta) = ", degrees(t_max)
-print "min(theta) = ", degrees(t_min)
-print "dtheta = ", degrees(dtheta)
-
-avg_theta = [0 for i in range(args.bin+1)]
-nval = [0 for i in range(args.bin+1)]
-for i in range(len(eng)):
-  idx = int(floor(((theta[i]-min(theta))/dtheta)))
-  avg_theta[idx] += eng[i]
-  nval[idx] += 1
+  avg_theta = [0 for i in range(args.bin+1)]
+  nval = [0 for i in range(args.bin+1)]
+  for i in range(len(eng)):
+    idx = int(floor(((theta[i]-min(theta))/dtheta)))
+    avg_theta[idx] += eng[i]
+    nval[idx] += 1
   
+  for idx in xrange(len(avg_theta)):
+    if nval[idx] != 0: tot_avg_theta[idx] += avg_theta[idx]/float(nval[idx])
+  
+  tot += 1
+
+out = open(args.output,'w')
+out.write('# Total potential energy as a function of polar angle (measured from equator)\n')
+out.write('# Generated on: %s\n' % str(datetime.now()))
+out.write('# angle(deg)   <E>\n')
+
 for i in range(len(nval)):
-  print degrees(t_min+i*dtheta-0.5*pi), avg_theta[i]/nval[i]
+  out.write('%f %f\n' % (degrees(t_min+i*dtheta-0.5*pi), tot_avg_theta[i]/tot))
+
+out.close()
+
+end = datetime.now()
+
+total = end - start
+
+print 
+print "  *** Completed in ", total.total_seconds(), " seconds *** "
+print
+
