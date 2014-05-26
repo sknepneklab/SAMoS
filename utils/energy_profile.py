@@ -64,13 +64,16 @@ def rotate_vectorial(v,n,phi):
 
 
 def appendSpherical_np(xyz):
-    ptsnew = np.hstack((xyz, np.zeros(xyz.shape)))
-    xy = xyz[:,0]**2 + xyz[:,1]**2
-    ptsnew[:,3] = np.sqrt(xy + xyz[:,2]**2)
-    ptsnew[:,4] = np.arctan2(np.sqrt(xy), xyz[:,2]) # for elevation angle defined from Z-axis down
-    #ptsnew[:,4] = np.arctan2(xyz[:,2], np.sqrt(xy)) # for elevation angle defined from XY-plane up
-    ptsnew[:,5] = np.arctan2(xyz[:,1], xyz[:,0])
-    return ptsnew
+    R = np.sqrt(xyz[:,0]**2 + xyz[:,1]**2 + xyz[:,2]**2)
+    angle = np.arccos(xyz[:,2]/R)
+    return np.degrees(angle)
+    #ptsnew = np.hstack((xyz, np.zeros(xyz.shape)))
+    #xy = xyz[:,0]**2 + xyz[:,1]**2
+    #ptsnew[:,3] = np.sqrt(xy + xyz[:,2]**2)
+    #ptsnew[:,4] = np.arctan2(np.sqrt(xy), xyz[:,2]) # for elevation angle defined from Z-axis down
+    ##ptsnew[:,4] = np.arctan2(xyz[:,2], np.sqrt(xy)) # for elevation angle defined from XY-plane up
+    #ptsnew[:,5] = np.arctan2(xyz[:,1], xyz[:,0])
+    #return ptsnew
 
 def compute_energy(r,k):
   eng = np.zeros(len(r))
@@ -132,6 +135,7 @@ files = sorted(glob(args.input+'*.dat'))[args.skip:]
 ez = np.array([0,0,1])  # lab frame z-axis
 
 tot_avg_theta = [0 for i in range(args.bin+1)]
+tot_avg_v = [0 for i in range(args.bin+1)]
 tot = 0
 for f in files:
   print "Processing file : ", f
@@ -146,43 +150,53 @@ for f in files:
   axis = axis/np.linalg.norm(axis)
   rot_angle = acos(np.dot(direction,ez))
   x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
+  vx, vy, vz = np.array(data.data[data.keys['vx']]), np.array(data.data[data.keys['vy']]), np.array(data.data[data.keys['vz']])
   r = np.column_stack((x,y,z))
   n = np.empty(np.shape(r))
   n[:,0] = axis[0]
   n[:,1] = axis[1]
   n[:,2] = axis[2]
-  vrot = rotate_vectorial(r,n,rot_angle)
-  ptsnew = appendSpherical_np(vrot)
+  vrot = rotate_vectorial(r,n,-rot_angle)
+  #ptsnew = appendSpherical_np(vrot)
+  theta = appendSpherical_np(vrot)
   print "Computing potential energy..."
   eng = compute_energy(vrot,args.k)
+  print "Computing velocity magnitude..."
+  vel = np.sqrt(vx**2 + vy**2 + vz**2)
   print "Computing angular average..."
-  theta = ptsnew[:,4]
+  #theta = ptsnew[:,4]
   t_max, t_min = max(theta), min(theta)
   dtheta = (t_max-t_min)/args.bin
-
-#print "max(theta) = ", degrees(t_max)
-#print "min(theta) = ", degrees(t_min)
-#print "dtheta = ", degrees(dtheta)
-
+  print 't_min = ', t_min
+  print 't_max = ', t_max
+  print 'dt = ', dtheta
+ 
   avg_theta = [0 for i in range(args.bin+1)]
+  avg_v = [0 for i in range(args.bin+1)]
   nval = [0 for i in range(args.bin+1)]
+  nval_v = [0 for i in range(args.bin+1)]
   for i in range(len(eng)):
-    idx = int(floor(((theta[i]-min(theta))/dtheta)))
+    idx = int(round(((theta[i]-min(theta))/dtheta)))
     avg_theta[idx] += eng[i]
     nval[idx] += 1
+    avg_v[idx] += vel[i]
+    nval_v[idx] += 1
+    
   
   for idx in xrange(len(avg_theta)):
     if nval[idx] != 0: tot_avg_theta[idx] += avg_theta[idx]/float(nval[idx])
+    if nval_v[idx] != 0: tot_avg_v[idx] += avg_v[idx]/float(nval_v[idx])
   
   tot += 1
 
 out = open(args.output,'w')
 out.write('# Total potential energy as a function of polar angle (measured from equator)\n')
 out.write('# Generated on: %s\n' % str(datetime.now()))
-out.write('# angle(deg)   <E>\n')
+out.write('# angle(deg)   <E>  <v>\n')
 
 for i in range(len(nval)):
-  out.write('%f %f\n' % (degrees(t_min+i*dtheta-0.5*pi), tot_avg_theta[i]/tot))
+  out.write('%f %f  %f\n' % (t_min+i*dtheta-90, tot_avg_theta[i]/tot, tot_avg_v[i]/tot))
+  #out.write('%f %f  %f\n' % (degrees(t_min+i*dtheta-0.5*pi), tot_avg_theta[i]/tot, tot_avg_v[i]/tot))
 
 out.close()
 
