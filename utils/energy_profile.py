@@ -75,8 +75,9 @@ def appendSpherical_np(xyz):
     #ptsnew[:,5] = np.arctan2(xyz[:,1], xyz[:,0])
     #return ptsnew
 
-def compute_energy(r,k):
+def compute_energy_and_pressure(r,k):
   eng = np.zeros(len(r))
+  press = np.zeros(len(r))
   a = np.ones(len(r))
   dist = sd.cdist(r,r)
   for i in range(len(r)):
@@ -84,19 +85,15 @@ def compute_energy(r,k):
       dr = dist[i,j]
       if dr < 2:
         diff = 2.0-dr
-        eng_val = 0.5*k*diff*diff
+        fact = 0.5*k*diff
+        eng_val = fact*diff
+        press_val = fact*dr
         eng[i] += eng_val
         eng[j] += eng_val
-  #idx = 0
-  #for (x0,y0,z0,a0) in zip(x,y,z,a):
-    #for (x1,y1,z1,a1) in zip(x,y,z,a):
-      #dx, dy, dz = x1-x0, y1-y0, z1-z0
-      #dr = sqrt(dx*dx+dy*dy+dz*dz)
-      #if dr < a0+a1:
-        #diff = a0+a1-dr
-        #eng[idx] += 0.5*k*diff*diff
-    #idx += 1
-  return eng
+        press[i] += press_val
+        press[j] += press_val
+  return [eng, press]
+
 
 
 parser = argparse.ArgumentParser()
@@ -136,6 +133,8 @@ ez = np.array([0,0,1])  # lab frame z-axis
 
 tot_avg_theta = [0 for i in range(args.bin+1)]
 tot_avg_v = [0 for i in range(args.bin+1)]
+tot_avg_press = [0 for i in range(args.bin+1)]
+tot_nval = [0 for i in range(args.bin+1)]
 tot = 0
 for f in files:
   print "Processing file : ", f
@@ -160,7 +159,7 @@ for f in files:
   #ptsnew = appendSpherical_np(vrot)
   theta = appendSpherical_np(vrot)
   print "Computing potential energy..."
-  eng = compute_energy(vrot,args.k)
+  eng, press = compute_energy_and_pressure(vrot,args.k)
   print "Computing velocity magnitude..."
   vel = np.sqrt(vx**2 + vy**2 + vz**2)
   print "Computing angular average..."
@@ -173,29 +172,38 @@ for f in files:
  
   avg_theta = [0 for i in range(args.bin+1)]
   avg_v = [0 for i in range(args.bin+1)]
+  avg_press = [0 for i in range(args.bin+1)]
   nval = [0 for i in range(args.bin+1)]
-  nval_v = [0 for i in range(args.bin+1)]
   for i in range(len(eng)):
     idx = int(round(((theta[i]-min(theta))/dtheta)))
     avg_theta[idx] += eng[i]
-    nval[idx] += 1
     avg_v[idx] += vel[i]
-    nval_v[idx] += 1
+    avg_press[idx] += press[i]
+    nval[idx] += 1
     
   
   for idx in xrange(len(avg_theta)):
-    if nval[idx] != 0: tot_avg_theta[idx] += avg_theta[idx]/float(nval[idx])
-    if nval_v[idx] != 0: tot_avg_v[idx] += avg_v[idx]/float(nval_v[idx])
-  
+    if nval[idx] != 0: 
+      tot_avg_theta[idx] += avg_theta[idx]/float(nval[idx])
+      tot_avg_v[idx] += avg_v[idx]/float(nval[idx])
+      tot_avg_press[idx] += avg_press[idx]/float(nval[idx])
+    tot_nval[idx] += nval[idx]  
+    
   tot += 1
 
 out = open(args.output,'w')
 out.write('# Total potential energy as a function of polar angle (measured from equator)\n')
 out.write('# Generated on: %s\n' % str(datetime.now()))
-out.write('# angle(deg)   <E>  <v>\n')
+out.write('# angle(deg)   <E>  <v>  <P>  <density>  <A>\n')
 
 for i in range(len(nval)):
-  out.write('%f %f  %f\n' % (t_min+i*dtheta-90, tot_avg_theta[i]/tot, tot_avg_v[i]/tot))
+  E = tot_avg_theta[i]/tot
+  V = tot_avg_v[i]/tot
+  P = tot_avg_press[i]/tot
+  theta = t_min+i*dtheta
+  A = 2.0*pi*args.sphere_r**2 * sin(radians(theta))*radians(dtheta)
+  rho = (tot_nval[i]/float(tot))/A
+  out.write('%f %f  %f  %f  %f  %f\n' % (theta-90, E, V, P, rho, A))
   #out.write('%f %f  %f\n' % (degrees(t_min+i*dtheta-0.5*pi), tot_avg_theta[i]/tot, tot_avg_v[i]/tot))
 
 out.close()
