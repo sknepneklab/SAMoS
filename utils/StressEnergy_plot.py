@@ -69,13 +69,13 @@ class StressEnergy:
     idx = 0
     for (x0,y0,z0,a0) in zip(self.X,self.Y,self.Z,self.A):
       for (x1,y1,z1,a1) in zip(self.X,self.Y,self.Z,self.A):
-	dx, dy, dz = x1-x0, y1-y0, z1-z0
-	self.flip_boundary(dx,dy,dz)
-	dr = sqrt(dx*dx+dy*dy+dz*dz)
-	if (dr > 0.0):
-	  if dr < a0+a1:
-	    diff = a0+a1-dr
-	    press[idx] += 0.5*k*diff*dr
+		dx, dy, dz = x1-x0, y1-y0, z1-z0
+		self.flip_boundary(dx,dy,dz)
+		dr = sqrt(dx*dx+dy*dy+dz*dz)
+		if (dr > 0.0):
+		  if dr < a0+a1:
+			diff = a0+a1-dr
+			press[idx] += 0.5*k*diff*dr
       idx += 1
     return press
 
@@ -84,16 +84,16 @@ class StressEnergy:
     idx = 0
     for (x0,y0,z0,a0) in zip(self.X,self.Y,self.Z,self.A):
       for (x1,y1,z1,a1) in zip(self.X,self.Y,self.Z,self.A):
-	dx, dy, dz = x1-x0, y1-y0, z1-z0
-	self.flip_boundary(dx,dy,dz)
-	dr = sqrt(dx*dx+dy*dy+dz*dz)
-	if (dr > 0.0):
-	  if dr < a0+a1:
-	    diff = a0+a1-dr
-	    rvec=[dx, dy, dz]
-	    for i in range(3):
-	      for j in range(3):
-		sigmaij[i][j][idx] += 0.5*k*diff*rvec[i]*rvec[j]/dr
+		dx, dy, dz = x1-x0, y1-y0, z1-z0
+		self.flip_boundary(dx,dy,dz)
+		dr = sqrt(dx*dx+dy*dy+dz*dz)
+		if (dr > 0.0):
+		  if dr < a0+a1:
+			diff = a0+a1-dr
+			rvec=[dx, dy, dz]
+			for i in range(3):
+			  for j in range(3):
+				sigmaij[i][j][idx] += 0.5*k*diff*rvec[i]*rvec[j]/dr
       idx += 1
     return sigmaij
 
@@ -187,97 +187,99 @@ class XYZCPrint:
     for (x,y,z,e) in zip(X,Y,Z,self.eng):
       self.out.write('A %f  %f  %f  %f\n' % (x,y,z,e))
 
+# Scripting version: Only execute if this is called as a script. Otherwise, it attempts to go through here when loading as a module 
+# and throws errors because some arguments aren't defined
+if __name__ == "__main__":
+	parser = argparse.ArgumentParser()
+	parser.add_argument("-i", "--input", type=str, help="Input file with particle velocity field")
+	parser.add_argument("-o", "--output", type=str, default="StressEnergy", help="Output file (POV-Ray scene script)")
+	parser.add_argument("-k", "--k", type=float, default=1.0, help="soft potential strength")
+	parser.add_argument("-R", "--sphere_r", type=float, default=10.0, help="radius of sphere for spherical system")
+	parser.add_argument("-L", "--low_colour", type=float, nargs=3, default=[0.0,0.0,1.0], help="lowest energy colour")
+	parser.add_argument("-H", "--hi_colour", type=float, nargs=3, default=[1.0,0.0,0.0], help="highest energy colour")
+	parser.add_argument("-c", "--connectivity", type=str, default=None, help="Connectivity file (xyzl format produced by stripack)")
+	args = parser.parse_args()
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--input", type=str, help="Input file with particle velocity field")
-parser.add_argument("-o", "--output", type=str, default="StressEnergy", help="Output file (POV-Ray scene script)")
-parser.add_argument("-k", "--k", type=float, default=1.0, help="soft potential strength")
-parser.add_argument("-R", "--sphere_r", type=float, default=10.0, help="radius of sphere for spherical system")
-parser.add_argument("-L", "--low_colour", type=float, nargs=3, default=[0.0,0.0,1.0], help="lowest energy colour")
-parser.add_argument("-H", "--hi_colour", type=float, nargs=3, default=[1.0,0.0,0.0], help="highest energy colour")
-parser.add_argument("-c", "--connectivity", type=str, default=None, help="Connectivity file (xyzl format produced by stripack)")
-args = parser.parse_args()
+	print
+	print "\tActive Particles on Curved Spaces (APCS)"
+	print "\tPotential energy distribution"
+	print 
+	print "\tRastko Sknepnek"
+	print "\tUniversity of Dundee"
+	print "\t(c) 2013"
+	print "\t----------------------------------------------"
+	print 
+	print "\tInput : ", args.input
+	print "\tOutput : ", args.output
+	print "\tLow colour : ", args.low_colour
+	print "\tHi colour : ", args.hi_colour
+	if args.connectivity != None:
+	  print "\tConnectivity file : ", args.connectivity
+	print 
 
-print
-print "\tActive Particles on Curved Spaces (APCS)"
-print "\tPotential energy distribution"
-print 
-print "\tRastko Sknepnek"
-print "\tUniversity of Dundee"
-print "\t(c) 2013"
-print "\t----------------------------------------------"
-print 
-print "\tInput : ", args.input
-print "\tOutput : ", args.output
-print "\tLow colour : ", args.low_colour
-print "\tHi colour : ", args.hi_colour
-if args.connectivity != None:
-  print "\tConnectivity file : ", args.connectivity
-print 
+	start = datetime.now()
 
-start = datetime.now()
+	print "Reading data..."
+	data = ReadData(args.input)
+	str_eng = StressEnergy(data)
 
-print "Reading data..."
-data = ReadData(args.input)
-str_eng = StressEnergy(data)
+	print "Computing potential energy and stresses ..."
+	engs = str_eng.compute_harmonic(args.k)
+	press = str_eng.compute_pressure(args.k)
+	sigmaij = str_eng.compute_pressure(args.k)
 
-print "Computing potential energy and stresses ..."
-engs = str_eng.compute_harmonic(args.k)
-press = str_eng.compute_pressure(args.k)
-sigmaij = str_eng.compute_pressure(args.k)
+	# later ...
+	#print "Generating POV Ray output..."
+	#p = POVPrint(args.output+'.pov',data,eng)
+	#p.sphere_radius = args.sphere_r
+	#p.hi_colour = args.hi_colour
+	#p.low_colour = args.low_colour
+	#p.write()
 
-# later ...
-#print "Generating POV Ray output..."
-#p = POVPrint(args.output+'.pov',data,eng)
-#p.sphere_radius = args.sphere_r
-#p.hi_colour = args.hi_colour
-#p.low_colour = args.low_colour
-#p.write()
+	#print "Generating XYZC output..."
+	#xyzc = XYZCPrint(args.output+'.xyzc',data,engs)
+	#xyzc.write()
 
-#print "Generating XYZC output..."
-#xyzc = XYZCPrint(args.output+'.xyzc',data,engs)
-#xyzc.write()
+	print "Generating VTU output..."
+	x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
+	vtk_writer = VTK_XML_Serial_Unstructured()
 
-print "Generating VTU output..."
-x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
-vtk_writer = VTK_XML_Serial_Unstructured()
+	nneigh = []
+	if args.connectivity != None:
+	  nneigh = [0 for i in range(data.N)]
+	  print "Generating connectivities..."
+	  con = open(args.connectivity,'r')
+	  edges = [f for f in map(lambda x: int(x.strip()), con.readlines()) if f != -1]
+	  edge_pairs = zip(edges[::2],edges[1::2])
+	  for (i,j) in edge_pairs:
+		nneigh[i-1] += 0.5
+		nneigh[j-1] += 0.5
+	  
+	if len(nneigh) == 0:
+	  vtk_writer.snapshot(args.output+'.vtu',x,y,z,energies=engs,pressures=press)
+	else:
+	  vtk_writer.snapshot(args.output+'.vtu',x,y,z,energies=engs,pressures=press,nneigh=nneigh)
 
-nneigh = []
-if args.connectivity != None:
-  nneigh = [0 for i in range(data.N)]
-  print "Generating connectivities..."
-  con = open(args.connectivity,'r')
-  edges = [f for f in map(lambda x: int(x.strip()), con.readlines()) if f != -1]
-  edge_pairs = zip(edges[::2],edges[1::2])
-  for (i,j) in edge_pairs:
-    nneigh[i-1] += 0.5
-    nneigh[j-1] += 0.5
-  
-if len(nneigh) == 0:
-  vtk_writer.snapshot(args.output+'.vtu',x,y,z,energies=engs,pressures=press)
-else:
-  vtk_writer.snapshot(args.output+'.vtu',x,y,z,energies=engs,pressures=press,nneigh=nneigh)
+	print "Generating XYZ file for SRTIPACK triangulation..."
+	out = open(args.output+'.xyz','w')
+	for (xx,yy,zz) in zip(x,y,z):
+	  out.write('%f  %f  %f\n' % (xx,yy,zz))
+	out.close()
 
-print "Generating XYZ file for SRTIPACK triangulation..."
-out = open(args.output+'.xyz','w')
-for (xx,yy,zz) in zip(x,y,z):
-  out.write('%f  %f  %f\n' % (xx,yy,zz))
-out.close()
-
-print "Lowest energy : ", min(engs)
-print "Highest energy : ", max(engs)
-print "Lowest pressure : ", min(press)
-print "Highest pressure : ", max(press)
+	print "Lowest energy : ", min(engs)
+	print "Highest energy : ", max(engs)
+	print "Lowest pressure : ", min(press)
+	print "Highest pressure : ", max(press)
 
 
 
-end = datetime.now()
+	end = datetime.now()
 
-total = end - start
+	total = end - start
 
-print 
-print "  *** Completed in ", total.total_seconds(), " seconds *** "
-print
+	print 
+	print "  *** Completed in ", total.total_seconds(), " seconds *** "
+	print
  
 
     
