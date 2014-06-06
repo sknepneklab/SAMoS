@@ -54,7 +54,6 @@ nstep=10000000
 nsave=10000
 nsnap=int(nstep/nsave)
 skip=int(nsnap/2)
-skip=995
 
 nbin=180
 
