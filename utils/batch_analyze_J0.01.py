@@ -26,7 +26,7 @@
 from read_data import *
 from read_param import *
 # Pre-existing analysis scripts
-from energy_profile_lib import *
+from energy_profile_lib_v import *
 #from glob import glob
 #from StressEnergy_plot import StressEnergy
 
@@ -54,6 +54,7 @@ nstep=10000000
 nsave=10000
 nsnap=int(nstep/nsave)
 skip=int(nsnap/2)
+skip=995
 
 nbin=180
 
@@ -93,7 +94,7 @@ for i in range(len(vList)):
 		alpha_profile[issomething]/=iscount[issomething]
 		alpha_v_profile[issomething]/=iscount[issomething]
 		
-		outfile=outfolder+'profiles_v0' + vList[i] + '_j' + JList[j] + '.dat'
-		outfile2=outfolder + 'axis_v0' + vList[i] + '_j' + JList[j] + '.dat'
+		outfile=outfolder+'profilesV_v0' + vList[i] + '_j' + JList[j] + '.dat'
+		outfile2=outfolder + 'axisV_v0' + vList[i] + '_j' + JList[j] + '.dat'
 		np.savetxt(outfile,  np.transpose(np.array([theta_bin,rho_profile,vel_profile,eng_profile,press_profile,alpha_profile,alpha_v_profile])),fmt='%12.6g', header='theta rho vel energy pressure alpha alpha_v')   # x,y,z equal sized 1D arrays
 		np.savetxt(outfile2,axis,fmt='%12.6g', header='axis')
