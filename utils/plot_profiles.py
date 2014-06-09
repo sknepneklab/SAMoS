@@ -64,14 +64,14 @@ vList=['0.005','0.01','0.02','0.05','0.1','0.2','0.5','1']
 #JList=['10']
 #vList=['1']
 nbin=180
-
+rval=28.2094791
 testmap=LinearSegmentedColormap('test',cdict,N=len(vList))
 testmap2=LinearSegmentedColormap('test',cdict,N=len(JList))
 
 
 # Profiles
 # Set column to plot
-usecolumn=1
+usecolumn=6
 
 profList=[r'$\theta$',r'$\rho$',r'$\sqrt{\langle v^2 \rangle}/v_0$','energy','pressure',r'$\alpha$',r'$\alpha_v$']
 profName=['theta','rho','vrms','energy','pressure','alpha','alpha_v']
@@ -81,19 +81,26 @@ for j in range(len(JList)):
 	for i in range(len(vList)):
 		print vList[i],JList[j]
 		ax=plt.gca()
-		outfile=outfolder+'data/profiles_v0' + vList[i] + '_j' + JList[j] + '.dat'
-		outfile2=outfolder + 'data/axis_v0' + vList[i] + '_j' + JList[j] + '.dat'
+		outfile=outfolder+'data/profilesV_v0' + vList[i] + '_j' + JList[j] + '.dat'
+		outfile2=outfolder + 'data/axisV_v0' + vList[i] + '_j' + JList[j] + '.dat'
 		# header='theta rho vel energy pressure alpha alpha_v'
 		profiles=sp.loadtxt(outfile, unpack=True)[:,:] 
 		isdata=[index for index,value in enumerate(profiles[1,:]) if (value >0)]
+		# Forgot the normalization of rho by the angle band width
+		if usecolumn==1:
+			normz=2*np.pi*rval*abs(np.cos(profiles[0,:]))
+			profiles[1,isdata]=profiles[1,isdata]/normz[isdata]
+			profiles[1,:]/=np.mean(profiles[1,:])
 		if usecolumn==2:
 			plt.plot(profiles[0,isdata],profiles[usecolumn,isdata]/float(vList[i]),color=testmap(i), linestyle='solid',label=vList[i])
 		else:
 			plt.plot(profiles[0,isdata],profiles[usecolumn,isdata],color=testmap(i), linestyle='solid',label=vList[i])
-	if usecolumn>=5:
+	if usecolumn<=4:
+		plt.ylim(0,1.25*profiles[usecolumn,nbin/2])
+	if usecolumn==5:
 		plt.plot(profiles[0,isdata],profiles[0,isdata],'k-')
 		plt.ylim(-0.5,0.5)
-		plt.xlim(-np.pi/2,np.pi/2)
+	plt.xlim(-np.pi/2,np.pi/2)
 	plt.xlabel(profList[0]) 
 	plt.ylabel(profList[usecolumn]) 
 	plt.legend(loc=2,ncol=2)
@@ -107,19 +114,25 @@ for i in range(len(vList)):
 	for j in range(len(JList)):
 		print vList[i],JList[j]
 		ax=plt.gca()
-		outfile=outfolder+'data/profiles_v0' + vList[i] + '_j' + JList[j] + '.dat'
-		outfile2=outfolder + 'data/axis_v0' + vList[i] + '_j' + JList[j] + '.dat'
+		outfile=outfolder+'data/profilesV_v0' + vList[i] + '_j' + JList[j] + '.dat'
+		outfile2=outfolder + 'data/axisV_v0' + vList[i] + '_j' + JList[j] + '.dat'
 		# header='theta rho vel energy pressure alpha alpha_v'
 		profiles=sp.loadtxt(outfile, unpack=True)[:,:] 
 		isdata=[index for index,value in enumerate(profiles[1,:]) if (value >0)]
+		if usecolumn==1:
+			normz=2*np.pi*rval*abs(np.cos(profiles[0,:]))
+			profiles[1,isdata]=profiles[1,isdata]/normz[isdata]
+			profiles[1,:]/=np.mean(profiles[1,:])
 		if usecolumn==2:
 			plt.plot(profiles[0,isdata],profiles[usecolumn,isdata]/float(vList[i]),color=testmap2(j), linestyle='solid',label=JList[j])
 		else:
 			plt.plot(profiles[0,isdata],profiles[usecolumn,isdata],color=testmap2(j), linestyle='solid',label=JList[j])
-	if usecolumn>=5:
+	if usecolumn==5:
 		plt.plot(profiles[0,isdata],profiles[0,isdata],'k-')
 		plt.ylim(-0.5,0.5)
-		plt.xlim(-np.pi/2,np.pi/2)
+	if usecolumn<=4:
+		plt.ylim(0,1.25*profiles[usecolumn,nbin/2])
+	plt.xlim(-np.pi/2,np.pi/2)
 	plt.xlabel(profList[0]) 
 	plt.ylabel(profList[usecolumn]) 
 	plt.legend(loc=2,ncol=2)
@@ -134,8 +147,8 @@ for i in range(len(vList)):
 	#for j in range(len(JList)):
 		#print vList[i],JList[j]
 		#ax=plt.gca()
-		#outfile=outfolder+'data/profiles_v0' + vList[i] + '_j' + JList[j] + '.dat'
-		#outfile2=outfolder + 'data/axis_v0' + vList[i] + '_j' + JList[j] + '.dat'
+		#outfile=outfolder+'data/profilesV_v0' + vList[i] + '_j' + JList[j] + '.dat'
+		#outfile2=outfolder + 'data/axisV_v0' + vList[i] + '_j' + JList[j] + '.dat'
 		#axis=sp.loadtxt(outfile2, unpack=True)[:,:] 
 		#ax.scatter(axis[0,:], axis[1,:], axis[2,:], zdir='z',color=testmap2(j), linestyle='solid',label=JList[j])
 	#plt.xlabel('x') 
@@ -148,7 +161,7 @@ for i in range(len(vList)):
 	#plt.legend()
 	#plt.title('Velocity ' + r'$v_0=$' + vList[i])
 	
-	#filename=outfolder + 'pics/axis_' + profName[usecolumn] + '_v' + vList[i] +'.pdf'
+	#filename=outfolder + 'pics/axisV_' + profName[usecolumn] + '_v' + vList[i] +'.pdf'
 	#plt.savefig(filename)
 	
 

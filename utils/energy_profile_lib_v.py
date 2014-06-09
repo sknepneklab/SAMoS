@@ -26,7 +26,7 @@
 
 from read_data import *
 from op import *
-from inertia import *
+#from inertia import *
 from glob import glob
 from datetime import *
 from random import uniform 
@@ -124,9 +124,11 @@ def compute_energy_and_pressure_rastko(r,k):
 def compute_energy_and_pressure(r,k,sigma):
 	eng = np.zeros(len(r))
 	press = np.zeros(len(r))
+	stress = np.zeros((len(r),3,3))
 	#dist = sd.cdist(r,r)
 	dmax=4*sigma**2
 	for i in range(len(r)):
+	#for i in range(10):
 		dist=np.sum((r-r[i,:])**2,axis=1)
 		neighbours=[index for index,value in enumerate(dist) if value <dmax]
 		neighbours.remove(i)
@@ -135,9 +137,15 @@ def compute_energy_and_pressure(r,k,sigma):
 		fact = 0.5*k*diff
 		eng_val = fact*diff
 		press_val = fact*dr
+		# Stress (force moment) has to be element by element) r_a F_b = -k r_a dist_b 
+		drvec=r[neighbours,:]-r[i,:]
+		Fvec=k*((diff/dr).transpose()*(drvec).transpose()).transpose()
+		for u in range(3):
+			for v in range(3):
+				stress[neighbours,u,v]+=0.5*drvec[:,u]*Fvec[:,v]
 		eng[neighbours]+=eng_val
 		press[neighbours]+=press_val
-	return [eng, press]
+	return [eng, press, stress]
 
 def getProfiles(f,nbin,radius,stiffness,sigma,debug=False):
 	
@@ -158,6 +166,8 @@ def getProfiles(f,nbin,radius,stiffness,sigma,debug=False):
 	ez = np.array([0,0,1])  # lab frame z-axis
 	# Simply get the axis as the mean crossproduct or r and v; assuming alignment. This should also not flip.
 	direction=np.sum(np.cross(rval,vval),axis=0)
+	orderpar=direction/len(x)
+	print orderpar
 	direction = direction/np.linalg.norm(direction)
 	axis = np.cross(direction,ez)
 	axis = axis/np.linalg.norm(axis)
@@ -195,10 +205,15 @@ def getProfiles(f,nbin,radius,stiffness,sigma,debug=False):
 	# No - add pi/2 to get something that does not add up to zero 
 	alpha_v=np.arccos(np.sum(velnorm*etheta, axis=1))
 	
-	eng, press = compute_energy_and_pressure(rval,stiffness,sigma)
-	#eng, press = compute_energy_and_pressure_rastko(rval,stiffness)
-	# The stress here needs to be normalized by the total area (complete MF approach ...)
-	#press=press/(4*np.pi*radius**2)
+	eng, press,stress = compute_energy_and_pressure(rval,stiffness,sigma)
+	# Project the stresses into the e,theta,phi components. The rr component hast to be 0, and the r cross components
+	# belong to the projection. So they are not all that interesting. 
+	# We want the theta theta, theta phi, phi theta ant phi phi components (implicitly testing symmetries ...)
+	# I give up on the notation. Stress is (N,3,3), the axes are (N,3). We want e_i sigma_ij e_j
+	s_tt=np.sum(etheta*np.einsum('kij,kj->ki',stress,etheta),axis=1)
+	s_tp=np.sum(etheta*np.einsum('...ij,...j->...i',stress,ephi),axis=1)
+	s_pt=np.sum(ephi*np.einsum('...ij,...j->...i',stress,etheta),axis=1)
+	s_pp=np.sum(ephi*np.einsum('...ij,...j->...i',stress,ephi),axis=1)
 	
 	# Setting up the binning. I changed this to go from -pi/2 to pi/2 consistently. This maybe makes less pretty pictures,
 	# but the edges are going to be a lot cleaner. Also only one bin to handle accross multiple v0/J.
@@ -206,11 +221,20 @@ def getProfiles(f,nbin,radius,stiffness,sigma,debug=False):
 	# Position angle with the z axis
 	theta_bin=np.linspace(0,np.pi,nbin+1)
 	dtheta=theta_bin[1]-theta_bin[0]
+	theta_out=theta_bin[:nbin]+dtheta/2-np.pi/2
 	
 	rho_profile, bin_edges = np.histogram(theta, bins=theta_bin,density=True)
+	isdata=[index for index,value in enumerate(rho_profile) if (value >0)]
+	normz=2*np.pi*radius*abs(np.cos(theta_out))
+	rho_profile[isdata]=rho_profile[isdata]/normz[isdata]
+	rho_profile/=np.mean(rho_profile)
 	vel_profile=np.zeros(np.shape(rho_profile))
 	eng_profile=np.zeros(np.shape(rho_profile))
 	press_profile=np.zeros(np.shape(rho_profile))
+	s_tt_profile=np.zeros(np.shape(rho_profile))
+	s_tp_profile=np.zeros(np.shape(rho_profile))
+	s_pt_profile=np.zeros(np.shape(rho_profile))
+	s_pp_profile=np.zeros(np.shape(rho_profile))
 	alpha_profile=np.zeros(np.shape(rho_profile))
 	alpha_v_profile=np.zeros(np.shape(rho_profile))
 	for idx in range(nbin):
@@ -220,10 +244,14 @@ def getProfiles(f,nbin,radius,stiffness,sigma,debug=False):
 			vel_profile[idx]=np.mean(vel[inbin])
 			eng_profile[idx]=np.mean(eng[inbin])
 			press_profile[idx]=np.mean(press[inbin])
+			s_tt_profile[idx]=np.mean(s_tt[inbin])
+			s_tp_profile[idx]=np.mean(s_tp[inbin])
+			s_pt_profile[idx]=np.mean(s_pt[inbin])
+			s_pp_profile[idx]=np.mean(s_pp[inbin])
 			alpha_profile[idx]=np.mean(alpha[inbin])
 			alpha_v_profile[idx]=np.mean(alpha_v[inbin])
 	
-	theta_out=theta_bin[:nbin]+dtheta/2-np.pi/2
+	
 	
 	# Debugging output
 	if debug==True:
@@ -231,7 +259,7 @@ def getProfiles(f,nbin,radius,stiffness,sigma,debug=False):
 		ax = fig.add_subplot(111, projection='3d')
 		ax.scatter(rval[:,0], rval[:,1], rval[:,2], zdir='z', c='b')
 		
-	return [theta_out,rho_profile,vel_profile,eng_profile,press_profile,alpha_profile,alpha_v_profile,direction]
+	return [theta_out,rho_profile,vel_profile,eng_profile,press_profile,s_tt_profile,s_tp_profile,s_pt_profile,s_pp_profile,alpha_profile,alpha_v_profile,direction,orderpar]
 
 
 # Scripting version: Only execute if this is called as a script. Otherwise, it attempts to go through here when loading as a module 
@@ -273,19 +301,28 @@ if __name__ == "__main__":
 	vel_profile =np.zeros((nbin,)) 
 	eng_profile = np.zeros((nbin,)) 
 	press_profile = np.zeros((nbin,)) 
+	s_tt_profile = np.zeros((nbin,)) 
+	s_tp_profile = np.zeros((nbin,)) 
+	s_pt_profile = np.zeros((nbin,)) 
+	s_pp_profile = np.zeros((nbin,)) 
 	alpha_profile = np.zeros((nbin,)) 
 	alpha_v_profile = np.zeros((nbin,)) 
 	axis = np.zeros((len(files),3)) 
+	orderpar = np.zeros((len(files),3)) 
 	iscount = np.zeros((nbin,)) 
 	tot = 0
-	for f in files:
-		[theta_bin,rho_profile0,vel_profile0,eng_profile0,press_profile0,alpha_profile0,alpha_v_profile0,axis[tot,:]]=getProfiles(f,args.bin,args.sphere_r,args.k,args.particle_r)	
+	for f in files[800:801]:
+		[theta_bin,rho_profile0,vel_profile0,eng_profile0,press_profile0,s_tt_profile0,s_tp_profile0,s_pt_profile0,s_pp_profile0,alpha_profile0,alpha_v_profile0,axis[tot,:],orderpar[tot,:]]=getProfiles(f,args.bin,args.sphere_r,args.k,args.particle_r)	
 		isparticles=np.array([index for index,value in enumerate(rho_profile0) if (value >0)])
 		iscount[isparticles]+=1
 		rho_profile[isparticles]+=rho_profile0[isparticles]
 		vel_profile[isparticles]+=vel_profile0[isparticles]
 		eng_profile[isparticles]+=eng_profile0[isparticles]
 		press_profile[isparticles]+=press_profile0[isparticles]
+		s_tt_profile[isparticles]+=s_tt_profile0[isparticles]
+		s_tp_profile[isparticles]+=s_tp_profile0[isparticles]
+		s_pt_profile[isparticles]+=s_pt_profile0[isparticles]
+		s_pp_profile[isparticles]+=s_pp_profile0[isparticles]
 		alpha_profile[isparticles]+=alpha_profile0[isparticles]
 		alpha_v_profile[isparticles]+=alpha_v_profile0[isparticles]
 		tot +=1
@@ -294,10 +331,15 @@ if __name__ == "__main__":
 	vel_profile[issomething]/=iscount[issomething]
 	eng_profile[issomething]/=iscount[issomething]
 	press_profile[issomething]/=iscount[issomething]
+	press_profile[issomething]/=iscount[issomething]
+	s_tt_profile[issomething]/=iscount[issomething]
+	s_tp_profile[issomething]/=iscount[issomething]
+	s_pt_profile[issomething]/=iscount[issomething]
+	s_pp_profile[issomething]/=iscount[issomething]
 	alpha_profile[issomething]/=iscount[issomething]
 	alpha_v_profile[issomething]/=iscount[issomething]
 	
-	np.savetxt(args.output,  np.transpose(np.array([theta_bin,rho_profile,vel_profile,eng_profile,press_profile,alpha_profile,alpha_v_profile])),fmt='%12.6g', header='theta rho vel energy pressure alpha alpha_v')   # x,y,z equal sized 1D arrays
+	#np.savetxt(args.output,  np.transpose(np.array([theta_bin,rho_profile,vel_profile,eng_profile,press_profile,alpha_profile,alpha_v_profile])),fmt='%12.6g', header='theta rho vel energy pressure alpha alpha_v')   # x,y,z equal sized 1D arrays
 	
 	end = datetime.now()
 
@@ -317,7 +359,10 @@ if __name__ == "__main__":
 	plt.title('energy')
 	
 	plt.figure()
-	plt.plot(theta_bin[issomething],press_profile[issomething],'.-')
+	plt.plot(theta_bin[issomething],press_profile[issomething],'.-k')
+	plt.plot(theta_bin[issomething],s_tt_profile[issomething],'.-r')
+	plt.plot(theta_bin[issomething],s_tp_profile[issomething],'.-g')
+	plt.plot(theta_bin[issomething],s_pp_profile[issomething],'.-b')
 	plt.title('pressure')
 	
 	plt.figure()
