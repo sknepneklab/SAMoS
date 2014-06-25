@@ -129,6 +129,7 @@ print
 start = datetime.now()
 
 files = sorted(glob(args.input+'*.dat'))[args.skip:]
+print files
 #print "Reading data..."
 #data = ReadData(args.input)
 
