@@ -42,11 +42,11 @@ from energy_profile_lib_v import *
 	
 
 # This is the structured data file hierarchy. Replace as appropriate (do not go the Yaouen way and fully automatize ...)
-basefolder = '/home/silke/Documents/CurrentProjects/Rastko/Runs/'
-outfolder= '/home/silke/Documents/CurrentProjects/Rastko/analysis/'
+basefolder = '/home/sknepnek/DATA/Active/sphere/2014-04-15/J_1.00/' 
+outfolder= '/home/sknepnek/DATA/Active/sphere/2014-04-15/J_1.00/results/'
 #JList=['10', '1', '0.1', '0.01']
-vList=['0.005','0.01','0.02','0.05','0.1','0.2','0.5','1']
-JList=['0.1']
+vList=['0.05','0.5','5.0']
+JList=['1.0']
 nu_r='0.002'
 phi='1'
 sigma=1
@@ -60,10 +60,10 @@ nbin=180
 for i in range(len(vList)):
 	for j in range(len(JList)):
 		print vList[i],JList[j]
-		folder=basefolder+'data_v0_'+vList[i]+'/data_j_'+JList[j]+'_sphere/'
+		folder=basefolder+'v0_'+vList[i]+'/'
 		print folder
 		param = Param(folder)
-		files = sorted(glob(folder+'*.dat'))[skip:]
+		files = sorted(glob(folder+'sphere_J*.dat'))[skip:]
 		
 		rho_profile =np.zeros((nbin,)) 
 		vel_profile =np.zeros((nbin,)) 

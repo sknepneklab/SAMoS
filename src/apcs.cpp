@@ -69,6 +69,7 @@
 #include "integrator_brownian.hpp"
 #include "integrator_vicsek.hpp"
 #include "integrator_nve.hpp"
+#include "integrator_nematic.hpp"
 #include "integrator.hpp"
 #include "aligner.hpp"
 #include "pair_aligner.hpp"
@@ -178,6 +179,8 @@ int main(int argc, char* argv[])
   integrators["vicsek"] = boost::factory<IntegratorVicsekPtr>();
   // Register NVE integrator with the integrators class factory
   integrators["nve"] = boost::factory<IntegratorNVEPtr>();
+  // Register nematic integrator with the integrators class factory
+  integrators["nematic"] = boost::factory<IntegratorNematicPtr>();
   
   // Register polar aligner with the pairwise aligner class factory
   pair_aligners["polar"] = boost::factory<PairPolarAlignPtr>();
