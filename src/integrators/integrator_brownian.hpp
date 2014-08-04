@@ -88,6 +88,16 @@ public:
       m_msg->msg(Messenger::INFO,"Brownian dynamic integrator. Setting random number generator seed to "+param["seed"]+".");
       m_rng = make_shared<RNG>(lexical_cast<int>(param["seed"]));
     }
+    if (param.find("nematic") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Brownian dynamic integrator. Assuming polar order parameter.");
+      m_nematic = false;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Brownian dynamic integrator. Assuming nematic order parameter.");
+      m_nematic = true;
+    }
     m_stoch_coeff = sqrt(m_nu*m_dt);
   }
   
@@ -101,6 +111,7 @@ private:
   double  m_nu;           //!< Rotational diffusion 
   double  m_mu;           //!< Mobility 
   double  m_stoch_coeff;  //!< Factor for the stochastic part of the equation of motion (\f$ = \nu \sqrt{dt} \f$)
+  bool    m_nematic;      //!< If true; assume that the system is nematic, and the velocity will switch direction randomly
   
 };
 

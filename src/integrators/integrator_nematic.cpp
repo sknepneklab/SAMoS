@@ -49,7 +49,10 @@ void IntegratorNematic::integrate()
     Particle& p = m_system->get_particle(i);
     // Update particle position 
     double kappa = m_rng->drnd()-0.5;
-    kappa /= fabs(kappa);
+    if (kappa != 0.0)
+      kappa /= fabs(kappa);
+    else
+      kappa = 0.0;
     kappa *= m_d0;
     p.x += kappa*p.nx;
     p.y += kappa*p.ny;
