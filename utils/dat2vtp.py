@@ -31,6 +31,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", type=str, help="input file (base name)")
 parser.add_argument("-o", "--output", type=str, help="output directory")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
+parser.add_argument("--shift", action='store_true', default=False, help="Shift data by half length of the director")
 args = parser.parse_args()
 
 print
@@ -45,6 +46,8 @@ print
 print "\tInput files : ", args.input
 print "\tOutput files : ", args.output
 print "\tSkip frames : ", args.skip
+if args.shift:
+  print "\tShifting position by half of the director."
 print
 
 start = datetime.now()
@@ -98,9 +101,14 @@ for f in files:
     Directors.SetNumberOfComponents(3)
     Directors.SetName("Directors")
 
-  for (xx,yy,zz,rr) in zip(x,y,z,r):
-    Points.InsertNextPoint(xx,yy,zz)
-    Radii.InsertNextValue(rr)
+  if args.shift:
+    for (xx,yy,zz,rr,nnx,nny,nnz) in zip(x,y,z,r,nx,ny,nz):
+      Points.InsertNextPoint(xx-0.5*nnx,yy-0.5*nny,zz-0.5*nnz)
+      Radii.InsertNextValue(rr)
+  else:
+    for (xx,yy,zz,rr) in zip(x,y,z,r):
+      Points.InsertNextPoint(xx,yy,zz)
+      Radii.InsertNextValue(rr)
     
   if has_v:
     for (vvx,vvy,vvz) in zip(vx,vy,vz):
