@@ -50,53 +50,63 @@ public:
   { 
     if (param.find("v0") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Brownian dynamic integrator. Active velocity v0 not specified. Using default value 1.");
+      m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. Active velocity v0 not specified. Using default value 1.");
       m_v0 = 1.0;
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Brownian dynamic integrator. Setting magnitude of active velocity to "+param["v0"]+".");
+      m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Setting magnitude of active velocity to "+param["v0"]+".");
       m_v0 = lexical_cast<double>(param["v0"]);
     }
     if (param.find("nu") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Brownian dynamic integrator. Rotational diffusion rate not set. Using default value 1.");
+      m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. Rotational diffusion rate not set. Using default value 1.");
       m_nu = 1.0;
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Brownian dynamic integrator. Setting rotational diffusion rate to "+param["nu"]+".");
+      m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Setting rotational diffusion rate to "+param["nu"]+".");
       m_nu = lexical_cast<double>(param["nu"]);
     }
     if (param.find("mu") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Brownian dynamic integrator. Mobility not set. Using default value 1.");
+      m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. Mobility not set. Using default value 1.");
       m_mu = 1.0;
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Brownian dynamic integrator. Setting mobility to "+param["mu"]+".");
+      m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Setting mobility to "+param["mu"]+".");
       m_mu = lexical_cast<double>(param["mu"]);
     }
     if (param.find("seed") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Brownian dynamic integrator. No random number generator seed specified. Using default 0.");
+      m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. No random number generator seed specified. Using default 0.");
       m_rng = make_shared<RNG>(0);
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Brownian dynamic integrator. Setting random number generator seed to "+param["seed"]+".");
+      m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Setting random number generator seed to "+param["seed"]+".");
       m_rng = make_shared<RNG>(lexical_cast<int>(param["seed"]));
     }
     if (param.find("nematic") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Brownian dynamic integrator. Assuming polar order parameter.");
+      m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. Assuming polar order parameter.");
       m_nematic = false;
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Brownian dynamic integrator. Assuming nematic order parameter.");
+      m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Assuming nematic order parameter.");
       m_nematic = true;
+      if (param.find("tau") == param.end())
+      {
+        m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. Nematic systems No flip rate given. Assuming default 1.");
+        m_tau = m_dt/1.0;
+      }
+      else
+      {
+        m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Nematic system. Setting flip rate to "+param["tau"]+".");
+        m_tau = m_dt/lexical_cast<double>(param["tau"]);
+      }
     }
     m_stoch_coeff = sqrt(m_nu*m_dt);
   }
@@ -112,6 +122,7 @@ private:
   double  m_mu;           //!< Mobility 
   double  m_stoch_coeff;  //!< Factor for the stochastic part of the equation of motion (\f$ = \nu \sqrt{dt} \f$)
   bool    m_nematic;      //!< If true; assume that the system is nematic, and the velocity will switch direction randomly
+  double  m_tau;          //!< Time scale for the direction flip for nematic systems (flip with probability dt/tau)
   
 };
 

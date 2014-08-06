@@ -37,7 +37,6 @@
 void IntegratorBrownian::integrate()
 {
   int N = m_system->size();
-  double kappa = 1.0;
   // compute forces in the current configuration
   if (m_potential)
     m_potential->compute();
@@ -50,14 +49,13 @@ void IntegratorBrownian::integrate()
     Particle& p = m_system->get_particle(i);
     // Check if we have nematic system
     if (m_nematic)
-    {
-      kappa = m_rng->drnd()-0.5;
-      kappa = (kappa == 0.0) ? 0.0 : kappa/fabs(kappa);
-    }
+      if (m_rng->drnd() < m_tau)  // Flip direction n with probability m_tua (dt/tua, where tau is the parameter given in the input file).
+        p.kappa = -p.kappa;  // Note: We could as well just flip n, but this turns out to be nicer to visualize with Paraview (physics is not changed!!!)
     // Update velocity
-    p.vx = m_v0*kappa*p.nx + m_mu*p.fx;
-    p.vy = m_v0*kappa*p.ny + m_mu*p.fy;
-    p.vz = m_v0*kappa*p.nz + m_mu*p.fz;
+    double fact = m_v0*p.kappa;
+    p.vx = fact*p.nx + m_mu*p.fx;
+    p.vy = fact*p.ny + m_mu*p.fy;
+    p.vz = fact*p.nz + m_mu*p.fz;
     // Update particle position according to the eq. (1a)
     p.x += m_dt*p.vx;
     p.y += m_dt*p.vy;
