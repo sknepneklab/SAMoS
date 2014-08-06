@@ -24,6 +24,7 @@ from read_data import *
 import numpy as np
 from datetime import *
 from glob import glob
+from scipy.spatial import ConvexHull
 import vtk
 
 
@@ -32,6 +33,7 @@ parser.add_argument("-i", "--input", type=str, help="input file (base name)")
 parser.add_argument("-o", "--output", type=str, help="output directory")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
 parser.add_argument("--shift", action='store_true', default=False, help="Shift data by half length of the director")
+parser.add_argument("--connected", action='store_true', default=False, help="Include Delaunay triangulation data")
 args = parser.parse_args()
 
 print
@@ -118,8 +120,27 @@ for f in files:
     for (nnx,nny,nnz) in zip(nx,ny,nz):
       Directors.InsertNextTuple3(nnx,nny,nnz)
 
+  if args.connected:
+    Lines = vtk.vtkCellArray()
+    Line = vtk.vtkLine()
+    points = np.column_stack((x,y,z)) 
+    hull = ConvexHull(points)
+    edges = []
+    for h in hull.simplices:
+      i, j, k = h
+      if not sorted([i,j]) in edges: edges.append(sorted([i,j]))
+      if not sorted([i,k]) in edges: edges.append(sorted([i,k]))
+      if not sorted([j,k]) in edges: edges.append(sorted([j,k]))
+    for (i,j) in edges:
+      Line.GetPointIds().SetId(0,i)
+      Line.GetPointIds().SetId(1,j)
+      Lines.InsertNextCell(Line)
+    
+
   polydata = vtk.vtkPolyData()
   polydata.SetPoints(Points)
+  if args.connected:
+    polydata.SetLines(Lines)
 
   polydata.GetPointData().AddArray(Radii)
 
