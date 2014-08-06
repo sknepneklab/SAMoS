@@ -25,6 +25,7 @@ import numpy as np
 from datetime import *
 from glob import glob
 from scipy.spatial import ConvexHull
+import math as m
 import vtk
 
 
@@ -102,6 +103,10 @@ for f in files:
     Directors = vtk.vtkDoubleArray()
     Directors.SetNumberOfComponents(3)
     Directors.SetName("Directors")
+    # Negative directors to mimic neamtic (silly but should work)
+    NDirectors = vtk.vtkDoubleArray()
+    NDirectors.SetNumberOfComponents(3)
+    NDirectors.SetName("NDirectors")
 
   if args.shift:
     for (xx,yy,zz,rr,nnx,nny,nnz) in zip(x,y,z,r,nx,ny,nz):
@@ -119,13 +124,21 @@ for f in files:
   if has_n:
     for (nnx,nny,nnz) in zip(nx,ny,nz):
       Directors.InsertNextTuple3(nnx,nny,nnz)
+      NDirectors.InsertNextTuple3(-nnx,-nny,-nnz)
 
   if args.connected:
     Lines = vtk.vtkCellArray()
     Line = vtk.vtkLine()
+    Lengths = vtk.vtkDoubleArray()
+    Lengths.SetNumberOfComponents(1)
+    Lengths.SetName('Length')
+    NNeighs = vtk.vtkDoubleArray()
+    NNeighs.SetNumberOfComponents(1)
+    NNeighs.SetName('NNeigh')
     points = np.column_stack((x,y,z)) 
     hull = ConvexHull(points)
     edges = []
+    nneighs = [0 for i in xrange(len(x))]
     for h in hull.simplices:
       i, j, k = h
       if not sorted([i,j]) in edges: edges.append(sorted([i,j]))
@@ -135,12 +148,19 @@ for f in files:
       Line.GetPointIds().SetId(0,i)
       Line.GetPointIds().SetId(1,j)
       Lines.InsertNextCell(Line)
-    
+      nneighs[i] += 1
+      nneighs[j] += 1
+      dx, dy, dz = x[i]-x[j], y[i]-y[j], z[i]-z[j]
+      Lengths.InsertNextValue(m.sqrt(dx*dx + dy*dy + dz*dz))
+    for n in nneighs:
+      NNeighs.InsertNextValue(n)
 
   polydata = vtk.vtkPolyData()
   polydata.SetPoints(Points)
   if args.connected:
     polydata.SetLines(Lines)
+    polydata.GetCellData().AddArray(Lengths)
+    polydata.GetPointData().AddArray(NNeighs)
 
   polydata.GetPointData().AddArray(Radii)
 
@@ -149,6 +169,7 @@ for f in files:
 
   if has_n:
     polydata.GetPointData().AddArray(Directors)
+    polydata.GetPointData().AddArray(NDirectors)
 
   polydata.Modified()
   writer = vtk.vtkXMLPolyDataWriter()
