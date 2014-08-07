@@ -57,10 +57,11 @@ cdict = {'red':   [(0.0,  0.75, 0.75),
 	
 
 # This is the structured data file hierarchy. Replace as appropriate (do not go the Yaouen way and fully automatize ...)
-basefolder = '/home/silke/Documents/CurrentProjects/Rastko/Runs/'
+basefolder= '/home/silke/Documents/CurrentProjects/Rastko/analysis/data/SilkeJ1/'
 outfolder= '/home/silke/Documents/CurrentProjects/Rastko/analysis/'
 JList=['10', '1', '0.1', '0.01']
-vList=['0.005','0.01','0.02','0.05','0.1','0.2','0.5','1']
+#vList=['0.005','0.01','0.02','0.05','0.1','0.2','0.5','1']
+vList=['0.005','0.05','0.1','0.2','0.5','1']
 #JList=['10']
 #vList=['1']
 nbin=180
@@ -76,38 +77,40 @@ dt=0.001
 
 # Profiles
 # Set column to plot
-usecolumn=9
+usecolumn=1
 
 profList=[r'$\theta$',r'$\rho$',r'$\sqrt{\langle v^2 \rangle}/v_0$','energy','pressure',r'$\Sigma_{\theta \theta}$',r'$\Sigma_{\theta \phi}$',r'$\Sigma_{\phi \theta}$',r'$\Sigma_{\phi \phi}$',r'$\alpha$',r'$\alpha_v$']
 profName=['theta','rho','vrms','energy','pressure','stt','stp','spt','spp','alpha','alpha_v']
 
 
-#plt.figure(figsize=(10,7),linewidth=2.0)
-#for i in range(len(vList)):	
-	#profiles=np.zeros((11,180))
-	#for j in range(len(JList)):
-		#print vList[i],JList[j]
-		#ax=plt.gca()
-		#outfile=outfolder+'data/profilesV_v0' + vList[i] + '_j' + JList[j] + '.dat'
-		#outfile2=outfolder + 'data/axisV_v0' + vList[i] + '_j' + JList[j] + '.dat'
-		## header='theta rho vel energy pressure alpha alpha_v'
-		#profiles+=sp.loadtxt(outfile, unpack=True)[:,:] 
-	#profiles/=len(JList)
-	#isdata=[index for index,value in enumerate(profiles[1,:]) if (value >0)]
-	#if usecolumn==2:
-		#plt.plot(profiles[0,isdata],profiles[usecolumn,isdata]/float(vList[i]),color=testmap(i), linestyle='solid',label=vList[i])
-	#else:
-		#plt.plot(profiles[0,isdata],profiles[usecolumn,isdata],color=testmap(i), linestyle='solid',label=vList[i])
-	#if usecolumn==9:
-		#plt.plot(profiles[0,isdata],0.45*profiles[0,isdata],':',color=(0.5,0.5,0.5))
-		#plt.ylim(-0.5,0.5)
-	##if usecolumn<=8:
-		##plt.ylim(0,1.05*profiles[usecolumn,nbin/2])
-	#plt.xlim(-np.pi/2,np.pi/2)
-	#plt.xlabel(profList[0]) 
-	#plt.ylabel(profList[usecolumn]) 
-	#plt.legend(loc=2,ncol=2)
-	##plt.title('Velocity ' + r'$v_0=$' + vList[i])
+plt.figure(figsize=(10,7),linewidth=2.0)
+for i in range(0,len(vList)):	
+	profiles=np.zeros((11,180))
+	for j in range(len(JList)):
+		print vList[i],JList[j]
+		ax=plt.gca()
+		outfile=basefolder+'profilesV_v0' + vList[i] + '_j' + JList[j] + '.dat'
+		outfile2=basefolder + 'axisV_v0' + vList[i] + '_j' + JList[j] + '.dat'
+		# header='theta rho vel energy pressure alpha alpha_v'
+		profiles+=sp.loadtxt(outfile, unpack=True)[:,:] 
+	profiles/=len(JList)
+	isdata=[index for index,value in enumerate(profiles[1,:]) if (value >0)]
+	if (usecolumn==9)and(i==1):
+		plt.plot(profiles[0,isdata],0.45*profiles[0,isdata],'--',color=(0,0,0),label='slope 0.45')
+		plt.ylim(-0.5,0.5)
+	if usecolumn==2:
+		plt.plot(profiles[0,isdata],profiles[usecolumn,isdata]/float(vList[i]),color=testmap(i), linestyle='solid',label=vList[i])
+	else:
+		plt.plot(profiles[0,isdata],profiles[usecolumn,isdata],color=testmap(i), linestyle='solid',label=vList[i])
+	#if usecolumn<=8:
+		#plt.ylim(0,1.05*profiles[usecolumn,nbin/2])
+	plt.xlim(-np.pi/2,np.pi/2)
+	plt.xlim(-1.5,1.5)
+	plt.ylim(0,4.5)
+	plt.xlabel(profList[0]) 
+	plt.ylabel(profList[usecolumn]) 
+	plt.legend(loc=2,ncol=1)
+	#plt.title('Velocity ' + r'$v_0=$' + vList[i])
 	
 	#filename=outfolder + 'pics/profile_' + profName[usecolumn] + '_allJ.pdf'
 	#plt.savefig(filename)
@@ -164,52 +167,52 @@ profName=['theta','rho','vrms','energy','pressure','stt','stp','spt','spp','alph
 	
 
 	
-# Order parameter n = |\frac{1}{N R v_0} \sum r \times v|
-fig=plt.figure(figsize=(10,7),linewidth=2.0)
-ax=plt.gca()
-orderpar=np.zeros((len(vList),len(JList)))
-order=np.zeros((len(vList),))
-dorder=np.zeros((len(vList),))
-vval=np.zeros((len(vList),))
+## Order parameter n = |\frac{1}{N R v_0} \sum r \times v|
+#fig=plt.figure(figsize=(10,7),linewidth=2.0)
+#ax=plt.gca()
+#orderpar=np.zeros((len(vList),len(JList)))
+#order=np.zeros((len(vList),))
+#dorder=np.zeros((len(vList),))
+#vval=np.zeros((len(vList),))
 
-for i in range(len(vList)):	
-	for j in range(len(JList)):
-		print vList[i],JList[j]
-		outfile=outfolder+'data/profilesV_v0' + vList[i] + '_j' + JList[j] + '.dat'
-		outfile2=outfolder + 'data/axisV_v0' + vList[i] + '_j' + JList[j] + '.dat'
-		axis=sp.loadtxt(outfile2, unpack=True)[:,:] 
-		orderpar0=np.sqrt(axis[3,:]**2+axis[4,:]**2+axis[5,:]**2)
-		orderpar[i,j]=np.mean(orderpar0)
-	order[i]=np.mean(orderpar[i,:])
-	dorder[i]=np.std(orderpar[i,:]) 
-	vval[i]=np.log10(float(vList[i]))
-plt.errorbar(vval,order,yerr=dorder,color=testmap2(j), linestyle='solid',marker='o',markersize=10,label='J=1')
+#for i in range(len(vList)):	
+	#for j in range(len(JList)):
+		#print vList[i],JList[j]
+		#outfile=outfolder+'data/profilesV_v0' + vList[i] + '_j' + JList[j] + '.dat'
+		#outfile2=outfolder + 'data/axisV_v0' + vList[i] + '_j' + JList[j] + '.dat'
+		#axis=sp.loadtxt(outfile2, unpack=True)[:,:] 
+		#orderpar0=np.sqrt(axis[3,:]**2+axis[4,:]**2+axis[5,:]**2)
+		#orderpar[i,j]=np.mean(orderpar0)
+	#order[i]=np.mean(orderpar[i,:])
+	#dorder[i]=np.std(orderpar[i,:]) 
+	#vval[i]=np.log10(float(vList[i]))
+#plt.errorbar(vval,order,yerr=dorder,color=testmap2(j), linestyle='solid',marker='o',markersize=10,label='J=1')
 
 
-del vList
-del JList
-JList=['0.1']
-vList=['0.05','0.5','5.0']
+#del vList
+#del JList
+#JList=['0.1']
+#vList=['0.05','0.5','5.0']
 
-orderpar=np.zeros((len(vList),))
-dorder=np.zeros((len(vList),))
-vval=np.zeros((len(vList),))
-for j in range(len(JList)):
-	for i in range(len(vList)):	
-		print vList[i],JList[j]
-		outfile=outfolder+'data_Rastko/profilesV_v0' + vList[i] + '_j' + JList[j] + '.dat'
-		outfile2=outfolder + 'data_Rastko/axisV_v0' + vList[i] + '_j' + JList[j] + '.dat'
-		axis=sp.loadtxt(outfile2, unpack=True)[:,:] 
-		orderpar0=np.sqrt(axis[3,:]**2+axis[4,:]**2+axis[5,:]**2)
-		orderpar[i]=np.mean(orderpar0)
-		dorder[i]=np.std(orderpar0) 
-		vval[i]=np.log10(float(vList[i]))
-	plt.errorbar(vval,orderpar,yerr=dorder,color=testmap2(j), linestyle='solid',marker='s',markersize=10,label='J='+JList[j])
-plt.xlabel(r'$\log_{10}v_0$') 
-plt.ylabel('n') 
-plt.ylim(0,1)
-plt.legend(loc=2,ncol=1)
-plt.title('Order parameter')
+#orderpar=np.zeros((len(vList),))
+#dorder=np.zeros((len(vList),))
+#vval=np.zeros((len(vList),))
+#for j in range(len(JList)):
+	#for i in range(len(vList)):	
+		#print vList[i],JList[j]
+		#outfile=outfolder+'data_Rastko/profilesV_v0' + vList[i] + '_j' + JList[j] + '.dat'
+		#outfile2=outfolder + 'data_Rastko/axisV_v0' + vList[i] + '_j' + JList[j] + '.dat'
+		#axis=sp.loadtxt(outfile2, unpack=True)[:,:] 
+		#orderpar0=np.sqrt(axis[3,:]**2+axis[4,:]**2+axis[5,:]**2)
+		#orderpar[i]=np.mean(orderpar0)
+		#dorder[i]=np.std(orderpar0) 
+		#vval[i]=np.log10(float(vList[i]))
+	#plt.errorbar(vval,orderpar,yerr=dorder,color=testmap2(j), linestyle='solid',marker='s',markersize=10,label='J='+JList[j])
+#plt.xlabel(r'$\log_{10}v_0$') 
+#plt.ylabel('n') 
+#plt.ylim(0,1)
+#plt.legend(loc=2,ncol=1)
+#plt.title('Order parameter')
 
 
 
