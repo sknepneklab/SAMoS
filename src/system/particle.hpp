@@ -58,7 +58,6 @@ public:
   { 
     fx = 0.0; fy = 0.0; fz = 0.0; 
     tau_x = 0.0; tau_y = 0.0; tau_z = 0.0;
-    kappa = 1.0;
   }
   
   //! Get particle id
@@ -138,7 +137,6 @@ public:
   double nx, ny, nz;           //!< Particle direction vector (not necessarily equal to velocity direction)
   //@}
   double omega;                //!< Magnitude of the angular velocity (in the direction of the normal to the surface)
-  double kappa;                //!< +/-1: Determined direction of motion (direction vector) for nematic systems
   
 private:  // Make these attributes immutable 
   

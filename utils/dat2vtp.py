@@ -22,6 +22,7 @@ import sys
 import argparse
 from read_data import *
 import numpy as np
+import numpy.linalg as lin
 from datetime import *
 from glob import glob
 from scipy.spatial import ConvexHull
@@ -33,8 +34,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", type=str, help="input file (base name)")
 parser.add_argument("-o", "--output", type=str, help="output directory")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
-parser.add_argument("--shift", action='store_true', default=False, help="Shift data by half length of the director")
 parser.add_argument("--connected", action='store_true', default=False, help="Include Delaunay triangulation data")
+parser.add_argument("--nematic", action='store_true', default=False, help="Shift n vectors such that particle is in the middle of director.")
 args = parser.parse_args()
 
 print
@@ -49,8 +50,6 @@ print
 print "\tInput files : ", args.input
 print "\tOutput files : ", args.output
 print "\tSkip frames : ", args.skip
-if args.shift:
-  print "\tShifting position by half of the director."
 print
 
 start = datetime.now()
@@ -104,18 +103,14 @@ for f in files:
     Directors.SetNumberOfComponents(3)
     Directors.SetName("Directors")
     # Negative directors to mimic neamtic (silly but should work)
-    NDirectors = vtk.vtkDoubleArray()
-    NDirectors.SetNumberOfComponents(3)
-    NDirectors.SetName("NDirectors")
+    if args.nematic:
+      NDirectors = vtk.vtkDoubleArray()
+      NDirectors.SetNumberOfComponents(3)
+      NDirectors.SetName("NDirectors")
 
-  if args.shift:
-    for (xx,yy,zz,rr,nnx,nny,nnz) in zip(x,y,z,r,nx,ny,nz):
-      Points.InsertNextPoint(xx-0.5*nnx,yy-0.5*nny,zz-0.5*nnz)
-      Radii.InsertNextValue(rr)
-  else:
-    for (xx,yy,zz,rr) in zip(x,y,z,r):
-      Points.InsertNextPoint(xx,yy,zz)
-      Radii.InsertNextValue(rr)
+  for (xx,yy,zz,rr) in zip(x,y,z,r):
+    Points.InsertNextPoint(xx,yy,zz)
+    Radii.InsertNextValue(rr)
     
   if has_v:
     for (vvx,vvy,vvz) in zip(vx,vy,vz):
@@ -123,8 +118,11 @@ for f in files:
 
   if has_n:
     for (nnx,nny,nnz) in zip(nx,ny,nz):
-      Directors.InsertNextTuple3(nnx,nny,nnz)
-      NDirectors.InsertNextTuple3(-nnx,-nny,-nnz)
+      if args.nematic:
+        Directors.InsertNextTuple3(0.5*nnx,0.5*nny,0.5*nnz)
+        NDirectors.InsertNextTuple3(-0.5*nnx,-0.5*nny,-0.5*nnz)
+      else:
+        Directors.InsertNextTuple3(nnx,nny,nnz)        
 
   if args.connected:
     Lines = vtk.vtkCellArray()
@@ -135,6 +133,11 @@ for f in files:
     NNeighs = vtk.vtkDoubleArray()
     NNeighs.SetNumberOfComponents(1)
     NNeighs.SetName('NNeigh')
+    Areas = vtk.vtkDoubleArray()
+    Areas.SetNumberOfComponents(1)
+    Areas.SetName('Area')
+    Faces = vtk.vtkCellArray()
+    Polygon = vtk.vtkPolygon()
     points = np.column_stack((x,y,z)) 
     hull = ConvexHull(points)
     edges = []
@@ -144,6 +147,15 @@ for f in files:
       if not sorted([i,j]) in edges: edges.append(sorted([i,j]))
       if not sorted([i,k]) in edges: edges.append(sorted([i,k]))
       if not sorted([j,k]) in edges: edges.append(sorted([j,k]))
+      #a1 = points[j]-points[i]
+      #a2 = points[k]-points[i]
+      #area = 0.5*lin.norm(np.cross(a1,a2))
+      #Areas.InsertNextValue(area)
+      #Polygon.GetPointIds().SetNumberOfIds(3)
+      #Polygon.GetPointIds().SetId(0, i)
+      #Polygon.GetPointIds().SetId(1, j)
+      #Polygon.GetPointIds().SetId(2, k)
+      #Faces.InsertNextCell(Polygon)
     for (i,j) in edges:
       Line.GetPointIds().SetId(0,i)
       Line.GetPointIds().SetId(1,j)
@@ -158,9 +170,11 @@ for f in files:
   polydata = vtk.vtkPolyData()
   polydata.SetPoints(Points)
   if args.connected:
+    polydata.GetPointData().AddArray(NNeighs)
     polydata.SetLines(Lines)
     polydata.GetCellData().AddArray(Lengths)
-    polydata.GetPointData().AddArray(NNeighs)
+    #polydata.SetPolys(Faces)
+    #polydata.GetCellData().AddArray(Areas)
 
   polydata.GetPointData().AddArray(Radii)
 
@@ -169,7 +183,8 @@ for f in files:
 
   if has_n:
     polydata.GetPointData().AddArray(Directors)
-    polydata.GetPointData().AddArray(NDirectors)
+    if args.nematic:
+      polydata.GetPointData().AddArray(NDirectors)
 
   polydata.Modified()
   writer = vtk.vtkXMLPolyDataWriter()
@@ -178,8 +193,7 @@ for f in files:
   writer.SetInputData(polydata)
   writer.SetDataModeToAscii()
   writer.Write()
-
-
+  
 end = datetime.now()
 
 total = end - start
