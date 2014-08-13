@@ -57,6 +57,7 @@ void IntegratorBrownian::integrate()
     p.vx = m_v0*p.nx + m_mu*p.fx;
     p.vy = m_v0*p.ny + m_mu*p.fy;
     p.vz = m_v0*p.nz + m_mu*p.fz;
+    //m_constraint->enforce(p);
     // Update particle position according to the eq. (1a)
     p.x += m_dt*p.vx;
     p.y += m_dt*p.vy;
