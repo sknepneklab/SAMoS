@@ -435,12 +435,13 @@ def getDefects(f,radius,sigma,outname,debug=False,writeVTK=False):
     # Find out if the last point and the starting point are in the same hemisphere. 
     cdefect=np.dot(coord[t],coord[0])
     if cdefect<0:
-      print "Found Defect!"
-      # Construct the geometric centre of the defect
-      rmhat=np.sum(rval[thisLoop],axis=0)
-      rmhat/=np.sqrt(np.sum(rmhat**2))
-      defects[ndefect,:]=radius*rmhat
-      ndefect+=1
+      if ndefect<100:
+        print "Found Defect!"
+        # Construct the geometric centre of the defect
+        rmhat=np.sum(rval[thisLoop],axis=0)
+        rmhat/=np.sqrt(np.sum(rmhat**2))
+        defects[ndefect,:]=radius*rmhat
+        ndefect+=1
   
   #print defects
   print 'Nummber of defects: ' + str(ndefect)
