@@ -74,6 +74,7 @@ public:
                  | qi::as_string[keyword["nlist"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]           /*! Handles neighbour list. */
                  | qi::as_string[keyword["pair_align"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles pairwise alignment. */
                  | qi::as_string[keyword["external_align"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]  /*! Handles external alignment. */
+                 | qi::as_string[keyword["group"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]           /*! Handles particle groups. */
                  /* to add new command: | qi::as_string[keyword["newcommand"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ] */
                )
                >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&CommandData::attrib_param_complex, phoenix::ref(command_data)) = qi::_1 ]

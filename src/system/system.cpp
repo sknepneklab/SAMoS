@@ -120,5 +120,120 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   }
   msg->msg(Messenger::INFO,"Read data for "+lexical_cast<string>(m_particles.size())+" particles.");
   inp.close();
+  
+  // Populate group 'all'
+  m_group["all"] = make_shared<Group>(Group(0,"all"));
+  for (unsigned int i = 0; i < m_particles.size(); i++)
+    m_group["all"]->add_particle(i);
+  m_num_groups = 1;
+  
+  msg->msg(Messenger::INFO,"Generated group 'all' containing all particles.");
+  
   this->disable_per_particle_eng();
+}
+
+/*! Generate a group of particles
+    \param name name of the group
+    \param param Contains information about all parameters
+    
+    Groups can be generated based on a number of criteria
+    For example base on the particle type, particle size (radius), position, etc.
+    
+*/
+void System::make_group(const string name, pairs_type& param)
+{
+  m_group[name] = make_shared<Group>(Group(m_num_groups++, name));
+  map<string, vector<bool> > to_add;
+  if (param.find("type") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["type"].push_back(false);
+    m_msg->msg(Messenger::INFO,"Adding particle by group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].get_type() == lexical_cast<int>(param["type"]))
+        to_add["type"][i] = true;
+  }
+  if (param.find("r_eq") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["r_eq"].push_back(false);
+    m_msg->msg(Messenger::INFO,"Adding particle of radius equal to "+param["r_eq"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].get_radius() == lexical_cast<double>(param["r_eq"]))
+        to_add["r_eq"][i] = true;
+  }
+  if (param.find("r_le") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["r_le"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle of radius less or equal "+param["r_le"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].get_radius() <= lexical_cast<double>(param["r_le"]))
+        to_add["r_le"][i] = true;
+  }
+  if (param.find("r_ge") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["r_ge"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle of radius greater or equal to "+param["r_ge"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].get_radius() >= lexical_cast<double>(param["r_ge"]))
+        to_add["r_ge"][i] = true;
+  }
+  if (param.find("x_le") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["x_le"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle with x coordinate less or equal to "+param["x_le"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].x <= lexical_cast<double>(param["x_le"]))
+        to_add["x_le"][i] = true;
+  }
+  if (param.find("x_ge") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["x_ge"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle with x coordinate greater or equal to "+param["x_ge"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].x >= lexical_cast<double>(param["x_ge"]))
+        to_add["x_ge"][i] = true;
+  }
+  if (param.find("y_le") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["y_le"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle with y coordinate less or equal to "+param["y_le"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].y <= lexical_cast<double>(param["y_le"]))
+        to_add["y_le"][i] = true;
+  }
+  if (param.find("y_ge") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["y_ge"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle with y coordinate greater or equal to "+param["y_ge"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].y >= lexical_cast<double>(param["y_ge"]))
+        to_add["y_ge"][i] = true;
+  }
+  if (param.find("z_le") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["z_le"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle with z coordinate less or equal to "+param["z_le"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].z <= lexical_cast<double>(param["z_le"]))
+        to_add["z_le"][i] = true;
+  }
+  if (param.find("z_ge") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["z_ge"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle with z coordinate greater or equal to "+param["z_ge"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].z >= lexical_cast<double>(param["z_ge"]))
+        to_add["z_ge"][i] = true;
+  }
+  
+  for (unsigned int i = 0; i < m_particles.size(); i++)
+  {
+    bool add = true;
+    for (map<string, vector<bool> >::iterator it = to_add.begin(); it != to_add.end(); it++)
+      add = add && (*it).second[i];
+    if (add)
+      m_group[name]->add_particle(i);
+  }
+  
+  m_msg->msg(Messenger::INFO,"Added "+lexical_cast<string>(m_group[name]->get_size())+" particles to group "+name+".");
+      
 }

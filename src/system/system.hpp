@@ -31,16 +31,21 @@
 #include <exception>
 #include <fstream>
 #include <cmath>
+#include <map>
 
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/regex.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
 #include "particle.hpp"
 #include "box.hpp"
 #include "messenger.hpp"
+#include "group.hpp"
+
+#include "parse_parameters.hpp"
 
 using std::vector;
 using std::string;
@@ -48,11 +53,13 @@ using std::runtime_error;
 using std::ifstream;
 using std::exception;
 using std::sqrt;
+using std::map;
 using boost::lexical_cast;
 using boost::bad_lexical_cast;
 using boost::split_regex;
 using boost::regex;
 using boost::shared_ptr;
+using boost::make_shared;
 using namespace boost::algorithm;
 
 /*! This class handles collection of all particles, i.e. the entire system.
@@ -118,6 +125,30 @@ public:
       m_msg->msg(Messenger::INFO,"Periodic flag for the system is set to false.");
     m_periodic = periodic; 
   }
+   
+  //! Get particle group
+  //! \param name Group name
+  GroupPtr get_group(const string name)  
+  { 
+    if (!(this->has_group(name)))
+    {
+      m_msg->msg(Messenger::ERROR,"Group "+name+" does not exist.");
+      throw runtime_error("Non-existent particle group.");
+    }
+    return m_group[name];
+  }
+
+  //! Generate a group of particles
+  void make_group(const string, pairs_type&);
+  
+  //! Check if a group exists
+  //! \param name Group name 
+  bool has_group(const string name)  
+  {  
+    if (m_group.find(name) == m_group.end())
+      return false;
+    return true;
+  }
   
   //! Enable per particle energy tracking
   void enable_per_particle_eng() { m_compute_per_particle_eng = true; }
@@ -133,10 +164,12 @@ private:
   vector<Particle> m_particles;         //!< Contains all particle in the system 
   MessengerPtr m_msg;                   //!< Handles messages sent to output
   BoxPtr m_box;                         //!< Simulation box object
+  map<string, GroupPtr> m_group;        //!< All groups in the system 
   bool m_periodic;                      //!< If true, we use periodic boundary conditions 
   int m_time_step;                      //!< Current time step
   bool m_compute_per_particle_eng;      //!< If true, compute per particle potential and alignment energy (we need to be able to turn it on and off since it is slow - STL map in the inner loop!)
-  
+  int m_num_groups;                     //!< Total number of groups in the system
+    
 };
 
 typedef shared_ptr<System> SystemPtr;

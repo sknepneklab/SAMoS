@@ -51,6 +51,7 @@
 #include "parse_log_dump.hpp"
 #include "parse_align.hpp"
 #include "parse_external_align.hpp"
+#include "parse_group.hpp"
 #include "constraint.hpp"
 #include "constraint_sphere.hpp"
 #include "constraint_plane.hpp"
@@ -102,6 +103,7 @@ int main(int argc, char* argv[])
   RunData             run_data;
   AlignData           pair_align_data;
   ExternalAlignData   external_align_data;
+  GroupData           group_data;
   pairs_type          parameter_data;   // All parameters for different commands
   
   // Parser grammars
@@ -116,6 +118,7 @@ int main(int argc, char* argv[])
   run_grammar             run_parser(run_data);
   align_grammar           align_parser(pair_align_data);
   external_align_grammar  external_align_parser(external_align_data);
+  group_grammar           group_parser(group_data);
   key_value_sequence      param_parser;
   
   // Class factories 
@@ -704,6 +707,35 @@ int main(int argc, char* argv[])
             {
               msg->msg(Messenger::ERROR,"Error parsing pair_potential command at line : "+lexical_cast<string>(current_line)+".");
               throw std::runtime_error("Error parsing pair_potential command.");
+            }
+          }
+          else if (command_data.command == "group")       // if command is group, parse it and add this group to the list of all groups
+          {
+            if (!defined["input"])  // We need to have system defined before we can add any groups
+            {
+              if (defined["messages"])
+                msg->msg(Messenger::ERROR,"System has not been defined. Please define system using \"input\" command before adding any particle groups.");
+              else
+                std::cerr << "System has not been defined. Please define system using \"input\" command before adding any particle groups." << std::endl;
+              throw std::runtime_error("System not defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), group_parser, qi::space))
+            {
+              if (qi::phrase_parse(group_data.params.begin(), group_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                sys->make_group(group_data.name,parameter_data);
+                msg->msg(Messenger::INFO,"Adding group "+group_data.name+".");
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse parameters for group "+group_data.name+" at line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing group parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing group command as line "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing group line.");
             }
           }
         }
