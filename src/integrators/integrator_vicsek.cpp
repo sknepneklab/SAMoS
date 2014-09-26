@@ -39,7 +39,8 @@
 void IntegratorVicsek::integrate()
 {
   double noise = m_eta*sqrt(m_dt);
-  int N = m_system->size();
+  int N = m_system->get_group(m_group_name)->get_size();
+  vector<int> particles = m_system->get_group(m_group_name)->get_particles();
   // compute forces in the current configuration
   if (m_potential)
     m_potential->compute();
@@ -49,7 +50,8 @@ void IntegratorVicsek::integrate()
   // iterate over all particles 
   for (int i = 0; i < N; i++)
   {
-    Particle& p = m_system->get_particle(i);
+    int pi = particles[i];
+    Particle& p = m_system->get_particle(pi);
     // Update particle velocity 
     p.vx = m_v0*p.tau_x + m_mu*p.fx;
     p.vy = m_v0*p.tau_y + m_mu*p.fy;

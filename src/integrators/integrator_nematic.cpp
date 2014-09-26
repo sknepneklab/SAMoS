@@ -39,14 +39,16 @@
 **/
 void IntegratorNematic::integrate()
 {
-  int N = m_system->size();
+  int N = m_system->get_group(m_group_name)->get_size();
+  vector<int> particles = m_system->get_group(m_group_name)->get_particles();
   // No need to compute potential, only compute torques in the current configuration
   if (m_align)
     m_align->compute();
   // iterate over all particles 
   for (int i = 0; i < N; i++)
   {
-    Particle& p = m_system->get_particle(i);
+    int pi = particles[i];
+    Particle& p = m_system->get_particle(pi);
     // Update particle position 
     double kappa = m_rng->drnd()-0.5;
     if (kappa != 0.0)

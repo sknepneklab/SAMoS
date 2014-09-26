@@ -52,6 +52,7 @@
 #include "parse_align.hpp"
 #include "parse_external_align.hpp"
 #include "parse_group.hpp"
+#include "parse_disable.hpp"
 #include "constraint.hpp"
 #include "constraint_sphere.hpp"
 #include "constraint_plane.hpp"
@@ -104,6 +105,7 @@ int main(int argc, char* argv[])
   AlignData           pair_align_data;
   ExternalAlignData   external_align_data;
   GroupData           group_data;
+  DisableData         disable_data;
   pairs_type          parameter_data;   // All parameters for different commands
   
   // Parser grammars
@@ -119,6 +121,7 @@ int main(int argc, char* argv[])
   align_grammar           align_parser(pair_align_data);
   external_align_grammar  external_align_parser(external_align_data);
   group_grammar           group_parser(group_data);
+  disable_grammar         disable_parser(disable_data);
   key_value_sequence      param_parser;
   
   // Class factories 
@@ -132,17 +135,17 @@ int main(int argc, char* argv[])
   std::ifstream command_file;    // File with simulation parameters and controls
   std::string command_line;      // Line from the command file
   
-  MessengerPtr msg;                   // Messenger object
-  BoxPtr box;                         // Handles simulation box
-  SystemPtr sys;                      // System object
-  PotentialPtr pot;                   // Handles all potentials
-  ConstraintPtr constraint;           // Handles the constraint to the manifold
-  NeighbourListPtr nlist;             // Handles global neighbour list
-  IntegratorPtr integrator;           // Handles the integrator
-  AlignerPtr    aligner;              // Handles all aligners
-  ExternalAlignPtr external_aligner;  // Handles all external aligners
-  vector<DumpPtr> dump;               // Handles all different dumps
-  vector<LoggerPtr> log;              // Handles all different logs
+  MessengerPtr msg;                                // Messenger object
+  BoxPtr box;                                      // Handles simulation box
+  SystemPtr sys;                                   // System object
+  PotentialPtr pot;                                // Handles all potentials
+  ConstraintPtr constraint;                        // Handles the constraint to the manifold
+  NeighbourListPtr nlist;                          // Handles global neighbour list
+  std::map<std::string,IntegratorPtr> integrator;  // Handles the integrator
+  AlignerPtr    aligner;                           // Handles all aligners
+  ExternalAlignPtr external_aligner;               // Handles all external aligners
+  vector<DumpPtr> dump;                            // Handles all different dumps
+  vector<LoggerPtr> log;                           // Handles all different logs
   
   bool periodic = false;       // If true, use periodic boundary conditions
   bool has_potential = false;  // If false, potential handling object (Potential class) has not be initialized yet
@@ -161,6 +164,7 @@ int main(int argc, char* argv[])
   defined["integrator"] = false;       // If false, no integrator has been defined (cannot run simulation)
   defined["pair_aligner"] = false;     // If false, no pairwise alignment has been defined
   defined["external_aligner"] = false; // If false, no external alignment has been defined
+  
     
   // Register spherical constraint with the constraint class factory
   constraints["sphere"] = boost::factory<ConstraintSpherePtr>();
@@ -526,10 +530,23 @@ int main(int argc, char* argv[])
             {
               if (qi::phrase_parse(integrator_data.params.begin(), integrator_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                integrator = boost::shared_ptr<Integrator>(integrators[integrator_data.type](sys,msg,pot,aligner,nlist,constraint, parameter_data));
-                msg->msg(Messenger::INFO,"Adding integrator of type "+integrator_data.type+".");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for integrator "+integrator_data.type+" is set to "+(*it).second+".");
+                if (integrator.find(integrator_data.type) == integrator.end())
+                {
+                  std::string group_name;
+                  if (parameter_data.find("group") == parameter_data.end())
+                    group_name = "all";
+                  else
+                    group_name = parameter_data["group"];
+                  integrator[integrator_data.type+"_"+group_name] = boost::shared_ptr<Integrator>(integrators[integrator_data.type](sys,msg,pot,aligner,nlist,constraint, parameter_data));
+                  msg->msg(Messenger::INFO,"Adding integrator of type "+integrator_data.type+".");
+                  for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
+                    msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for integrator "+integrator_data.type+" is set to "+(*it).second+".");
+                }
+                else
+                {
+                  msg->msg(Messenger::ERROR,"Integrator of type "+integrator_data.type+" already exists. You need to disable the old one first.");
+                  throw std::runtime_error("Integrator already exists.");
+                }
               }
               else
               {
@@ -643,7 +660,8 @@ int main(int argc, char* argv[])
                   (*it_d)->dump(time_step);
                 for (vector<LoggerPtr>::iterator it_l = log.begin(); it_l != log.end(); it_l++)
                   (*it_l)->log();
-                integrator->integrate();
+                for (std::map<std::string, IntegratorPtr>::iterator it_integ = integrator.begin(); it_integ != integrator.end(); it_integ++)
+                  (*it_integ).second->integrate();
                 // Check the neighbour list rebuild only if necessary 
                 if ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist()))
                 {
@@ -709,6 +727,35 @@ int main(int argc, char* argv[])
               throw std::runtime_error("Error parsing pair_potential command.");
             }
           }
+          else if (command_data.command == "align_param")       // parse pair parameters for potential
+          {
+            if (!has_aligner)  // We need to have pair aligners defined before we can change their parameters
+            {
+              msg->msg(Messenger::ERROR,"No pair aligners have been defined. Please define them using \"pair_align\" command before modifying any pair parameters.");
+              throw std::runtime_error("No pair aligners defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), align_parser, qi::space))
+            {
+              if (qi::phrase_parse(pair_align_data.params.begin(), pair_align_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                aligner->add_pair_align_parameters(pair_align_data.type, parameter_data);
+                msg->msg(Messenger::INFO,"Setting new parameters for "+pair_align_data.type+".");
+                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
+                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for pair aligner "+pair_align_data.type+" is set to "+(*it).second+".");
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse pair alignment parameters for potential type "+pair_align_data.type+" in line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing pair alignment parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing align_param command at line : "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing align_param command.");
+            }
+            
+          }
           else if (command_data.command == "group")       // if command is group, parse it and add this group to the list of all groups
           {
             if (!defined["input"])  // We need to have system defined before we can add any groups
@@ -736,6 +783,86 @@ int main(int argc, char* argv[])
             {
               msg->msg(Messenger::ERROR,"Error parsing group command as line "+lexical_cast<string>(current_line)+".");
               throw std::runtime_error("Error parsing group line.");
+            }
+          }
+          else if (command_data.command == "disable")       // if command is disable, parse it and disable given integrator 
+          {
+            if (!defined["integrator"])
+            {
+              msg->msg(Messenger::ERROR,"Integrator has not been defined. Please define it using \"integrator\" command before trying to disable it.");
+              throw std::runtime_error("Integrator not defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), disable_parser, qi::space))
+            {
+              if (qi::phrase_parse(disable_data.params.begin(), disable_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                std::string group_name;
+                if (parameter_data.find("group") == parameter_data.end())
+                  group_name = "all";
+                else
+                  group_name = parameter_data["group"];
+                std::string to_disable = disable_data.type+"_"+group_name;
+                if (integrator.find(to_disable) == integrator.end())
+                {
+                  msg->msg(Messenger::ERROR,"Integrator "+to_disable+" has not been defined. Cannot disable it.");
+                  throw std::runtime_error("Trying to disable non-existent integrator.");
+                }
+                else
+                {
+                  msg->msg(Messenger::INFO,"Disabling integrator "+to_disable+".");
+                  integrator.erase(to_disable);
+                }
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse parameters for integrator disable "+disable_data.type+" at line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing disable parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing disable command as line "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing disable line.");
+            }
+          }
+          else if (command_data.command == "disable")       // if command is disable, parse it and disable given integrator 
+          {
+            if (!defined["integrator"])
+            {
+              msg->msg(Messenger::ERROR,"Integrator has not been defined. Please define it using \"integrator\" command before trying to disable it.");
+              throw std::runtime_error("Integrator not defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), disable_parser, qi::space))
+            {
+              if (qi::phrase_parse(disable_data.params.begin(), disable_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                std::string group_name;
+                if (parameter_data.find("group") == parameter_data.end())
+                  group_name = "all";
+                else
+                  group_name = parameter_data["group"];
+                std::string to_disable = disable_data.type+"_"+group_name;
+                if (integrator.find(to_disable) == integrator.end())
+                {
+                  msg->msg(Messenger::ERROR,"Integrator "+to_disable+" has not been defined. Cannot disable it.");
+                  throw std::runtime_error("Trying to disable non-existent integrator.");
+                }
+                else
+                {
+                  msg->msg(Messenger::INFO,"Disabling integrator "+to_disable+".");
+                  integrator.erase(to_disable);
+                }
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse parameters for integrator disable "+disable_data.type+" at line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing disable parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing disable command as line "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing disable line.");
             }
           }
         }

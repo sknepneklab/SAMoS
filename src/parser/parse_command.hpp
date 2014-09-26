@@ -59,8 +59,9 @@ public:
   command_grammar(CommandData& command_data) : command_grammar::base_type(command)
   {
     command = (
-                 qi::as_string[keyword["pair_potential"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]  /*! Handles pair potential, such as Lennard-Jones or Coulomb */
+                 qi::as_string[keyword["pair_potential"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]    /*! Handles pair potential, such as Lennard-Jones or Coulomb */
                  | qi::as_string[keyword["pair_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles parameters for the pair potentials */
+                 | qi::as_string[keyword["align_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]     /*! Handles parameters for the alignment */
                  | qi::as_string[keyword["external"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]        /*! Handles external potentials */
                  | qi::as_string[keyword["external_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]  /*! Handles parameters for external potentials */
                  | qi::as_string[keyword["integrator"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles integrators (NVE, NTV, etc.) */
@@ -75,6 +76,7 @@ public:
                  | qi::as_string[keyword["pair_align"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles pairwise alignment. */
                  | qi::as_string[keyword["external_align"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]  /*! Handles external alignment. */
                  | qi::as_string[keyword["group"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]           /*! Handles particle groups. */
+                 | qi::as_string[keyword["disable"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]         /*! Handles disabling integrators. */
                  /* to add new command: | qi::as_string[keyword["newcommand"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ] */
                )
                >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&CommandData::attrib_param_complex, phoenix::ref(command_data)) = qi::_1 ]

@@ -94,22 +94,22 @@ public:
     
     if (pair_param.find("J") != pair_param.end())
     {
-      m_msg->msg(Messenger::INFO,"MF pairwise alignment. Setting coupling constant to "+pair_param["J"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
-      param["J"] = lexical_cast<double>(pair_param["j"]);
+      m_msg->msg(Messenger::INFO,"MF pairwise alignment. Setting coupling constant to "+pair_param["J"]+" for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      param["J"] = lexical_cast<double>(pair_param["J"]);
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"MF pairwise alignment. Using default strength ("+lexical_cast<string>(m_J)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      m_msg->msg(Messenger::INFO,"MF pairwise alignment. Using default strength ("+lexical_cast<string>(m_J)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["J"] = m_J;
     }
     if (pair_param.find("rcut") != pair_param.end())
     {
-      m_msg->msg(Messenger::INFO,"MF pairwise alignment. Setting cutoff distance to "+pair_param["rcut"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      m_msg->msg(Messenger::INFO,"MF pairwise alignment. Setting cutoff distance to "+pair_param["rcut"]+" for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["rcut"] = lexical_cast<double>(pair_param["rcut"]);
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"MF pairwise alignment. Using default cutoff distance ("+lexical_cast<string>(m_rcut)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      m_msg->msg(Messenger::INFO,"MF pairwise alignment. Using default cutoff distance ("+lexical_cast<string>(m_rcut)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["rcut"] = m_rcut;
     }    
         

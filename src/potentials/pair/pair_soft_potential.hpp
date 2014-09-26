@@ -82,12 +82,12 @@ public:
     
     if (pair_param.find("k") != pair_param.end())
     {
-      m_msg->msg(Messenger::INFO,"Soft pair potential. Setting strength to "+pair_param["k"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      m_msg->msg(Messenger::INFO,"Soft pair potential. Setting strength to "+pair_param["k"]+" for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["k"] = lexical_cast<double>(pair_param["k"]);
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Soft pair potential. Using default strength ("+lexical_cast<string>(m_k)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      m_msg->msg(Messenger::INFO,"Soft pair potential. Using default strength ("+lexical_cast<string>(m_k)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["k"] = m_k;
     }
         
