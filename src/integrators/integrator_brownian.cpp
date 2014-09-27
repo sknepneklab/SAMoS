@@ -51,7 +51,7 @@ void IntegratorBrownian::integrate()
     Particle& p = m_system->get_particle(pi);
     // Check if we have nematic system
     if (m_nematic)
-      if (m_rng->drnd() < m_tau)  // Flip direction n with probability m_tua (dt/tua, where tau is the parameter given in the input file).
+      if (m_rng->drnd() < m_tau)  // Flip direction n with probability m_tua (dt/tau, where tau is the parameter given in the input file).
       {
         p.nx = -p.nx;  p.ny = -p.ny;  p.nz = -p.nz;
       }

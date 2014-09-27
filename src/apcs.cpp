@@ -68,6 +68,7 @@
 #include "pair_coulomb_potential.hpp"
 #include "pair_soft_potential.hpp"
 #include "pair_lj_potential.hpp"
+#include "pair_gaussian_potential.hpp"
 #include "potential.hpp"
 #include "integrator_brownian.hpp"
 #include "integrator_vicsek.hpp"
@@ -179,7 +180,9 @@ int main(int argc, char* argv[])
   pair_potentials["coulomb"] = boost::factory<PairCoulombPotentialPtr>();
   // Register soft pair potential with the pair potentials class factory
   pair_potentials["soft"] = boost::factory<PairSoftPotentialPtr>();
-    
+  // Register Gaussian pair potential with the pair potentials class factory
+  pair_potentials["gaussian"] = boost::factory<PairGaussianPotentialPtr>();  
+  
   // Register gravity to the external potential class factory
   external_potentials["gravity"] = boost::factory<ExternalGravityPotentialPtr>();
   

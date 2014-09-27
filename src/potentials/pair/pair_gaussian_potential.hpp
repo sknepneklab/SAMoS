@@ -25,9 +25,12 @@
 #ifndef __PAIR_GAUSSIAN_POTENTIAL_HPP__
 #define __PAIR_GAUSSIAN_POTENTIAL_HPP__
 
+#include <cmath>
+
 #include "pair_potential.hpp"
 
 using std::make_pair;
+using std::sqrt;
 
 /*! PairGaussianPotential implements a potential with two Gaussians shifted with respect to each other 
  * \f$ U_{Gauss}\left(r_{ij}\right) = A e^{-\alpha(r-r_A)^2} + B e^{-\beta(r-r_B)} \f$,
@@ -52,8 +55,8 @@ public:
     }
     if (param.find("A") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"No first potential depth (A) specified for the Gaussian pair potential. Setting it to 1.");
-      m_A = 1.0;
+      m_msg->msg(Messenger::WARNING,"No first potential depth (A) specified for the Gaussian pair potential. Setting it to 2.");
+      m_A = 2.0;
     }
     else
     {
@@ -82,13 +85,13 @@ public:
     }
     if (param.find("beta") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"No second potential width (beta) specified for the Gaussian pair potential. Setting it to 1.");
-      m_beta = 1.0;
+      m_msg->msg(Messenger::WARNING,"No second potential width (beta) specified for the Gaussian pair potential. Setting it to 3.");
+      m_beta = 3.0;
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Global second potential width (beta) for Gaussian pair potential is set to "+param["alpha"]+".");
-      m_alpha = lexical_cast<double>(param["alpha"]);
+      m_msg->msg(Messenger::INFO,"Global second potential width (beta) for Gaussian pair potential is set to "+param["beta"]+".");
+      m_beta = lexical_cast<double>(param["beta"]);
     }
     if (param.find("rA") == param.end())
     {
