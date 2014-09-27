@@ -227,7 +227,7 @@ public:
     else
     {
       m_msg->msg(Messenger::INFO,"Gaussian pair potential. Using default rcut ("+lexical_cast<string>(m_rcut)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
-      param["rcut"] = m_sigma;
+      param["rcut"] = m_rcut;
     }
     
     m_pair_params[make_pair(type_1,type_2)]["A"] = param["A"];

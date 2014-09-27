@@ -36,8 +36,8 @@ void PairGaussianPotential::compute()
   double rA = m_rA;
   double rB = m_rB;
   double rcut = m_rcut;
-  double pot_eng_correction = 0.0;
-  
+  double rcut_sq = rcut*rcut;
+    
    
   if (m_system->compute_per_particle_energy())
   {
@@ -84,7 +84,7 @@ void PairGaussianPotential::compute()
           rA = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["rA"];
           rB = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["rB"];
         }
-        double r = sqrt(r);
+        double r = sqrt(r_sq);
         // Handle potential 
         double r_m_rA = r - rA, r_m_rB = r - rB;
         double potential_energy = A*exp(-alpha*r_m_rA*r_m_rA)+B*exp(-beta*r_m_rB*r_m_rB);
