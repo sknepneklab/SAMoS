@@ -28,6 +28,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #include <boost/shared_ptr.hpp>
 
@@ -35,6 +36,7 @@
 using std::ostream;
 using std::vector;
 using std::string;
+using std::find;
 
 using boost::shared_ptr;
 
@@ -72,6 +74,23 @@ public:
   { 
     m_particles.push_back(id);
     m_size++;
+  }
+  
+  //! Shift indices
+  //! When a particle is removed from the system, we need to 
+  //! shift down all indices that are larger than its original value
+  //! \param id if of the removed particle
+  void shift(int id)
+  {
+    vector<int>::iterator it_e = find(m_particles.begin(), m_particles.end(), id);
+    if (it_e != m_particles.end())
+    {
+      m_particles.erase(it_e);
+      for (unsigned int i = 0; i < m_particles.size(); i++)
+        if (m_particles[i] > id)
+          m_particles[i]--;
+      m_size--;
+    }
   }
   
   //! Get particles in the group

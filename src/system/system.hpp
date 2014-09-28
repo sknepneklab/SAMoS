@@ -32,6 +32,7 @@
 #include <fstream>
 #include <cmath>
 #include <map>
+#include <list>
 
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
@@ -54,6 +55,7 @@ using std::ifstream;
 using std::exception;
 using std::sqrt;
 using std::map;
+using std::list;
 using boost::lexical_cast;
 using boost::bad_lexical_cast;
 using boost::split_regex;
@@ -115,6 +117,7 @@ public:
     }
   }
   
+  
   //! Set the periodic boundary conditions flag
   //! \param periodic value of the periodic boundary conditions flag
   void set_periodic(bool periodic) 
@@ -138,6 +141,13 @@ public:
     return m_group[name];
   }
 
+  //! Check is neighbour list needs forced rebuild (like after adding or removing particles
+  bool get_force_nlist_rebuild() { return m_force_nlist_rebuild; }
+  
+  //! Set the force_nlist_rebuild flag
+  //! \param val new value of the flag
+  void set_force_nlist_rebuild(bool val) { m_force_nlist_rebuild = val; }
+  
   //! Generate a group of particles
   void make_group(const string, pairs_type&);
   
@@ -149,6 +159,12 @@ public:
       return false;
     return true;
   }
+  
+  //! Add particle to the system
+  void add_particle(Particle&);
+  
+  //! Remove particle from the system
+  void remove_particle(Particle&);
   
   //! Enable per particle energy tracking
   void enable_per_particle_eng() { m_compute_per_particle_eng = true; }
@@ -169,6 +185,7 @@ private:
   int m_time_step;                      //!< Current time step
   bool m_compute_per_particle_eng;      //!< If true, compute per particle potential and alignment energy (we need to be able to turn it on and off since it is slow - STL map in the inner loop!)
   int m_num_groups;                     //!< Total number of groups in the system
+  bool m_force_nlist_rebuild;           //!< Forced rebuilding of neighbour list
     
 };
 

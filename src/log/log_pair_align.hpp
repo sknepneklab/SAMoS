@@ -41,14 +41,7 @@ public:
   //! \param pot Interaction handler object
   //! \param align Alignment handler object
   //! \param type Type of the pair alignment to log (should match the pair_align type)
-  LogPairAlign(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, const string& type) : Log(sys, msg, pot, align), m_type(type)  
-  { 
-    if (!align)
-    {
-      m_msg->msg(Messenger::ERROR,"In order to log pair alignment at least one aligner has to be defined before specifying log command.");
-      throw runtime_error("Trying to log non-existent pair alignment.");
-    }
-  }
+  LogPairAlign(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, const string& type) : Log(sys, msg, pot, align), m_type(type)  { }
   
   virtual ~LogPairAlign() { }
   

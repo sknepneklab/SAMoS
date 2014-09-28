@@ -120,5 +120,6 @@ void IntegratorNVE::integrate()
     m_constraint->enforce(p);
     // Update angular velocity
     p.omega += dt_2*m_constraint->project_torque(p);
+    p.age += m_dt;
   }
 }

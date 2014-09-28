@@ -67,5 +67,6 @@ void IntegratorVicsek::integrate()
     p.z += m_dt*p.vz;
     // Project everything back to the manifold
     m_constraint->enforce(p);
+    p.age += m_dt;
   }
 }

@@ -24,6 +24,7 @@
 
 #include "system.hpp"
 
+
 // Set of auxiliary functions that help parse lines of the input file and
 // reduce code bloating of the System class constructor
 // These are defined as static 
@@ -55,7 +56,7 @@ static vector<string> split_line(const string& str)
  * \param msg Pointer to the Messenger object
  * \param box Pointer to the simulation box object
  */
-System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_msg(msg), m_box(box), m_periodic(false)
+System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_msg(msg), m_box(box), m_periodic(false), m_force_nlist_rebuild(false)
 {
   vector<string> s_line;
   ifstream inp;
@@ -124,7 +125,10 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   // Populate group 'all'
   m_group["all"] = make_shared<Group>(Group(0,"all"));
   for (unsigned int i = 0; i < m_particles.size(); i++)
+  {
     m_group["all"]->add_particle(i);
+    m_particles[i].groups.push_back("all");
+  }
   m_num_groups = 1;
   
   msg->msg(Messenger::INFO,"Generated group 'all' containing all particles.");
@@ -231,9 +235,46 @@ void System::make_group(const string name, pairs_type& param)
     for (map<string, vector<bool> >::iterator it = to_add.begin(); it != to_add.end(); it++)
       add = add && (*it).second[i];
     if (add)
+    {
+      Particle& p = m_particles[i];
       m_group[name]->add_particle(i);
+      p.groups.push_back(name);
+    }
   }
   
   m_msg->msg(Messenger::INFO,"Added "+lexical_cast<string>(m_group[name]->get_size())+" particles to group "+name+".");
       
+}
+
+/*! Add particle to the system
+ *  \param p Particle to add
+ */ 
+void System::add_particle(Particle& p)
+{
+  m_particles.push_back(p);
+  for (list<string>::iterator it = p.groups.begin(); it != p.groups.end(); it++)
+    m_group[*it]->add_particle(p.get_id());
+  // We need to force neighbour list rebuild
+  m_force_nlist_rebuild = true;
+}
+
+/*! Remove particle from the system
+ *  \param p Particle to remove
+ */ 
+void System::remove_particle(Particle& p)
+{
+  int id = p.get_id();
+  m_particles.erase(m_particles.begin() + id);
+  // Shift down all ids
+  for (unsigned int i = 0; i < m_particles.size(); i++)
+  {
+    Particle& p = m_particles[i];
+    if (p.get_id() > id)
+      p.set_id(p.get_id() - 1);
+  }
+  // Update all groups
+  for(map<string, GroupPtr>::iterator it_g = m_group.begin(); it_g != m_group.end(); it_g++)
+    (*it_g).second->shift(id);
+  // We need to force neighbour list rebuild
+  m_force_nlist_rebuild = true;
 }

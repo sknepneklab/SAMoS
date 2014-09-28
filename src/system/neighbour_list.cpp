@@ -28,6 +28,12 @@
 */
 void NeighbourList::build()
 {
+ 
+ m_list.clear();
+  
+ for (int i = 0; i < m_system->size(); i++)
+      m_list.push_back(vector<int>());
+  
  if (m_use_cell_list) 
     this->build_cell();
   else
@@ -47,9 +53,6 @@ void NeighbourList::build_nsq()
   double d2;
   
   m_old_state.clear();
-  
-  for (int i = 0; i < N; i++)
-    m_list[i].clear();
   
   for (int i = 0; i < N; i++)
   {
@@ -89,9 +92,6 @@ void NeighbourList::build_cell()
   double d2;
   
   m_old_state.clear();
-  
-  for (int i = 0; i < N; i++)
-    m_list[i].clear();
   
   m_cell_list->populate();
   

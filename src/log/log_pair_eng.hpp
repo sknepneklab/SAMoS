@@ -41,14 +41,7 @@ public:
   //! \param pot Interaction handler object
   //! \param align Alignment handler object
   //! \param type Type of the pair energy to log (should match the pair_potential type)
-  LogPairEng(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, const string& type) : Log(sys, msg, pot, align), m_type(type)  
-  { 
-    if (!pot)
-    {
-      m_msg->msg(Messenger::ERROR,"In order to log pair energy at least one potential has to be defined before specifying log command.");
-      throw runtime_error("Trying to log non-existent pair potentials.");
-    }
-  }
+  LogPairEng(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, const string& type) : Log(sys, msg, pot, align), m_type(type)  { }
   
   virtual ~LogPairEng() { }
   

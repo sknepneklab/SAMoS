@@ -69,5 +69,6 @@ void IntegratorNematic::integrate()
     //double dtheta = m_dt*m_constraint->project_torque(p) + m_stoch_coeff*m_rng->gauss_rng(1.0);
     m_constraint->rotate_director(p,dtheta);
     //p.omega = dtheta*m_dt;
+    p.age += m_dt;
   }
 }
