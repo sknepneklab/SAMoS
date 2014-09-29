@@ -32,6 +32,12 @@
 using std::make_pair;
 using std::sqrt;
 
+//! Structure that handles parameters for the soft pair potential
+struct SoftParameters
+{
+  double k;
+};
+
 /*! PairSoftPotential implements the soft repulsive force between particles.
  *  Potential is given as \f$ U_{soft}\left(r_{ij}\right) = \frac{k}{2} \left(a_i + a_j - r_{ij}\right)^2 \f$, if
  *  \f$ r_{ij} \le a_i + a_j \f$ or \f$ U_{soft} = 0 \f$ if \f$ r_{ij} > a_i + a_j \f$.
@@ -49,6 +55,7 @@ public:
   //! \param param Contains information about all parameters (k)
   PairSoftPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairPotential(sys, msg, nlist, param)
   {
+    int ntypes = m_system->get_ntypes();
     if (param.find("k") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No potential strength (k) specified for soft pair potential. Setting it to 1.");
@@ -59,6 +66,20 @@ public:
       m_msg->msg(Messenger::INFO,"Global potential strength (k) for soft pair potential is set to "+param["k"]+".");
       m_k = lexical_cast<double>(param["k"]);
     }
+    m_pair_params = new SoftParameters*[ntypes];
+    for (int i = 0; i < ntypes; i++)
+    {
+      m_pair_params[i] = new SoftParameters[ntypes];
+      for (int j = 0; j < ntypes; j++)
+        m_pair_params[i][j].k = m_k;
+    }
+  }
+  
+  virtual ~PairSoftPotential()
+  {
+    for (int i = 0; i < m_system->get_ntypes(); i++)
+      delete [] m_pair_params[i];
+    delete [] m_pair_params;
   }
                                                                                                                 
   //! Set pair parameters data for pairwise interactions    
@@ -91,9 +112,9 @@ public:
       param["k"] = m_k;
     }
         
-    m_pair_params[make_pair(type_1,type_2)]["k"] = param["k"];
+    m_pair_params[type_1-1][type_2-1].k = param["k"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["k"] = param["k"];
+      m_pair_params[type_2-1][type_1-1].k = param["k"];
     
     m_has_pair_params = true;
   }
@@ -107,7 +128,8 @@ public:
   
 private:
        
-  double m_k;       //!< potential strength
+  double m_k;                       //!< potential strength
+  SoftParameters** m_pair_params;   //!< type specific pair parameters 
      
 };
 

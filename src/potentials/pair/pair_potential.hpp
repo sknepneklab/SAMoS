@@ -39,7 +39,6 @@ using std::pair;
 using std::string;
 using std::vector;
 
-typedef map<pair<int,int>, map<string,double> > PairData;
 
 /*! PairPotential is the base class (abstract) that handles
  *  all calls to the pair potential evaluations. Children 
@@ -60,7 +59,11 @@ public:
                                                                                               m_has_pair_params(false),
                                                                                               m_shifted(false)
                                                                                               { }
-                                                                                                                
+                                                                                                       
+  //! Destructor 
+  virtual ~PairPotential() { }
+  
+                                                                                                   
   //! Get the total potential energy
   double get_potential_energy() { return m_potential_energy; } //!< \return value of the total potential energy
   
@@ -78,7 +81,6 @@ protected:
   SystemPtr m_system;              //!< Pointer to the System object
   MessengerPtr m_msg;              //!< Handles messages sent to output
   NeighbourListPtr m_nlist;        //!< Handles NeighbourList object
-  PairData m_pair_params;          //!< Handles specific parameters for a given pair
   bool m_has_pair_params;          //!< Flag that controls if pair parameters are set
   bool m_shifted;                  //!< If true, potential is shifted at cutoff
   double m_potential_energy;       //!< Total potential energy

@@ -51,8 +51,9 @@ void PairCoulombPotential::compute()
       Particle& pj = m_system->get_particle(j);
       if (m_has_pair_params)
       {
-        alpha = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["alpha"];
-        sigma = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["sigma"];
+        int pi_t = pi.get_type() - 1, pj_t = pj.get_type() - 1;
+        alpha = m_pair_params[pi_t][pj_t].alpha;
+        sigma = m_pair_params[pi_t][pj_t].sigma;
         sigma_sq = sigma*sigma;
       }
       double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;

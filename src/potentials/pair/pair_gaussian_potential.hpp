@@ -32,6 +32,18 @@
 using std::make_pair;
 using std::sqrt;
 
+//! Structure that handles parameters for the Gaussian pair potential
+struct GaussianParameters
+{
+  double A;
+  double B;
+  double alpha;
+  double beta;
+  double rA;
+  double rB;
+  double rcut;
+};
+
 /*! PairGaussianPotential implements a potential with two Gaussians shifted with respect to each other 
  * \f$ U_{Gauss}\left(r_{ij}\right) = A e^{-\alpha(r-r_A)^2} + B e^{-\beta(r-r_B)} \f$,
  *  where \f$ A \f$ and \f$ B \f$ control strengths of two parts, \f$ \alpha \f$ and \f$ \beta \f$
@@ -48,6 +60,7 @@ public:
   //! \param param Contains information about all parameters (epsilon, sigma, and rcut)
   PairGaussianPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairPotential(sys, msg, nlist, param)
   {
+    int ntypes = m_system->get_ntypes();
     if (!m_nlist)
     {
       m_msg->msg(Messenger::ERROR,"Gaussian pair potential requires neighbour list. None given.");
@@ -125,6 +138,22 @@ public:
       m_rcut = lexical_cast<double>(param["rcut"]);
     }
     
+    m_pair_params = new GaussianParameters*[ntypes];
+    for (int i = 0; i < ntypes; i++)
+    {
+      m_pair_params[i] = new GaussianParameters[ntypes];
+      for (int j = 0; j < ntypes; j++)
+      {
+        m_pair_params[i][j].A = m_A;
+        m_pair_params[i][j].B = m_A;
+        m_pair_params[i][j].alpha = m_alpha;
+        m_pair_params[i][j].beta = m_beta;
+        m_pair_params[i][j].rA = m_rA;
+        m_pair_params[i][j].rB = m_rB;
+        m_pair_params[i][j].rcut = m_rcut;
+      }
+    }
+    
     if (m_rcut > m_nlist->get_cutoff())
       m_msg->msg(Messenger::WARNING,"Neighbour list cutoff distance (" + lexical_cast<string>(m_nlist->get_cutoff())+
       " is smaller than the Gaussian cuttof distance ("+lexical_cast<string>(m_rcut)+
@@ -135,6 +164,13 @@ public:
       m_msg->msg(Messenger::INFO,"Gaussian potential shifted to zero at cutoff.");
       m_shifted = true;
     }
+  }
+  
+  virtual ~PairGaussianPotential()
+  {
+    for (int i = 0; i < m_system->get_ntypes(); i++)
+      delete [] m_pair_params[i];
+    delete [] m_pair_params;
   }
                                                                                                                 
   //! Set pair parameters data for pairwise interactions    
@@ -230,28 +266,27 @@ public:
       param["rcut"] = m_rcut;
     }
     
-    m_pair_params[make_pair(type_1,type_2)]["A"] = param["A"];
+    m_pair_params[type_1-1][type_2-1].A = param["A"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["A"] = param["A"];
-    m_pair_params[make_pair(type_1,type_2)]["B"] = param["B"];
+      m_pair_params[type_2-1][type_1-1].A = param["A"];
+    m_pair_params[type_1-1][type_2-1].B = param["B"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["B"] = param["B"];
-    m_pair_params[make_pair(type_1,type_2)]["alpha"] = param["alpha"];
+      m_pair_params[type_2-1][type_1-1].B = param["B"];
+    m_pair_params[type_1-1][type_2-1].alpha = param["alpha"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["alpha"] = param["alpha"];
-    m_pair_params[make_pair(type_1,type_2)]["beta"] = param["beta"];
+      m_pair_params[type_2-1][type_1-1].alpha = param["alpha"];
+    m_pair_params[type_1-1][type_2-1].beta = param["beta"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["beta"] = param["beta"];
-    m_pair_params[make_pair(type_1,type_2)]["rA"] = param["rA"];
+      m_pair_params[type_2-1][type_1-1].beta = param["beta"];
+    m_pair_params[type_1-1][type_2-1].rA = param["rA"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["rA"] = param["rA"];
-    m_pair_params[make_pair(type_1,type_2)]["rB"] = param["rB"];
+      m_pair_params[type_2-1][type_1-1].rA = param["rA"];
+    m_pair_params[type_1-1][type_2-1].rB = param["rB"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["rB"] = param["rB"];
-    
-    m_pair_params[make_pair(type_1,type_2)]["rcut"] = param["rcut"];
+      m_pair_params[type_2-1][type_1-1].rB = param["rB"];
+    m_pair_params[type_1-1][type_2-1].rcut = param["rcut"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["rcut"] = param["rcut"];
+      m_pair_params[type_2-1][type_1-1].rcut = param["rcut"];
     
     if (param["rcut"] < m_nlist->get_cutoff())
       m_msg->msg(Messenger::WARNING,"Neighbour list cutoff distance (" + lexical_cast<string>(m_nlist->get_cutoff())+
@@ -277,7 +312,7 @@ private:
   double m_rA;     //!< position of fist peak
   double m_rB;     //!< position of second peak
   double m_rcut;   //!< cutoff distance
-    
+  GaussianParameters** m_pair_params;   //!< type specific pair parameters   
 };
 
 typedef shared_ptr<PairGaussianPotential> PairGaussianPotentialPtr;

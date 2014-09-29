@@ -54,7 +54,7 @@ void PairLJPotential::compute()
       Particle& pj = m_system->get_particle(neigh[j]);
       if (m_has_pair_params)
       {
-        rcut = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["rcut"];
+        rcut = m_pair_params[pi.get_type()-1][pj.get_type()-1].rcut;
         rcut_sq = rcut*rcut;
       }
       double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
@@ -72,8 +72,9 @@ void PairLJPotential::compute()
       {
         if (m_has_pair_params)
         {
-          sigma = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["sigma"];
-          eps = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["epsilon"];
+          int pi_t = pi.get_type() - 1, pj_t = pj.get_type() - 1;
+          sigma = m_pair_params[pi_t][pj_t].sigma;
+          eps = m_pair_params[pi_t][pj_t].eps;
           sigma_sq = sigma*sigma;
         }
         double inv_r_sq = sigma_sq/r_sq;

@@ -59,7 +59,7 @@ void PairGaussianPotential::compute()
       Particle& pj = m_system->get_particle(neigh[j]);
       if (m_has_pair_params)
       {
-        rcut = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["rcut"];
+        rcut = m_pair_params[pi.get_type()-1][pj.get_type()-1].rcut;
         rcut_sq = rcut*rcut;
       }
       double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
@@ -77,12 +77,13 @@ void PairGaussianPotential::compute()
       {
         if (m_has_pair_params)
         {
-          A = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["A"];
-          B = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["B"];
-          alpha = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["alpha"];
-          beta = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["beta"];
-          rA = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["rA"];
-          rB = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["rB"];
+          int pi_t = pi.get_type() - 1, pj_t = pj.get_type() - 1;
+          A = m_pair_params[pi_t][pj_t].A;
+          B = m_pair_params[pi_t][pj_t].B;
+          alpha = m_pair_params[pi_t][pj_t].alpha;
+          beta = m_pair_params[pi_t][pj_t].beta;
+          rA = m_pair_params[pi_t][pj_t].rA;
+          rB = m_pair_params[pi_t][pj_t].rB;
         }
         double r = sqrt(r_sq);
         // Handle potential 

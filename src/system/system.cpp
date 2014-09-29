@@ -58,6 +58,7 @@ static vector<string> split_line(const string& str)
  */
 System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_msg(msg), m_box(box), m_periodic(false), m_force_nlist_rebuild(false)
 {
+  vector<int> types;
   vector<string> s_line;
   ifstream inp;
   inp.exceptions ( std::ifstream::failbit | std::ifstream::badbit );
@@ -109,6 +110,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         m_msg->msg(Messenger::ERROR,"Z coordinate of particle "+lexical_cast<string>(p.get_id())+" is outside simulation box. Please update box size.");
         throw runtime_error("Particle outside the box.");
       }
+      if (find(types.begin(), types.end(), tp) == types.end())
+        types.push_back(tp);
       p.vx = lexical_cast<double>(s_line[6]);
       p.vy = lexical_cast<double>(s_line[7]);
       p.vz = lexical_cast<double>(s_line[8]);
@@ -132,6 +135,11 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   m_num_groups = 1;
   
   msg->msg(Messenger::INFO,"Generated group 'all' containing all particles.");
+  
+  m_n_types = types.size();
+   
+  msg->msg(Messenger::INFO,"There are " + lexical_cast<string>(m_n_types) + " distinct particle types in the system.");
+  
   
   this->disable_per_particle_eng();
 }
