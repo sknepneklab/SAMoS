@@ -29,6 +29,14 @@
 
 using std::make_pair;
 
+//! Structure that handles parameters for the Lennard-Jones pair potential
+struct LJParameters
+{
+  double eps;
+  double sigma;
+  double rcut;
+};
+
 /*! PairLJPotential implements standard Lennard Jones potential 
  * \f$ U_{LJ}\left(r_{ij}\right) = 4\varepsilon \left[\left(\frac \sigma r_{ij}\right)^{12}-\left(\frac \sigma r_{ij}\right)^6)\right] \f$,
  *  where \f$ \varepsilon \f$ is the potential strength, \f$ \sigma \f$ is the particle diameter and \f$ r_{ij} \f$ is the 
@@ -45,6 +53,7 @@ public:
   //! \param param Contains information about all parameters (epsilon, sigma, and rcut)
   PairLJPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairPotential(sys, msg, nlist, param)
   {
+    int ntypes = m_system->get_ntypes();
     if (!m_nlist)
     {
       m_msg->msg(Messenger::ERROR,"Lennard Jones pair potential requires neighbour list. None given.");
@@ -93,6 +102,24 @@ public:
       m_msg->msg(Messenger::INFO,"Lennard-Jones potential shifted to zero at cutoff.");
       m_shifted = true;
     }
+    m_pair_params = new LJParameters*[ntypes];
+    for (int i = 0; i < ntypes; i++)
+    {
+      m_pair_params[i] = new LJParameters[ntypes];
+      for (int j = 0; j < ntypes; j++)
+      {
+        m_pair_params[i][j].eps = m_eps;
+        m_pair_params[i][j].sigma = m_sigma;
+        m_pair_params[i][j].rcut = m_rcut;
+      }
+    }
+  }
+  
+  virtual ~PairLJPotential()
+  {
+    for (int i = 0; i < m_system->get_ntypes(); i++)
+      delete [] m_pair_params[i];
+    delete [] m_pair_params;
   }
                                                                                                                 
   //! Set pair parameters data for pairwise interactions    
@@ -147,15 +174,16 @@ public:
       param["rcut"] = m_sigma;
     }
     
-    m_pair_params[make_pair(type_1,type_2)]["epsilon"] = param["epsilon"];
+    
+    m_pair_params[type_1-1][type_2-1].eps = param["epsilon"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["epsilon"] = param["epsilon"];
-    m_pair_params[make_pair(type_1,type_2)]["sigma"] = param["sigma"];
+      m_pair_params[type_2-1][type_1-1].eps = param["epsilon"];
+    m_pair_params[type_1-1][type_2-1].sigma = param["sigma"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["sigma"] = param["sigma"];
-    m_pair_params[make_pair(type_1,type_2)]["rcut"] = param["rcut"];
+      m_pair_params[type_2-1][type_1-1].sigma = param["sigma"];
+    m_pair_params[type_1-1][type_2-1].rcut = param["rcut"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["rcut"] = param["rcut"];
+      m_pair_params[type_2-1][type_1-1].rcut = param["rcut"];
     
     if (param["rcut"] < m_nlist->get_cutoff())
       m_msg->msg(Messenger::WARNING,"Neighbour list cutoff distance (" + lexical_cast<string>(m_nlist->get_cutoff())+
@@ -177,6 +205,7 @@ private:
   double m_eps;    //!< potential depth 
   double m_sigma;  //!< particle diameter
   double m_rcut;   //!< cutoff distance
+  LJParameters** m_pair_params;   //!< type specific pair parameters 
     
 };
 

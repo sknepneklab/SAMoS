@@ -24,6 +24,7 @@
 
 #include "system.hpp"
 
+
 // Set of auxiliary functions that help parse lines of the input file and
 // reduce code bloating of the System class constructor
 // These are defined as static 
@@ -55,8 +56,9 @@ static vector<string> split_line(const string& str)
  * \param msg Pointer to the Messenger object
  * \param box Pointer to the simulation box object
  */
-System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_msg(msg), m_box(box), m_periodic(false)
+System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_msg(msg), m_box(box), m_periodic(false), m_force_nlist_rebuild(false)
 {
+  vector<int> types;
   vector<string> s_line;
   ifstream inp;
   inp.exceptions ( std::ifstream::failbit | std::ifstream::badbit );
@@ -108,6 +110,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         m_msg->msg(Messenger::ERROR,"Z coordinate of particle "+lexical_cast<string>(p.get_id())+" is outside simulation box. Please update box size.");
         throw runtime_error("Particle outside the box.");
       }
+      if (find(types.begin(), types.end(), tp) == types.end())
+        types.push_back(tp);
       p.vx = lexical_cast<double>(s_line[6]);
       p.vy = lexical_cast<double>(s_line[7]);
       p.vz = lexical_cast<double>(s_line[8]);
@@ -120,5 +124,165 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   }
   msg->msg(Messenger::INFO,"Read data for "+lexical_cast<string>(m_particles.size())+" particles.");
   inp.close();
+  
+  // Populate group 'all'
+  m_group["all"] = make_shared<Group>(Group(0,"all"));
+  for (unsigned int i = 0; i < m_particles.size(); i++)
+  {
+    m_group["all"]->add_particle(i);
+    m_particles[i].groups.push_back("all");
+  }
+  m_num_groups = 1;
+  
+  msg->msg(Messenger::INFO,"Generated group 'all' containing all particles.");
+  
+  m_n_types = types.size();
+   
+  msg->msg(Messenger::INFO,"There are " + lexical_cast<string>(m_n_types) + " distinct particle types in the system.");
+  
+  
   this->disable_per_particle_eng();
+}
+
+/*! Generate a group of particles
+    \param name name of the group
+    \param param Contains information about all parameters
+    
+    Groups can be generated based on a number of criteria
+    For example base on the particle type, particle size (radius), position, etc.
+    
+*/
+void System::make_group(const string name, pairs_type& param)
+{
+  m_group[name] = make_shared<Group>(Group(m_num_groups++, name));
+  map<string, vector<bool> > to_add;
+  if (param.find("type") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["type"].push_back(false);
+    m_msg->msg(Messenger::INFO,"Adding particle by group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].get_type() == lexical_cast<int>(param["type"]))
+        to_add["type"][i] = true;
+  }
+  if (param.find("r_eq") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["r_eq"].push_back(false);
+    m_msg->msg(Messenger::INFO,"Adding particle of radius equal to "+param["r_eq"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].get_radius() == lexical_cast<double>(param["r_eq"]))
+        to_add["r_eq"][i] = true;
+  }
+  if (param.find("r_le") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["r_le"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle of radius less or equal "+param["r_le"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].get_radius() <= lexical_cast<double>(param["r_le"]))
+        to_add["r_le"][i] = true;
+  }
+  if (param.find("r_ge") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["r_ge"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle of radius greater or equal to "+param["r_ge"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].get_radius() >= lexical_cast<double>(param["r_ge"]))
+        to_add["r_ge"][i] = true;
+  }
+  if (param.find("x_le") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["x_le"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle with x coordinate less or equal to "+param["x_le"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].x <= lexical_cast<double>(param["x_le"]))
+        to_add["x_le"][i] = true;
+  }
+  if (param.find("x_ge") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["x_ge"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle with x coordinate greater or equal to "+param["x_ge"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].x >= lexical_cast<double>(param["x_ge"]))
+        to_add["x_ge"][i] = true;
+  }
+  if (param.find("y_le") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["y_le"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle with y coordinate less or equal to "+param["y_le"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].y <= lexical_cast<double>(param["y_le"]))
+        to_add["y_le"][i] = true;
+  }
+  if (param.find("y_ge") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["y_ge"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle with y coordinate greater or equal to "+param["y_ge"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].y >= lexical_cast<double>(param["y_ge"]))
+        to_add["y_ge"][i] = true;
+  }
+  if (param.find("z_le") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["z_le"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle with z coordinate less or equal to "+param["z_le"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].z <= lexical_cast<double>(param["z_le"]))
+        to_add["z_le"][i] = true;
+  }
+  if (param.find("z_ge") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["z_ge"].push_back(false);
+          m_msg->msg(Messenger::INFO,"Adding particle with z coordinate greater or equal to "+param["z_ge"]+" to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].z >= lexical_cast<double>(param["z_ge"]))
+        to_add["z_ge"][i] = true;
+  }
+  
+  for (unsigned int i = 0; i < m_particles.size(); i++)
+  {
+    bool add = true;
+    for (map<string, vector<bool> >::iterator it = to_add.begin(); it != to_add.end(); it++)
+      add = add && (*it).second[i];
+    if (add)
+    {
+      Particle& p = m_particles[i];
+      m_group[name]->add_particle(i);
+      p.groups.push_back(name);
+    }
+  }
+  
+  m_msg->msg(Messenger::INFO,"Added "+lexical_cast<string>(m_group[name]->get_size())+" particles to group "+name+".");
+      
+}
+
+/*! Add particle to the system
+ *  \param p Particle to add
+ */ 
+void System::add_particle(Particle& p)
+{
+  m_particles.push_back(p);
+  for (list<string>::iterator it = p.groups.begin(); it != p.groups.end(); it++)
+    m_group[*it]->add_particle(p.get_id());
+  // We need to force neighbour list rebuild
+  m_force_nlist_rebuild = true;
+}
+
+/*! Remove particle from the system
+ *  \param p Particle to remove
+ */ 
+void System::remove_particle(Particle& p)
+{
+  int id = p.get_id();
+  m_particles.erase(m_particles.begin() + id);
+  // Shift down all ids
+  for (unsigned int i = 0; i < m_particles.size(); i++)
+  {
+    Particle& p = m_particles[i];
+    if (p.get_id() > id)
+      p.set_id(p.get_id() - 1);
+  }
+  // Update all groups
+  for(map<string, GroupPtr>::iterator it_g = m_group.begin(); it_g != m_group.end(); it_g++)
+    (*it_g).second->shift(id);
+  // We need to force neighbour list rebuild
+  m_force_nlist_rebuild = true;
 }

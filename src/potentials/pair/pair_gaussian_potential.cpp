@@ -16,30 +16,35 @@
  * ************************************************************* */
 
 /*!
- * \file pair_lj_potential.cpp
+ * \file pair_gaussian_potential.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 22-Oct-2013
- * \brief Implementation of PairLJPotential class
+ * \date 27-Sept-2014
+ * \brief Implementation of PairGaussianPotential class
  */ 
 
-#include "pair_lj_potential.hpp"
+#include "pair_gaussian_potential.hpp"
 
-void PairLJPotential::compute()
+void PairGaussianPotential::compute()
 {
   int N = m_system->size();
   bool periodic = m_system->get_periodic();
   BoxPtr box = m_system->get_box();
-  double sigma = m_sigma;
-  double eps = m_eps;
+  double A = m_A;
+  double B = m_B;
+  double alpha = m_alpha;
+  double beta = m_beta;
+  double rA = m_rA;
+  double rB = m_rB;
   double rcut = m_rcut;
-  double sigma_sq = sigma*sigma, rcut_sq = rcut*rcut;
- 
+  double rcut_sq = rcut*rcut;
+    
+   
   if (m_system->compute_per_particle_energy())
   {
     for  (int i = 0; i < N; i++)
     {
       Particle& p = m_system->get_particle(i);
-      p.set_pot_energy("lj",0.0);
+      p.set_pot_energy("gaussian",0.0);
     }
   }
 
@@ -73,23 +78,25 @@ void PairLJPotential::compute()
         if (m_has_pair_params)
         {
           int pi_t = pi.get_type() - 1, pj_t = pj.get_type() - 1;
-          sigma = m_pair_params[pi_t][pj_t].sigma;
-          eps = m_pair_params[pi_t][pj_t].eps;
-          sigma_sq = sigma*sigma;
+          A = m_pair_params[pi_t][pj_t].A;
+          B = m_pair_params[pi_t][pj_t].B;
+          alpha = m_pair_params[pi_t][pj_t].alpha;
+          beta = m_pair_params[pi_t][pj_t].beta;
+          rA = m_pair_params[pi_t][pj_t].rA;
+          rB = m_pair_params[pi_t][pj_t].rB;
         }
-        double inv_r_sq = sigma_sq/r_sq;
-        double inv_r_6  = inv_r_sq*inv_r_sq*inv_r_sq;
+        double r = sqrt(r_sq);
         // Handle potential 
-        double potential_energy = 4.0*eps*inv_r_6*(inv_r_6 - 1.0);
+        double r_m_rA = r - rA, r_m_rB = r - rB;
+        double potential_energy = A*exp(-alpha*r_m_rA*r_m_rA)+B*exp(-beta*r_m_rB*r_m_rB);
         if (m_shifted)
         {
-          double inv_r_cut_sq = sigma_sq/rcut_sq;
-          double inv_r_cut_6 = inv_r_cut_sq*inv_r_cut_sq*inv_r_cut_sq;
-          potential_energy -= 4.0 * eps * inv_r_cut_6 * (inv_r_cut_6 - 1.0);
+          double rcut_m_rA = rcut - rA, rcut_m_rB = rcut - rB;
+          potential_energy -= A*exp(-alpha*rcut_m_rA*rcut_m_rA)+B*exp(-beta*rcut_m_rB*rcut_m_rB);
         }
         m_potential_energy += potential_energy;
         // Handle force
-        double force_factor = 48.0*eps*inv_r_6*(inv_r_6 - 0.5)*inv_r_sq;
+        double force_factor = (2.0/r)*(A*alpha*r_m_rA*exp(-alpha*r_m_rA*r_m_rA)+B*beta*r_m_rB*exp(-beta*r_m_rB*r_m_rB));
         pi.fx += force_factor*dx;
         pi.fy += force_factor*dy;
         pi.fz += force_factor*dz;
@@ -99,8 +106,8 @@ void PairLJPotential::compute()
         pj.fz -= force_factor*dz;
         if (m_system->compute_per_particle_energy())
         {
-          pi.add_pot_energy("lj",potential_energy);
-          pj.add_pot_energy("lj",potential_energy);
+          pi.add_pot_energy("gaussian",potential_energy);
+          pj.add_pot_energy("gaussian",potential_energy);
         }
       }
     }

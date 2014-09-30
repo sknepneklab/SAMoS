@@ -36,6 +36,7 @@ using std::ostream;
 using boost::format;
 using std::map;
 using std::string;
+using std::list;
 
 const int NUM_PART_ATTRIB = 10;  //!< Number of particle attributes
 
@@ -58,6 +59,7 @@ public:
   { 
     fx = 0.0; fy = 0.0; fz = 0.0; 
     tau_x = 0.0; tau_y = 0.0; tau_z = 0.0;
+    age = 0.0;
   }
   
   //! Get particle id
@@ -68,6 +70,10 @@ public:
   
   //! Get particle radius (size)
   double get_radius() const { return m_r; } //!< \return particle radius (m_r)
+  
+  //! Set is (for particle relabelling purposes
+  //! \param id new id
+  void set_id(int id) { m_id = id; }
   
   //! Return potential energy of a given type
   //! \param type potential energy type to return 
@@ -137,6 +143,8 @@ public:
   double nx, ny, nz;           //!< Particle direction vector (not necessarily equal to velocity direction)
   //@}
   double omega;                //!< Magnitude of the angular velocity (in the direction of the normal to the surface)
+  double age;                  //!< Particle age (used when deciding to remove and split the particle)
+  list<string> groups;         //!< List of all groups particle belongs to.
   
 private:  // Make these attributes immutable 
   

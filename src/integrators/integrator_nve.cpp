@@ -31,12 +31,15 @@
 **/
 void IntegratorNVE::integrate()
 {
-  int N = m_system->size();
+  int N = m_system->get_group(m_group_name)->get_size();
+  vector<int> particles = m_system->get_group(m_group_name)->get_particles();
   double dt_2 = 0.5*m_dt;
   // Perform first half step for velocity
   for (int i = 0; i < N; i++)
   {
-    Particle& p = m_system->get_particle(i);
+    int pi = particles[i];
+    Particle& p = m_system->get_particle(pi);
+    //Particle& p = m_system->get_particle(i);
     p.vx += dt_2*p.fx;
     p.vy += dt_2*p.fy;
     p.vz += dt_2*p.fz;
@@ -48,7 +51,9 @@ void IntegratorNVE::integrate()
   // update position
   for (int i = 0; i < N; i++)
   {
-    Particle& p = m_system->get_particle(i);
+    int pi = particles[i];
+    Particle& p = m_system->get_particle(pi);
+    //Particle& p = m_system->get_particle(i);
     double dx = m_dt*p.vx;
     double dy = m_dt*p.vy;
     double dz = m_dt*p.vz;
@@ -80,7 +85,9 @@ void IntegratorNVE::integrate()
   // Enforce constraints and update alignment
   for (int i = 0; i < N; i++)
   {
-    Particle& p = m_system->get_particle(i);
+    int pi = particles[i];
+    Particle& p = m_system->get_particle(pi);
+    //Particle& p = m_system->get_particle(i);
     // Change orientation of the velocity (in the tangent plane) according to eq. (1b)
     double dtheta = m_dt*m_constraint->project_torque(p);
     if (m_has_theta_limit)
@@ -92,7 +99,9 @@ void IntegratorNVE::integrate()
   // Perform second half step for velocity only if there is no limit on particle move
   for (int i = 0; i < N; i++)
   {
-    Particle& p = m_system->get_particle(i);
+    int pi = particles[i];
+    Particle& p = m_system->get_particle(pi);
+    //Particle& p = m_system->get_particle(i);
     p.vx += dt_2*p.fx;
     p.vy += dt_2*p.fy;
     p.vz += dt_2*p.fz;
@@ -111,5 +120,6 @@ void IntegratorNVE::integrate()
     m_constraint->enforce(p);
     // Update angular velocity
     p.omega += dt_2*m_constraint->project_torque(p);
+    p.age += m_dt;
   }
 }

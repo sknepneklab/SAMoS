@@ -87,11 +87,24 @@ for f in files:
     nz = np.array(data.data[data.keys['nz']])
     has_n = True
 
-  r = np.ones(len(x))  
+  if (data.keys.has_key('radius')):
+    r = np.array(data.data[data.keys['radius']])
+  else:
+    r = np.ones(len(x))  
+  
+  if (data.keys.has_key('type')):
+    tp = np.array(data.data[data.keys['type']])
+  else:
+    tp = np.ones(len(x))
+  
 
   Radii = vtk.vtkDoubleArray()
   Radii.SetNumberOfComponents(1)
   Radii.SetName('Radius')
+  
+  Types = vtk.vtkDoubleArray()
+  Types.SetNumberOfComponents(1)
+  Types.SetName('Type')
 
   if has_v:
     Velocities = vtk.vtkDoubleArray()
@@ -108,9 +121,10 @@ for f in files:
       NDirectors.SetNumberOfComponents(3)
       NDirectors.SetName("NDirectors")
 
-  for (xx,yy,zz,rr) in zip(x,y,z,r):
+  for (xx,yy,zz,rr,t) in zip(x,y,z,r,tp):
     Points.InsertNextPoint(xx,yy,zz)
     Radii.InsertNextValue(rr)
+    Types.InsertNextValue(t)
     
   if has_v:
     for (vvx,vvy,vvz) in zip(vx,vy,vz):
@@ -177,6 +191,7 @@ for f in files:
     #polydata.GetCellData().AddArray(Areas)
 
   polydata.GetPointData().AddArray(Radii)
+  polydata.GetPointData().AddArray(Types)
 
   if has_v:
     polydata.GetPointData().AddArray(Velocities)
@@ -190,7 +205,10 @@ for f in files:
   writer = vtk.vtkXMLPolyDataWriter()
   outname = '.'.join(f.split('.')[:-1])
   writer.SetFileName(args.output+'/'+outname+'.vtp')
-  writer.SetInputData(polydata)
+  if vtk.VTK_MAJOR_VERSION <= 5:
+    writer.SetInput(polydata)
+  else:
+    writer.SetInputData(polydata)
   writer.SetDataModeToAscii()
   writer.Write()
   

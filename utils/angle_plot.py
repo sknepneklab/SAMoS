@@ -37,12 +37,14 @@ parser.add_argument("-H", "--histogram", type=str, default='hist.dat', help="nam
 parser.add_argument("-b", "--bins", type=int, default=25, help="number of bins in the histogram")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many time steps")
 parser.add_argument("-S", "--step", type=float, default=5000, help="Time step multiplier")
+parser.add_argument("-R", "--radius", type=float, default=16.0, help="System's radius")
+parser.add_argument("--v0", type=float, default=1.0, help="v0")
+parser.add_argument("-J", "--J", type=float, default=1.0, help="J")
 args = parser.parse_args()
 
-inpname = '.'.join(args.input.split('.')[:-1])
-inpname = inpname.split('_')
-v0 = float(inpname[inpname.index('v0')+1])
-R = float(inpname[inpname.index('R')+1])
+v0 =  args.v0
+R = args.radius
+J = args.J
 
 
 print
@@ -64,6 +66,7 @@ print "\tTime steps per snapshots : ", args.step
 print "\tNumber of bins : ", args.bins
 print "\tR : ", R
 print "\tv0 : ", v0
+print "\tJ : ", J
 
 start = datetime.now()
 
@@ -111,9 +114,11 @@ print '<a6> = ',np.mean(A[:,5]), '+/-', np.std(A[:,5])
 datout.close()
 
 ang = angles - np.mean(angles)
-ang_correl = np.correlate(ang,ang,mode='full')
-ang_correl = ang_correl[ang_correl.size/2:]
+ang_correl = np.zeros(ang.size)
+for tau in xrange(ang.size):
+  ang_correl[tau] = np.mean(ang[:ang.size-tau]*ang[tau:])
 ang_correl /= ang_correl[0]
+
 
 autodata = open(args.autocorrel,'w')
 for (step,ac) in zip(steps,ang_correl):
@@ -121,12 +126,12 @@ for (step,ac) in zip(steps,ang_correl):
 autodata.close()
 
 plt.rc('text', usetex=True)
-plt.xlim((0,max(steps)))
+plt.xlim((0,max(steps[:ang_correl.size/2])))
 plt.ylim((1.1*min(ang_correl),1.0*max(ang_correl)))
-plt.title(r'Autocorrelation function R = '+str(R)+', $v_0$ = '+str(v0))
-plt.plot(steps,ang_correl,'b-', linewidth=2.0)
+plt.title(r'Autocorrelation function R = '+str(R)+', $v_0$ = '+str(v0)+' J = '+str(J))
+plt.plot(steps[:ang_correl.size/2],ang_correl[:ang_correl.size/2],'b-', linewidth=2.0)
 plt.tick_params(axis='both', which='major', labelsize=20)
-plt.xlabel('time step',fontsize=20)
+plt.xlabel(r'$\tau$',fontsize=20)
 plt.ylabel(r'autocorrelation function',fontsize=20)
 autocorrelname = '.'.join(args.autocorrel.split('.')[:-1])
 plt.savefig(autocorrelname+'.png',format='png')
@@ -145,14 +150,27 @@ histdata.close()
 plt.rc('text', usetex=True)
 plt.xlim((0,180))
 #plt.ylim((0,200))
-plt.title(r'Histogram of $<\alpha>$, R = '+str(R)+', $v_0$ = '+str(v0))
+plt.title(r'Histogram of all $\alpha$, R = '+str(R)+', $v_0$ = '+str(v0)+' J = '+str(J))
 bins = np.linspace(0,180,90)
 plt.hist(allangles,bins,color='green',alpha=0.8,normed=1)
+plt.tick_params(axis='both', which='major', labelsize=20)
+plt.xlabel(r'$\alpha$',fontsize=20)
+plt.ylabel(r'$P(\alpha)$',fontsize=20)
+histname = '.'.join(args.histogram.split('.')[:-1])
+plt.savefig(histname+'.png',format='png')
+plt.clf()
+
+plt.rc('text', usetex=True)
+plt.xlim((0,180))
+#plt.ylim((0,200))
+plt.title(r'Histogram of $<\alpha>$, R = '+str(R)+', $v_0$ = '+str(v0)+' J = '+str(J))
+bins = np.linspace(0,180,90)
+plt.hist(angles,bins,color='green',alpha=0.8,normed=1)
 plt.tick_params(axis='both', which='major', labelsize=20)
 plt.xlabel(r'$<\alpha>$',fontsize=20)
 plt.ylabel(r'$P(<\alpha>)$',fontsize=20)
 histname = '.'.join(args.histogram.split('.')[:-1])
-plt.savefig(histname+'.png',format='png')
+plt.savefig('mean_'+histname+'.png',format='png')
 plt.clf()
 
 

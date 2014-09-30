@@ -25,6 +25,8 @@
 #ifndef __INTEGRATOR_H__
 #define __INTEGRATOR_H__
 
+#include <string>
+
 #include <boost/make_shared.hpp>
 
 #include "system.hpp"
@@ -33,6 +35,8 @@
 #include "constraint.hpp"
 #include "aligner.hpp" 
 #include "parse_parameters.hpp"
+
+using std::string;
 
 using boost::make_shared;
 
@@ -66,6 +70,16 @@ public:
       throw runtime_error("Integrator time step not specified.");
     }
     m_dt = lexical_cast<double>(param["dt"]);
+    if (param.find("group") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"No group has been set. Assuming group 'all'.");
+      m_group_name = "all";
+    }
+    else
+    {
+      m_group_name = param["group"];
+      m_msg->msg(Messenger::INFO,"Applying integrator to group "+m_group_name+".");
+    }
   }
   
   //! Propagate system for a time step
@@ -80,6 +94,7 @@ protected:
   NeighbourListPtr m_nlist;    //!< Pointer to the neighbour list object
   ConstraintPtr m_constraint;  //!< Pointer to the handler for constraints
   double m_dt;                 //!< time step
+  string m_group_name;         //!< Name of the group to apply this integrator to
   
 };
 

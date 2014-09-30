@@ -36,7 +36,8 @@
 **/
 void IntegratorBrownian::integrate()
 {
-  int N = m_system->size();
+  int N = m_system->get_group(m_group_name)->get_size();
+  vector<int> particles = m_system->get_group(m_group_name)->get_particles();
   // compute forces in the current configuration
   if (m_potential)
     m_potential->compute();
@@ -46,10 +47,11 @@ void IntegratorBrownian::integrate()
   // iterate over all particles 
   for (int i = 0; i < N; i++)
   {
-    Particle& p = m_system->get_particle(i);
+    int pi = particles[i];
+    Particle& p = m_system->get_particle(pi);
     // Check if we have nematic system
     if (m_nematic)
-      if (m_rng->drnd() < m_tau)  // Flip direction n with probability m_tua (dt/tua, where tau is the parameter given in the input file).
+      if (m_rng->drnd() < m_tau)  // Flip direction n with probability m_tua (dt/tau, where tau is the parameter given in the input file).
       {
         p.nx = -p.nx;  p.ny = -p.ny;  p.nz = -p.nz;
       }
@@ -72,5 +74,6 @@ void IntegratorBrownian::integrate()
     //double dtheta = m_dt*m_constraint->project_torque(p) + m_stoch_coeff*m_rng->gauss_rng(1.0);
     m_constraint->rotate_director(p,dtheta);
     //p.omega = dtheta*m_dt;
+    p.age += m_dt;
   }
 }

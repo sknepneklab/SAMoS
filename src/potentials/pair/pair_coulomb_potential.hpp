@@ -32,6 +32,13 @@
 using std::make_pair;
 using std::sqrt;
 
+//! Structure that handles parameters for the Coulomb pair potential
+struct CoulombParameters
+{
+  double alpha;
+  double sigma;
+};
+
 /*! PairCoulombPotential implements standard Coulomb potential with a LJ repulsive part
  *  to avoid diverging forces and interaction strengths for collapsing particles. Potential is given as
  *  \f$ U_{Coul}\left(r_{ij}\right) = \frac{\alpha}{r_{ij}} + 4\left|\alpha\right|\left(\frac \sigma r_{ij}\right)^{12} \f$,
@@ -49,6 +56,7 @@ public:
   //! \param param Contains information about all parameters (alpha and sigma)
   PairCoulombPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairPotential(sys, msg, nlist, param)
   {
+    int ntypes = m_system->get_ntypes();
     if (param.find("alpha") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No potential strength (alpha) specified for Coulomb pair potential. Setting it to 1.");
@@ -70,6 +78,23 @@ public:
       m_msg->msg(Messenger::INFO,"Global particle diameter (sigma) for Coulomb pair potential is set to "+param["sigma"]+".");
       m_sigma = lexical_cast<double>(param["sigma"]);
     }
+    m_pair_params = new CoulombParameters*[ntypes];
+    for (int i = 0; i < ntypes; i++)
+    {
+      m_pair_params[i] = new CoulombParameters[ntypes];
+      for (int j = 0; j < ntypes; j++)
+      {
+        m_pair_params[i][j].alpha = m_alpha;
+        m_pair_params[i][j].sigma = m_sigma;
+      }
+    }
+  }
+  
+  virtual ~PairCoulombPotential()
+  {
+    for (int i = 0; i < m_system->get_ntypes(); i++)
+      delete [] m_pair_params[i];
+    delete [] m_pair_params;
   }
                                                                                                                 
   //! Set pair parameters data for pairwise interactions    
@@ -113,12 +138,12 @@ public:
       param["sigma"] = m_sigma;
     }
     
-    m_pair_params[make_pair(type_1,type_2)]["epsilon"] = param["epsilon"];
+    m_pair_params[type_1-1][type_2-1].alpha = param["alpha"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["epsilon"] = param["epsilon"];
-    m_pair_params[make_pair(type_1,type_2)]["sigma"] = param["sigma"];
+      m_pair_params[type_2-1][type_1-1].alpha = param["alpha"];
+    m_pair_params[type_1-1][type_2-1].sigma = param["sigma"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["sigma"] = param["sigma"];
+      m_pair_params[type_2-1][type_1-1].sigma = param["sigma"];
     
     m_has_pair_params = true;
   }
@@ -131,9 +156,10 @@ public:
   
   
 private:
-       
-  double m_alpha;    //!< potential strength
-  double m_sigma;    //!< particle diameter
+        
+  double m_alpha;       //!< potential strength
+  double m_sigma;       //!< particle diameter
+  CoulombParameters** m_pair_params;   //!< type specific pair parameters 
     
 };
 

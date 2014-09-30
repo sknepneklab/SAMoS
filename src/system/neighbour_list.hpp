@@ -68,8 +68,7 @@ public:
   //! \param pad Padding distance
   NeighbourList(SystemPtr sys, MessengerPtr msg, double cutoff, double pad) : m_system(sys), m_msg(msg), m_cut(cutoff), m_pad(pad)
   {
-    for (int i = 0; i < m_system->size(); i++)
-      m_list.push_back(vector<int>());
+   
     // Check if box is large enough for cell list
     if (m_system->get_box()->Lx > 2.0*(cutoff+pad) && m_system->get_box()->Ly > 2.0*(cutoff+pad) && m_system->get_box()->Lz > 2.0*(cutoff+pad))
     {
