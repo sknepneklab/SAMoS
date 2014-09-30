@@ -71,22 +71,24 @@ cdict = {'red':   [(0.0,  0.75, 0.75),
 
 # This is the structured data file hierarchy. Replace as appropriate (do not go the Yaouen way and fully automatize ...)
 basefolder= '/home/silke/Documents/CurrentProjects/Rastko/nematic/data/'
-basefolder='/home/silke/Documents/CurrentProjects/Rastko/nematic/data/R_5.0_J0.1/'
+basefolder='/home/silke/Documents/CurrentProjects/Rastko/nematic/data/R_30.0_J0.1/'
 #vList=['0.2','0.3','0.5','0.7','1.0','1.5','2.0','3.0','5.0','7.0','10.0']
 #vList=['0.1','1.0','1.25','1.5','1.75','2.0','3.0']
-#vList=['0.1','0.2','0.3','0.4','0.75','1.0','1.25','1.5','1.75','2.0','3.0']
-vList=['0.2','0.3','0.4','0.75']
+#vList=['1.0','1.25','1.5','1.75','2.0','3.0']
+vList=['0.2','0.3','0.4', '0.5','0.75']
 #JList=['0.01','0.05']
 #vList=['0.2','1.0','5.0']
 #RList=['5.0','6.0','7.0','8.0','9.0','10.0','12.0','14.0','16.0','18.0','20.0','25.0','30.0','40.0']
 phiList=['1.0']
-R='5'
+R='30'
 J='0.1'
 
 vmap=LinearSegmentedColormap('test',cdict,N=len(vList))
 Rmap=LinearSegmentedColormap('test',cdict,N=len(phiList))
 
-nsnap=20020
+#vList=['0.2','0.3','0.4']
+
+#nsnap=20020
 nskip=1000
 nskip=500
 step=5000
@@ -96,11 +98,7 @@ r=0
 #Jval=np.zeros((len(JList),))
 #avtot=np.zeros((len(phiList),len(JList)))
 #davtot=np.zeros((len(phiList),len(JList)))
-defectmat=np.empty((nsnap-nskip,4,3))
-angles=np.zeros((nsnap-nskip,6))
-avang=np.zeros((nsnap-nskip))
-ang_correl=np.zeros((nsnap-nskip))
-stdang=np.zeros((nsnap-nskip))
+
 bins=np.linspace(0,180,45)
 dbin=bins[1]-bins[0]
 
@@ -117,6 +115,14 @@ for v in vList:
 	print infile
 	# header='theta rho vel energy pressure alpha alpha_v'
 	datamat=(sp.loadtxt(infile, unpack=True)[:,(nskip+1):]).T 
+	
+	nsnap=len(datamat[:,0])+nskip
+	defectmat=np.empty((nsnap-nskip,4,3))
+	angles=np.zeros((nsnap-nskip,6))
+	avang=np.zeros((nsnap-nskip))
+	ang_correl=np.zeros((nsnap-nskip))
+	stdang=np.zeros((nsnap-nskip))
+
 	ndefect=datamat[:,0]
 	
 	# This includes potential zeros. Be very careful in the subsequent analysis
@@ -136,6 +142,8 @@ for v in vList:
 	angles[:,4] = np.degrees(np.arccos(np.sum(defectmat[:,1,:]*defectmat[:,3,:],axis=1)))
 	angles[:,5] = np.degrees(np.arccos(np.sum(defectmat[:,2,:]*defectmat[:,3,:],axis=1)))
 	
+	huh=np.isnan(angles)
+	angles[huh]=109
 	# First stop: Correlations on the mean angle
 	# The whole mean angle story only makes proper sense for four of them
 	# Start with that, at least
@@ -164,7 +172,7 @@ for v in vList:
 	# Plotting as desired
 	time=np.linspace(nskip*dt*step,nsnap*dt*step,nsnap-nskip)
 	#plt.plot(time,avang,'-',color=vmap(v),label=JList[v])
-	plt.plot(time[isfour],avang[isfour],'-',color=vmap(w))
+	#plt.plot(time[isfour],avang[isfour],'-',color=vmap(w),label=vList[w])
 	
 	# Calculate correlation function - but only if were are on four angles throughout. 
 	# Deal with the rest later ... complex situation
@@ -173,6 +181,9 @@ for v in vList:
 	# Angular correlation
 	# Nope, this misses the normalization ...
 	avshift=avang-np.mean(avang)
+	for u in range(len(avshift)):
+		if np.isnan(avshift[u]):
+			avshift[u]=0.0
 	#ang_correl = np.correlate(avang-np.mean(avang),avang-np.mean(avang),mode='full')
 	#ang_correl = ang_correl[:(nsnap-nskip)]
 	#ang_correl /= ang_correl[0]
@@ -181,28 +192,27 @@ for v in vList:
 	ang_correl /= ang_correl[0]
 	time=np.linspace(0,(nsnap-nskip)*dt*step,nsnap-nskip)
 	# Plotting for both (comment out as desired)
-	#plt.plot(time,ang_correl,'-',color=vmap(w),label=vList[w])
+	plt.plot(time,ang_correl,'-',color=vmap(w),label=vList[w])
 	# Histogram
 	ang_hist,bin_edges =np.histogram(np.ravel(angles[isfour,:]),bins=bins,density=True)
 	#plt.plot(bins[:44]+dbin/2,ang_hist,'.-',color='r')
-	plt.plot(bins[:44]+dbin/2,ang_hist,'.-',color=vmap(w),label=vList[w])
+	#plt.plot(bins[:44]+dbin/2,ang_hist,'.-',color=vmap(w),label=vList[w])
 
 	
 	## angles
-	plt.xlabel('time') 
-	plt.ylabel('angle') 
-	## correlations
 	#plt.xlabel('time') 
-	#plt.ylabel('C(t)') 
+	#plt.ylabel('angle') 
 	#plt.legend(loc=3,ncol=2)
-	#plt.xlim(0,50000)
-	#plt.ylim(-0.5,1.05)
-	# Histograms
-	#plt.xlabel('angle') 
-	#plt.ylabel('P(angle)') 
-	#plt.legend(loc=1,ncol=2)
-	#plt.xlim(0,500)
-	#plt.ylim(-0.5,1.05)
+	## correlations
+	plt.xlabel('time') 
+	plt.ylabel('C(t)') 
+	#plt.legend(loc=3,ncol=2)
+	plt.xlim(0,50000)
+	plt.ylim(-0.5,1.05)
+	## Histograms
+	plt.xlabel('angle') 
+	plt.ylabel('P(angle)') 
+	
 	
 	plt.title('Alignment ' + J)
 	#plt.title('Velocity ' + str(v))
@@ -217,7 +227,7 @@ for v in vList:
 #plt.xlabel('v_0') 
 #plt.ylabel('angle') 
 #plt.legend(loc=3,ncol=1)
-		
+plt.legend(loc=1,ncol=2)
 	
 plt.show()
 
