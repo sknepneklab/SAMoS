@@ -70,6 +70,7 @@
 #include "pair_soft_potential.hpp"
 #include "pair_lj_potential.hpp"
 #include "pair_gaussian_potential.hpp"
+#include "pair_morse_potential.hpp"
 #include "potential.hpp"
 #include "integrator_brownian.hpp"
 #include "integrator_vicsek.hpp"
@@ -190,6 +191,8 @@ int main(int argc, char* argv[])
   pair_potentials["soft"] = boost::factory<PairSoftPotentialPtr>();
   // Register Gaussian pair potential with the pair potentials class factory
   pair_potentials["gaussian"] = boost::factory<PairGaussianPotentialPtr>();  
+  // Register Morse pair potential with the pair potentials class factory
+  pair_potentials["morse"] = boost::factory<PairMorsePotentialPtr>();  
   
   // Register gravity to the external potential class factory
   external_potentials["gravity"] = boost::factory<ExternalGravityPotentialPtr>();

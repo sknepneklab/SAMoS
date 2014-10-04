@@ -27,7 +27,6 @@
 
 #include "pair_potential.hpp"
 
-using std::make_pair;
 
 //! Structure that handles parameters for the Lennard-Jones pair potential
 struct LJParameters
@@ -171,7 +170,7 @@ public:
     else
     {
       m_msg->msg(Messenger::INFO,"Lennard Jones pair potential. Using default rcut ("+lexical_cast<string>(m_rcut)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
-      param["rcut"] = m_sigma;
+      param["rcut"] = m_rcut;
     }
     
     

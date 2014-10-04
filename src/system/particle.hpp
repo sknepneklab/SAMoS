@@ -60,6 +60,7 @@ public:
     fx = 0.0; fy = 0.0; fz = 0.0; 
     tau_x = 0.0; tau_y = 0.0; tau_z = 0.0;
     age = 0.0;
+    m_flag = 0;
   }
   
   //! Get particle id
@@ -127,6 +128,13 @@ public:
     m_align_eng[type] += val;
   }
   
+  //! Set flag parameter
+  //! \param flag value of the flag 
+  void set_flag(int flag) { m_flag = flag; }
+  
+  //! Get flag parameter
+  int get_flag() const { return m_flag; }
+  
   ///@{
   double x, y, z;              //!< Position in the embedding 3d flat space
   //@}
@@ -149,6 +157,7 @@ public:
 private:  // Make these attributes immutable 
   
   int m_id;                //!< Unique id
+  int m_flag;              //!< This is a unique id which does not change regardless of removal of old and addition of new particles (note: clumsy, needs redesign)
   int m_type;              //!< Particle type
   double m_r;              //!< Particle radius 
   map<string,double> m_pot_eng;   //!< Holds current value of the potential energy of a given type 

@@ -192,6 +192,7 @@ private:
   int m_num_groups;                     //!< Total number of groups in the system
   bool m_force_nlist_rebuild;           //!< Forced rebuilding of neighbour list
   int m_n_types;                        //!< Number of different particle types (used to set pair parameters) 
+  int m_current_particle_flag;          //!< Keeps track of the last particle flag (distinct immutable id) of all particles. For bookkeeping. Clumsy as hell!  
     
 };
 

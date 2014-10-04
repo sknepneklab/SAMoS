@@ -45,7 +45,8 @@ Logger::Logger(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr ali
   m_logger["velocity"] = boost::make_shared<LogVelocity>(LogVelocity(sys, msg, pot, align));
   m_logger["vec_velocity"] = boost::make_shared<LogVecVelocity>(LogVecVelocity(sys, msg, pot, align));
   m_logger["soft_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"soft")); 
-  m_logger["gaussian_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"gaussian")); 
+  m_logger["gaussian_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"gaussian"));
+  m_logger["morse_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"morse")); 
   m_logger["lj_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"lj")); 
   m_logger["coulomb_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"coulomb"));
   m_logger["polar_align"] = boost::make_shared<LogPairAlign>(LogPairAlign(sys, msg, pot, align,"polar")); 

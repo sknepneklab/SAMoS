@@ -56,7 +56,7 @@ static vector<string> split_line(const string& str)
  * \param msg Pointer to the Messenger object
  * \param box Pointer to the simulation box object
  */
-System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_msg(msg), m_box(box), m_periodic(false), m_force_nlist_rebuild(false)
+System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_msg(msg), m_box(box), m_periodic(false), m_force_nlist_rebuild(false), m_current_particle_flag(0)
 {
   vector<int> types;
   vector<string> s_line;
@@ -119,6 +119,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
       p.ny = lexical_cast<double>(s_line[10]);
       p.nz = lexical_cast<double>(s_line[11]);
       p.omega = lexical_cast<double>(s_line[12]);
+      p.set_flag(m_current_particle_flag);
+      m_current_particle_flag++;
       m_particles.push_back(p);
     }
   }
@@ -259,11 +261,13 @@ void System::make_group(const string name, pairs_type& param)
  */ 
 void System::add_particle(Particle& p)
 {
+  p.set_flag(m_current_particle_flag);
   m_particles.push_back(p);
   for (list<string>::iterator it = p.groups.begin(); it != p.groups.end(); it++)
     m_group[*it]->add_particle(p.get_id());
   // We need to force neighbour list rebuild
   m_force_nlist_rebuild = true;
+  m_current_particle_flag++;
 }
 
 /*! Remove particle from the system

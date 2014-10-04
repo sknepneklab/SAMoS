@@ -296,6 +296,8 @@ void Dump::dump_data()
       m_out << " id ";
     if (m_params.find("tp") != m_params.end())
       m_out << " type ";
+    if (m_params.find("flag") != m_params.end())
+      m_out << " flag ";
     if (m_params.find("radius") != m_params.end())
       m_out << " radius ";
     if (m_params.find("coordinate") != m_params.end())
@@ -317,6 +319,8 @@ void Dump::dump_data()
       m_out << format("%5d ") % p.get_id();
     if (m_params.find("tp") != m_params.end())
       m_out << format("%2d ") % p.get_type();
+    if (m_params.find("flag") != m_params.end())
+      m_out << format("%5d ") % p.get_flag();
     if (m_params.find("radius") != m_params.end())
       m_out << format("%8.5f ") % p.get_radius();
     if (m_params.find("coordinate") != m_params.end())
