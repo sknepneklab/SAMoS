@@ -184,7 +184,7 @@ public:
     if (type_1 != type_2)
       m_pair_params[type_2-1][type_1-1].rcut = param["rcut"];
     
-    if (param["rcut"] < m_nlist->get_cutoff())
+    if (param["rcut"] > m_nlist->get_cutoff())
       m_msg->msg(Messenger::WARNING,"Neighbour list cutoff distance (" + lexical_cast<string>(m_nlist->get_cutoff())+
       "is smaller than the Lennard-Jones cuttof distance ("+lexical_cast<string>(m_rcut)+
       ") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+"). Results will not be reliable.");
