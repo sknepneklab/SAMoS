@@ -131,3 +131,32 @@ void NeighbourList::build_cell()
   }
   //m_msg->msg(Messenger::INFO, "Rebuilt neighbour list (using cell list).");
 }
+
+//! Check is neighbour list of the given particle needs update
+//! \param p particle to check 
+//! \return true if the list needs update
+bool NeighbourList::need_update(Particle& p)
+{
+  int id = p.get_id();
+  bool periodic = m_system->get_periodic();
+  BoxPtr box = m_system->get_box();
+  
+  double dx = m_old_state[id].x - p.x;
+  double dy = m_old_state[id].y - p.y;
+  double dz = m_old_state[id].z - p.z;
+  
+  if (periodic)
+  {
+    if (dx > box->xhi) dx -= box->Lx;
+    else if (dx < box->xlo) dx += box->Lx;
+    if (dy > box->yhi) dy -= box->Ly;
+    else if (dy < box->ylo) dy += box->Ly;
+    if (dz > box->zhi) dz -= box->Lz;
+    else if (dz < box->zlo) dz += box->Lz;
+  }
+  
+  if (dx*dx + dy*dy + dz*dz < 0.25*m_pad*m_pad)
+    return false;
+  else
+    return true;
+}

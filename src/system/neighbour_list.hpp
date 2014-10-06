@@ -94,19 +94,7 @@ public:
   }
   
   //! Check is neighbour list of the given particle needs update
-  //! \param p particle to check 
-  //! \return true if the list needs update
-  bool need_update(Particle& p)
-  {
-    int id = p.get_id();
-    double dx = m_old_state[id].x - p.x;
-    double dy = m_old_state[id].y - p.y;
-    double dz = m_old_state[id].z - p.z;
-    if (dx*dx + dy*dy + dz*dz < 0.25*m_pad*m_pad)
-      return false;
-    else
-      return true;
-  }
+  bool need_update(Particle&);
   
   //! Get neighbour list for a give particle
   //! \param id Particle id

@@ -34,6 +34,13 @@ using std::make_pair;
 using std::sqrt;
 using std::vector;
 
+//! Structure that handles parameters for the nematic alignment 
+struct NematicAlignParameters
+{
+  double J;
+  double rcut;
+};
+
 /*! PairNematicAlign implements the "nematic" type alignment between neighbouring particles.
  *  For all particles within the cutoff distance \f$ r_{cut} \left(\leq r_{nl}\right) \f$
  *  (\f$ r_{nl} \f$ being neighbour list cutoff distance) we compute torque on the particle as
@@ -51,6 +58,7 @@ public:
   //! \param param Contains information about all parameters (J and cutoff distance)
   PairNematicAlign(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairAlign(sys, msg, nlist, param)
   {
+    int ntypes = m_system->get_ntypes();
     if (param.find("J") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No coupling constant (J) specified for MF alignment. Setting it to 1.");
@@ -71,6 +79,23 @@ public:
       m_msg->msg(Messenger::INFO,"Global cutoff distance (rcut) for MF alignment is set to "+param["rcut"]+".");
       m_rcut = lexical_cast<double>(param["rcut"]);
     }
+    m_pair_params = new NematicAlignParameters*[ntypes];
+    for (int i = 0; i < ntypes; i++)
+    {
+      m_pair_params[i] = new NematicAlignParameters[ntypes];
+      for (int j = 0; j < ntypes; j++)
+      {
+        m_pair_params[i][j].J = m_J;
+        m_pair_params[i][j].rcut = m_rcut;
+      }
+    }
+  }
+  
+  virtual ~PairNematicAlign()
+  {
+    for (int i = 0; i < m_system->get_ntypes(); i++)
+      delete [] m_pair_params[i];
+    delete [] m_pair_params;
   }
                                                                                                                 
   //! Set pair parameters data for pairwise alignment    
@@ -113,13 +138,12 @@ public:
       param["rcut"] = m_rcut;
     }    
         
-    m_pair_params[make_pair(type_1,type_2)]["J"] = param["J"];
+    m_pair_params[type_1-1][type_2-1].J = param["J"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["J"] = param["J"];
-    
-    m_pair_params[make_pair(type_1,type_2)]["rcut"] = param["rcut"];
+      m_pair_params[type_2-1][type_1-1].J = param["J"];
+    m_pair_params[type_1-1][type_2-1].rcut = param["rcut"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["rcut"] = param["rcut"];
+      m_pair_params[type_2-1][type_1-1].rcut = param["rcut"];
     
     m_has_pair_params = true;
   }
@@ -135,6 +159,7 @@ private:
        
   double m_J;       //!< Coupling constant
   double m_rcut;    //!< Cutoff distance (has to be less than neighbour list cutoff)
+  NematicAlignParameters** m_pair_params;   //!< type specific pair parameters 
      
 };
 

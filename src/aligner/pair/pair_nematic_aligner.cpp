@@ -51,8 +51,9 @@ void PairNematicAlign::compute()
       Particle& pj = m_system->get_particle(neigh[j]);
       if (m_has_pair_params)
       {
-        J = 2.0*m_pair_params[make_pair(pi.get_type(),pj.get_type())]["J"];
-        rcut = m_pair_params[make_pair(pi.get_type(),pj.get_type())]["rcut"];
+        int pi_t = pi.get_type() - 1, pj_t = pj.get_type() - 1;
+        J = m_pair_params[pi_t][pj_t].J;
+        rcut = m_pair_params[pi_t][pj_t].rcut;
       }
       double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
       if (periodic)

@@ -34,6 +34,13 @@ using std::make_pair;
 using std::sqrt;
 using std::vector;
 
+//! Structure that handles parameters for the polar alignment 
+struct PolarAlignParameters
+{
+  double J;
+  double rcut;
+};
+
 
 /*! PairPolarAlign implements the "polar" type alignment between neighbouring particles.
  *  For all particles within the cutoff distance \f$ r_{cut} \left(\leq r_{nl}\right) \f$
@@ -52,6 +59,7 @@ public:
   //! \param param Contains information about all parameters (J and cutoff distance)
   PairPolarAlign(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairAlign(sys, msg, nlist, param)
   {
+    int ntypes = m_system->get_ntypes();
     if (param.find("J") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No coupling constant (J) specified for polar alignment. Setting it to 1.");
@@ -72,6 +80,23 @@ public:
       m_msg->msg(Messenger::INFO,"Global cutoff distance (rcut) for polar alignment is set to "+param["rcut"]+".");
       m_rcut = lexical_cast<double>(param["rcut"]);
     }
+    m_pair_params = new PolarAlignParameters*[ntypes];
+    for (int i = 0; i < ntypes; i++)
+    {
+      m_pair_params[i] = new PolarAlignParameters[ntypes];
+      for (int j = 0; j < ntypes; j++)
+      {
+        m_pair_params[i][j].J = m_J;
+        m_pair_params[i][j].rcut = m_rcut;
+      }
+    }
+  }
+  
+  virtual ~PairPolarAlign()
+  {
+    for (int i = 0; i < m_system->get_ntypes(); i++)
+      delete [] m_pair_params[i];
+    delete [] m_pair_params;
   }
                                                                                                                 
   //! Set pair parameters data for pairwise alignment    
@@ -113,14 +138,13 @@ public:
       m_msg->msg(Messenger::INFO,"Polar pairwise alignment. Using default cutoff distance ("+lexical_cast<string>(m_rcut)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["rcut"] = m_rcut;
     }    
-        
-    m_pair_params[make_pair(type_1,type_2)]["J"] = param["J"];
-    if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["J"] = param["J"];
     
-    m_pair_params[make_pair(type_1,type_2)]["rcut"] = param["rcut"];
+    m_pair_params[type_1-1][type_2-1].J = param["J"];
     if (type_1 != type_2)
-      m_pair_params[make_pair(type_2,type_1)]["rcut"] = param["rcut"];
+      m_pair_params[type_2-1][type_1-1].J = param["J"];
+    m_pair_params[type_1-1][type_2-1].rcut = param["rcut"];
+    if (type_1 != type_2)
+      m_pair_params[type_2-1][type_1-1].rcut = param["rcut"];
     
     m_has_pair_params = true;
   }
@@ -134,8 +158,9 @@ public:
   
 private:
        
-  double m_J;       //!< Coupling constant
-  double m_rcut;    //!< Cutoff distance (has to be less than neighbour list cutoff)
+  double m_J;                             //!< Coupling constant
+  double m_rcut;                          //!< Cutoff distance (has to be less than neighbour list cutoff)
+  PolarAlignParameters** m_pair_params;   //!< type specific pair parameters 
      
 };
 
