@@ -57,7 +57,8 @@ public:
                                                                                               m_msg(msg),
                                                                                               m_nlist(nlist),
                                                                                               m_has_pair_params(false),
-                                                                                              m_shifted(false)
+                                                                                              m_shifted(false),
+                                                                                              m_use_particle_radii(false)
                                                                                               { }
                                                                                                        
   //! Destructor 
@@ -84,6 +85,7 @@ protected:
   bool m_has_pair_params;          //!< Flag that controls if pair parameters are set
   bool m_shifted;                  //!< If true, potential is shifted at cutoff
   double m_potential_energy;       //!< Total potential energy
+  bool m_use_particle_radii;       //!< If true, base potential ranges (if they exist) on particle radii
   
 };
 

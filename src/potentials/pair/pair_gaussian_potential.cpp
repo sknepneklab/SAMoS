@@ -57,6 +57,7 @@ void PairGaussianPotential::compute()
     for (unsigned int j = 0; j < neigh.size(); j++)
     {
       Particle& pj = m_system->get_particle(neigh[j]);
+      double ai = pi.get_radius();
       if (m_has_pair_params)
       {
         rcut = m_pair_params[pi.get_type()-1][pj.get_type()-1].rcut;
@@ -85,6 +86,8 @@ void PairGaussianPotential::compute()
           rA = m_pair_params[pi_t][pj_t].rA;
           rB = m_pair_params[pi_t][pj_t].rB;
         }
+        if (m_use_particle_radii)
+          rB = ai + pj.get_radius();
         double r = sqrt(r_sq);
         // Handle potential 
         double r_m_rA = r - rA, r_m_rB = r - rB;

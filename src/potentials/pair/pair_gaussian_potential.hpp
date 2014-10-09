@@ -138,6 +138,12 @@ public:
       m_rcut = lexical_cast<double>(param["rcut"]);
     }
     
+    if (param.find("use_particle_radii") != param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Gaussian pair potential is set to use particle radii to control its range. Parameter rB will be ignored.");
+      m_use_particle_radii = true;
+    }
+    
     m_pair_params = new GaussianParameters*[ntypes];
     for (int i = 0; i < ntypes; i++)
     {

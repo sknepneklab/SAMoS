@@ -91,6 +91,12 @@ public:
       m_rcut = lexical_cast<double>(param["rcut"]);
     }
     
+    if (param.find("use_particle_radii") != param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Lennard-Jones pair potential is set to use particle radii to control its range. Parameter sigma will be ignored.");
+      m_use_particle_radii = true;
+    }
+    
     if (m_rcut > m_nlist->get_cutoff())
       m_msg->msg(Messenger::WARNING,"Neighbour list cutoff distance (" + lexical_cast<string>(m_nlist->get_cutoff())+
       " is smaller than the Lennard-Jones cuttof distance ("+lexical_cast<string>(m_rcut)+

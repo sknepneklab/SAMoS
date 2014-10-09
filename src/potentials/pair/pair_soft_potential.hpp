@@ -36,6 +36,7 @@ using std::sqrt;
 struct SoftParameters
 {
   double k;
+  double a;
 };
 
 /*! PairSoftPotential implements the soft repulsive force between particles.
@@ -65,6 +66,21 @@ public:
     {
       m_msg->msg(Messenger::INFO,"Global potential strength (k) for soft pair potential is set to "+param["k"]+".");
       m_k = lexical_cast<double>(param["k"]);
+    }
+    if (param.find("a") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"No potential range (a) specified for soft pair potential. Setting it to 2.");
+      m_a = 2.0;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Global potential range (a) for soft pair potential is set to "+param["a"]+".");
+      m_a = lexical_cast<double>(param["a"]);
+    }
+    if (param.find("use_particle_radii") != param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Soft pair potential is set to use particle radii to control its range. Parameter a will be ignored.");
+      m_use_particle_radii = true;
     }
     m_pair_params = new SoftParameters*[ntypes];
     for (int i = 0; i < ntypes; i++)
@@ -111,10 +127,24 @@ public:
       m_msg->msg(Messenger::INFO,"Soft pair potential. Using default strength ("+lexical_cast<string>(m_k)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["k"] = m_k;
     }
-        
+    if (pair_param.find("a") != pair_param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Soft pair potential. Setting range to "+pair_param["a"]+" for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      param["a"] = lexical_cast<double>(pair_param["a"]);
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Soft pair potential. Using default range ("+lexical_cast<string>(m_a)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      param["a"] = m_a;
+    }
+    
+    
     m_pair_params[type_1-1][type_2-1].k = param["k"];
     if (type_1 != type_2)
       m_pair_params[type_2-1][type_1-1].k = param["k"];
+    m_pair_params[type_1-1][type_2-1].k = param["a"];
+    if (type_1 != type_2)
+      m_pair_params[type_2-1][type_1-1].k = param["a"];
     
     m_has_pair_params = true;
   }
@@ -129,6 +159,7 @@ public:
 private:
        
   double m_k;                       //!< potential strength
+  double m_a;                       //!< potential range
   SoftParameters** m_pair_params;   //!< type specific pair parameters 
      
 };

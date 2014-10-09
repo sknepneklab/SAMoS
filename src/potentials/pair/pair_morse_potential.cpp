@@ -49,6 +49,7 @@ void PairMorsePotential::compute()
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
+    double ai = pi.get_radius();
     vector<int>& neigh = m_nlist->get_neighbours(i);
     for (unsigned int j = 0; j < neigh.size(); j++)
     {
@@ -78,15 +79,17 @@ void PairMorsePotential::compute()
           a = m_pair_params[pi_t][pj_t].a;
           re = m_pair_params[pi_t][pj_t].re;
         }
+        if (m_use_particle_radii)
+          re = ai + pj.get_radius();
         double r = sqrt(r_sq);
         double exp_fact = exp(-a*(r-re));
         double pot_fact = exp_fact - 1.0;
         // Handle potential 
-        double potential_energy = D*pot_fact*pot_fact;
+        double potential_energy = D*(pot_fact*pot_fact-1.0);
         if (m_shifted)
         {
           double shift_fact = exp(-a*(rcut-re)) - 1.0;
-          potential_energy -= D*shift_fact*shift_fact;
+          potential_energy -= D*(shift_fact*shift_fact-1.0);
         }
         m_potential_energy += potential_energy;
         // Handle force

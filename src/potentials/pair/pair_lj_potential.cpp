@@ -48,6 +48,7 @@ void PairLJPotential::compute()
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
+    double ai = pi.get_radius();
     vector<int>& neigh = m_nlist->get_neighbours(i);
     for (unsigned int j = 0; j < neigh.size(); j++)
     {
@@ -75,6 +76,11 @@ void PairLJPotential::compute()
           int pi_t = pi.get_type() - 1, pj_t = pj.get_type() - 1;
           sigma = m_pair_params[pi_t][pj_t].sigma;
           eps = m_pair_params[pi_t][pj_t].eps;
+          sigma_sq = sigma*sigma;
+        }
+        if (m_use_particle_radii)
+        {
+          sigma = ai+pj.get_radius();
           sigma_sq = sigma*sigma;
         }
         double inv_r_sq = sigma_sq/r_sq;
