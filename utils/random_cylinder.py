@@ -15,20 +15,34 @@
 #  
 # ################################################################
 
-# Utility code for building random initial configuration on xy plane
+# Utility code for building random initial configuration on a sphere
 
 from datetime import *
 from random import uniform 
 from math import *
 import argparse
-
+import numpy as np
 
 from particle import *
 
-class Plane:
+def projection_matrix(axis):
+  n = axis/np.sqrt(np.dot(axis,axis))
+  return (np.identity(3) - np.outer(n,n))
+
+
+def rotation_matrix(axis,theta):
+  n = axis/np.sqrt(np.dot(axis,axis))
+  a = np.cos(theta/2)
+  b,c,d = -n*np.sin(theta/2)
+  return np.array([[a*a+b*b-c*c-d*d, 2*(b*c-a*d), 2*(b*d+a*c)],
+                  [2*(b*c+a*d), a*a+c*c-b*b-d*d, 2*(c*d-a*b)],
+                  [2*(b*d-a*c), 2*(c*d+a*b), a*a+d*d-b*b-c*c]])
+
+class Cylinder:
   
-  def __init__(self, Lx, Ly, N, v):
-    self.L = (Lx,Ly)
+  def __init__(self, R, H, N, v):
+    self.R = R
+    self.H = H
     self.N = N
     self.particles = [Particle(i) for i in range(N)]
     self.__generate_pos()
@@ -37,80 +51,80 @@ class Plane:
     
   def __generate_pos(self):
     for i in range(self.N):
-      x = uniform(-0.5*self.L[0],0.5*self.L[0])
-      y = uniform(-0.5*self.L[1],0.5*self.L[1])
-      z = 0
+      z = uniform(-0.5*self.H,0.5*self.H)
+      phi = uniform(0.0, 2*pi)
+      x = self.R*cos(phi)
+      y = self.R*sin(phi)
       self.particles[i].r = [x,y,z]
 
   def __generate_vel(self,vav=1.0):
     for p in self.particles:
-      phi = uniform(0,2*pi)
-      p.v = [vav*cos(phi),vav*sin(phi),0.0]
-  
+      axis = np.array([p.r[0],p.r[1],0])
+      v = np.array([uniform(-0.5,0.5), uniform(-0.5,0.5), uniform(-0.5,0.5)])
+      v = np.dot(projection_matrix(axis),v)
+      vlen = sqrt(sum(v**2))
+      v *= vav/vlen
+      theta = uniform(0,2*pi)
+      v = np.dot(rotation_matrix(axis,theta),v)
+      p.v = v
+ 
   def __generate_director(self):
     for p in self.particles:
-      phi = uniform(0,2*pi)
-      p.n = [cos(phi),sin(phi),0.0]
-  
-  def set_radius(self,radii):
-    for i in xrange(len(radii)):
-      self.particles[i].R = radii[i]
-  
+      axis = np.array([p.r[0],p.r[1],0])
+      n = np.array([uniform(-0.5,0.5), uniform(-0.5,0.5), uniform(-0.5,0.5)])
+      n = np.dot(projection_matrix(axis),n)
+      nlen = sqrt(sum(n**2))
+      n *= 1.0/nlen
+      theta = uniform(0,2*pi)
+      n = np.dot(rotation_matrix(axis,theta),n)
+      p.n = n
+ 
   def write(self,outfile):
     gentime = datetime.now()
     out = open(outfile,'w')
     out.write('# Total of %d particles\n' % self.N)
     out.write('# Generated on : %s\n' % str(gentime))
-    out.write('# id  type radius  x   y   z   vx   vy   vz   nx   ny   nz  omega\n')
+    out.write('# id  type radius  x   y   z   vx   vy   vz   nx   ny   nz   omega\n')
     for p in self.particles:
       x, y, z = p.r
       vx, vy, vz = p.v
       nx, ny, nz = p.n
-      out.write('%d  %d  %f %f  %f  %f  %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz,p.omega))
+      out.write('%d  %d  %f %f  %f  %f  %f  %f  %f  %f  %f  %f   %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz,p.omega))
     out.close()
     
+
+
 parser = argparse.ArgumentParser()
-parser.add_argument("-x", "--lx", type=float, default=10.0, help="box length in x direction")
-parser.add_argument("-y", "--ly", type=float, default=10.0, help="box length in y direction")
+parser.add_argument("-R", "--radius", type=float, default=10.0, help="cylinder radius")
+parser.add_argument("-H", "--height", type=float, default=20.0, help="cylinder height")
 parser.add_argument("-f", "--phi",  type=float, default=0.5, help="packing fraction")
 parser.add_argument("-o", "--output", type=str, default='out.dat', help="output file")
 parser.add_argument("-v", "--vavr", type=float, default=1.0, help="average velocity")
-parser.add_argument("--a1",  type=float, default=0.5, help="radius of particles of type 1")
-parser.add_argument("--a2",  type=float, default=1.0, help="radius of particles of type 2")
-parser.add_argument("--eta",  type=float, default=0.5, help="fraction of particles of type 1")
 args = parser.parse_args()
-
-N = int(round(1.0/pi*args.lx*args.ly*args.phi/(args.eta*args.a1**2+(1-args.eta)*args.a2**2)))
 
 print
 print "\tActive Particles on Curved Spaces (APCS)"
-print "\tBuilding of a random flat configuration (xy plane)"
+print "\tBuilding of a random spherical configuration"
 print 
 print "\tRastko Sknepnek"
 print "\tUniversity of Dundee"
 print "\t(c) 2013"
 print "\t----------------------------------------------"
 print 
-print "\tLx : ", args.lx
-print "\tLy : ", args.ly
+print "\tRadius : ", args.radius
+print "\tHeight : ", args.height
 print "\tPacking fraction : ", args.phi
-print "\tNumber of particles : ", N
 print "\tAverage velocity : ", args.vavr
+N=int(round(2.0*args.radius*args.height*args.phi))
+print "\tTotal number of particles : ", N
 print "\tOutput file : ", args.output
-print "\tFraction of particles of type 1 : ", args.eta
-print "\tRadius of particles of type 1 : ", args.a1
-print "\tRadius of particles of type 2 : ", args.a2
 print 
 
 start = datetime.now()
 
-p = Plane(args.lx, args.ly, N, args.vavr)
-radii = []
-for i in xrange(N):
-  if i < args.eta*N: radii.append(args.a1)
-  else: radii.append(args.a2)
-p.set_radius(radii)
-p.write(args.output)
+
+c = Cylinder(args.radius, args.height, N, args.vavr)
+c.write(args.output)
 
 end = datetime.now()
 
@@ -119,3 +133,5 @@ total = end - start
 print 
 print "  *** Completed in ", total.total_seconds(), " seconds *** "
 print
+
+
