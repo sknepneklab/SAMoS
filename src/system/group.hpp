@@ -76,6 +76,16 @@ public:
     m_size++;
   }
   
+  //! Remove particle from group
+  //! \param id particle id to add
+  void remove_particle(int id) 
+  { 
+    vector<int>::iterator it_p = find(m_particles.begin(), m_particles.end(), id);
+    m_particles.erase(it_p);
+    m_size--;
+  }
+  
+  
   //! Shift indices
   //! When a particle is removed from the system, we need to 
   //! shift down all indices that are larger than its original value

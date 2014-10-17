@@ -290,3 +290,32 @@ void System::remove_particle(Particle& p)
   // We need to force neighbour list rebuild
   m_force_nlist_rebuild = true;
 }
+
+/*! Change group of the particle
+ *  \param p Particle whose group we want to change
+ *  \param old_group Old group
+ *  \param new_group New group 
+*/
+void System::change_group(Particle& p, const string& old_group, const string& new_group)
+{
+  if (old_group == "all" && new_group != "all")
+  {
+    m_msg->msg(Messenger::ERROR,"Particle"+lexical_cast<string>(p.get_id())+": Cannot change from \"all\" to other group ("+new_group+").");
+    throw runtime_error("Can't change out of \"all\" group.");
+  }
+  list<string>::iterator it_g = find(p.groups.begin(),p.groups.end(),old_group);
+  if (it_g == p.groups.end())
+  {
+    m_msg->msg(Messenger::ERROR,"Particle"+lexical_cast<string>(p.get_id())+" does not belong to group "+old_group+".");
+    throw runtime_error("Unknown particle group.");
+  }
+  else
+    p.groups.erase(it_g);
+  
+  if (new_group != "all") // It's already in "all"
+    p.groups.push_back(new_group);
+  
+  m_group[old_group]->remove_particle(p.get_id());
+  if (new_group != "all") // It's already in "all"
+    m_group[new_group]->add_particle(p.get_id());
+}

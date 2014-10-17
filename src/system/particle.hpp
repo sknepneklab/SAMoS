@@ -72,9 +72,18 @@ public:
   //! Get particle radius (size)
   double get_radius() const { return m_r; } //!< \return particle radius (m_r)
   
-  //! Set is (for particle relabelling purposes
+  //! Set id (for particle relabelling purposes)
   //! \param id new id
   void set_id(int id) { m_id = id; }
+  
+  //! Set type (for group changes and birth/death)
+  //! \param type new type
+  void set_type(int type) { m_type = type; }
+  
+  //! Set radius (for group changes and birth/death)
+  //! \param r new type
+  void set_radius(double r) { m_r = r; }
+  
   
   //! Return potential energy of a given type
   //! \param type potential energy type to return 
