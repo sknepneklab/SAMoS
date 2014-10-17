@@ -75,6 +75,7 @@ public:
                  | qi::as_string[keyword["nlist"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]           /*! Handles neighbour list. */
                  | qi::as_string[keyword["pair_align"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles pairwise alignment. */
                  | qi::as_string[keyword["external_align"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]  /*! Handles external alignment. */
+                 | qi::as_string[keyword["external_align_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]  /*! Handles external alignment parameters. */
                  | qi::as_string[keyword["group"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]           /*! Handles particle groups. */
                  | qi::as_string[keyword["disable"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]         /*! Handles disabling integrators. */
                  | qi::as_string[keyword["population"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles population control. */

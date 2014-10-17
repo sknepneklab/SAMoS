@@ -84,6 +84,7 @@
 #include "pair_nematic_aligner.hpp"
 #include "pair_vicsek_aligner.hpp"
 #include "external_aligner.hpp"
+#include "external_ajpolar_aligner.hpp"
 #include "population.hpp"
 #include "population_random.hpp"
 
@@ -215,6 +216,9 @@ int main(int argc, char* argv[])
   pair_aligners["nematic"] = boost::factory<PairNematicAlignPtr>();
   // Register Vicsek aligner with the pairwise aligner class factory
   pair_aligners["vicsek"] = boost::factory<PairVicsekAlignPtr>();
+  
+  // Register active jamming polar external alignment to the external align class factory
+  external_aligners["aj"] = boost::factory<ExternalAJPolarAlignPtr>();
   
   // Register random population control with the class factory
   populations["random"] = boost::factory<PopulationRandomPtr>();
@@ -791,6 +795,72 @@ int main(int argc, char* argv[])
             {
               msg->msg(Messenger::ERROR,"Error parsing align_param command at line : "+lexical_cast<string>(current_line)+".");
               throw std::runtime_error("Error parsing align_param command.");
+            }
+            
+          }
+          else if (command_data.command == "external_align")       // if command is pair align, parse it and add this pair alignment to the list of pairwise aligners
+          {
+            if (!defined["input"])  // We need to have system defined before we can add any aligners 
+            {
+              if (defined["messages"])
+                msg->msg(Messenger::ERROR,"System has not been defined. Please define system using \"input\" command before adding any external aligners.");
+              else
+                std::cerr << "System has not been defined. Please define system using \"input\" command before adding any external aligners." << std::endl;
+              throw std::runtime_error("System not defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), external_align_parser, qi::space))
+            {
+              if (!has_aligner) 
+              {
+                aligner = boost::make_shared<Aligner>(Aligner(sys,msg));
+                has_aligner = true;
+                defined["external_aligner"] = true;
+              }
+              if (qi::phrase_parse(external_align_data.params.begin(), external_align_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                aligner->add_external_align(external_align_data.type, external_aligners[external_align_data.type](sys,msg,parameter_data));
+                msg->msg(Messenger::INFO,"Added "+external_align_data.type+" to the list of external aligners.");
+                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
+                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for external alignment "+external_align_data.type+" is set to "+(*it).second+".");
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse external alignment parameters for aligner type "+external_align_data.type+" in line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing external aligner parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing external_align command at line : "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing external_align command.");
+            }
+          }
+          else if (command_data.command == "external_align_param")       // parse parameters for external aligner
+          {
+            if (!defined["external_aligner"])  // We need to have external aligners defined before we can change their parameters
+            {
+              msg->msg(Messenger::ERROR,"No aligners have been defined. Please define them using \"external_align\" command before modifying any parameters.");
+              throw std::runtime_error("No external aligners defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), external_align_parser, qi::space))
+            {
+              if (qi::phrase_parse(external_align_data.params.begin(), external_align_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                aligner->add_external_align_parameters(external_align_data.type, parameter_data);
+                msg->msg(Messenger::INFO,"Setting new parameters for "+external_align_data.type+".");
+                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
+                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for external aligner "+external_align_data.type+" is set to "+(*it).second+".");
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse external alignment parameters for aligner type "+external_align_data.type+" in line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing external alignment parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing external_align_param command at line : "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing external_align_param command.");
             }
             
           }

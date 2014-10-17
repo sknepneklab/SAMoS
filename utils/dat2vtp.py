@@ -56,6 +56,7 @@ start = datetime.now()
 
 files = sorted(glob(args.input+'*.dat'))[args.skip:]
 
+u=0
 for f in files:
   print "Processing file : ", f
 
@@ -203,7 +204,10 @@ for f in files:
 
   polydata.Modified()
   writer = vtk.vtkXMLPolyDataWriter()
-  outname = '.'.join(f.split('.')[:-1])
+  #outname = '.'.join(f.split('.')[:-1])
+  #print outname
+  outname='frame' + str(u)
+  u+=1
   writer.SetFileName(args.output+'/'+outname+'.vtp')
   if vtk.VTK_MAJOR_VERSION <= 5:
     writer.SetInput(polydata)
