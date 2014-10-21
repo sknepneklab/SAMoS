@@ -45,9 +45,9 @@ void ExternalAJPolarAlign::compute()
     if (m_has_params)
       tau = m_type_params[pi.get_type()].tau;
     
-    pi.tau_x -= tau_x/tau;
-    pi.tau_y -= tau_y/tau;
-    pi.tau_z -= tau_z/tau;
+    pi.tau_x += tau_x/tau;
+    pi.tau_y += tau_y/tau;
+    pi.tau_z += tau_z/tau;
     
   }
 }
