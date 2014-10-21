@@ -67,7 +67,7 @@ void PairSoftPotential::compute()
       double r_sq = dx*dx + dy*dy + dz*dz;
       double r = sqrt(r_sq);
       double ai_p_aj;
-      if (m_use_particle_radii)
+      if (!m_use_particle_radii)
         ai_p_aj = m_a;
       else
         ai_p_aj = ai+aj;
