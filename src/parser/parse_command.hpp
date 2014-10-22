@@ -79,6 +79,7 @@ public:
                  | qi::as_string[keyword["group"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]           /*! Handles particle groups. */
                  | qi::as_string[keyword["disable"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]         /*! Handles disabling integrators. */
                  | qi::as_string[keyword["population"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles population control. */
+                 | qi::as_string[keyword["zero_momentum"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]   /*! Handles zeroing momentum of a group of particles. */
                  /* to add new command: | qi::as_string[keyword["newcommand"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ] */
                )
                >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&CommandData::attrib_param_complex, phoenix::ref(command_data)) = qi::_1 ]

@@ -319,3 +319,41 @@ void System::change_group(Particle& p, const string& old_group, const string& ne
   if (new_group != "all") // It's already in "all"
     m_group[new_group]->add_particle(p.get_id());
 }
+
+/*! Kill off any non-zero momentum and angular momentum that a group of particles might have pick up
+ * if the 3d-Newton's law breaking m_limit was enabled.
+ * \param group Group name
+*/
+void System::zero_cm_momentum(const string& group)
+{
+  if (m_group.find(group) == m_group.end())
+  {
+    m_msg->msg(Messenger::ERROR,"Group"+group+" does not exist, so its momentum cannot be zeroed out.");
+    throw runtime_error("Unknown group.");
+  }
+  
+  int N = m_group[group]->get_size();
+  vector<int> particles = m_group[group]->get_particles();
+  double vcm_x = 0.0, vcm_y = 0.0, vcm_z = 0.0;
+  double tau_cm_x = 0.0, tau_cm_y = 0.0, tau_cm_z = 0.0;
+  N = this->size();
+  
+  m_msg->msg(Messenger::INFO,"Removing centre of mass momentum and angular momentum of the group "+group+".");
+  
+  for (int i = 0; i < N; i++)
+  {
+    int pi = particles[i];
+    Particle& p = m_particles[pi];
+    vcm_x += p.vx;  vcm_y += p.vy;   vcm_z += p.vz;
+    tau_cm_x += p.tau_x;  tau_cm_y += p.tau_y;   tau_cm_z += p.tau_z;
+  }
+  vcm_x /= N; vcm_y /= N; vcm_z /= N;
+  tau_cm_x /= N; tau_cm_y /= N; tau_cm_z /= N;
+  for (int i = 0; i < N; i++)
+  {
+    int pi = particles[i];
+    Particle& p = m_particles[pi];
+    p.vx -= vcm_x;  p.vy -= vcm_y;  p.vz -= vcm_z;
+    p.tau_x -= tau_cm_x; p.tau_y -= tau_cm_y; p.tau_z -= tau_cm_z;
+  }
+}

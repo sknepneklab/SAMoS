@@ -1005,6 +1005,28 @@ int main(int argc, char* argv[])
               throw std::runtime_error("Error parsing population line.");
             }
           }
+          else if (command_data.command == "zero_momentum")       // if command is used to zero total momentum of a group of particles
+          {
+            if (!defined["input"])  // we need to have system defined before we can zero its momentum
+            {
+              if (defined["messages"])
+                msg->msg(Messenger::ERROR,"System has not been defined. Please define system using \"input\" command before trying to zero out momentum.");
+              else
+                std::cerr << "System has not been defined. Please define system using \"input\" command before trying to zero out momentum." << std::endl;
+              throw std::runtime_error("System not defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), param_parser, qi::space, parameter_data))
+            {
+              string particle_group = "all";
+              if (parameter_data.find("group") != parameter_data.end()) particle_group = parameter_data["group"];
+              sys->zero_cm_momentum(particle_group);
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Could not parse zero_momentum parameters at line "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing zero_momentum parameters.");
+            }
+          }
         }
         else
         {

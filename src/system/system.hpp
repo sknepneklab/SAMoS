@@ -184,6 +184,9 @@ public:
   //! Compute per particle energy 
   bool compute_per_particle_energy() { return m_compute_per_particle_eng; }
   
+  //! Zero centre of mass momentum
+  void zero_cm_momentum(const string&);
+  
 private:
   
   vector<Particle> m_particles;         //!< Contains all particle in the system 
