@@ -60,6 +60,7 @@ void NeighbourList::build_nsq()
     for (int j = i + 1; j < N; j++)
     {
       Particle& pj = m_system->get_particle(j);
+      bool exclude = false;
       double dx = pi.x - pj.x;
       double dy = pi.y - pj.y;
       double dz = pi.z - pj.z;
@@ -73,7 +74,10 @@ void NeighbourList::build_nsq()
         else if (dz < box->zlo) dz += box->Lz;
       }
       d2 = dx*dx + dy*dy + dz*dz;
-      if (d2 < cut2)
+      if (m_system->has_exclusions())
+            if (m_system->in_exclusion(pi.get_id(), pj.get_id()))
+              exclude = true;
+      if (d2 < cut2 && (!exclude))
         m_list[i].push_back(j);
     }
     m_old_state.push_back(PartPos(pi.x,pi.y,pi.z));
@@ -107,6 +111,7 @@ void NeighbourList::build_cell()
       for (unsigned int j = 0; j < p_idx_vec.size(); j++)
       {
         Particle& pj = m_system->get_particle(p_idx_vec[j]);
+        bool exclude = false;
         if (pj.get_id() > pi.get_id())
         {
           double dx = pi.x - pj.x;
@@ -122,7 +127,10 @@ void NeighbourList::build_cell()
             else if (dz < box->zlo) dz += box->Lz;
           }
           d2 = dx*dx + dy*dy + dz*dz;
-          if (d2 < cut2)
+          if (m_system->has_exclusions())
+            if (m_system->in_exclusion(pi.get_id(), pj.get_id()))
+              exclude = true;
+          if (d2 < cut2 && (!exclude))
             m_list[i].push_back(pj.get_id());
         }
       }

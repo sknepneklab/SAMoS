@@ -44,6 +44,8 @@
 #include "log_vec_velocity.hpp"
 #include "log_pair_eng.hpp"
 #include "log_pair_align.hpp"
+#include "log_bond_eng.hpp"
+#include "log_angle_eng.hpp"
 
 using std::string;
 using std::ofstream;

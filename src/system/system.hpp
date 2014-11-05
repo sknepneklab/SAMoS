@@ -43,6 +43,8 @@
 #include <boost/make_shared.hpp>
 
 #include "particle.hpp"
+#include "bond.hpp"
+#include "angle.hpp"
 #include "box.hpp"
 #include "messenger.hpp"
 #include "group.hpp"
@@ -76,14 +78,29 @@ public:
   //! Construct the system 
   System(const string&, MessengerPtr, BoxPtr);
   
-  ~System() { m_particles.clear(); }
+  ~System() { m_particles.clear(); m_bonds.clear(); m_angles.clear(); }
   
   //! Get system size
   int size() { return m_particles.size(); } //!< \return Number of particles in the system.
   
+  //! Get number of bonds
+  int num_bonds() { return m_bonds.size(); } //!< \return Number of bonds in the system.
+  
+  //! Get number of angles
+  int num_angles() { return m_angles.size(); } //!< \return Number of angles in the system.
+  
   //! Get particle 
   //! \param i index of the particle to return 
   Particle& get_particle(int i) { return m_particles[i]; }  
+  
+  //! Get a bond
+  //! \param i index of the bond to return
+  Bond& get_bond(int i) { return m_bonds[i]; }
+  
+  //! Get an angle
+  //! \param i index of the angle to return 
+  Angle& get_angle(int i) { return m_angles[i]; }
+  
   
   //! Get simulation box
   BoxPtr get_box() { return m_box; }
@@ -165,6 +182,12 @@ public:
   //! Get the number of particle types
   int get_ntypes() const { return m_n_types; }
   
+  //! Get the number of bond types
+  int get_n_bond_types() const { return m_n_bond_types; }
+  
+  //! Get the number of angle types
+  int get_n_angle_types() const { return m_n_angle_types; }
+  
   //! Add particle to the system
   void add_particle(Particle&);
   
@@ -173,8 +196,7 @@ public:
   
   //! Move particle from one group to the other
   void change_group(Particle&, const string&, const string&);
-  
-  
+    
   //! Enable per particle energy tracking
   void enable_per_particle_eng() { m_compute_per_particle_eng = true; }
   
@@ -187,9 +209,35 @@ public:
   //! Zero centre of mass momentum
   void zero_cm_momentum(const string&);
   
+  //! Read in all bonds from the bonds file
+  void read_bonds(const string&);
+  
+  //! Read in all angles from the angles file
+  void read_angles(const string&);
+  
+  //! Get list of exclusions for a given particle
+  //! \param i particle index
+  vector<int>& get_exclusions(int i) { return m_exclusions[i]; }
+ 
+  //! Return true is there are exclusions in the system
+  bool has_exclusions() { return m_has_exclusions; }
+ 
+  //! Check if a particle j is in the exclusion list of particle i
+  //! \param i particle whose exclusions to check
+  //! \param j check if this particle is in the exclusion list
+  bool in_exclusion(int i, int j)
+  {
+    if (find(m_exclusions[i].begin(), m_exclusions[i].end(), j) == m_exclusions[i].end())
+      return false;
+    return true;
+  }
+  
+  
 private:
   
   vector<Particle> m_particles;         //!< Contains all particle in the system 
+  vector<Bond> m_bonds;                 //!< Contains all bonds in the system
+  vector<Angle> m_angles;                //!< Contains all angles in the system
   MessengerPtr m_msg;                   //!< Handles messages sent to output
   BoxPtr m_box;                         //!< Simulation box object
   map<string, GroupPtr> m_group;        //!< All groups in the system 
@@ -199,7 +247,11 @@ private:
   int m_num_groups;                     //!< Total number of groups in the system
   bool m_force_nlist_rebuild;           //!< Forced rebuilding of neighbour list
   int m_n_types;                        //!< Number of different particle types (used to set pair parameters) 
+  int m_n_bond_types;                   //!< Number of different bond types
+  int m_n_angle_types;                  //!< Number of different angle types
   int m_current_particle_flag;          //!< Keeps track of the last particle flag (distinct immutable id) of all particles. For bookkeeping. Clumsy as hell!  
+  bool m_has_exclusions;                //!< If true, there are bonded interactions in the system and therefore those are accompanied with exclusions
+  vector<vector<int> > m_exclusions;    //!< Which particles to be excluded from computing non bonded interactions (basically everything in bonds and angles)
     
 };
 

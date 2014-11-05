@@ -27,6 +27,8 @@ include_directories($ENV{GSL_DIR}/include
                     ${APCS_SOURCE_DIR}/src/potentials
                     ${APCS_SOURCE_DIR}/src/potentials/external
                     ${APCS_SOURCE_DIR}/src/potentials/pair
+                    ${APCS_SOURCE_DIR}/src/potentials/bond
+                    ${APCS_SOURCE_DIR}/src/potentials/angle
                     ${APCS_SOURCE_DIR}/src/system
                     ${APCS_SOURCE_DIR}/src/utils
                     ${APCS_SOURCE_DIR}/src/aligner

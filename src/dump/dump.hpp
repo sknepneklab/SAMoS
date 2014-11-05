@@ -102,6 +102,8 @@ private:
   void dump_xyzv();
   //! Dump XYZC file format for visualization with SimRePlay
   void dump_xyzc();
+  //! Dump MOL2 file format for visualization with VMD
+  void dump_mol2();
   
 };
 

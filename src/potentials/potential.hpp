@@ -36,11 +36,15 @@ using std::string;
 
 #include "pair_potential.hpp"
 #include "external_potential.hpp"
+#include "bond_potential.hpp"
+#include "angle_potential.hpp"
 
 typedef map<string,PairPotentialPtr> PairPotType;
 typedef map<string,ExternalPotentialPtr> ExternPotType;
+typedef map<string,BondPotentialPtr> BondPotType;
+typedef map<string,AnglePotentialPtr> AnglePotType;
 
-/*! Potential class handles all potentials (pair interactions and external forces) present 
+/*! Potential class handles all potentials (pair interactions, external forces, bonds and angles) present 
  *  in the system. All potentials are stored in two STL maps which both have strings as keys
  *  while items are pointers (boost shared_ptr) to the PairPotential and ExternalPotential abstract classes,
  *  respectively. The integrator part of the code calls member functions of this class
@@ -60,6 +64,8 @@ public:
   {
     m_pair_interactions.clear();
     m_external_potentials.clear();
+    m_bond.clear();
+    m_angle.clear();
   }
   
   //! Add pair potential to the list of all pair interactions
@@ -83,6 +89,24 @@ public:
     m_msg->msg(Messenger::INFO,"Added external potential : " + name + " to the list of external forces.");
   }
   
+  //! Add bond potential to the list of all bond interactions
+  //! \param name Unique name of the potential 
+  //! \param pot Pointer to the bond potential object
+  void add_bond_potential(const string& name, BondPotentialPtr pot)
+  {
+    m_bond[name] = pot;
+    m_msg->msg(Messenger::INFO,"Added bond potential : " + name + " to the list of bond interactions.");
+  }
+  
+  //! Add angle potential to the list of all angle interactions
+  //! \param name Unique name of the potential 
+  //! \param pot Pointer to the angle potential object
+  void add_angle_potential(const string& name, AnglePotentialPtr pot)
+  {
+    m_angle[name] = pot;
+    m_msg->msg(Messenger::INFO,"Added angle potential : " + name + " to the list of angle interactions.");
+  }
+  
   //! Add pair potential parameters
   //! \param name Unique name of the potential 
   //! \param params maps with new potential parameters
@@ -97,6 +121,22 @@ public:
   void add_external_potential_parameters(const string& name, pairs_type& params)
   {
     m_external_potentials[name]->set_parameters(params);
+  }
+  
+  //! Add bond potential parameters
+  //! \param name Unique name of the potential 
+  //! \param params maps with new potential parameters
+  void add_bond_potential_parameters(const string& name, pairs_type& params)
+  {
+    m_bond[name]->set_bond_parameters(params);
+  }
+  
+  //! Add angle potential parameters
+  //! \param name Unique name of the potential 
+  //! \param params maps with new potential parameters
+  void add_angle_potential_parameters(const string& name, pairs_type& params)
+  {
+    m_angle[name]->set_angle_parameters(params);
   }
   
   //! Compute total pair potential energy of a given type (for measurement)
@@ -123,6 +163,30 @@ public:
     return m_external_potentials[type]->get_potential_energy();
   }
   
+  //! Compute total bond potential energy of a given type (for measurement)
+  //! \param type bond potential type
+  double compute_bond_potential_energy_of_type(const string& type)
+  {
+    if (m_bond.find(type) == m_bond.end())
+    {
+      m_msg->msg(Messenger::ERROR,"Trying to compute bond potential of type " + type + " that is not defined for this system.");
+      throw runtime_error("Bond potential of type " + type + " not defined.");
+    }
+    return m_bond[type]->get_potential_energy();
+  }
+  
+  //! Compute total angle potential energy of a given type (for measurement)
+  //! \param type angle potential type
+  double compute_angle_potential_energy_of_type(const string& type)
+  {
+    if (m_angle.find(type) == m_angle.end())
+    {
+      m_msg->msg(Messenger::ERROR,"Trying to compute angle potential of type " + type + " that is not defined for this system.");
+      throw runtime_error("Angle potential of type " + type + " not defined.");
+    }
+    return m_angle[type]->get_potential_energy();
+  }
+  
   //! Returns true if any of the potentials need neighbour list
   bool need_nlist() { return m_need_nlist; } 
   
@@ -134,8 +198,10 @@ private:
   SystemPtr m_system;            //!< Contains pointer to the System object
   MessengerPtr m_msg;            //!< Handles messages sent to output
   
-  PairPotType m_pair_interactions;    //!< Contains information about all pair interactions
+  PairPotType m_pair_interactions;      //!< Contains information about all pair interactions
   ExternPotType m_external_potentials;  //!< Contains information about all external forces
+  BondPotType m_bond;                   //!< Contains information about all bonds
+  AnglePotType m_angle;                 //!< Contains information about all angles
   
   bool m_need_nlist;                  //!< If true, there are potentials that need neighbour list
    

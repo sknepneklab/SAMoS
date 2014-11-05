@@ -80,6 +80,12 @@ public:
                  | qi::as_string[keyword["disable"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]         /*! Handles disabling integrators. */
                  | qi::as_string[keyword["population"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles population control. */
                  | qi::as_string[keyword["zero_momentum"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]   /*! Handles zeroing momentum of a group of particles. */
+                 | qi::as_string[keyword["bond"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]            /*! Handles bond potentials. */
+                 | qi::as_string[keyword["bond_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles bond potential parameters. */
+                 | qi::as_string[keyword["angle"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]           /*! Handles angle potentials. */
+                 | qi::as_string[keyword["angle_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]     /*! Handles angle potential parameters. */
+                 | qi::as_string[keyword["read_bonds"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles bonds file. */
+                 | qi::as_string[keyword["read_angles"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]     /*! Handles angles file. */
                  /* to add new command: | qi::as_string[keyword["newcommand"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ] */
                )
                >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&CommandData::attrib_param_complex, phoenix::ref(command_data)) = qi::_1 ]

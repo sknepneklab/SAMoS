@@ -33,7 +33,7 @@ endmacro(add_source_dir)
 set(_apcs_sources "")
 
 # process all subdirectories, which add source files to _apcs_sources 
-set(_dir_list constraints  dump log  integrators  messenger  parser  potentials potentials/pair potentials/external aligner aligner/pair aligner/external system  utils population)
+set(_dir_list constraints  dump log  integrators  messenger  parser  potentials potentials/pair potentials/external potentials/bond potentials/angle aligner aligner/pair aligner/external system  utils population)
 
 foreach (dir ${_dir_list})
 add_source_dir(${dir})

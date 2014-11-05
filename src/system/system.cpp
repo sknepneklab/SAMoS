@@ -144,6 +144,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   
   
   this->disable_per_particle_eng();
+  
+  m_has_exclusions = false;
 }
 
 /*! Generate a group of particles
@@ -356,4 +358,176 @@ void System::zero_cm_momentum(const string& group)
     p.vx -= vcm_x;  p.vy -= vcm_y;  p.vz -= vcm_z;
     p.tau_x -= tau_cm_x; p.tau_y -= tau_cm_y; p.tau_z -= tau_cm_z;
   }
+}
+
+/*! Read in bond information from the bonds file.
+ *  Bonds file has the following structure
+ *  # - comments
+ *  id  type i j
+ *  where id is unique bond id (starts with 0)
+ *  type is bond type (positive integer)
+ *  i is the index of first particle in the bond (also indexed from zero)
+ *  j is the index of second particle in the bond (indexed from zero)
+ *  
+ *  \param bond_file name of the file containing bonds information
+*/
+void System::read_bonds(const string& bond_file)
+{
+  vector<int> types;
+  vector<string> s_line;
+  ifstream inp;
+  inp.exceptions ( std::ifstream::failbit | std::ifstream::badbit );
+  try
+  {
+    inp.open(bond_file.c_str());
+  }
+  catch (exception& e)
+  {
+    m_msg->msg(Messenger::ERROR,"Problem opening (bond) file "+bond_file);
+    throw e;
+  }
+  
+  string line;
+  m_msg->msg(Messenger::INFO,"Reading bond information from file: "+bond_file);
+  
+  // Handle exclusions
+  if (m_exclusions.size() == 0)
+    for (int i = 0; i < this->size(); i++)
+      m_exclusions.push_back(vector<int>());
+  
+  inp.exceptions ( std::ifstream::badbit ); // need to reset ios exceptions to avoid EOF failure of getline
+  while ( getline(inp, line) )
+  {
+    trim(line);
+    to_lower(line);
+    if (line[0] != '#' && line.size() > 0)
+    {
+      s_line = split_line(line);
+      if (s_line.size() < NUM_BOND_ATTRIB)
+      {
+        m_msg->msg(Messenger::ERROR,"Insufficient number of parameters to define a bond. " + lexical_cast<string>(s_line.size()) + " given, but " + lexical_cast<string>(NUM_BOND_ATTRIB) + " expected.");
+        throw runtime_error("Insufficient number of parameters in the bond file.");
+      }
+      int id = lexical_cast<int>(s_line[0]);  // read bond id
+      int tp = lexical_cast<int>(s_line[1]);  // read particle type// Handle exclusions
+      int i = lexical_cast<int>(s_line[2]);   // read id of first particle
+      int j = lexical_cast<int>(s_line[3]);   // read id of second particle
+      if (i >= m_particles.size())
+      {
+        m_msg->msg(Messenger::ERROR,"Index of first particle "+lexical_cast<string>(i)+" is larger than the total number of particles.");
+        throw runtime_error("Wrong particle index.");
+      }
+      if (j >= m_particles.size())
+      {
+        m_msg->msg(Messenger::ERROR,"Index of second particle "+lexical_cast<string>(j)+" is larger than the total number of particles.");
+        throw runtime_error("Wrong particle index.");
+      }
+      m_bonds.push_back(Bond(id, tp, i, j));
+      if (!this->in_exclusion(i,j))
+        m_exclusions[i].push_back(j);
+      if (!this->in_exclusion(j,i))
+        m_exclusions[j].push_back(i);
+      if (find(types.begin(), types.end(), tp) == types.end())
+        types.push_back(tp);
+    }
+  }
+  m_msg->msg(Messenger::INFO,"Read data for "+lexical_cast<string>(m_bonds.size())+" bonds.");
+  inp.close();
+  
+  m_n_bond_types = types.size();
+  
+  m_has_exclusions = true;
+}
+
+
+/*! Read in angle information from the angles file.
+ *  Angles file has the following structure
+ *  # - comments
+ *  id  type i j k
+ *  where id is unique angle id (starts with 0)
+ *  type is angle type (positive integer)
+ *  i is the index of first (left) particle
+ *  j is the index of second (middle) particle 
+ *  k is the index of the third (right) particle
+ *  
+ *  \param angle_file name of the file containing angles information
+*/
+void System::read_angles(const string& angle_file)
+{
+  vector<int> types;
+  vector<string> s_line;
+  ifstream inp;
+  inp.exceptions ( std::ifstream::failbit | std::ifstream::badbit );
+  try
+  {
+    inp.open(angle_file.c_str());
+  }
+  catch (exception& e)
+  {
+    m_msg->msg(Messenger::ERROR,"Problem opening (angle) file "+angle_file);
+    throw e;
+  }
+  
+  string line;
+  m_msg->msg(Messenger::INFO,"Reading angle information from file: "+angle_file);
+  
+  // Handle exclusions
+  if (m_exclusions.size() == 0)
+    for (int i = 0; i < this->size(); i++)
+      m_exclusions.push_back(vector<int>());
+  
+  inp.exceptions ( std::ifstream::badbit ); // need to reset ios exceptions to avoid EOF failure of getline
+  while ( getline(inp, line) )
+  {
+    trim(line);
+    to_lower(line);
+    if (line[0] != '#' && line.size() > 0)
+    {
+      s_line = split_line(line);
+      if (s_line.size() < NUM_ANGLE_ATTRIB)
+      {
+        m_msg->msg(Messenger::ERROR,"Insufficient number of parameters to define an angle. " + lexical_cast<string>(s_line.size()) + " given, but " + lexical_cast<string>(NUM_ANGLE_ATTRIB) + " expected.");
+        throw runtime_error("Insufficient number of parameters in the angle file.");
+      }
+      int id = lexical_cast<int>(s_line[0]);  // read bond id
+      int tp = lexical_cast<int>(s_line[1]);  // read particle type
+      int i = lexical_cast<int>(s_line[2]);   // read id of first (left) particle
+      int j = lexical_cast<int>(s_line[3]);   // read id of second (middle) particle
+      int k = lexical_cast<int>(s_line[4]);   // read id of third (right) particle
+      if (i >= m_particles.size())
+      {
+        m_msg->msg(Messenger::ERROR,"Index of first (m_systemleft) particle "+lexical_cast<string>(i)+" is larger than the total number of particles.");
+        throw runtime_error("Wrong particle index.");
+      }
+      if (j >= m_particles.size())
+      {
+        m_msg->msg(Messenger::ERROR,"Index of second (middle) particle "+lexical_cast<string>(j)+" is larger than the total number of particles.");
+        throw runtime_error("Wrong particle index.");
+      }
+      if (k >= m_particles.size())
+      {
+        m_msg->msg(Messenger::ERROR,"Index of third (right) particle "+lexical_cast<string>(k)+" is larger than the total number of particles.");
+        throw runtime_error("Wrong particle index.");
+      }
+      m_angles.push_back(Angle(id, tp, i, j, k));
+      if (!this->in_exclusion(i,j))
+        m_exclusions[i].push_back(j);
+      if (!this->in_exclusion(i,k))
+        m_exclusions[i].push_back(k);
+      if (!this->in_exclusion(j,i))
+        m_exclusions[j].push_back(i);
+      if (!this->in_exclusion(j,k))
+        m_exclusions[j].push_back(k);
+      if (!this->in_exclusion(k,i))
+        m_exclusions[k].push_back(i);
+      if (!this->in_exclusion(k,j))
+        m_exclusions[k].push_back(j);
+      if (find(types.begin(), types.end(), tp) == types.end())
+        types.push_back(tp);
+    }
+  }
+  m_msg->msg(Messenger::INFO,"Read data for "+lexical_cast<string>(m_angles.size())+" angles.");
+  inp.close();
+  m_has_exclusions = true;
+  m_n_angle_types = types.size();
 }

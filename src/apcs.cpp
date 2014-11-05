@@ -54,6 +54,8 @@
 #include "parse_group.hpp"
 #include "parse_disable.hpp"
 #include "parse_population.hpp"
+#include "parse_bond.hpp"
+#include "parse_angle.hpp"
 #include "constraint.hpp"
 #include "constraint_sphere.hpp"
 #include "constraint_plane.hpp"
@@ -87,6 +89,10 @@
 #include "external_ajpolar_aligner.hpp"
 #include "population.hpp"
 #include "population_random.hpp"
+#include "bond_potential.hpp" 
+#include "bond_harmonic_potential.hpp"
+#include "angle_potential.hpp"
+#include "angle_harmonic_potential.hpp"
 
 
 typedef boost::function< ConstraintPtr(SystemPtr, MessengerPtr, pairs_type&) > constraint_factory;                                                             //!< Type that handles all constraints
@@ -96,6 +102,9 @@ typedef boost::function< IntegratorPtr(SystemPtr, MessengerPtr, PotentialPtr, Al
 typedef boost::function< PairAlignPtr(SystemPtr, MessengerPtr, NeighbourListPtr, pairs_type&) > pair_aligner_factory;                                          //!< Type that handles all pairwise alignment
 typedef boost::function< ExternalAlignPtr(SystemPtr, MessengerPtr, pairs_type&) > external_aligner_factory;                                                    //!< Type that handles all external alignment
 typedef boost::function< PopulationPtr(SystemPtr, MessengerPtr, pairs_type&) > population_factory;                                                             //!< Type that handles all populations
+typedef boost::function< BondPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > bond_potential_factory;                                                      //!< Type that handles all bond potentials
+typedef boost::function< AnglePotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > angle_potential_factory;                                                    //!< Type that handles all angle potentials
+
 
 int main(int argc, char* argv[])
 {
@@ -114,6 +123,8 @@ int main(int argc, char* argv[])
   GroupData           group_data;
   DisableData         disable_data;
   PopulationData      population_data;
+  BondData            bond_data;
+  AngleData           angle_data;
   pairs_type          parameter_data;   // All parameters for different commands
   
   // Parser grammars
@@ -131,6 +142,8 @@ int main(int argc, char* argv[])
   group_grammar           group_parser(group_data);
   disable_grammar         disable_parser(disable_data);
   population_grammar      population_parser(population_data);
+  bond_grammar            bond_parser(bond_data);
+  angle_grammar           angle_parser(angle_data);
   key_value_sequence      param_parser;
   
   // Class factories 
@@ -141,6 +154,8 @@ int main(int argc, char* argv[])
   std::map<std::string, pair_aligner_factory> pair_aligners;
   std::map<std::string, external_aligner_factory> external_aligners;
   std::map<std::string, population_factory> populations;
+  std::map<std::string, bond_potential_factory> bond_potentials;
+  std::map<std::string, angle_potential_factory> angle_potentials;
   
   std::ifstream command_file;    // File with simulation parameters and controls
   std::string command_line;      // Line from the command file
@@ -176,6 +191,10 @@ int main(int argc, char* argv[])
   defined["integrator"] = false;       // If false, no integrator has been defined (cannot run simulation)
   defined["pair_aligner"] = false;     // If false, no pairwise alignment has been defined
   defined["external_aligner"] = false; // If false, no external alignment has been defined
+  defined["bond"] = false;             // If false, no bonds have been added to the system
+  defined["angle"] = false;            // If false, no angles have been defined in the system
+  defined["read_bonds"] = false;       // If false, no bond potentials have been defined
+  defined["read_angles"] = false;      // If false, no angle potentials have been defined
   
     
   // Register spherical constraint with the constraint class factory
@@ -223,6 +242,11 @@ int main(int argc, char* argv[])
   // Register random population control with the class factory
   populations["random"] = boost::factory<PopulationRandomPtr>();
   
+  // Register harmonic bond potential with the class factory
+  bond_potentials["harmonic"] = boost::factory<BondHarmonicPotentialPtr>();
+  
+  // Register harmonic angle potential with the class factory
+  angle_potentials["harmonic"] = boost::factory<AngleHarmonicPotentialPtr>();
   
   if (argc < 2)
   {
@@ -325,8 +349,50 @@ int main(int argc, char* argv[])
             }
             else
             {
-              std::cerr << "Could not parse messenger command." << std::endl;
-              throw std::runtime_error("Could not parse messenger command.");
+              std::cerr << "Could not parse input command." << std::endl;
+              throw std::runtime_error("Could not parse input command.");
+            }
+          }
+          else if (command_data.command == "read_bonds")       // if command is read_bonds, parse it and read in the bonds information, if possible
+          {
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), input_parser, qi::space))  
+            {
+              if (!defined["input"])  // We need to have system defined before we can add any bond potentials 
+              {
+                if (defined["messages"])
+                  msg->msg(Messenger::ERROR,"System has not been defined. Please define system using \"input\" command before reading bond information.");
+                else
+                  std::cerr << "System has not been defined. Please define system using \"input\" command before reading bond information." << std::endl;
+                throw std::runtime_error("System not defined.");
+              }
+              sys->read_bonds(input_data.name);
+              msg->msg(Messenger::INFO,"Finished reading bond data from "+input_data.name+".");
+            }
+            else
+            {
+              std::cerr << "Could not parse read_bonds command." << std::endl;
+              throw std::runtime_error("Could not parse read_bonds command.");
+            }
+          }
+          else if (command_data.command == "read_angles")       // if command is read_angles, parse it and read in the angles information, if possible
+          {
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), input_parser, qi::space))  
+            {
+              if (!defined["input"])  // We need to have system defined before we can add any angle potentials
+              {
+                if (defined["messages"])
+                  msg->msg(Messenger::ERROR,"System has not been defined. Please define system using \"input\" command before reading angle information.");
+                else
+                  std::cerr << "System has not been defined. Please define system using \"input\" command before reading angle information." << std::endl;
+                throw std::runtime_error("System not defined.");
+              }
+              sys->read_angles(input_data.name);
+              msg->msg(Messenger::INFO,"Finished reading angle data from "+input_data.name+".");
+            }
+            else
+            {
+              std::cerr << "Could not parse read_angles command." << std::endl;
+              throw std::runtime_error("Could not parse read_angles command.");
             }
           }
           else if (command_data.command == "pair_potential")       // if command is pair potential, parse it and add this pair potential to the list of pair potentials
@@ -407,6 +473,96 @@ int main(int argc, char* argv[])
               msg->msg(Messenger::ERROR,"Error parsing external command at line : "+lexical_cast<string>(current_line)+".");
               throw std::runtime_error("Error parsing external command.");
             }
+          }
+          else if (command_data.command == "bond")       // if command is bond, parse it and add this bond potential to the list of bond potentials
+          {
+            if (!defined["input"])  // We need to have system defined before we can add any external potential 
+            {
+              if (defined["messages"])
+                msg->msg(Messenger::ERROR,"System has not been defined. Please define system using \"input\" command before adding any bond potentials.");
+              else
+                std::cerr << "System has not been defined. Please define system using \"input\" command before adding any angle potentials." << std::endl;
+              throw std::runtime_error("System not defined.");
+            }
+            if (!defined["bond"])  // We need to have bonds defined before we can add any bond potential 
+            {
+              if (defined["messages"])
+                msg->msg(Messenger::ERROR,"Bond file has not been specified. Please define system using \"read_bonds\" command before adding any bond potentials.");
+              else
+                std::cerr << "Bonds have not been defined. Please define system using \"read_bonds\" command before adding any bond potentials." << std::endl;
+              throw std::runtime_error("Bonds not defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), bond_parser, qi::space))
+            {
+              if (!has_potential) 
+              {
+                pot = boost::make_shared<Potential>(Potential(sys,msg));
+                has_potential = true;
+              }
+              if (qi::phrase_parse(bond_data.params.begin(), bond_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                pot->add_bond_potential(bond_data.type, bond_potentials[bond_data.type](sys,msg,parameter_data));
+                msg->msg(Messenger::INFO,"Added "+bond_data.type+" to the list of bond potentials.");
+                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
+                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for bond potential "+bond_data.type+" is set to "+(*it).second+".");
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse bond potential parameters for bond type "+bond_data.type+" in line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing bond potential parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing bond command at line : "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing bond command.");
+            }
+            
+          }
+          else if (command_data.command == "angle")       // if command is angle, parse it and add this angle potential to the list of angle potentials
+          {
+            if (!defined["input"])  // We need to have system defined before we can add any external potential 
+            {
+              if (defined["messages"])
+                msg->msg(Messenger::ERROR,"System has not been defined. Please define system using \"input\" command before adding any angle potentials.");
+              else
+                std::cerr << "System has not been defined. Please define system using \"input\" command before adding any angle potentials." << std::endl;
+              throw std::runtime_error("System not defined.");
+            }
+            if (!defined["angle"])  // We need to have angles defined before we can add any bond potential 
+            {
+              if (defined["messages"])
+                msg->msg(Messenger::ERROR,"Angle file has not been specified. Please define system using \"read_angles\" command before adding any angle potentials.");
+              else
+                std::cerr << "Angles have not been defined. Please define system using \"read_angles\" command before adding any angle potentials." << std::endl;
+              throw std::runtime_error("Angles not defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), angle_parser, qi::space))
+            {
+              if (!has_potential) 
+              {
+                pot = boost::make_shared<Potential>(Potential(sys,msg));
+                has_potential = true;
+              }
+              if (qi::phrase_parse(angle_data.params.begin(), angle_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                pot->add_angle_potential(angle_data.type, angle_potentials[angle_data.type](sys,msg,parameter_data));
+                msg->msg(Messenger::INFO,"Added "+angle_data.type+" to the list of angle potentials.");
+                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
+                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for angle potential "+angle_data.type+" is set to "+(*it).second+".");
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse angle potential parameters for angle type "+angle_data.type+" in line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing angle potential parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing angle command at line : "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing angle command.");
+            }
+            
           }
           else if (command_data.command == "constraint")       // if command is constraint, parse it and add create appropriate constraint object
           {
@@ -639,6 +795,62 @@ int main(int argc, char* argv[])
             {
               msg->msg(Messenger::ERROR,"Error parsing external_param command at line : "+lexical_cast<string>(current_line)+".");
               throw std::runtime_error("Error parsing external_param command.");
+            }
+          }
+          else if (command_data.command == "bond_param")       // parse bond parameters for a bond potential
+          {
+            if (!defined["read_bonds"])  // We need to have at least one bond potential defined before we can change the parameters
+            {
+              msg->msg(Messenger::ERROR,"No bond potentials have been defined. Please define them using \"bond\" command before modifying any parameters.");
+              throw std::runtime_error("No bond potentials defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), bond_parser, qi::space))
+            {
+              if (qi::phrase_parse(bond_data.params.begin(), bond_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                pot->add_bond_potential_parameters(bond_data.type, parameter_data);
+                msg->msg(Messenger::INFO,"Setting new parameters for "+bond_data.type+".");
+                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
+                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for bond potential "+bond_data.type+" is set to "+(*it).second+".");
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse bond potential parameters for bond potential type "+bond_data.type+" in line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing bond potential parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing bond_param command at line : "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing bond_param command.");
+            }
+          }
+          else if (command_data.command == "angle_param")       // parse angle parameters for an angle potential
+          {
+            if (!defined["read_angles"])  // We need to have at least one angle potential defined before we can change the parameters
+            {
+              msg->msg(Messenger::ERROR,"No angle potentials have been defined. Please define them using \"angle\" command before modifying any parameters.");
+              throw std::runtime_error("No angle potentials defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), angle_parser, qi::space))
+            {
+              if (qi::phrase_parse(angle_data.params.begin(), angle_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                pot->add_angle_potential_parameters(angle_data.type, parameter_data);
+                msg->msg(Messenger::INFO,"Setting new parameters for "+angle_data.type+".");
+                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
+                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for angle potential "+angle_data.type+" is set to "+(*it).second+".");
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse angle potential parameters for bond potential type "+angle_data.type+" in line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing angle potential parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing angle_param command at line : "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing angle_param command.");
             }
           }
           else if (command_data.command == "run")       // run actual simulation

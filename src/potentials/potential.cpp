@@ -32,9 +32,15 @@ void Potential::compute()
   m_system->reset_forces();
   PairPotType::iterator it_pair;
   ExternPotType::iterator it_ext;
+  BondPotType::iterator it_bond;
+  AnglePotType::iterator it_angle;
   
   for(it_pair = m_pair_interactions.begin(); it_pair != m_pair_interactions.end(); it_pair++)
     (*it_pair).second->compute();
   for(it_ext = m_external_potentials.begin(); it_ext != m_external_potentials.end(); it_ext++)
     (*it_ext).second->compute();
+  for(it_bond = m_bond.begin(); it_bond != m_bond.end(); it_bond++)
+    (*it_bond).second->compute();
+  for(it_angle = m_angle.begin(); it_angle != m_angle.end(); it_angle++)
+    (*it_angle).second->compute();
 }
