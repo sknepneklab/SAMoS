@@ -93,6 +93,7 @@
 #include "bond_harmonic_potential.hpp"
 #include "angle_potential.hpp"
 #include "angle_harmonic_potential.hpp"
+#include "angle_cosine_potential.hpp"
 
 
 typedef boost::function< ConstraintPtr(SystemPtr, MessengerPtr, pairs_type&) > constraint_factory;                                                             //!< Type that handles all constraints
@@ -247,7 +248,9 @@ int main(int argc, char* argv[])
   
   // Register harmonic angle potential with the class factory
   angle_potentials["harmonic"] = boost::factory<AngleHarmonicPotentialPtr>();
-  
+    // Register cosine angle potential with the class factory
+  angle_potentials["cosine"] = boost::factory<AngleCosinePotentialPtr>();
+
   if (argc < 2)
   {
     std::cerr << "Usage: " << std::endl;

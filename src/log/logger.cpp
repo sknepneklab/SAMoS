@@ -53,6 +53,8 @@ Logger::Logger(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr ali
   m_logger["nematic_align"] = boost::make_shared<LogPairAlign>(LogPairAlign(sys, msg, pot, align,"nematic")); 
   m_logger["harmonic_bond_energy"] = boost::make_shared<LogBondEng>(LogBondEng(sys, msg, pot, align,"harmonic")); 
   m_logger["harmonic_angle_energy"] = boost::make_shared<LogAngleEng>(LogAngleEng(sys, msg, pot, align,"harmonic")); 
+  m_logger["cosine_angle_energy"] = boost::make_shared<LogAngleEng>(LogAngleEng(sys, msg, pot, align,"cosine")); 
+
   // ------------------------------------------------------------------
     
   m_msg->msg(Messenger::INFO,"Added logger. Logged quantities will be sent to "+file_name+".");

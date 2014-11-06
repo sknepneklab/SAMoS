@@ -60,6 +60,7 @@ using std::sqrt;
 using std::map;
 using std::list;
 using std::find;
+using std::min_element;
 using boost::lexical_cast;
 using boost::bad_lexical_cast;
 using boost::split_regex;
@@ -232,6 +233,8 @@ public:
     return true;
   }
   
+  //! Compute tangent in the direction of the neighbour with the smallest index
+  void compute_tangent(int, double&, double&, double&);
   
 private:
   

@@ -27,6 +27,7 @@
 
 #include <iostream>
 #include <list>
+#include <vector>
 #include <map>
 #include <string>
 
@@ -37,6 +38,7 @@ using boost::format;
 using std::map;
 using std::string;
 using std::list;
+using std::vector;
 
 const int NUM_PART_ATTRIB = 10;  //!< Number of particle attributes
 
@@ -162,6 +164,8 @@ public:
   double omega;                //!< Magnitude of the angular velocity (in the direction of the normal to the surface)
   double age;                  //!< Particle age (used when deciding to remove and split the particle)
   list<string> groups;         //!< List of all groups particle belongs to.
+  vector<int> bonds;           //!< List of all bonds this particle belongs to
+  vector<int> angles;          //!< List of all angles this particle belongs to
   
 private:  // Make these attributes immutable 
   

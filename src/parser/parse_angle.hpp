@@ -57,6 +57,7 @@ public:
   {
     angle = (
               qi::as_string[keyword["harmonic"]][phoenix::bind(&AngleData::type, phoenix::ref(angle_data)) = qi::_1 ]       /*! Handles harmonic angles */
+            | qi::as_string[keyword["cosine"]][phoenix::bind(&AngleData::type, phoenix::ref(angle_data)) = qi::_1 ]         /*! Handles cosine angles */
              /* to add new angle potential: | qi::as_string[keyword["newpotential"]][phoenix::bind(&AngleData::type, phoenix::ref(angle_data)) = qi::_1 ] */
             )
             >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&AngleData::params, phoenix::ref(angle_data)) = qi::_1 ]

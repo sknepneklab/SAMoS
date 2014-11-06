@@ -423,6 +423,8 @@ void System::read_bonds(const string& bond_file)
         throw runtime_error("Wrong particle index.");
       }
       m_bonds.push_back(Bond(id, tp, i, j));
+      m_particles[i].bonds.push_back(id);
+      m_particles[j].bonds.push_back(id);
       if (!this->in_exclusion(i,j))
         m_exclusions[i].push_back(j);
       if (!this->in_exclusion(j,i))
@@ -510,6 +512,9 @@ void System::read_angles(const string& angle_file)
         throw runtime_error("Wrong particle index.");
       }
       m_angles.push_back(Angle(id, tp, i, j, k));
+      m_particles[i].angles.push_back(id);
+      m_particles[j].angles.push_back(id);
+      m_particles[k].angles.push_back(id);
       if (!this->in_exclusion(i,j))
         m_exclusions[i].push_back(j);
       if (!this->in_exclusion(i,k))
@@ -531,3 +536,23 @@ void System::read_angles(const string& angle_file)
   m_has_exclusions = true;
   m_n_angle_types = types.size();
 }
+
+//! Compute tangent in the direction of the neighbour with the smallest index
+//! Used for simulation of actomyosin
+//! \param i particle at which we want to compute tangent vector
+//! \param tx x component of the tangent vector (returned)
+//! \param ty y component of the tangent vector (returned)
+//! \param tz z component of the tangent vector (returned)
+void System::compute_tangent(int i, double& tx, double& ty, double& tz)
+{
+//     tx = ty = tz = 0.0;
+//     if (bonds.size() > 0)
+//     {
+//       int j = *(min_elem(bonds.begin(), bonds.end()));
+//       if (j < m_id)
+//       {
+//           
+//       }
+//     }
+}
+  
