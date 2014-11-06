@@ -58,8 +58,8 @@ void AngleHarmonicPotential::compute()
     }
     if (m_has_angle_params)
     {
-      k = m_angle_params[a.type].k;
-      t0 = m_angle_params[a.type].t0;
+      k = m_angle_params[a.type-1].k;
+      t0 = m_angle_params[a.type-1].t0;
      }
       
     double r_sq_1 = dx1*dx1 + dy1*dy1 + dz1*dz1;

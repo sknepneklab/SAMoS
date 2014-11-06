@@ -75,11 +75,12 @@
 #include "pair_gaussian_potential.hpp"
 #include "pair_morse_potential.hpp"
 #include "potential.hpp"
+#include "integrator.hpp"
 #include "integrator_brownian.hpp"
 #include "integrator_vicsek.hpp"
 #include "integrator_nve.hpp"
 #include "integrator_nematic.hpp"
-#include "integrator.hpp"
+#include "integrator_actomyo.hpp"
 #include "aligner.hpp"
 #include "pair_aligner.hpp"
 #include "pair_polar_aligner.hpp"
@@ -229,6 +230,8 @@ int main(int argc, char* argv[])
   integrators["nve"] = boost::factory<IntegratorNVEPtr>();
   // Register nematic integrator with the integrators class factory
   integrators["nematic"] = boost::factory<IntegratorNematicPtr>();
+  // Register actomyo integrator with the integrators class factory
+  integrators["actomyo"] = boost::factory<IntegratorActomyoPtr>();
   
   // Register polar aligner with the pairwise aligner class factory
   pair_aligners["polar"] = boost::factory<PairPolarAlignPtr>();

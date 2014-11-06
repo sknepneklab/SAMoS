@@ -50,8 +50,8 @@ void BondHarmonicPotential::compute()
     }
     if (m_has_bond_params)
     {
-      k = m_bond_params[b.type].k;
-      l0 = m_bond_params[b.type].l0;
+      k = m_bond_params[b.type-1].k;
+      l0 = m_bond_params[b.type-1].l0;
      }
       
     double r_sq = dx*dx + dy*dy + dz*dz;

@@ -236,6 +236,9 @@ public:
   //! Compute tangent in the direction of the neighbour with the smallest index
   void compute_tangent(int, double&, double&, double&);
   
+  //! Apply period boundary conditions on a quantity 
+  void apply_periodic(double&, double&, double&);
+  
 private:
   
   vector<Particle> m_particles;         //!< Contains all particle in the system 

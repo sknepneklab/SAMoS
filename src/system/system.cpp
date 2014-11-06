@@ -545,14 +545,45 @@ void System::read_angles(const string& angle_file)
 //! \param tz z component of the tangent vector (returned)
 void System::compute_tangent(int i, double& tx, double& ty, double& tz)
 {
-//     tx = ty = tz = 0.0;
-//     if (bonds.size() > 0)
-//     {
-//       int j = *(min_elem(bonds.begin(), bonds.end()));
-//       if (j < m_id)
-//       {
-//           
-//       }
-//     }
+  tx = ty = tz = 0.0;
+  Particle& pi = m_particles[i];
+  if (pi.bonds.size() > 0)
+  {
+    int j = *(min_element(pi.bonds.begin(), pi.bonds.end()));
+    if (j < pi.get_id())
+    {
+      Particle& pj = m_particles[j];
+      double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
+      if (m_periodic)
+      {
+        if (dx > m_box->xhi) dx -= m_box->Lx;
+        else if (dx < m_box->xlo) dx += m_box->Lx;
+        if (dy > m_box->yhi) dy -= m_box->Ly;
+        else if (dy < m_box->ylo) dy += m_box->Ly;
+        if (dz > m_box->zhi) dz -= m_box->Lz;
+        else if (dz < m_box->zlo) dz += m_box->Lz;
+      }
+      double l = sqrt(dx*dx + dy*dy + dz*dz);
+      tx = dx/l;
+      ty = dy/l;
+      tz = dz/l;
+    }
+  }
 }
-  
+ 
+//! Apply period boundary conditions on three coordinate
+//! \param dx x value too apply periodic boundary to (will be overwritten)
+//! \param dy y value too apply periodic boundary to (will be overwritten)
+//! \param dz z value too apply periodic boundary to (will be overwritten)
+void System::apply_periodic(double& dx, double& dy, double& dz)
+{
+  if (m_periodic)
+  {
+    if (dx > m_box->xhi) dx -= m_box->Lx;
+    else if (dx < m_box->xlo) dx += m_box->Lx;
+    if (dy > m_box->yhi) dy -= m_box->Ly;
+    else if (dy < m_box->ylo) dy += m_box->Ly;
+    if (dz > m_box->zhi) dz -= m_box->Lz;
+    else if (dz < m_box->zlo) dz += m_box->Lz;
+  }
+}

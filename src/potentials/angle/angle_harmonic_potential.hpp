@@ -69,7 +69,7 @@ public:
     
     if (param.find("t_eq") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"No equilibrium angle (t0) specified for harmonic angle potential. Setting it to 1.");
+      m_msg->msg(Messenger::WARNING,"No equilibrium angle (t0) specified for harmonic angle potential. Setting it to pi.");
       m_t0 = M_PI;
     }
     else

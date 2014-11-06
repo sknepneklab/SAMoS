@@ -57,7 +57,7 @@ void AngleCosinePotential::compute()
     }
     if (m_has_angle_params)
     {
-      k = m_angle_params[a.type].k;
+      k = m_angle_params[a.type-1].k;
      }
       
     double r_sq_1 = dx1*dx1 + dy1*dy1 + dz1*dz1;
