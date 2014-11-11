@@ -68,6 +68,12 @@ public:
     }
   }
   
+  //! Computes normal to the surface
+  void compute_normal(Particle& p, double& Nx, double& Ny, double& Nz) 
+  {
+    Nx = 0.0; Ny = 0.0; Nz = 1.0; 
+  }
+  
   //! Enforce constraint
   void enforce(Particle&);
   

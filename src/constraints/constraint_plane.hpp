@@ -54,6 +54,12 @@ public:
     m_msg->msg(Messenger::INFO,"Planar constraint. Setting plane dimensions to lx = "+lexical_cast<string>(m_lx)+" and ly = "+lexical_cast<string>(m_ly)+".");
   }
   
+  //! Computes normal to the surface
+  void compute_normal(Particle& p, double& Nx, double& Ny, double& Nz) 
+  {
+    Nx = 0.0; Ny = 0.0; Nz = 1.0; 
+  }
+  
   //! Enforce constraint
   void enforce(Particle&);
   

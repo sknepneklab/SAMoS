@@ -50,6 +50,9 @@ public:
   //! \param param parameters that define the manifolds (e.g., sphere radius)
   Constraint(SystemPtr sys, MessengerPtr msg, pairs_type& param) : m_system(sys), m_msg(msg) { }
   
+  //! Computes normal to the surface
+  virtual void compute_normal(Particle&, double&, double&, double&) = 0;
+  
   //! Enforce constraint
   virtual void enforce(Particle&) = 0;
   

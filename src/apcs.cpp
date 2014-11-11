@@ -61,6 +61,7 @@
 #include "constraint_plane.hpp"
 #include "constraint_plane_walls.hpp"
 #include "constraint_cylinder.hpp"
+#include "constraint_peanut.hpp"
 #include "rng.hpp"
 #include "particle.hpp"
 #include "box.hpp"
@@ -207,6 +208,8 @@ int main(int argc, char* argv[])
   constraints["walls"] = boost::factory<ConstraintPlaneWallsPtr>();
   // Register cylindrical constraint with the constraint class factory
   constraints["cylinder"] = boost::factory<ConstraintCylinderPtr>();
+  // Register peanut constraint with the constraint class factory
+  constraints["peanut"] = boost::factory<ConstraintPeanutPtr>();
   
   // Register Lennard-Jones pair potential with the pair potentials class factory
   pair_potentials["lj"] = boost::factory<PairLJPotentialPtr>();
