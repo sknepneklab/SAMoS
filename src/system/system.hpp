@@ -193,7 +193,7 @@ public:
   void add_particle(Particle&);
   
   //! Remove particle from the system
-  void remove_particle(Particle&);
+  void remove_particle(int);
   
   //! Move particle from one group to the other
   void change_group(Particle&, const string&, const string&);
@@ -238,6 +238,9 @@ public:
   
   //! Apply period boundary conditions on a quantity 
   void apply_periodic(double&, double&, double&);
+  
+  //! Make sure that all group information on particles matches group information in the lists
+  bool group_ok(const string&);
   
 private:
   

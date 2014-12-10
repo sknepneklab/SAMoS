@@ -91,6 +91,7 @@
 #include "external_ajpolar_aligner.hpp"
 #include "population.hpp"
 #include "population_random.hpp"
+#include "population_density.hpp"
 #include "bond_potential.hpp" 
 #include "bond_harmonic_potential.hpp"
 #include "angle_potential.hpp"
@@ -174,7 +175,7 @@ int main(int argc, char* argv[])
   ExternalAlignPtr external_aligner;               // Handles all external aligners
   vector<DumpPtr> dump;                            // Handles all different dumps
   vector<LoggerPtr> log;                           // Handles all different logs
-  PopulationPtr  population;                       // Handles population
+  vector<PopulationPtr>  population;               // Handles all population methods
   
   bool periodic = false;       // If true, use periodic boundary conditions
   bool has_potential = false;  // If false, potential handling object (Potential class) has not be initialized yet
@@ -248,6 +249,8 @@ int main(int argc, char* argv[])
   
   // Register random population control with the class factory
   populations["random"] = boost::factory<PopulationRandomPtr>();
+  // Register density population control with the class factory
+  populations["density"] = boost::factory<PopulationDensityPtr>();
   
   // Register harmonic bond potential with the class factory
   bond_potentials["harmonic"] = boost::factory<BondHarmonicPotentialPtr>();
@@ -909,8 +912,11 @@ int main(int argc, char* argv[])
                   (*it_integ).second->integrate();
                 if (has_population)
                 {
-                  population->divide(time_step);
-                  population->remove(time_step);
+                  for (vector<PopulationPtr>::iterator it_pop = population.begin(); it_pop != population.end(); it_pop++)
+                  {
+                    (*it_pop)->divide(time_step);
+                    (*it_pop)->remove(time_step);
+                  }
                 }
                 // Check the neighbour list rebuild only if necessary 
                 if ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist()))
@@ -1208,7 +1214,7 @@ int main(int argc, char* argv[])
             {
               if (qi::phrase_parse(population_data.params.begin(), population_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                population = boost::shared_ptr<Population>(populations[population_data.type](sys,msg,parameter_data));  // dirty workaround shared_ptr and inherited classes
+                population.push_back(boost::shared_ptr<Population>(populations[population_data.type](sys,msg,parameter_data)));  // dirty workaround shared_ptr and inherited classes
                 msg->msg(Messenger::INFO,"Adding population of type "+population_data.type+".");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
                   msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for population "+population_data.type+" is set to "+(*it).second+".");

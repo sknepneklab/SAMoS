@@ -16,13 +16,13 @@
  * ************************************************************* */
 
 /*!
- * \file population_random.cpp
+ * \file population_density.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
  * \date 28-Sept-2014
- * \brief Implementation of PopulationRandom class.
+ * \brief Implementation of PopulationDensity class.
  */ 
 
-#include "population_random.hpp"
+#include "population_density.hpp"
 
 
 /*! Divide particles according to their age.
@@ -38,10 +38,15 @@
  *  \param t current time step
  *  
 */
-void PopulationRandom::divide(int t)
+void PopulationDensity::divide(int t)
 {
   if (t % m_freq == 0)  // Attempt division only at certain time steps
   { 
+    if (!m_system->group_ok(m_group_name))
+    {
+      cout << "Before divide P: Group info mismatch for group : " << m_group_name << endl;
+      throw runtime_error("Group mismatch.");
+    }
     int new_type;   // type of new particle
     double new_r;   // radius of newly formed particle
     int N = m_system->get_group(m_group_name)->get_size();
@@ -51,13 +56,13 @@ void PopulationRandom::divide(int t)
     for (int i = 0; i < N; i++)
     {
       int pi = particles[i];
-      Particle& p = m_system->get_particle(pi);
-      if (m_rng->drnd() < p.age*m_div_rate)
+      Particle& p = m_system->get_particle(pi); 
+      if (m_rng->drnd() < m_div_rate*(1.0-p.coordination/m_rho_max) )
       {
         Particle p_new(m_system->size(), p.get_type(), p.get_radius());
-        p_new.x = p.x + 0.5*p.get_radius()*p.nx;
-        p_new.y = p.y + 0.5*p.get_radius()*p.ny;
-        p_new.z = p.z + 0.5*p.get_radius()*p.nz;
+        p_new.x = p.x + m_split_distance*p.get_radius()*p.nx;
+        p_new.y = p.y + m_split_distance*p.get_radius()*p.ny;
+        p_new.z = p.z + m_split_distance*p.get_radius()*p.nz;
         if (periodic)
         {
           if (p_new.x > box->xhi) p_new.x -= box->Lx;
@@ -67,9 +72,9 @@ void PopulationRandom::divide(int t)
           if (p_new.z > box->zhi) p_new.z -= box->Lz;
           else if (p_new.z < box->zlo) p_new.z += box->Lz;
         }
-        p.x -= 0.5*p.get_radius()*p.nx;
-        p.y -= 0.5*p.get_radius()*p.ny;
-        p.z -= 0.5*p.get_radius()*p.nz;
+        p.x -= m_split_distance*p.get_radius()*p.nx;
+        p.y -= m_split_distance*p.get_radius()*p.ny;
+        p.z -= m_split_distance*p.get_radius()*p.nz;
         if (periodic)
         {
           if (p.x > box->xhi) p.x -= box->Lx;
@@ -117,6 +122,11 @@ void PopulationRandom::divide(int t)
         }
       }
     }
+    if (!m_system->group_ok(m_group_name))
+    {
+      cout << "After Divide P: Group info mismatch for group : " << m_group_name << endl;
+      throw runtime_error("Group mismatch.");
+    }
   }
 }
 
@@ -128,10 +138,15 @@ void PopulationRandom::divide(int t)
  *  \param t current time step
  * 
 */
-void PopulationRandom::remove(int t)
+void PopulationDensity::remove(int t)
 {
   if (t % m_freq == 0)  // Attempt removal only at certain time steps
   { 
+    if (!m_system->group_ok(m_group_name))
+    {
+      cout << "Before Remove P: Group info mismatch for group : " << m_group_name << endl;
+      throw runtime_error("Group mismatch.");
+    }
     int N = m_system->get_group(m_group_name)->get_size();
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();
     vector<int> to_remove;
@@ -139,8 +154,8 @@ void PopulationRandom::remove(int t)
     {
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi);
-      if (m_rng->drnd() < p.age*m_death_rate)
-        to_remove.push_back(p.get_id());
+      if (m_rng->drnd() < m_death_rate)
+          to_remove.push_back(p.get_id());
     }
     int offset = 0;
     for (vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); it++)
@@ -150,12 +165,12 @@ void PopulationRandom::remove(int t)
     }
     if (m_system->size() == 0)
     {
-      m_msg->msg(Messenger::ERROR,"Random population control. No particles left in the system. Please reduce that death rate.");
+      m_msg->msg(Messenger::ERROR,"Density population control. No particles left in the system. Please reduce that death rate.");
       throw runtime_error("No particles left in the system.");
     }
     if (!m_system->group_ok(m_group_name))
     {
-      cout << "Remove P: Group info mismatch for group : " << m_group_name << endl;
+      cout << "After Remove P: Group info mismatch for group : " << m_group_name << endl;
       throw runtime_error("Group mismatch.");
     }
   }

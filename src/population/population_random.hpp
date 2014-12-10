@@ -65,8 +65,8 @@ public:
     }
     if (param.find("division_rate") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Random population control. No division rate set. Using default 1.");
-      m_div_rate = 1.0;
+      m_msg->msg(Messenger::WARNING,"Random population control. No division rate set. Using default 0.001.");
+      m_div_rate = 0.001;
     }
     else
     {
@@ -75,8 +75,8 @@ public:
     }
     if (param.find("death_rate") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Random population control. No death rate set. Using default 1.");
-      m_death_rate = 1.0;
+      m_msg->msg(Messenger::WARNING,"Random population control. No death rate set. Using default 0.001.");
+      m_death_rate = 0.001;
     }
     else
     {

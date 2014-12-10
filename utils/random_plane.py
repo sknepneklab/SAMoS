@@ -56,6 +56,10 @@ class Plane:
     for i in xrange(len(radii)):
       self.particles[i].R = radii[i]
   
+  def set_type(self,types):
+    for i in xrange(len(types)):
+      self.particles[i].tp = types[i]
+  
   def write(self,outfile):
     gentime = datetime.now()
     out = open(outfile,'w')
@@ -106,10 +110,16 @@ start = datetime.now()
 
 p = Plane(args.lx, args.ly, N, args.vavr)
 radii = []
+types = []
 for i in xrange(N):
-  if i < args.eta*N: radii.append(args.a1)
-  else: radii.append(args.a2)
+  if i < args.eta*N: 
+    radii.append(args.a1)
+    types.append(1)
+  else: 
+    radii.append(args.a2)
+    types.append(2)
 p.set_radius(radii)
+p.set_type(types)
 p.write(args.output)
 
 end = datetime.now()

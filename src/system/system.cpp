@@ -273,11 +273,10 @@ void System::add_particle(Particle& p)
 }
 
 /*! Remove particle from the system
- *  \param p Particle to remove
+ *  \param id Id of particle to remove
  */ 
-void System::remove_particle(Particle& p)
+void System::remove_particle(int id)
 {
-  int id = p.get_id();
   m_particles.erase(m_particles.begin() + id);
   // Shift down all ids
   for (unsigned int i = 0; i < m_particles.size(); i++)
@@ -289,6 +288,12 @@ void System::remove_particle(Particle& p)
   // Update all groups
   for(map<string, GroupPtr>::iterator it_g = m_group.begin(); it_g != m_group.end(); it_g++)
     (*it_g).second->shift(id);
+//   for(map<string, GroupPtr>::iterator it_g = m_group.begin(); it_g != m_group.end(); it_g++)
+//   {
+//     if (!this->group_ok((*it_g).first))
+//       cout << "Group " << (*it_g).first << " not OK." << endl;
+//     throw runtime_error("Group not OK.");
+//   }
   // We need to force neighbour list rebuild
   m_force_nlist_rebuild = true;
 }
@@ -302,13 +307,14 @@ void System::change_group(Particle& p, const string& old_group, const string& ne
 {
   if (old_group == "all" && new_group != "all")
   {
-    m_msg->msg(Messenger::ERROR,"Particle"+lexical_cast<string>(p.get_id())+": Cannot change from \"all\" to other group ("+new_group+").");
+    m_msg->msg(Messenger::ERROR,"Particle "+lexical_cast<string>(p.get_id())+": Cannot change from \"all\" to other group ("+new_group+").");
     throw runtime_error("Can't change out of \"all\" group.");
   }
   list<string>::iterator it_g = find(p.groups.begin(),p.groups.end(),old_group);
   if (it_g == p.groups.end())
   {
-    m_msg->msg(Messenger::ERROR,"Particle"+lexical_cast<string>(p.get_id())+" does not belong to group "+old_group+".");
+    m_msg->msg(Messenger::ERROR,"Particle "+lexical_cast<string>(p.get_id())+" does not belong to group "+old_group+".");
+    cout << p;
     throw runtime_error("Unknown particle group.");
   }
   else
@@ -320,6 +326,9 @@ void System::change_group(Particle& p, const string& old_group, const string& ne
   m_group[old_group]->remove_particle(p.get_id());
   if (new_group != "all") // It's already in "all"
     m_group[new_group]->add_particle(p.get_id());
+//   cout << "Particle after group change: " << endl;
+//   cout << p;
+//   cout << "++++++++++++++++++++++++++++++++++++++" << endl;
 }
 
 /*! Kill off any non-zero momentum and angular momentum that a group of particles might have pick up
@@ -587,3 +596,25 @@ void System::apply_periodic(double& dx, double& dy, double& dz)
     else if (dz < m_box->zlo) dz += m_box->Lz;
   }
 }
+
+//! Make sure that all group information on particles matches group information in the lists
+//! \param group group name
+bool System::group_ok(const string& group)
+{
+  int N = m_group[group]->get_size();
+  vector<int> particles = m_group[group]->get_particles();
+  for (int i = 0; i < N; i++)
+  {
+    int pi = particles[i];
+    Particle& p = m_particles[pi];
+    list<string>::iterator it_g = find(p.groups.begin(),p.groups.end(),group);
+    if (it_g == p.groups.end())
+    {
+      cout << "For group : " << group << endl;
+      cout << p;
+      return false;
+    }
+  }
+  return true;
+}
+

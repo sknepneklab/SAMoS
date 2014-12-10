@@ -94,18 +94,16 @@ public:
   {
     vector<int>::iterator it_e = find(m_particles.begin(), m_particles.end(), id);
     if (it_e != m_particles.end())
-    {
       m_particles.erase(it_e);
-      for (unsigned int i = 0; i < m_particles.size(); i++)
-        if (m_particles[i] > id)
-          m_particles[i]--;
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i] > id)
+        m_particles[i]--;
       m_size--;
-    }
   }
   
   //! Get particles in the group
   vector<int>& get_particles() { return m_particles; } //!< \return reference to the vector containing indices of all particles in this group
-  
+    
 private:  // Make these attributes immutable 
   
   int m_id;                        //!< Unique id

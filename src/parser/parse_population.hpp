@@ -56,7 +56,8 @@ public:
   population_grammar(PopulationData& population_data) : population_grammar::base_type(population)
   {
     population = (
-                  qi::as_string[keyword["random"]][phoenix::bind(&PopulationData::type, phoenix::ref(population_data)) = qi::_1 ]       /*! Handles random population control */
+                    qi::as_string[keyword["random"]][phoenix::bind(&PopulationData::type, phoenix::ref(population_data)) = qi::_1 ]         /*! Handles random population control */
+                  | qi::as_string[keyword["density"]][phoenix::bind(&PopulationData::type, phoenix::ref(population_data)) = qi::_1 ]        /*! Handles density population control */
                   /* to add new population: | qi::as_string[keyword["newpopulation"]][phoenix::bind(&PopulationData::type, phoenix::ref(population_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&PopulationData::params, phoenix::ref(population_data)) = qi::_1 ]

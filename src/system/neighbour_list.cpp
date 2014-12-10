@@ -32,7 +32,11 @@ void NeighbourList::build()
  m_list.clear();
   
  for (int i = 0; i < m_system->size(); i++)
-      m_list.push_back(vector<int>());
+ {
+   Particle& p = m_system->get_particle(i);
+   p.coordination = 0;
+   m_list.push_back(vector<int>());
+ }
   
  if (m_use_cell_list) 
     this->build_cell();
@@ -75,10 +79,20 @@ void NeighbourList::build_nsq()
       }
       d2 = dx*dx + dy*dy + dz*dz;
       if (m_system->has_exclusions())
-            if (m_system->in_exclusion(pi.get_id(), pj.get_id()))
-              exclude = true;
+        if (m_system->in_exclusion(pi.get_id(), pj.get_id()))
+          exclude = true;
       if (d2 < cut2 && (!exclude))
         m_list[i].push_back(j);
+      if (d2 < cut2)
+      {
+        double r = pi.get_radius() + pj.get_radius();
+        if (d2 < r*r)
+        {
+          pi.coordination++;
+          pj.coordination++;
+        }
+      }
+      
     }
     m_old_state.push_back(PartPos(pi.x,pi.y,pi.z));
   }
@@ -132,6 +146,15 @@ void NeighbourList::build_cell()
               exclude = true;
           if (d2 < cut2 && (!exclude))
             m_list[i].push_back(pj.get_id());
+          if (d2 < cut2)
+          {
+            double r = pi.get_radius() + pj.get_radius();
+            if (d2 < r*r)
+            {
+              pi.coordination++;
+              pj.coordination++;
+            }
+          } 
         }
       }
     }

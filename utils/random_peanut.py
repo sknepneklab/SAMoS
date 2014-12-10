@@ -106,6 +106,17 @@ class Peanut:
       out.write('%d  %d  %f %f  %f  %f  %f  %f  %f  %f  %f  %f   %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz,p.omega))
     out.close()
     
+  def write_xyz(self,outfile):
+    with open(outfile,'w') as out:
+      for p in self.particles:
+        x, y, z = p.r
+        fact_1 = 4.0*self.a*self.a;
+        fact_2 = 4.0*(x*x + y*y + z*z);
+        Nx = (-fact_1 + fact_2)*x;
+        Ny = ( fact_1 + fact_2)*y; 
+        Nz = ( fact_1 + fact_2)*z;
+        len_N = sqrt(Nx*Nx + Ny*Ny + Nz*Nz)
+        out.write('%f %f  %f  %f  %f  %f\n' % (x,y,z,Nx/len_N,Ny/len_N,Nz/len_N))
 
 
 parser = argparse.ArgumentParser()
@@ -114,6 +125,7 @@ parser.add_argument("-b", "--b", type=float, default=10.0, help="parameter b")
 parser.add_argument("-f", "--phi",  type=float, default=0.5, help="packing fraction")
 parser.add_argument("-o", "--output", type=str, default='out.dat', help="output file")
 parser.add_argument("-v", "--vavr", type=float, default=1.0, help="average velocity")
+parser.add_argument("-x", "--xyz", type=str, default=None, help="name of the XYZ file for surface reconstruction")
 args = parser.parse_args()
 
 print
@@ -141,6 +153,9 @@ start = datetime.now()
 
 p = Peanut(args.a, args.b, N, args.vavr)
 p.write(args.output)
+
+if args.xyz != None:
+  p.write_xyz(args.xyz)
 
 end = datetime.now()
 

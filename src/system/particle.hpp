@@ -39,6 +39,7 @@ using std::map;
 using std::string;
 using std::list;
 using std::vector;
+using std::endl;
 
 const int NUM_PART_ATTRIB = 10;  //!< Number of particle attributes
 
@@ -166,6 +167,7 @@ public:
   list<string> groups;         //!< List of all groups particle belongs to.
   vector<int> bonds;           //!< List of all bonds this particle belongs to
   vector<int> angles;          //!< List of all angles this particle belongs to
+  int coordination;            //!< Keeps track of the number of neighbours
   
 private:  // Make these attributes immutable 
   
