@@ -122,7 +122,7 @@ for j in range(len(JList)):
 	plt.title('Interaction strength ' + r'$J=$' + JList[j])
 	
 	filename=picsfolder + '/profile_' + profName[usecolumn] + '_J' + JList[j] +'.pdf'
-	plt.savefig(filename)
+	#plt.savefig(filename)
 
 #for i in range(len(vList)):	
 	#plt.figure(figsize=(10,7),linewidth=2.0)
