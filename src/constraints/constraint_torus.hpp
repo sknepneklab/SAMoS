@@ -78,22 +78,22 @@ public:
     }
     if (param.find("maxiter") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Peanut constraint. Maximum number of iterations has not been set. Assuming 100");
+      m_msg->msg(Messenger::WARNING,"Toroidal constraint. Maximum number of iterations has not been set. Assuming 100");
       m_max_iter = 100;
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Peanut constraint. Maximum number of iterations set to "+param["maxiter"]+".");
+      m_msg->msg(Messenger::INFO,"Toroidal constraint. Maximum number of iterations set to "+param["maxiter"]+".");
       m_max_iter = lexical_cast<int>(param["maxiter"]);
     }
     if (param.find("tol") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Peanut constraint. Tolerance has not been set. Assuming 1e-6.");
+      m_msg->msg(Messenger::WARNING,"Toroidal constraint. Tolerance has not been set. Assuming 1e-6.");
       m_tol = 1e-6;
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Peanut constraint. Tolerance set to "+param["tol"]+".");
+      m_msg->msg(Messenger::INFO,"Toroidal constraint. Tolerance set to "+param["tol"]+".");
       m_tol = lexical_cast<int>(param["tol"]);
     }
   }

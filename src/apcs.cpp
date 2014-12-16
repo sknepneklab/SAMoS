@@ -63,6 +63,8 @@
 #include "constraint_cylinder.hpp"
 #include "constraint_peanut.hpp"
 #include "constraint_torus.hpp"
+#include "constraint_ellipsoid.hpp"
+#include "constraint_gyroid.hpp"
 #include "rng.hpp"
 #include "particle.hpp"
 #include "box.hpp"
@@ -214,6 +216,10 @@ int main(int argc, char* argv[])
   constraints["peanut"] = boost::factory<ConstraintPeanutPtr>();
   // Register torus constraint with the constraint class factory
   constraints["torus"] = boost::factory<ConstraintTorusPtr>();
+  // Register ellipsoid constraint with the constraint class factory
+  constraints["ellipsoid"] = boost::factory<ConstraintEllipsoidPtr>();
+  // Register gyroid constraint with the constraint class factory
+  constraints["gyroid"] = boost::factory<ConstraintEllipsoidPtr>();
   
   // Register Lennard-Jones pair potential with the pair potentials class factory
   pair_potentials["lj"] = boost::factory<PairLJPotentialPtr>();

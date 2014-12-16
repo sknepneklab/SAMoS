@@ -59,7 +59,9 @@ public:
                   | qi::as_string[keyword["cylinder"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on a cylinder */
                   | qi::as_string[keyword["peanut"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on a peanut */
                   | qi::as_string[keyword["torus"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on a torus */
-                   /* to add new constraint: | qi::as_string[keyword["newconstraint"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ] */
+                  | qi::as_string[keyword["ellipsoid"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on an ellipsoid */
+                  | qi::as_string[keyword["gyroid"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on a gyroid */
+                  /* to add new constraint: | qi::as_string[keyword["newconstraint"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&ConstraintlData::params, phoenix::ref(constraint_data)) = qi::_1 ]
                  >> (qi::eol || qi::eoi);
