@@ -76,11 +76,23 @@ int CellList::get_cell_idx(const Particle& p)
 //! Populate cell list
 void CellList::populate()
 {
+  BoxPtr box = m_system->get_box();
+  double lx = box->Lx, ly = box->Ly, lz = box->Lz;
+  bool periodic = m_system->get_periodic();
   for (int i = 0; i < m_size; i++)
     m_cells[i].wipe();
   for (int i = 0; i < m_system->size(); i++)
   {
     Particle& p = m_system->get_particle(i);
+    if (periodic)
+    {
+      if (p.x < box->xlo) p.x += lx;
+      else if (p.x > box->xhi) p.x -= lx;
+      if (p.y < box->ylo) p.y += ly;
+      else if (p.y > box->yhi) p.y -= ly;
+      if (p.z < box->zlo) p.z += lz;
+      else if (p.z > box->zhi) p.z -= lz;
+    }
     this->add_particle(p);
   }
   //m_msg->msg(Messenger::INFO,"Populated cell list.");

@@ -104,12 +104,12 @@ void ConstraintGyroid::enforce(Particle& p)
     // Check periodic boundary conditions 
     if (periodic)
     {
-      if (p.x <= box->xlo) p.x += lx;
-      else if (p.x >= box->xhi) p.x -= lx;
-      if (p.y <= box->ylo) p.y += ly;
-      else if (p.y >= box->yhi) p.y -= ly;
-      if (p.z <= box->zlo) p.z += lz;
-      else if (p.z >= box->zhi) p.z -= lz;
+      if (p.x < box->xlo) p.x += lx;
+      else if (p.x > box->xhi) p.x -= lx;
+      if (p.y < box->ylo) p.y += ly;
+      else if (p.y > box->yhi) p.y -= ly;
+      if (p.z < box->zlo) p.z += lz;
+      else if (p.z > box->zhi) p.z -= lz;
     }
     else // reflective boundary conditions
     {

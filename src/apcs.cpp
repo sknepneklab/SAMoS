@@ -219,7 +219,7 @@ int main(int argc, char* argv[])
   // Register ellipsoid constraint with the constraint class factory
   constraints["ellipsoid"] = boost::factory<ConstraintEllipsoidPtr>();
   // Register gyroid constraint with the constraint class factory
-  constraints["gyroid"] = boost::factory<ConstraintEllipsoidPtr>();
+  constraints["gyroid"] = boost::factory<ConstraintGyroidPtr>();
   
   // Register Lennard-Jones pair potential with the pair potentials class factory
   pair_potentials["lj"] = boost::factory<PairLJPotentialPtr>();
