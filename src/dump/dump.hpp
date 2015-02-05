@@ -34,6 +34,7 @@
 
 #include "system.hpp"
 #include "parse_parameters.hpp"
+#include "neighbour_list.hpp"
 
 using std::string;
 using std::ofstream;
@@ -51,7 +52,7 @@ class Dump
 {
 public:
   //! Constructor
-  Dump(SystemPtr, MessengerPtr, const string&, pairs_type&);
+  Dump(SystemPtr, MessengerPtr, NeighbourListPtr, const string&, pairs_type&);
   
   //! Destructor
   ~Dump()
@@ -68,6 +69,7 @@ private:
   
   SystemPtr m_system;           //!< Pointer to the System object
   MessengerPtr m_msg;           //!< Handles system wide messages
+  NeighbourListPtr m_nlist;     //!< Pointer to the global neighbour list
   string m_file_name;           //!< Base file name for the output file
   pairs_type m_params;          //!< Control parameters
   string m_ext;                 //!< File name extension
@@ -78,6 +80,7 @@ private:
   bool m_print_header;          //!< If true, print header line on some file types
   string m_type;                //!< File format for the dump 
   bool m_no_header;             //!< Do not print header in some files
+  double m_r_cut;               //!< Cutoff distance for the contact network
   
   // Auxiliary data structures
   map<string, string> m_type_ext;  //!< Hold extension for a given data type
@@ -104,6 +107,8 @@ private:
   void dump_xyzc();
   //! Dump MOL2 file format for visualization with VMD
   void dump_mol2();
+  //! Dump contact network for further analysis
+  void dump_contact();
   
 };
 

@@ -659,7 +659,7 @@ int main(int argc, char* argv[])
             {
               if (qi::phrase_parse(log_dump_data.params.begin(), log_dump_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                dump.push_back(boost::shared_ptr<Dump>(new Dump(sys,msg,log_dump_data.name,parameter_data)));
+                dump.push_back(boost::shared_ptr<Dump>(new Dump(sys,msg,nlist,log_dump_data.name,parameter_data)));
                 msg->msg(Messenger::INFO,"Adding dump to file "+log_dump_data.name+".");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
                   msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for dump "+log_dump_data.name+" is set to "+(*it).second+".");

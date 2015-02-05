@@ -38,10 +38,11 @@ static void write_int(ofstream &file, unsigned int val)
 /*! Construct a specific dump object
  *  \param sys Pointer to a System object
  *  \param msg Handles system wide messages
+ *  \param nlist Pointer to the global neighbour list
  *  \param fname Base file name for the output 
  *  \param params list of parameters that control dump (e.g., frequency, output type, etc.)
 */
-Dump::Dump(SystemPtr sys, MessengerPtr msg, const string& fname, pairs_type& params) : m_system(sys), m_msg(msg), m_file_name(fname), m_params(params)
+Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string& fname, pairs_type& params) : m_system(sys), m_msg(msg), m_file_name(fname), m_params(params)
 {
   m_type_ext["velocity"] = "vel";
   m_type_ext["xyz"] = "xyz";
@@ -52,6 +53,12 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, const string& fname, pairs_type& par
   m_type_ext["xyzv"] = "xyzv";
   m_type_ext["xyzc"] = "xyzc";
   m_type_ext["mol2"] = "mol2";
+  m_type_ext["contact"] = "con";
+  
+  if (nlist)
+    m_nlist = nlist;
+  else
+    m_msg->msg(Messenger::WARNING,"Neighbour list has not been specified. Contact network won't be produced.");
   
   m_print_header = false;
   
@@ -209,6 +216,8 @@ void Dump::dump(int step)
     this->dump_xyzc();
   else if (m_type == "mol2")
     this->dump_mol2();
+  else if (m_type == "contact")
+    this->dump_contact();
   
   if (m_multi_print)
     m_out.close();
@@ -475,5 +484,59 @@ void Dump::dump_mol2()
   {
     Bond& b = m_system->get_bond(i);
     m_out << format("%d\t%d\t%d\t%d") % (b.id + 1) % (b.i + 1) % (b.j + 1) % b.type << endl;
+  }
+}
+
+//! Dump contact network for particles
+//! Format is a simple text file with 3 columns
+//! Column 1: contact id (starting with 0)
+//! Column 2: id of the first particle in the contact (lower of the two ids)
+//! Column 3: id of the second particle in the contact (larger of the two ids)
+void Dump::dump_contact()
+{
+  if (!m_nlist)
+  {
+    m_msg->msg(Messenger::ERROR,"In order to produce contact network you need to specify neighbour list. Please use nlist command.");
+    throw runtime_error("No neighbour list specified for contact network dump.");
+  }
+  else
+  {
+    double rcut;
+    if (m_params.find("rcut") == m_params.end())
+    {
+      m_msg->msg(Messenger::WARNING,"No cutoff distance for the contact network set. Setting it to 1.");
+      rcut = 1.0;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Cutoff distance for contact network set to "+m_params["rcut"]+".");
+      rcut = lexical_cast<double>(m_params["rcut"]);
+    }
+    if (rcut > m_nlist->get_cutoff())
+    {
+      m_msg->msg(Messenger::WARNING,"Contact network cutoff distance larger than the neighbour list cutoff. Setting it to that of the neighbour list.");
+      rcut = m_nlist->get_cutoff();
+    }
+    if (m_print_header)
+       m_out << "#  contact_id   id_p1  id_p2" << endl;
+    bool periodic = m_system->get_periodic();
+    int N = m_system->size();
+    int contact = 0;
+    double rcut2 = rcut*rcut;
+    for (int i = 0; i < N; i++)
+    {
+      Particle& pi = m_system->get_particle(i);
+      vector<int>& neigh = m_nlist->get_neighbours(i);
+      for (unsigned int j = 0; j < neigh.size(); j++)
+      {
+        Particle& pj = m_system->get_particle(neigh[j]);
+        double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
+        if (periodic)
+          m_system->apply_periodic(dx,dy,dz);
+        double r_sq = dx*dx + dy*dy + dz*dz;
+        if (r_sq <= rcut2)
+          m_out << format("%d\t%d\t%d") % (contact++) % pi.get_id() % pj.get_id() << endl;
+      }
+    }
   }
 }

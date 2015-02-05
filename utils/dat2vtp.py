@@ -34,6 +34,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", type=str, help="input file (base name)")
 parser.add_argument("-o", "--output", type=str, help="output directory")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
+parser.add_argument("-C", "--contact", type=str, default=None, help="contact network data file")
+parser.add_argument("-e", "--exclude", type=float, default=None, help="exclude all contact line that are longer than this value")
 parser.add_argument("--connected", action='store_true', default=False, help="Include Delaunay triangulation data")
 parser.add_argument("--nematic", action='store_true', default=False, help="Shift n vectors such that particle is in the middle of director.")
 args = parser.parse_args()
@@ -50,12 +52,18 @@ print
 print "\tInput files : ", args.input
 print "\tOutput files : ", args.output
 print "\tSkip frames : ", args.skip
+if args.contact != None:
+  print "\tContact network data file : ", args.contact
+if args.exclude != None:
+  print "\tExclude all contact lines that are longer than : ", args.exclude 
 print
 
 start = datetime.now()
 
 files = sorted(glob(args.input+'*.dat'))[args.skip:]
-
+if args.contact != None:
+  cont_files = sorted(glob(args.contact+'*.con'))[args.skip:]  
+    
 u=0
 for f in files:
   print "Processing file : ", f
@@ -139,6 +147,30 @@ for f in files:
       else:
         Directors.InsertNextTuple3(nnx,nny,nnz)        
 
+  if args.contact != None:
+    if args.connected:
+      print "Error! You cannot use --connected flag with the contact network data"
+      sys.exit(1)
+    Lines = vtk.vtkCellArray()
+    Line = vtk.vtkLine()
+    contact = open(cont_files[u],'r')
+    con_lines = contact.readlines()
+    con_lines = map(lambda x: x.strip().split(),con_lines)
+    edges = []
+    for line in con_lines:
+      i, j = int(line[1]), int(line[2])
+      if args.exclude != None:
+        dr = np.sqrt((x[i]-x[j])**2 + (y[i]-y[j])**2 + (z[i]-z[j])**2)
+        if dr < args.exclude:
+          edges.append((i,j))
+      else:
+        edges.append((i,j))
+    contact.close()
+    for (i,j) in edges:
+      Line.GetPointIds().SetId(0,i)
+      Line.GetPointIds().SetId(1,j)
+      Lines.InsertNextCell(Line)
+
   if args.connected:
     Lines = vtk.vtkCellArray()
     Line = vtk.vtkLine()
@@ -190,6 +222,9 @@ for f in files:
     polydata.GetCellData().AddArray(Lengths)
     #polydata.SetPolys(Faces)
     #polydata.GetCellData().AddArray(Areas)
+
+  if args.contact != None:
+    polydata.SetLines(Lines)
 
   polydata.GetPointData().AddArray(Radii)
   polydata.GetPointData().AddArray(Types)
