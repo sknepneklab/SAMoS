@@ -63,6 +63,9 @@ start = datetime.now()
 files = sorted(glob(args.input+'*.dat'))[args.skip:]
 if args.contact != None:
   cont_files = sorted(glob(args.contact+'*.con'))[args.skip:]  
+  if len(files) != len(cont_files):
+    print "There has to be same number of data and contact files."
+    sys.exit(1)
     
 u=0
 for f in files:
@@ -158,13 +161,14 @@ for f in files:
     con_lines = map(lambda x: x.strip().split(),con_lines)
     edges = []
     for line in con_lines:
-      i, j = int(line[1]), int(line[2])
-      if args.exclude != None:
-        dr = np.sqrt((x[i]-x[j])**2 + (y[i]-y[j])**2 + (z[i]-z[j])**2)
-        if dr < args.exclude:
+      if not line[0] == '#':
+        i, j = int(line[1]), int(line[2])
+        if args.exclude != None:
+          dr = np.sqrt((x[i]-x[j])**2 + (y[i]-y[j])**2 + (z[i]-z[j])**2)
+          if dr < args.exclude:
+            edges.append((i,j))
+        else:
           edges.append((i,j))
-      else:
-        edges.append((i,j))
     contact.close()
     for (i,j) in edges:
       Line.GetPointIds().SetId(0,i)

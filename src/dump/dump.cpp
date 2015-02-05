@@ -502,6 +502,7 @@ void Dump::dump_contact()
   else
   {
     double rcut;
+    bool include_flag = false;
     if (m_params.find("rcut") == m_params.end())
     {
       m_msg->msg(Messenger::WARNING,"No cutoff distance for the contact network set. Setting it to 1.");
@@ -517,8 +518,15 @@ void Dump::dump_contact()
       m_msg->msg(Messenger::WARNING,"Contact network cutoff distance larger than the neighbour list cutoff. Setting it to that of the neighbour list.");
       rcut = m_nlist->get_cutoff();
     }
+    if (m_params.find("include_flag") != m_params.end())
+      include_flag = true;
     if (m_print_header)
-       m_out << "#  contact_id   id_p1  id_p2" << endl;
+    {
+       m_out << "#  contact_id   id_p1  id_p2";
+       if (include_flag)
+         m_out << "  flag_p1   flag_p2";
+       m_out << endl;
+    }
     bool periodic = m_system->get_periodic();
     int N = m_system->size();
     int contact = 0;
@@ -535,7 +543,12 @@ void Dump::dump_contact()
           m_system->apply_periodic(dx,dy,dz);
         double r_sq = dx*dx + dy*dy + dz*dz;
         if (r_sq <= rcut2)
-          m_out << format("%d\t%d\t%d") % (contact++) % pi.get_id() % pj.get_id() << endl;
+        {
+          m_out << format("%d\t%d\t%d") % (contact++) % pi.get_id() % pj.get_id();
+          if (include_flag)
+            m_out << format("\t%d\t%d") % pi.get_flag() % pj.get_flag();
+          m_out << endl;
+        }
       }
     }
   }
