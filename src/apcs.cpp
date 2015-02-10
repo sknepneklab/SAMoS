@@ -66,6 +66,7 @@
 #include "constraint_ellipsoid.hpp"
 #include "constraint_gyroid.hpp"
 #include "constraint_actomyo.hpp"
+#include "constraint_hourglass.hpp"
 #include "rng.hpp"
 #include "particle.hpp"
 #include "box.hpp"
@@ -223,6 +224,8 @@ int main(int argc, char* argv[])
   constraints["gyroid"] = boost::factory<ConstraintGyroidPtr>();
   // Register actomyo constraint with the constraint class factory
   constraints["actomyo"] = boost::factory<ConstraintActomyoPtr>();
+  // Register hourglass constraint with the constraint class factory
+  constraints["hourglass"] = boost::factory<ConstraintHourglassPtr>();
   
   // Register Lennard-Jones pair potential with the pair potentials class factory
   pair_potentials["lj"] = boost::factory<PairLJPotentialPtr>();

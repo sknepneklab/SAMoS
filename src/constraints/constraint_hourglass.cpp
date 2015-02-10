@@ -1,4 +1,4 @@
- /* *************************************************************
+/* *************************************************************
  *  
  *   Active Particles on Curved Spaces (APCS)
  *   
@@ -16,54 +16,53 @@
  * ************************************************************* */
 
 /*!
- * \file constraint_peanut.cpp
+ * \file constraint_hourglass.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 11-Nov-2014
- * \brief Implementation of the peanut constraint
+ * \date 09-Feb-2015
+ * \brief Implementation of the hourglass constraint
  */ 
 
-#include "constraint_peanut.hpp"
+#include "constraint_hourglass.hpp"
 
-static void compute_gradient(double x, double y, double z, double a, double& gx, double& gy, double& gz)
+static void compute_gradient(double x, double y, double z, double R, double A, double n, double L, double& gx, double& gy, double& gz)
 {
-  double fact_1 = 4.0*a*a;
-  double fact_2 = 4.0*(x*x + y*y + z*z);
-  gx = (-fact_1 + fact_2)*x;
-  gy = ( fact_1 + fact_2)*y; 
-  gz = ( fact_1 + fact_2)*z;
+  gx = 2.0*x;
+  gy = 2.0*y; 
+  gz = (-4*A*n*M_PI*cos((2*n*M_PI*z)/L)*(R + A*sin((2*n*M_PI*z)/L)))/L;
 }
 
 /*! Compute normal to the surface at p
 */
-void ConstraintPeanut::compute_normal(Particle& p, double& Nx, double& Ny, double& Nz)
+void ConstraintHourglass::compute_normal(Particle& p, double& Nx, double& Ny, double& Nz)
 {
   double x = p.x, y = p.y, z = p.z;
+  BoxPtr box = m_system->get_box();
+  double lz = box->Lz;
   // Compute unit gradient of the implicit function (normal will be normalized gradient)
-  double fact_1 = 4.0*m_a*m_a;
-  double fact_2 = 4.0*(x*x + y*y + z*z);
-  Nx = (-fact_1 + fact_2)*x;
-  Ny = ( fact_1 + fact_2)*y; 
-  Nz = ( fact_1 + fact_2)*z;
+  compute_gradient(x,y,z,m_R,m_A,m_n,lz,Nx,Ny,Nz);
   // Normalize N
   double len_N = sqrt(Nx*Nx + Ny*Ny + Nz*Nz);
   Nx /= len_N; Ny /= len_N; Nz /= len_N;
 }
 
 
-/*! Force particle to be confined to the surface of a peanut and
+/*! Force particle to be confined to the surface of a hourglass and
  *  its velocity to be tangent to it. We assume that during the integration 
  *  step particles do not move to much away from the surface and we project 
- *  them down to the surface of the peanut
- *  \param p Particle which is to be projected onto the peanut
+ *  them down to the surface of the hourglass
+ *  \param p Particle which is to be projected onto the hourglass
  */
-void ConstraintPeanut::enforce(Particle& p)
+void ConstraintHourglass::enforce(Particle& p)
 {
   // Project particle back onto the surface
   double x = p.x, y = p.y, z = p.z;
+  bool periodic = m_system->get_periodic();
+  BoxPtr box = m_system->get_box();
+  double lz = box->Lz;
   // Compute reference gradient (SHAKE method)
   double ref_gx, ref_gy, ref_gz;
-  compute_gradient(x,y,z,m_a,ref_gx, ref_gy, ref_gz);
-  
+  compute_gradient(x,y,z,m_R,m_A,m_n,lz,ref_gx, ref_gy, ref_gz);
+    
   bool satisfied;
   int iter = 0;
   while (iter++ < m_max_iter)
@@ -72,10 +71,10 @@ void ConstraintPeanut::enforce(Particle& p)
     x = p.x; y = p.y; z = p.z;
     // Compute unit gradient of the implicit function
     double gx, gy, gz;
-    compute_gradient(x,y,z,m_a,gx,gy,gz);
+    compute_gradient(x,y,z,m_R,m_A,m_n,lz,gx,gy,gz);
     double s = gx*ref_gx + gy*ref_gy + gz*ref_gz;
-    double tr = x*x + y*y + z*z;
-    double g = m_a*m_a*m_a*m_a - m_b*m_b*m_b*m_b - 2.0*m_a*m_a*(x*x - y*y - z*z) + tr*tr;
+    double zfact = m_R + m_A*sin(2.0*M_PI/lz*m_n*z);
+    double g = x*x + y*y - zfact*zfact;
     double lambda = g/s;
     if (fabs(g) > m_tol)
       satisfied = false;
@@ -98,16 +97,21 @@ void ConstraintPeanut::enforce(Particle& p)
   // normalize director
   double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny + p.nz*p.nz);
   p.nx *= inv_len;  p.ny *= inv_len;  p.nz *= inv_len;
+  if (periodic)
+  {
+    if (p.z > box->zhi) p.z -= box->Lz;
+    else if (p.z < box->zlo) p.z += box->Lz;
+  }
 }
 
 /*! Rotate director of a particle around the normal vector
  *  \note This function assumes that the particle has already been
- *  projected onto peanut and that its director is laying in 
+ *  projected onto hourglass and that its director is laying in 
  *  the tangent plane.
  *  \param p Particle whose director to rotate
  *  \param phi angle by which to rotate it
 */
-void ConstraintPeanut::rotate_director(Particle& p, double phi)
+void ConstraintHourglass::rotate_director(Particle& p, double phi)
 {
   double U, V, W;
   this->compute_normal(p,U,V,W);
@@ -126,12 +130,12 @@ void ConstraintPeanut::rotate_director(Particle& p, double phi)
 
 /*! Rotate velocity of a particle around the normal vector
  *  \note This function assumes that the particle has already been
- *  projected onto peanut and that its velocity is laying in 
+ *  projected onto hourglass and that its velocity is laying in 
  *  the tangent plane.
  *  \param p Particle whose velocity to rotate
  *  \param phi angle by which to rotate it
 */
-void ConstraintPeanut::rotate_velocity(Particle& p, double phi)
+void ConstraintHourglass::rotate_velocity(Particle& p, double phi)
 {
   double U, V, W;
   this->compute_normal(p,U,V,W);
@@ -150,10 +154,10 @@ void ConstraintPeanut::rotate_velocity(Particle& p, double phi)
 
 /*! Project particle torque onto the normal vector. The assumption here is that 
  *  the particle's director and velocity are all already in the tangent plane 
- *  and that it is constrained to the peanut.
+ *  and that it is constrained to the hourglass.
  *  \param p Particle whose torque to project
 */ 
-double ConstraintPeanut::project_torque(Particle& p)
+double ConstraintHourglass::project_torque(Particle& p)
 {
   double Nx, Ny, Nz;
   this->compute_normal(p,Nx,Ny,Nz);
