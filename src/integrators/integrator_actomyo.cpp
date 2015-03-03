@@ -31,7 +31,7 @@
  *  total force on myosin bead closest to the actin bead and \f$ \tau \f$
  *  if the tangent to the actin filament in the direction of the filament's
  *  head, we add a force \f$ F_a \f$ to the filament bead in the direction 
- *  of \f$ \tua \f$.
+ *  of \f$ \tau \f$.
  *  \note: For simplicity, we assume that actin filament beads have type 2.
  *  This is clearly a constraint, however, makes things much simpler to 
  *  implement.

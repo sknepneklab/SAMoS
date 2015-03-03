@@ -63,24 +63,21 @@ public:
     }
   }
   
+  //! Enforce constraint
+  void enforce(Particle&);
+  
   //! Computes normal to the surface
   void compute_normal(Particle& p, double& Nx, double& Ny, double& Nz)
   { 
     Nx = p.x/m_r; Ny = p.y/m_r; Nz = 0.0;
   }
+  
+  // Computer gradient at a point
+  void compute_gradient(Particle& p, double& gx, double& gy, double& gz) { }
+  
+  // Value of the constraint
+  double constraint_value(Particle& p) { return 0.0; }
       
-  //! Enforce constraint
-  void enforce(Particle&);
-  
-  //! Rotate director around normal vector to the sphere
-  void rotate_director(Particle&, double);
-  
-  //! Rotate velocity around normal vector to the sphere
-  void rotate_velocity(Particle&, double);
-  
-  //! Project torque onto normal vector onto the sphere and return rotation angle change
-  double project_torque(Particle&);
-    
 private:
   
   double m_r;     //!< Radius of the confining cylinder

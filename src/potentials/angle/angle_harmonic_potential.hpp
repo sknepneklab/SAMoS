@@ -41,7 +41,7 @@ struct AngleHarmoicParameters
 };
 
 /*! AngleHarmonicPotential implements standard harmonic angle potential 
- *  Potential is given as \f$ U_{harm}\left(\theta\right) = \frac{1}{2}k_\theta\left(\theta-\theta_0)^2 \f$,
+ *  Potential is given as \f$ U_{harm}\left(\theta\right) = \frac{1}{2}k_\theta\left(\theta-\theta_0\right)^2 \f$,
  *  where \f$ k_\theta \f$ is the stiffness, \f$ \theta \f$ is the angle between two bonds originating from the particle
  *  and \f$ \theta_0 \f$ is the rest (equilibrium) value of the angle.
  */

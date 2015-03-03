@@ -249,6 +249,9 @@ public:
   //! Make sure that all group information on particles matches group information in the lists
   bool group_ok(const string&);
   
+  //! enforce period boundary conditions
+  void enforce_periodic(Particle&);
+  
 private:
   
   vector<Particle> m_particles;         //!< Contains all particle in the system 

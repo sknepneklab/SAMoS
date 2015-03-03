@@ -618,3 +618,18 @@ bool System::group_ok(const string& group)
   return true;
 }
 
+//! Enforce period boundary conditions onto a particle
+//! \param p reference to the particle
+void System::enforce_periodic(Particle& p)
+{
+  if (m_periodic)
+  {
+    if (p.x < m_box->xlo) p.x += m_box->Lx;
+    else if (p.x > m_box->xhi) p.x -= m_box->Lx;
+    if (p.y < m_box->ylo) p.y += m_box->Ly;
+    else if (p.y > m_box->yhi) p.y -= m_box->Ly;
+    if (p.z < m_box->zlo) p.z += m_box->Lz;
+    else if (p.z > m_box->zhi) p.z -= m_box->Lz;
+  }
+}
+

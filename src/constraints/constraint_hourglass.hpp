@@ -92,54 +92,23 @@ public:
       m_msg->msg(Messenger::INFO,"Hourglass constraint. Number of nodes set to "+param["n"]+".");
       m_n = lexical_cast<double>(param["n"]);
     }
-    if (param.find("maxiter") == param.end())
-    {
-      m_msg->msg(Messenger::WARNING,"Hourglass constraint. Maximum number of iterations has not been set. Assuming 100");
-      m_max_iter = 100;
-    }
-    else
-    {
-      m_msg->msg(Messenger::INFO,"Hourglass constraint. Maximum number of iterations set to "+param["maxiter"]+".");
-      m_max_iter = lexical_cast<int>(param["maxiter"]);
-    }
-    if (param.find("tol") == param.end())
-    {
-      m_msg->msg(Messenger::WARNING,"Hourglass constraint. Tolerance has not been set. Assuming 1e-6.");
-      m_tol = 1e-6;
-    }
-    else
-    {
-      m_msg->msg(Messenger::INFO,"Hourglass constraint. Tolerance set to "+param["tol"]+".");
-      m_tol = lexical_cast<int>(param["tol"]);
-    }
   }
   
   //! Computes normal to the surface
-  //! \param p reference to a particle
-  //! \param Nx x component of the normal (returned)
-  //! \param Ny y component of the normal (returned)
-  //! \param Nz z component of the normal (returned)
-  void compute_normal(Particle& p, double& Nx, double& Ny, double& Nz);
+  void compute_normal(Particle&, double&, double&, double&); 
+   
+  // Computer gradient at a point
+  void compute_gradient(Particle&, double&, double&, double&);
   
-  //! Enforce constraint
-  void enforce(Particle&);
-  
-  //! Rotate director around normal vector to the sphere
-  void rotate_director(Particle&, double);
-  
-  //! Rotate velocity around normal vector to the sphere
-  void rotate_velocity(Particle&, double);
-  
-  //! Project torque onto normal vector onto the sphere and return rotation angle change
-  double project_torque(Particle&);
+  // Value of the constraint
+  double constraint_value(Particle&); 
     
 private:
   
   double m_R;     //!< Average radius
   double m_A;     //!< Amplitude (< R)
   double m_n;     //!< Number of nodes
-  int m_max_iter; //!< Maximum number of iterations to enforce the constraint
-  double m_tol;   //!< Tolerance for the constraint to be satisfied. 
+  
 };
 
 typedef shared_ptr<ConstraintHourglass> ConstraintHourglassPtr;  //!< Shared pointer to the Constraint object

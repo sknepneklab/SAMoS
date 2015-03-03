@@ -76,50 +76,23 @@ public:
       m_msg->msg(Messenger::ERROR,"Toroidal constraint. Tube radius has to be smaller than torus radius.");
       throw runtime_error("Toroidal constraint. Incompatible parameters.");
     }
-    if (param.find("maxiter") == param.end())
-    {
-      m_msg->msg(Messenger::WARNING,"Toroidal constraint. Maximum number of iterations has not been set. Assuming 100");
-      m_max_iter = 100;
-    }
-    else
-    {
-      m_msg->msg(Messenger::INFO,"Toroidal constraint. Maximum number of iterations set to "+param["maxiter"]+".");
-      m_max_iter = lexical_cast<int>(param["maxiter"]);
-    }
-    if (param.find("tol") == param.end())
-    {
-      m_msg->msg(Messenger::WARNING,"Toroidal constraint. Tolerance has not been set. Assuming 1e-6.");
-      m_tol = 1e-6;
-    }
-    else
-    {
-      m_msg->msg(Messenger::INFO,"Toroidal constraint. Tolerance set to "+param["tol"]+".");
-      m_tol = lexical_cast<int>(param["tol"]);
-    }
   }
   
   //! Computes normal to the surface
   void compute_normal(Particle&, double&, double&, double&); 
    
-  //! Enforce constraint
-  void enforce(Particle&);
+  // Computer gradient at a point
+  void compute_gradient(Particle&, double&, double&, double&);
   
-  //! Rotate director around normal vector to the torus
-  void rotate_director(Particle&, double);
-  
-  //! Rotate velocity around normal vector to the torus
-  void rotate_velocity(Particle&, double);
-  
-  //! Project torque onto normal vector onto the torus and return rotation angle change
-  double project_torque(Particle&);
+  // Value of the constraint
+  double constraint_value(Particle&); 
+    
     
 private:
   
   double m_a;     //!< Torus tube radius
   double m_c;     //!< Torus radius
-  int m_max_iter; //!< Maximum number of iterations to enforce the constraint
-  double m_tol;   //!< Tolerance for the constraint to be satisfied. 
-  
+    
 };
 
 typedef shared_ptr<ConstraintTorus> ConstraintTorusPtr;  //!< Shared pointer to the Constraint object

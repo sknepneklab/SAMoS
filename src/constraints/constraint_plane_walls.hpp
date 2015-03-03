@@ -68,12 +68,6 @@ public:
     }
   }
   
-  //! Computes normal to the surface
-  void compute_normal(Particle& p, double& Nx, double& Ny, double& Nz) 
-  {
-    Nx = 0.0; Ny = 0.0; Nz = 1.0; 
-  }
-  
   //! Enforce constraint
   void enforce(Particle&);
   
@@ -85,6 +79,15 @@ public:
   
   //! Project torque onto normal vector to the plane (z axis) and return rotation angle change
   double project_torque(Particle&);
+  
+  //! Computes normal to the surface
+  void compute_normal(Particle& p, double& Nx, double& Ny, double& Nz) { Nx = 0.0; Ny = 0.0; Nz = 1.0;  }
+  
+  // Computer gradient at a point
+  void compute_gradient(Particle& p, double& gx, double& gy, double& gz) { }
+  
+  // Value of the constraint
+  double constraint_value(Particle& p) { return 0.0; }
     
 private:
   
