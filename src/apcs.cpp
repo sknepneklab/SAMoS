@@ -33,89 +33,10 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/make_shared.hpp>
 
-#include "defaults.hpp"
-#include "messenger.hpp"
-#include "dump.hpp"
-#include "logger.hpp"
-#include "parse_command.hpp"
-#include "parse_constraint.hpp"
-#include "parse_external.hpp"
-#include "parse_input.hpp"
-#include "parse_run.hpp"
-#include "parse_potential.hpp"
-#include "parse_aux.hpp"
-#include "parse_parameters.hpp"
-#include "parse_rng_seed.hpp"
-#include "parse_box.hpp"
-#include "parse_integrator.hpp"
-#include "parse_log_dump.hpp"
-#include "parse_align.hpp"
-#include "parse_external_align.hpp"
-#include "parse_group.hpp"
-#include "parse_disable.hpp"
-#include "parse_population.hpp"
-#include "parse_bond.hpp"
-#include "parse_angle.hpp"
-#include "constraint.hpp"
-#include "constraint_sphere.hpp"
-#include "constraint_plane.hpp"
-#include "constraint_plane_walls.hpp"
-#include "constraint_cylinder.hpp"
-#include "constraint_peanut.hpp"
-#include "constraint_torus.hpp"
-#include "constraint_ellipsoid.hpp"
-#include "constraint_gyroid.hpp"
-#include "constraint_actomyo.hpp"
-#include "constraint_hourglass.hpp"
-#include "constraint_none.hpp"
-#include "rng.hpp"
-#include "particle.hpp"
-#include "box.hpp"
-#include "system.hpp"
-#include "neighbour_list.hpp"
-#include "external_potential.hpp"
-#include "external_gravity_potential.hpp"
-#include "pair_potential.hpp"
-#include "pair_coulomb_potential.hpp"
-#include "pair_soft_potential.hpp"
-#include "pair_lj_potential.hpp"
-#include "pair_gaussian_potential.hpp"
-#include "pair_morse_potential.hpp"
-#include "potential.hpp"
-#include "integrator.hpp"
-#include "integrator_brownian.hpp"
-#include "integrator_vicsek.hpp"
-#include "integrator_nve.hpp"
-#include "integrator_nematic.hpp"
-#include "integrator_actomyo.hpp"
-#include "aligner.hpp"
-#include "pair_aligner.hpp"
-#include "pair_polar_aligner.hpp"
-#include "pair_nematic_aligner.hpp"
-#include "pair_vicsek_aligner.hpp"
-#include "external_aligner.hpp"
-#include "external_ajpolar_aligner.hpp"
-#include "population.hpp"
-#include "population_random.hpp"
-#include "population_density.hpp"
-#include "bond_potential.hpp" 
-#include "bond_harmonic_potential.hpp"
-#include "angle_potential.hpp"
-#include "angle_harmonic_potential.hpp"
-#include "angle_cosine_potential.hpp"
-#include "value.hpp"
+#include "apcs.hpp"
 
-
-typedef boost::function< ConstraintPtr(SystemPtr, MessengerPtr, pairs_type&) > constraint_factory;                                                                       //!< Type that handles all constraints
-typedef boost::function< PairPotentialPtr(SystemPtr, MessengerPtr, NeighbourListPtr, ValuePtr, pairs_type&) > pair_potential_factory;                                    //!< Type that handles all pair potentials
-typedef boost::function< ExternalPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > external_potential_factory;                                                        //!< Type that handles all external potentials
-typedef boost::function< IntegratorPtr(SystemPtr, MessengerPtr, PotentialPtr, AlignerPtr, NeighbourListPtr, ConstraintPtr, ValuePtr, pairs_type&) > integrator_factory;  //!< Type that handles all integrators
-typedef boost::function< PairAlignPtr(SystemPtr, MessengerPtr, NeighbourListPtr, pairs_type&) > pair_aligner_factory;                                                    //!< Type that handles all pairwise alignment
-typedef boost::function< ExternalAlignPtr(SystemPtr, MessengerPtr, pairs_type&) > external_aligner_factory;                                                              //!< Type that handles all external alignment
-typedef boost::function< PopulationPtr(SystemPtr, MessengerPtr, pairs_type&) > population_factory;                                                                       //!< Type that handles all populations
-typedef boost::function< BondPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > bond_potential_factory;                                                                //!< Type that handles all bond potentials
-typedef boost::function< AnglePotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > angle_potential_factory;                                                              //!< Type that handles all angle potentials
-typedef boost::function< ValuePtr(MessengerPtr, pairs_type&) > value_factory;                                                                                            //!< Type that handles all value control objects
+#include "factory_types.hpp"
+#include "register.hpp"
 
 
 int main(int argc, char* argv[])
@@ -159,16 +80,16 @@ int main(int argc, char* argv[])
   key_value_sequence      param_parser;
   
   // Class factories 
-  std::map<std::string, constraint_factory> constraints;
-  std::map<std::string, pair_potential_factory> pair_potentials;
-  std::map<std::string, external_potential_factory> external_potentials;
-  std::map<std::string, integrator_factory> integrators;
-  std::map<std::string, pair_aligner_factory> pair_aligners;
-  std::map<std::string, external_aligner_factory> external_aligners;
-  std::map<std::string, population_factory> populations;
-  std::map<std::string, bond_potential_factory> bond_potentials;
-  std::map<std::string, angle_potential_factory> angle_potentials;
-  std::map<std::string, value_factory> values;
+  ConstraintMap constraints;
+  PairPotentialMap pair_potentials;
+  ExternalPotentialMap external_potentials;
+  IntegratorMap integrators;
+  PairAlignerMap pair_aligners;
+  ExternalAlignerMap external_aligners;
+  PopulationMap populations;
+  BondPotentialMap bond_potentials;
+  AnglePotentialMap angle_potentials;
+  ValueMap values;
   
   std::ifstream command_file;    // File with simulation parameters and controls
   std::string command_line;      // Line from the command file
@@ -210,81 +131,16 @@ int main(int argc, char* argv[])
   defined["read_angles"] = false;      // If false, no angle potentials have been defined
   
     
-  // Register spherical constraint with the constraint class factory
-  constraints["sphere"] = boost::factory<ConstraintSpherePtr>();
-  // Register xy plane constraint with the constraint class factory
-  constraints["plane"] = boost::factory<ConstraintPlanePtr>();
-  // Register plane walls constraint with the constraint class factory
-  constraints["walls"] = boost::factory<ConstraintPlaneWallsPtr>();
-  // Register cylindrical constraint with the constraint class factory
-  constraints["cylinder"] = boost::factory<ConstraintCylinderPtr>();
-  // Register peanut constraint with the constraint class factory
-  constraints["peanut"] = boost::factory<ConstraintPeanutPtr>();
-  // Register torus constraint with the constraint class factory
-  constraints["torus"] = boost::factory<ConstraintTorusPtr>();
-  // Register ellipsoid constraint with the constraint class factory
-  constraints["ellipsoid"] = boost::factory<ConstraintEllipsoidPtr>();
-  // Register gyroid constraint with the constraint class factory
-  constraints["gyroid"] = boost::factory<ConstraintGyroidPtr>();
-  // Register actomyo constraint with the constraint class factory
-  constraints["actomyo"] = boost::factory<ConstraintActomyoPtr>();
-  // Register hourglass constraint with the constraint class factory
-  constraints["hourglass"] = boost::factory<ConstraintHourglassPtr>();
-  // Register dummy constraint with the constraint class factory
-  constraints["none"] = boost::factory<ConstraintNonePtr>();
-  
-  // Register Lennard-Jones pair potential with the pair potentials class factory
-  pair_potentials["lj"] = boost::factory<PairLJPotentialPtr>();
-  // Register Coulomb pair potential with the pair potentials class factory
-  pair_potentials["coulomb"] = boost::factory<PairCoulombPotentialPtr>();
-  // Register soft pair potential with the pair potentials class factory
-  pair_potentials["soft"] = boost::factory<PairSoftPotentialPtr>();
-  // Register Gaussian pair potential with the pair potentials class factory
-  pair_potentials["gaussian"] = boost::factory<PairGaussianPotentialPtr>();  
-  // Register Morse pair potential with the pair potentials class factory
-  pair_potentials["morse"] = boost::factory<PairMorsePotentialPtr>();  
-  
-  // Register gravity to the external potential class factory
-  external_potentials["gravity"] = boost::factory<ExternalGravityPotentialPtr>();
-  
-  // Register Brownian dynamics integrator with the integrators class factory
-  integrators["brownian"] = boost::factory<IntegratorBrownianPtr>();
-  // Register Vicsek dynamics integrator with the integrators class factory
-  integrators["vicsek"] = boost::factory<IntegratorVicsekPtr>();
-  // Register NVE integrator with the integrators class factory
-  integrators["nve"] = boost::factory<IntegratorNVEPtr>();
-  // Register nematic integrator with the integrators class factory
-  integrators["nematic"] = boost::factory<IntegratorNematicPtr>();
-  // Register actomyo integrator with the integrators class factory
-  integrators["actomyo"] = boost::factory<IntegratorActomyoPtr>();
-  
-  // Register polar aligner with the pairwise aligner class factory
-  pair_aligners["polar"] = boost::factory<PairPolarAlignPtr>();
-  // Register nematic aligner with the pairwise aligner class factory
-  pair_aligners["nematic"] = boost::factory<PairNematicAlignPtr>();
-  // Register Vicsek aligner with the pairwise aligner class factory
-  pair_aligners["vicsek"] = boost::factory<PairVicsekAlignPtr>();
-  
-  // Register active jamming polar external alignment to the external align class factory
-  external_aligners["aj"] = boost::factory<ExternalAJPolarAlignPtr>();
-  
-  // Register random population control with the class factory
-  populations["random"] = boost::factory<PopulationRandomPtr>();
-  // Register density population control with the class factory
-  populations["density"] = boost::factory<PopulationDensityPtr>();
-  
-  // Register harmonic bond potential with the class factory
-  bond_potentials["harmonic"] = boost::factory<BondHarmonicPotentialPtr>();
-  
-  // Register harmonic angle potential with the class factory
-  angle_potentials["harmonic"] = boost::factory<AngleHarmonicPotentialPtr>();
-    // Register cosine angle potential with the class factory
-  angle_potentials["cosine"] = boost::factory<AngleCosinePotentialPtr>();
-
-  // Register constant value control the class factory
-  values["constant"] = boost::factory<ValueConstantPtr>();
-  // Register linear value control the class factory
-  values["linear"] = boost::factory<ValueLinearPtr>();
+  register_constraints(constraints);                     // Register all constraints
+  register_pair_potentials(pair_potentials);             // Register all pair potentials 
+  register_external_potentials(external_potentials);     // Register all external potentials 
+  register_integrators(integrators);                     // Register all integrators
+  register_pair_aligners(pair_aligners);                 // Register all pair aligners 
+  register_external_aligners(external_aligners);         // Register all external aligners
+  register_populations(populations);                     // Register all populations
+  register_bond_potentials(bond_potentials);             // Register all bond potentials
+  register_angle_potentials(angle_potentials);           // Register all angle potentials
+  register_values(values);                               // Register all values
   
   
   if (argc < 2)

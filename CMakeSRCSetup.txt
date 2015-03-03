@@ -35,6 +35,7 @@ include_directories($ENV{GSL_DIR}/include
                     ${APCS_SOURCE_DIR}/src/aligner/pair
                     ${APCS_SOURCE_DIR}/src/aligner/external
                     ${APCS_SOURCE_DIR}/src/population
+                    ${APCS_SOURCE_DIR}/src
                     )
 
 # list of all sources in various source directories
