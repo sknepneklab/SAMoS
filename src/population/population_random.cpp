@@ -55,9 +55,9 @@ void PopulationRandom::divide(int t)
       if (m_rng->drnd() < p.age*m_div_rate)
       {
         Particle p_new(m_system->size(), p.get_type(), p.get_radius());
-        p_new.x = p.x + 0.5*p.get_radius()*p.nx;
-        p_new.y = p.y + 0.5*p.get_radius()*p.ny;
-        p_new.z = p.z + 0.5*p.get_radius()*p.nz;
+        p_new.x = p.x + m_alpha*p.get_radius()*p.nx;
+        p_new.y = p.y + m_alpha*p.get_radius()*p.ny;
+        p_new.z = p.z + m_alpha*p.get_radius()*p.nz;
         if (periodic)
         {
           if (p_new.x > box->xhi) p_new.x -= box->Lx;
@@ -67,9 +67,9 @@ void PopulationRandom::divide(int t)
           if (p_new.z > box->zhi) p_new.z -= box->Lz;
           else if (p_new.z < box->zlo) p_new.z += box->Lz;
         }
-        p.x -= 0.5*p.get_radius()*p.nx;
-        p.y -= 0.5*p.get_radius()*p.ny;
-        p.z -= 0.5*p.get_radius()*p.nz;
+        p.x -= (1.0-m_alpha)*p.get_radius()*p.nx;
+        p.y -= (1.0-m_alpha)*p.get_radius()*p.ny;
+        p.z -= (1.0-m_alpha)*p.get_radius()*p.nz;
         if (periodic)
         {
           if (p.x > box->xhi) p.x -= box->Lx;

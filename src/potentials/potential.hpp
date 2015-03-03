@@ -191,7 +191,7 @@ public:
   bool need_nlist() { return m_need_nlist; } 
   
   //! Compute all forces and potentials in the system
-  void compute();
+  void compute(double);
   
 private:
   

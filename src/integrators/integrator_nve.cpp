@@ -78,7 +78,7 @@ void IntegratorNVE::integrate()
   }
   // compute forces in the current configuration
   if (m_potential)
-    m_potential->compute();
+    m_potential->compute(m_dt);
   // compute torques in the current configuration
   if (m_align)
     m_align->compute();

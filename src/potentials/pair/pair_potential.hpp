@@ -31,7 +31,7 @@
 
 #include "system.hpp"
 #include "neighbour_list.hpp"
-
+#include "value.hpp"
 #include "parse_parameters.hpp"
 
 using std::map;
@@ -52,14 +52,17 @@ public:
   //! \param sys Pointer to the System object
   //! \param msg Pointer to the internal state messenger
   //! \param nlist Pointer to the global neighbour list
+  //! \param val Value control object (for phasing in)
   //! \param param Contains information about all parameters 
-  PairPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : m_system(sys), 
-                                                                                              m_msg(msg),
-                                                                                              m_nlist(nlist),
-                                                                                              m_has_pair_params(false),
-                                                                                              m_shifted(false),
-                                                                                              m_use_particle_radii(false)
-                                                                                              { }
+  PairPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : m_system(sys), 
+                                                                                                            m_msg(msg),
+                                                                                                            m_nlist(nlist),
+                                                                                                            m_val(val),
+                                                                                                            m_has_pair_params(false),
+                                                                                                            m_shifted(false),
+                                                                                                            m_use_particle_radii(false),
+                                                                                                            m_phase_in(false)
+                                                                                                            { }
                                                                                                        
   //! Destructor 
   virtual ~PairPotential() { }
@@ -75,17 +78,19 @@ public:
   virtual bool need_nlist() = 0;
   
   //! Computes potentials and forces for all particles
-  virtual void compute() = 0;
+  virtual void compute(double) = 0;
   
 protected:
        
   SystemPtr m_system;              //!< Pointer to the System object
   MessengerPtr m_msg;              //!< Handles messages sent to output
   NeighbourListPtr m_nlist;        //!< Handles NeighbourList object
+  ValuePtr m_val;                  //!< Value object for phasing in particles
   bool m_has_pair_params;          //!< Flag that controls if pair parameters are set
   bool m_shifted;                  //!< If true, potential is shifted at cutoff
   double m_potential_energy;       //!< Total potential energy
   bool m_use_particle_radii;       //!< If true, base potential ranges (if they exist) on particle radii
+  bool m_phase_in;                 //!< If true, gradually switch on potential for particles that are younger than a given age
   
 };
 

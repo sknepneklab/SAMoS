@@ -24,7 +24,7 @@
 
 #include "pair_coulomb_potential.hpp"
 
-void PairCoulombPotential::compute()
+void PairCoulombPotential::compute(double dt)
 {
   int N = m_system->size();
   bool periodic = m_system->get_periodic();
@@ -32,6 +32,7 @@ void PairCoulombPotential::compute()
   double sigma = m_sigma;
   double alpha = m_alpha;
   double sigma_sq = sigma*sigma;
+  double phase_fact = 1.0;   // Phase in factor
   
   if (m_system->compute_per_particle_energy())
   {
@@ -46,6 +47,8 @@ void PairCoulombPotential::compute()
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
+    if (m_phase_in)
+      phase_fact = m_val->get_val(static_cast<int>(pi.age/dt));
     for (int j = i+1; j < N; j++)
     {
       Particle& pj = m_system->get_particle(j);
@@ -71,11 +74,11 @@ void PairCoulombPotential::compute()
       double inv_r_sq = sigma_sq/r_sq;
       double inv_r_6  = inv_r_sq*inv_r_sq*inv_r_sq;
       // Handle potential 
-      double potential_energy = alpha/r + 4.0*fabs(alpha)*inv_r_6*inv_r_6;
+      double potential_energy = phase_fact*(alpha/r + 4.0*fabs(alpha)*inv_r_6*inv_r_6);
       m_potential_energy += potential_energy;
       // Handle force
       double r_3 = r*r_sq;
-      double force_factor = alpha/r_3 + 48.0*fabs(alpha)*inv_r_6*inv_r_6*inv_r_sq;
+      double force_factor = phase_fact*(alpha/r_3 + 48.0*fabs(alpha)*inv_r_6*inv_r_6*inv_r_sq);
       pi.fx -= force_factor*dx;
       pi.fy -= force_factor*dy;
       pi.fz -= force_factor*dz;

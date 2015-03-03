@@ -107,7 +107,7 @@
 
 
 typedef boost::function< ConstraintPtr(SystemPtr, MessengerPtr, pairs_type&) > constraint_factory;                                                                       //!< Type that handles all constraints
-typedef boost::function< PairPotentialPtr(SystemPtr, MessengerPtr, NeighbourListPtr, pairs_type&) > pair_potential_factory;                                              //!< Type that handles all pair potentials
+typedef boost::function< PairPotentialPtr(SystemPtr, MessengerPtr, NeighbourListPtr, ValuePtr, pairs_type&) > pair_potential_factory;                                    //!< Type that handles all pair potentials
 typedef boost::function< ExternalPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > external_potential_factory;                                                        //!< Type that handles all external potentials
 typedef boost::function< IntegratorPtr(SystemPtr, MessengerPtr, PotentialPtr, AlignerPtr, NeighbourListPtr, ConstraintPtr, ValuePtr, pairs_type&) > integrator_factory;  //!< Type that handles all integrators
 typedef boost::function< PairAlignPtr(SystemPtr, MessengerPtr, NeighbourListPtr, pairs_type&) > pair_aligner_factory;                                                    //!< Type that handles all pairwise alignment
@@ -459,7 +459,16 @@ int main(int argc, char* argv[])
               }
               if (qi::phrase_parse(potential_data.params.begin(), potential_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                pot->add_pair_potential(potential_data.type, pair_potentials[potential_data.type](sys,msg,nlist,parameter_data));
+                std::string phase_in = "constant";
+                if (parameter_data.find("phase_in") != parameter_data.end())
+                    phase_in = parameter_data["phase_in"];                
+                pot->add_pair_potential(potential_data.type, pair_potentials[potential_data.type](
+                                                                                                  sys,
+                                                                                                  msg,
+                                                                                                  nlist,
+                                                                                                  boost::shared_ptr<Value>(values[phase_in](msg,parameter_data)),
+                                                                                                  parameter_data
+                                                                                                 ));
                 msg->msg(Messenger::INFO,"Added "+potential_data.type+" to the list of pair potentials.");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
                   msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for pair potential "+potential_data.type+" is set to "+(*it).second+".");
@@ -941,13 +950,14 @@ int main(int argc, char* argv[])
               msg->msg(Messenger::INFO,"Starting simulation run for "+lexical_cast<string>(run_data.steps)+" steps.");
               // Precompute forces and torques
               if (pot)
-                pot->compute();
+                pot->compute(1e-3);  // Some value to make sure phase in is working.
               if (aligner)
                 aligner->compute();
               int nlist_builds = 0;     // Count how many neighbour list builds we had during this run
               for (int t = 0; t <= run_data.steps; t++)
               {
                 sys->set_step(time_step);
+                sys->set_run_step(t);
                 for (vector<DumpPtr>::iterator it_d = dump.begin(); it_d != dump.end(); it_d++)
                   (*it_d)->dump(time_step);
                 for (vector<LoggerPtr>::iterator it_l = log.begin(); it_l != log.end(); it_l++)

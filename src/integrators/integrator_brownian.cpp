@@ -37,7 +37,7 @@
 void IntegratorBrownian::integrate()
 {
   int N = m_system->get_group(m_group_name)->get_size();
-  double T = m_temp->get_val(m_system->get_step());
+  double T = m_temp->get_val(m_system->get_run_step());
   double B = sqrt(3.0*m_mu*T);
   double sqrt_dt = sqrt(m_dt);
   double fd_x, fd_y, fd_z;                    // Deterministic part of the force
@@ -45,7 +45,7 @@ void IntegratorBrownian::integrate()
   vector<int> particles = m_system->get_group(m_group_name)->get_particles();
   // compute forces in the current configuration
   if (m_potential)
-    m_potential->compute();
+    m_potential->compute(m_dt);
   // compute torques in the current configuration
   if (m_align)
     m_align->compute();

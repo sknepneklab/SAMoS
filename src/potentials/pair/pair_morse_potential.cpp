@@ -24,7 +24,7 @@
 
 #include "pair_morse_potential.hpp"
 
-void PairMorsePotential::compute()
+void PairMorsePotential::compute(double dt)
 {
   int N = m_system->size();
   bool periodic = m_system->get_periodic();
@@ -34,6 +34,7 @@ void PairMorsePotential::compute()
   double re = m_re;
   double rcut = m_rcut;
   double rcut_sq = rcut*rcut;
+  double alpha = 1.0;  // Phase in factor
  
   if (m_system->compute_per_particle_energy())
   {
@@ -49,6 +50,8 @@ void PairMorsePotential::compute()
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
+    if (m_phase_in)
+      alpha = m_val->get_val(static_cast<int>(pi.age/dt));
     double ai = pi.get_radius();
     vector<int>& neigh = m_nlist->get_neighbours(i);
     for (unsigned int j = 0; j < neigh.size(); j++)
@@ -85,15 +88,15 @@ void PairMorsePotential::compute()
         double exp_fact = exp(-a*(r-re));
         double pot_fact = exp_fact - 1.0;
         // Handle potential 
-        double potential_energy = D*(pot_fact*pot_fact-1.0);
+        double potential_energy = D*alpha*(pot_fact*pot_fact-1.0);
         if (m_shifted)
         {
           double shift_fact = exp(-a*(rcut-re)) - 1.0;
-          potential_energy -= D*(shift_fact*shift_fact-1.0);
+          potential_energy -= D*alpha*(shift_fact*shift_fact-1.0);
         }
         m_potential_energy += potential_energy;
         // Handle force
-        double force_factor = 2.0*D*a*exp_fact*pot_fact/r;
+        double force_factor = 2.0*D*a*alpha*exp_fact*pot_fact/r;
         pi.fx += force_factor*dx;
         pi.fy += force_factor*dy;
         pi.fz += force_factor*dz;

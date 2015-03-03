@@ -53,8 +53,9 @@ public:
   //! \param sys Pointer to the System object
   //! \param msg Pointer to the internal state messenger
   //! \param nlist Pointer to the global neighbour list
+  //! \param val Value control object (for phasing in)
   //! \param param Contains information about all parameters (k)
-  PairSoftPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairPotential(sys, msg, nlist, param)
+  PairSoftPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param)
   {
     int ntypes = m_system->get_ntypes();
     if (param.find("k") == param.end())
@@ -82,6 +83,12 @@ public:
       m_msg->msg(Messenger::WARNING,"Soft pair potential is set to use particle radii to control its range. Parameter a will be ignored.");
       m_use_particle_radii = true;
     }
+    if (param.find("phase_in") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Soft pair potential. Gradually phasing in the potential for new particles.");
+      m_phase_in = true;
+    }    
+    
     m_pair_params = new SoftParameters*[ntypes];
     for (int i = 0; i < ntypes; i++)
     {
@@ -137,8 +144,7 @@ public:
       m_msg->msg(Messenger::INFO,"Soft pair potential. Using default range ("+lexical_cast<string>(m_a)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["a"] = m_a;
     }
-    
-    
+        
     m_pair_params[type_1-1][type_2-1].k = param["k"];
     if (type_1 != type_2)
       m_pair_params[type_2-1][type_1-1].k = param["k"];
@@ -153,7 +159,7 @@ public:
   bool need_nlist() { return true; }
   
   //! Computes potentials and forces for all particles
-  void compute();
+  void compute(double);
   
   
 private:
