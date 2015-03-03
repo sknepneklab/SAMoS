@@ -63,6 +63,7 @@ public:
                   | qi::as_string[keyword["gyroid"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]      /*! Handles constraint on a gyroid */
                   | qi::as_string[keyword["actomyo"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]     /*! Handles constraint actomyo */
                   | qi::as_string[keyword["hourglass"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]   /*! Handles constraint on a hourglass */
+                  | qi::as_string[keyword["none"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]        /*! Handles dummy constraint */
                   /* to add new constraint: | qi::as_string[keyword["newconstraint"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&ConstraintlData::params, phoenix::ref(constraint_data)) = qi::_1 ]

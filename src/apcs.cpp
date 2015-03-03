@@ -67,6 +67,7 @@
 #include "constraint_gyroid.hpp"
 #include "constraint_actomyo.hpp"
 #include "constraint_hourglass.hpp"
+#include "constraint_none.hpp"
 #include "rng.hpp"
 #include "particle.hpp"
 #include "box.hpp"
@@ -102,17 +103,19 @@
 #include "angle_potential.hpp"
 #include "angle_harmonic_potential.hpp"
 #include "angle_cosine_potential.hpp"
+#include "value.hpp"
 
 
-typedef boost::function< ConstraintPtr(SystemPtr, MessengerPtr, pairs_type&) > constraint_factory;                                                             //!< Type that handles all constraints
-typedef boost::function< PairPotentialPtr(SystemPtr, MessengerPtr, NeighbourListPtr, pairs_type&) > pair_potential_factory;                                    //!< Type that handles all pair potentials
-typedef boost::function< ExternalPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > external_potential_factory;                                              //!< Type that handles all external potentials
-typedef boost::function< IntegratorPtr(SystemPtr, MessengerPtr, PotentialPtr, AlignerPtr, NeighbourListPtr, ConstraintPtr, pairs_type&) > integrator_factory;  //!< Type that handles all integrators
-typedef boost::function< PairAlignPtr(SystemPtr, MessengerPtr, NeighbourListPtr, pairs_type&) > pair_aligner_factory;                                          //!< Type that handles all pairwise alignment
-typedef boost::function< ExternalAlignPtr(SystemPtr, MessengerPtr, pairs_type&) > external_aligner_factory;                                                    //!< Type that handles all external alignment
-typedef boost::function< PopulationPtr(SystemPtr, MessengerPtr, pairs_type&) > population_factory;                                                             //!< Type that handles all populations
-typedef boost::function< BondPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > bond_potential_factory;                                                      //!< Type that handles all bond potentials
-typedef boost::function< AnglePotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > angle_potential_factory;                                                    //!< Type that handles all angle potentials
+typedef boost::function< ConstraintPtr(SystemPtr, MessengerPtr, pairs_type&) > constraint_factory;                                                                       //!< Type that handles all constraints
+typedef boost::function< PairPotentialPtr(SystemPtr, MessengerPtr, NeighbourListPtr, pairs_type&) > pair_potential_factory;                                              //!< Type that handles all pair potentials
+typedef boost::function< ExternalPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > external_potential_factory;                                                        //!< Type that handles all external potentials
+typedef boost::function< IntegratorPtr(SystemPtr, MessengerPtr, PotentialPtr, AlignerPtr, NeighbourListPtr, ConstraintPtr, ValuePtr, pairs_type&) > integrator_factory;  //!< Type that handles all integrators
+typedef boost::function< PairAlignPtr(SystemPtr, MessengerPtr, NeighbourListPtr, pairs_type&) > pair_aligner_factory;                                                    //!< Type that handles all pairwise alignment
+typedef boost::function< ExternalAlignPtr(SystemPtr, MessengerPtr, pairs_type&) > external_aligner_factory;                                                              //!< Type that handles all external alignment
+typedef boost::function< PopulationPtr(SystemPtr, MessengerPtr, pairs_type&) > population_factory;                                                                       //!< Type that handles all populations
+typedef boost::function< BondPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > bond_potential_factory;                                                                //!< Type that handles all bond potentials
+typedef boost::function< AnglePotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > angle_potential_factory;                                                              //!< Type that handles all angle potentials
+typedef boost::function< ValuePtr(MessengerPtr, pairs_type&) > value_factory;                                                                                            //!< Type that handles all value control objects
 
 
 int main(int argc, char* argv[])
@@ -165,6 +168,7 @@ int main(int argc, char* argv[])
   std::map<std::string, population_factory> populations;
   std::map<std::string, bond_potential_factory> bond_potentials;
   std::map<std::string, angle_potential_factory> angle_potentials;
+  std::map<std::string, value_factory> values;
   
   std::ifstream command_file;    // File with simulation parameters and controls
   std::string command_line;      // Line from the command file
@@ -226,6 +230,8 @@ int main(int argc, char* argv[])
   constraints["actomyo"] = boost::factory<ConstraintActomyoPtr>();
   // Register hourglass constraint with the constraint class factory
   constraints["hourglass"] = boost::factory<ConstraintHourglassPtr>();
+  // Register dummy constraint with the constraint class factory
+  constraints["none"] = boost::factory<ConstraintNonePtr>();
   
   // Register Lennard-Jones pair potential with the pair potentials class factory
   pair_potentials["lj"] = boost::factory<PairLJPotentialPtr>();
@@ -275,10 +281,16 @@ int main(int argc, char* argv[])
     // Register cosine angle potential with the class factory
   angle_potentials["cosine"] = boost::factory<AngleCosinePotentialPtr>();
 
+  // Register constant value control the class factory
+  values["constant"] = boost::factory<ValueConstantPtr>();
+  // Register linear value control the class factory
+  values["linear"] = boost::factory<ValueLinearPtr>();
+  
+  
   if (argc < 2)
   {
     std::cerr << "Usage: " << std::endl;
-    std::cerr << "    apcs <file_name>" << std::endl;
+    std::cerr << "    apcs <config file name>" << std::endl;
     return -1;
   }
   
@@ -740,11 +752,28 @@ int main(int argc, char* argv[])
                 if (integrator.find(integrator_data.type) == integrator.end())
                 {
                   std::string group_name;
+                  std::string temperature_control;
                   if (parameter_data.find("group") == parameter_data.end())
                     group_name = "all";
                   else
                     group_name = parameter_data["group"];
-                  integrator[integrator_data.type+"_"+group_name] = boost::shared_ptr<Integrator>(integrators[integrator_data.type](sys,msg,pot,aligner,nlist,constraint, parameter_data));
+                  if (parameter_data.find("temperature_control") == parameter_data.end())
+                    temperature_control = "constant";
+                  else
+                    temperature_control = parameter_data["temperature_control"];
+                  integrator[integrator_data.type+"_"+group_name] = boost::shared_ptr<Integrator>(
+                                                                                                  integrators[integrator_data.type]
+                                                                                                  (
+                                                                                                    sys,
+                                                                                                    msg,
+                                                                                                    pot,
+                                                                                                    aligner,
+                                                                                                    nlist,
+                                                                                                    constraint,
+                                                                                                    boost::shared_ptr<Value>(values[temperature_control](msg,parameter_data)),
+                                                                                                    parameter_data
+                                                                                                  )
+                                                                                                 );
                   msg->msg(Messenger::INFO,"Adding integrator of type "+integrator_data.type+".");
                   for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
                     msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for integrator "+integrator_data.type+" is set to "+(*it).second+".");

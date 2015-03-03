@@ -41,6 +41,8 @@
 void IntegratorActomyo::integrate()
 {
   int N = m_system->size();
+  double T = m_temp->get_val(m_system->get_step()); // current temperature 
+  m_stoch_coeff = sqrt(6.0*T/m_zeta*m_dt);  // I think we need 6 here (2*d) because we only project into the 2d space.
   // compute forces in the current configuration
   if (m_potential)
     m_potential->compute();

@@ -47,8 +47,9 @@ public:
   //! \param align Pairwise and external alignment handler
   //! \param nlist Neighbour list object
   //! \param cons Enforces constraints to the manifold surface
+  //! \param temp Temperature control object
   //! \param param Contains information about all parameters 
-  IntegratorNematic(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstraintPtr cons, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, param)
+  IntegratorNematic(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstraintPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
   { 
     if (param.find("d0") == param.end())
     {

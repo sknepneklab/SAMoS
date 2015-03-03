@@ -34,6 +34,7 @@
 #include "potential.hpp"
 #include "constraint.hpp"
 #include "aligner.hpp" 
+#include "value.hpp"
 #include "parse_parameters.hpp"
 
 using std::string;
@@ -56,13 +57,15 @@ public:
   //! \param align Pairwise and external alignment handler
   //! \param nlist Neighbour list object
   //! \param cons Enforces constraints to the manifold surface
+  //! \param temp Temperature control object
   //! \param param Contains information about all parameters 
-  Integrator(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist, ConstraintPtr cons, pairs_type& param) : m_system(sys),
-                                                                                                                                                   m_msg(msg),
-                                                                                                                                                   m_potential(pot),
-                                                                                                                                                   m_align(align),
-                                                                                                                                                   m_nlist(nlist),
-                                                                                                                                                   m_constraint(cons)
+  Integrator(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist, ConstraintPtr cons, ValuePtr temp, pairs_type& param) : m_system(sys),
+                                                                                                                                                                  m_msg(msg),
+                                                                                                                                                                  m_potential(pot),
+                                                                                                                                                                  m_align(align),
+                                                                                                                                                                  m_nlist(nlist),
+                                                                                                                                                                  m_constraint(cons),
+                                                                                                                                                                  m_temp(temp)
   { 
     if (param.find("dt") == param.end())
     {
@@ -93,6 +96,7 @@ protected:
   AlignerPtr m_align;          //!< Pointer to alignment handler
   NeighbourListPtr m_nlist;    //!< Pointer to the neighbour list object
   ConstraintPtr m_constraint;  //!< Pointer to the handler for constraints
+  ValuePtr m_temp;             //!< Pointer to the handler of current value of temperature 
   double m_dt;                 //!< time step
   string m_group_name;         //!< Name of the group to apply this integrator to
   
