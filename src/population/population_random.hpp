@@ -143,6 +143,16 @@ public:
       m_msg->msg(Messenger::INFO,"Random population control. New group set to "+param["new_group"]+".");
       m_new_group = param["new_group"];
     }
+    if (param.find("move_split") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Random population control. No split of the offspring separation set. Assuming 0.5.");
+      m_alpha = 0.5;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Random population control. Split of the offspring separation set to "+param["move_split"]+".");
+      m_alpha = lexical_cast<double>(param["move_split"]);
+    }
     
   }
   
@@ -168,6 +178,7 @@ private:
   double m_new_radius;           //!< What is radius of new particle (0.0 no radius change)
   string m_old_group;            //!< What is old group of the particle (where to change from)
   string m_new_group;            //!< What is group of new particle (what to change to)
+  double m_alpha;                //!< When dividing particles, move new one to alpha*radius and the old one to (1-alpha)*radius
    
 };
 

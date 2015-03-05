@@ -169,6 +169,16 @@ public:
       m_msg->msg(Messenger::INFO,"Density population control. Maximum density set to "+param["rho_max"]+".");
       m_rho_max = lexical_cast<double>(param["rho_max"]);
     }
+    if (param.find("move_split") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Random population control. No split of the offspring separation set. Assuming 0.5.");
+      m_alpha = 0.5;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Random population control. Split of the offspring separation set to "+param["move_split"]+".");
+      m_alpha = lexical_cast<double>(param["move_split"]);
+    }
     
   }
   
@@ -196,6 +206,7 @@ private:
   string m_new_group;            //!< What is group of new particle (what to change to)
   double m_split_distance;       //!< Fraction of the particle radius to split after the division
   double m_rho_max;              //!< Maximum local density where division rate decays 
+  double m_alpha;                //!< When dividing particles, move new one to alpha*m_split_distance and the old one to (1-alpha)*split_distance
    
 };
 

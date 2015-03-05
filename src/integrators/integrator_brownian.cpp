@@ -37,10 +37,15 @@
 void IntegratorBrownian::integrate()
 {
   int N = m_system->get_group(m_group_name)->get_size();
+  double T = m_temp->get_val(m_system->get_run_step());
+  double B = sqrt(3.0*m_mu*T);
+  double sqrt_dt = sqrt(m_dt);
+  double fd_x, fd_y, fd_z;                    // Deterministic part of the force
+  double fr_x = 0.0, fr_y = 0.0, fr_z = 0.0;  // Random part of the force
   vector<int> particles = m_system->get_group(m_group_name)->get_particles();
   // compute forces in the current configuration
   if (m_potential)
-    m_potential->compute();
+    m_potential->compute(m_dt);
   // compute torques in the current configuration
   if (m_align)
     m_align->compute();
@@ -55,15 +60,31 @@ void IntegratorBrownian::integrate()
       {
         p.nx = -p.nx;  p.ny = -p.ny;  p.nz = -p.nz;
       }
+    // compute deterministic forces
+    fd_x = m_v0*p.nx + m_mu*p.fx; 
+    fd_y = m_v0*p.ny + m_mu*p.fy;
+    fd_z = m_v0*p.nz + m_mu*p.fz;
     // Update velocity
-    p.vx = m_v0*p.nx + m_mu*p.fx;
-    p.vy = m_v0*p.ny + m_mu*p.fy;
-    p.vz = m_v0*p.nz + m_mu*p.fz;
-    //m_constraint->enforce(p);
+    p.vx = fd_x; 
+    p.vy = fd_y;
+    p.vz = fd_z;
     // Update particle position according to the eq. (1a)
-    p.x += m_dt*p.vx;
-    p.y += m_dt*p.vy;
-    p.z += m_dt*p.vz;
+    p.x += m_dt*fd_x;
+    p.y += m_dt*fd_y;
+    p.z += m_dt*fd_z;
+    // Check is non-zero T
+    if (T > 0.0)
+    {
+      fr_x = B*2.0*(m_rng->drnd() - 0.5);//m_rng->gauss_rng(1.0);
+      fr_y = B*2.0*(m_rng->drnd() - 0.5);//m_rng->gauss_rng(1.0);
+      fr_z = B*2.0*(m_rng->drnd() - 0.5);//m_rng->gauss_rng(1.0);
+      p.vx += fr_x; 
+      p.vy += fr_y;
+      p.vz += fr_z;  
+      p.x += sqrt_dt*fr_x;
+      p.y += sqrt_dt*fr_y;
+      p.z += sqrt_dt*fr_z;
+    }
     // Project everything back to the manifold
     m_constraint->enforce(p);
     // Update angular velocity

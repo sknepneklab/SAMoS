@@ -49,8 +49,9 @@ public:
   //! \param sys Pointer to the System object
   //! \param msg Pointer to the internal state messenger
   //! \param nlist Pointer to the global neighbour list
+  //! \param val Value control object (for phasing in)
   //! \param param Contains information about all parameters (epsilon, sigma, and rcut)
-  PairLJPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairPotential(sys, msg, nlist, param)
+  PairLJPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param)
   {
     int ntypes = m_system->get_ntypes();
     if (!m_nlist)
@@ -96,6 +97,11 @@ public:
       m_msg->msg(Messenger::WARNING,"Lennard-Jones pair potential is set to use particle radii to control its range. Parameter sigma will be ignored.");
       m_use_particle_radii = true;
     }
+    if (param.find("phase_in") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Lennard Jones pair potential. Gradually phasing in the potential for new particles.");
+      m_phase_in = true;
+    }    
     
     if (m_rcut > m_nlist->get_cutoff())
       m_msg->msg(Messenger::WARNING,"Neighbour list cutoff distance (" + lexical_cast<string>(m_nlist->get_cutoff())+
@@ -178,7 +184,7 @@ public:
       m_msg->msg(Messenger::INFO,"Lennard Jones pair potential. Using default rcut ("+lexical_cast<string>(m_rcut)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["rcut"] = m_rcut;
     }
-    
+       
     
     m_pair_params[type_1-1][type_2-1].eps = param["epsilon"];
     if (type_1 != type_2)
@@ -202,7 +208,7 @@ public:
   bool need_nlist() { return true; }
   
   //! Computes potentials and forces for all particles
-  void compute();
+  void compute(double);
   
   
 private:

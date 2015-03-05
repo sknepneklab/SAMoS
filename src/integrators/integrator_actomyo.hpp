@@ -45,8 +45,9 @@ public:
   //! \param align Pairwise and external alignment handler
   //! \param nlist Neighbour list object
   //! \param cons Enforces constraints to the manifold surface
+  //! \param temp Temperature control object
   //! \param param Contains information about all parameters 
-  IntegratorActomyo(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstraintPtr cons, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, param)
+  IntegratorActomyo(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstraintPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
   { 
     m_msg->msg(Messenger::WARNING,"Using Actomyo dynamics integrator. All particle groups will be ignored. Working only with group \"all\".");
     if (param.find("zeta") == param.end())
@@ -79,17 +80,6 @@ public:
       m_msg->msg(Messenger::INFO,"Actomyo dynamics integrator. Setting active force on myosin to "+param["f"]+".");
       m_f_active = lexical_cast<double>(param["f"]);
     }
-    if (param.find("T") == param.end())
-    {
-      m_msg->msg(Messenger::WARNING,"Actomyo dynamics integrator. Temperature is not set. Using default value 1.");
-      m_D = 1.0/m_zeta;
-    }
-    else
-    {
-      m_msg->msg(Messenger::INFO,"Actomyo dynamics integrator. Setting temperature to "+param["T"]+".");
-      m_D = lexical_cast<double>(param["T"])/m_zeta;
-    }
-    m_stoch_coeff = sqrt(4.0*m_D*m_dt); // Check the factor under square root. I think it is 2d, where d is dimension of the system
   }
   
   //! Propagate system for a time step

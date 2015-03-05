@@ -53,14 +53,17 @@ public:
   constraint_grammar(ConstraintlData& constraint_data) : constraint_grammar::base_type(constraint)
   {
     constraint = (
-                    qi::as_string[keyword["sphere"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on a sphere */
+                    qi::as_string[keyword["sphere"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]      /*! Handles constraint on a sphere */
                   | qi::as_string[keyword["plane"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on a plane */
                   | qi::as_string[keyword["walls"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles plane walls constraints */
-                  | qi::as_string[keyword["cylinder"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on a cylinder */
-                  | qi::as_string[keyword["peanut"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on a peanut */
+                  | qi::as_string[keyword["cylinder"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]    /*! Handles constraint on a cylinder */
+                  | qi::as_string[keyword["peanut"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]      /*! Handles constraint on a peanut */
                   | qi::as_string[keyword["torus"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on a torus */
-                  | qi::as_string[keyword["ellipsoid"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on an ellipsoid */
-                  | qi::as_string[keyword["gyroid"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]       /*! Handles constraint on a gyroid */
+                  | qi::as_string[keyword["ellipsoid"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]   /*! Handles constraint on an ellipsoid */
+                  | qi::as_string[keyword["gyroid"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]      /*! Handles constraint on a gyroid */
+                  | qi::as_string[keyword["actomyo"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]     /*! Handles constraint actomyo */
+                  | qi::as_string[keyword["hourglass"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]   /*! Handles constraint on a hourglass */
+                  | qi::as_string[keyword["none"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ]        /*! Handles dummy constraint */
                   /* to add new constraint: | qi::as_string[keyword["newconstraint"]][phoenix::bind(&ConstraintlData::type, phoenix::ref(constraint_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&ConstraintlData::params, phoenix::ref(constraint_data)) = qi::_1 ]

@@ -31,7 +31,7 @@
  *  total force on myosin bead closest to the actin bead and \f$ \tau \f$
  *  if the tangent to the actin filament in the direction of the filament's
  *  head, we add a force \f$ F_a \f$ to the filament bead in the direction 
- *  of \f$ \tua \f$.
+ *  of \f$ \tau \f$.
  *  \note: For simplicity, we assume that actin filament beads have type 2.
  *  This is clearly a constraint, however, makes things much simpler to 
  *  implement.
@@ -41,9 +41,11 @@
 void IntegratorActomyo::integrate()
 {
   int N = m_system->size();
+  double T = m_temp->get_val(m_system->get_run_step()); // current temperature 
+  m_stoch_coeff = sqrt(6.0*T/m_zeta*m_dt);  // I think we need 6 here (2*d) because we only project into the 2d space.
   // compute forces in the current configuration
   if (m_potential)
-    m_potential->compute();
+    m_potential->compute(m_dt);
   // iterate over all particles 
   for (int i = 0; i < N; i++)
   {

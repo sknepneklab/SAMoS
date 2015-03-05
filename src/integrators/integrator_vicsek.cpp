@@ -43,7 +43,7 @@ void IntegratorVicsek::integrate()
   vector<int> particles = m_system->get_group(m_group_name)->get_particles();
   // compute forces in the current configuration
   if (m_potential)
-    m_potential->compute();
+    m_potential->compute(m_dt);
   // compute torques in the current configuration
   if (m_align)
     m_align->compute();

@@ -113,8 +113,15 @@ public:
   //! \param step current time step
   void set_step(int step) { m_time_step = step; }
   
+  //! Set current run step
+  //! \param step current run step
+  void set_run_step(int step) { m_run_step = step; }
+  
   //! Get current time step
   int get_step() { return m_time_step; }  //!< \return current time step
+  
+  //! Get current run step
+  int get_run_step() { return m_run_step; }  //!< \return current run step
   
   //! Reset all forces to zero
   void reset_forces()
@@ -242,6 +249,9 @@ public:
   //! Make sure that all group information on particles matches group information in the lists
   bool group_ok(const string&);
   
+  //! enforce period boundary conditions
+  void enforce_periodic(Particle&);
+  
 private:
   
   vector<Particle> m_particles;         //!< Contains all particle in the system 
@@ -252,6 +262,7 @@ private:
   map<string, GroupPtr> m_group;        //!< All groups in the system 
   bool m_periodic;                      //!< If true, we use periodic boundary conditions 
   int m_time_step;                      //!< Current time step
+  int m_run_step;                       //!< Time step for the current run
   bool m_compute_per_particle_eng;      //!< If true, compute per particle potential and alignment energy (we need to be able to turn it on and off since it is slow - STL map in the inner loop!)
   int m_num_groups;                     //!< Total number of groups in the system
   bool m_force_nlist_rebuild;           //!< Forced rebuilding of neighbour list

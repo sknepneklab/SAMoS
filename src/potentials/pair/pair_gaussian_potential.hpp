@@ -57,8 +57,9 @@ public:
   //! \param sys Pointer to the System object
   //! \param msg Pointer to the internal state messenger
   //! \param nlist Pointer to the global neighbour list
+  //! \param val Value control object (for phasing in)
   //! \param param Contains information about all parameters (epsilon, sigma, and rcut)
-  PairGaussianPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairPotential(sys, msg, nlist, param)
+  PairGaussianPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param)
   {
     int ntypes = m_system->get_ntypes();
     if (!m_nlist)
@@ -143,6 +144,12 @@ public:
       m_msg->msg(Messenger::WARNING,"Gaussian pair potential is set to use particle radii to control its range. Parameter rB will be ignored.");
       m_use_particle_radii = true;
     }
+    
+    if (param.find("phase_in") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Gaussian pair potential. Gradually phasing in the potential for new particles.");
+      m_phase_in = true;
+    }   
     
     m_pair_params = new GaussianParameters*[ntypes];
     for (int i = 0; i < ntypes; i++)
@@ -306,7 +313,7 @@ public:
   bool need_nlist() { return true; }
   
   //! Computes potentials and forces for all particles
-  void compute();
+  void compute(double);
   
   
 private:

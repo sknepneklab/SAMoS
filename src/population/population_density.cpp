@@ -60,9 +60,9 @@ void PopulationDensity::divide(int t)
       if (m_rng->drnd() < m_div_rate*(1.0-p.coordination/m_rho_max) )
       {
         Particle p_new(m_system->size(), p.get_type(), p.get_radius());
-        p_new.x = p.x + m_split_distance*p.get_radius()*p.nx;
-        p_new.y = p.y + m_split_distance*p.get_radius()*p.ny;
-        p_new.z = p.z + m_split_distance*p.get_radius()*p.nz;
+        p_new.x = p.x + m_alpha*m_split_distance*p.get_radius()*p.nx;
+        p_new.y = p.y + m_alpha*m_split_distance*p.get_radius()*p.ny;
+        p_new.z = p.z + m_alpha*m_split_distance*p.get_radius()*p.nz;
         if (periodic)
         {
           if (p_new.x > box->xhi) p_new.x -= box->Lx;
@@ -72,9 +72,9 @@ void PopulationDensity::divide(int t)
           if (p_new.z > box->zhi) p_new.z -= box->Lz;
           else if (p_new.z < box->zlo) p_new.z += box->Lz;
         }
-        p.x -= m_split_distance*p.get_radius()*p.nx;
-        p.y -= m_split_distance*p.get_radius()*p.ny;
-        p.z -= m_split_distance*p.get_radius()*p.nz;
+        p.x -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.nx;
+        p.y -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.ny;
+        p.z -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.nz;
         if (periodic)
         {
           if (p.x > box->xhi) p.x -= box->Lx;

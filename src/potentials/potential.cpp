@@ -26,8 +26,9 @@
 
 /*! Iterate over all pair and external potential and compute 
  *  potential energies and forces
+ *  \param dt step size (used to phase in particles)
  */
-void Potential::compute()
+void Potential::compute(double dt)
 {
   m_system->reset_forces();
   PairPotType::iterator it_pair;
@@ -36,7 +37,7 @@ void Potential::compute()
   AnglePotType::iterator it_angle;
   
   for(it_pair = m_pair_interactions.begin(); it_pair != m_pair_interactions.end(); it_pair++)
-    (*it_pair).second->compute();
+    (*it_pair).second->compute(dt);
   for(it_ext = m_external_potentials.begin(); it_ext != m_external_potentials.end(); it_ext++)
     (*it_ext).second->compute();
   for(it_bond = m_bond.begin(); it_bond != m_bond.end(); it_bond++)

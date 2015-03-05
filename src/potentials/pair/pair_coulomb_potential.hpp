@@ -53,8 +53,9 @@ public:
   //! \param sys Pointer to the System object
   //! \param msg Pointer to the internal state messenger
   //! \param nlist Pointer to the global neighbour list
+  //! \param val Value control object (for phasing in)
   //! \param param Contains information about all parameters (alpha and sigma)
-  PairCoulombPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairPotential(sys, msg, nlist, param)
+  PairCoulombPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param)
   {
     int ntypes = m_system->get_ntypes();
     if (param.find("alpha") == param.end())
@@ -78,6 +79,12 @@ public:
       m_msg->msg(Messenger::INFO,"Global particle diameter (sigma) for Coulomb pair potential is set to "+param["sigma"]+".");
       m_sigma = lexical_cast<double>(param["sigma"]);
     }
+    if (param.find("phase_in") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Coulomb pair potential. Gradually phasing in the potential for new particles.");
+      m_phase_in = true;
+    }    
+    
     m_pair_params = new CoulombParameters*[ntypes];
     for (int i = 0; i < ntypes; i++)
     {
@@ -152,7 +159,7 @@ public:
   bool need_nlist() { return false; }
   
   //! Computes potentials and forces for all particles
-  void compute();
+  void compute(double);
   
   
 private:

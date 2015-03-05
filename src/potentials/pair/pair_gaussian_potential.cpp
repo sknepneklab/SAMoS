@@ -24,7 +24,7 @@
 
 #include "pair_gaussian_potential.hpp"
 
-void PairGaussianPotential::compute()
+void PairGaussianPotential::compute(double dt)
 {
   int N = m_system->size();
   bool periodic = m_system->get_periodic();
@@ -37,6 +37,7 @@ void PairGaussianPotential::compute()
   double rB = m_rB;
   double rcut = m_rcut;
   double rcut_sq = rcut*rcut;
+  double phase_fact = 1.0;  // Phase in factor
     
    
   if (m_system->compute_per_particle_energy())
@@ -53,6 +54,8 @@ void PairGaussianPotential::compute()
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
+    if (m_phase_in)
+      phase_fact = m_val->get_val(static_cast<int>(pi.age/dt));
     vector<int>& neigh = m_nlist->get_neighbours(i);
     for (unsigned int j = 0; j < neigh.size(); j++)
     {
@@ -91,15 +94,15 @@ void PairGaussianPotential::compute()
         double r = sqrt(r_sq);
         // Handle potential 
         double r_m_rA = r - rA, r_m_rB = r - rB;
-        double potential_energy = A*exp(-alpha*r_m_rA*r_m_rA)+B*exp(-beta*r_m_rB*r_m_rB);
+        double potential_energy = A*phase_fact*exp(-alpha*r_m_rA*r_m_rA)+B*exp(-beta*r_m_rB*r_m_rB);
         if (m_shifted)
         {
           double rcut_m_rA = rcut - rA, rcut_m_rB = rcut - rB;
-          potential_energy -= A*exp(-alpha*rcut_m_rA*rcut_m_rA)+B*exp(-beta*rcut_m_rB*rcut_m_rB);
+          potential_energy -= A*phase_fact*exp(-alpha*rcut_m_rA*rcut_m_rA)+B*exp(-beta*rcut_m_rB*rcut_m_rB);
         }
         m_potential_energy += potential_energy;
         // Handle force
-        double force_factor = (2.0/r)*(A*alpha*r_m_rA*exp(-alpha*r_m_rA*r_m_rA)+B*beta*r_m_rB*exp(-beta*r_m_rB*r_m_rB));
+        double force_factor = (2.0/r)*phase_fact*(A*alpha*r_m_rA*exp(-alpha*r_m_rA*r_m_rA)+B*beta*r_m_rB*exp(-beta*r_m_rB*r_m_rB));
         pi.fx += force_factor*dx;
         pi.fy += force_factor*dy;
         pi.fz += force_factor*dz;

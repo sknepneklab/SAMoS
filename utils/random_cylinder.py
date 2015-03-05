@@ -40,10 +40,12 @@ def rotation_matrix(axis,theta):
 
 class Cylinder:
   
-  def __init__(self, R, H, N, v):
+  def __init__(self, R, H, N, v, A, n):
     self.R = R
     self.H = H
     self.N = N
+    self.A = A
+    self.n = n
     self.particles = [Particle(i) for i in range(N)]
     self.__generate_pos()
     self.__generate_vel(v)
@@ -53,13 +55,15 @@ class Cylinder:
     for i in range(self.N):
       z = uniform(-0.5*self.H,0.5*self.H)
       phi = uniform(0.0, 2*pi)
-      x = self.R*cos(phi)
-      y = self.R*sin(phi)
+      R = self.R + self.A*sin(2.0*pi/self.H*self.n*z)
+      x = R*cos(phi)
+      y = R*sin(phi)
       self.particles[i].r = [x,y,z]
 
   def __generate_vel(self,vav=1.0):
     for p in self.particles:
-      axis = np.array([p.r[0],p.r[1],0])
+      zgrad = -4.0*self.A*self.n*pi/self.H*cos(2.0*pi/self.H*self.n*p.r[2])*(self.R+self.A*sin(2.0*pi/self.H*self.n*p.r[2]))
+      axis = np.array([p.r[0],p.r[1],zgrad])
       v = np.array([uniform(-0.5,0.5), uniform(-0.5,0.5), uniform(-0.5,0.5)])
       v = np.dot(projection_matrix(axis),v)
       vlen = sqrt(sum(v**2))
@@ -70,7 +74,8 @@ class Cylinder:
  
   def __generate_director(self):
     for p in self.particles:
-      axis = np.array([p.r[0],p.r[1],0])
+      zgrad = -4.0*self.A*self.n*pi/self.H*cos(2.0*pi/self.H*self.n*p.r[2])*(self.R+self.A*sin(2.0*pi/self.H*self.n*p.r[2]))
+      axis = np.array([p.r[0],p.r[1],zgrad])
       n = np.array([uniform(-0.5,0.5), uniform(-0.5,0.5), uniform(-0.5,0.5)])
       n = np.dot(projection_matrix(axis),n)
       nlen = sqrt(sum(n**2))
@@ -97,6 +102,8 @@ class Cylinder:
 parser = argparse.ArgumentParser()
 parser.add_argument("-R", "--radius", type=float, default=10.0, help="cylinder radius")
 parser.add_argument("-H", "--height", type=float, default=20.0, help="cylinder height")
+parser.add_argument("-A", "--amplitude", type=float, default=0.0, help="amplitude for a wavy cylinder")
+parser.add_argument("-n", "--n", type=float, default=1.0, help="number of nodes (for a wavy cylinder)")
 parser.add_argument("-f", "--phi",  type=float, default=0.5, help="packing fraction")
 parser.add_argument("-o", "--output", type=str, default='out.dat', help="output file")
 parser.add_argument("-v", "--vavr", type=float, default=1.0, help="average velocity")
@@ -115,6 +122,8 @@ print "\tRadius : ", args.radius
 print "\tHeight : ", args.height
 print "\tPacking fraction : ", args.phi
 print "\tAverage velocity : ", args.vavr
+print "\tAmplitude (wavy cylinder) : ", args.amplitude
+print "\tNumber of nodes (wavy cylinder) : ", args.n
 N=int(round(2.0*args.radius*args.height*args.phi))
 print "\tTotal number of particles : ", N
 print "\tOutput file : ", args.output
@@ -123,7 +132,7 @@ print
 start = datetime.now()
 
 
-c = Cylinder(args.radius, args.height, N, args.vavr)
+c = Cylinder(args.radius, args.height, N, args.vavr, args.amplitude, args.n)
 c.write(args.output)
 
 end = datetime.now()

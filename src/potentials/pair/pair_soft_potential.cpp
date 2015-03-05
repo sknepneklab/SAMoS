@@ -24,7 +24,8 @@
 
 #include "pair_soft_potential.hpp"
 
-void PairSoftPotential::compute()
+//! \param dt time step sent by the integrator 
+void PairSoftPotential::compute(double dt)
 {
   int N = m_system->size();
   bool periodic = m_system->get_periodic();
@@ -32,6 +33,7 @@ void PairSoftPotential::compute()
   double k = m_k;
   double ai, aj;
   double force_factor;
+  double alpha = 1.0;  // phase in factor
   
   if (m_system->compute_per_particle_energy())
   {
@@ -46,6 +48,8 @@ void PairSoftPotential::compute()
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
+    if (m_phase_in)
+      alpha = m_val->get_val(static_cast<int>(pi.age/dt));
     ai = pi.get_radius();
     vector<int>& neigh = m_nlist->get_neighbours(i);
     for (unsigned int j = 0; j < neigh.size(); j++)
@@ -75,10 +79,10 @@ void PairSoftPotential::compute()
       {
         // Handle potential 
         double diff = ai_p_aj - r;
-        double pot_eng = 0.5*k*diff*diff;
+        double pot_eng = 0.5*k*alpha*diff*diff;
         m_potential_energy += pot_eng;
         // Handle force
-        if (r > 0.0) force_factor = k*diff/r;
+        if (r > 0.0) force_factor = k*alpha*diff/r;
         else force_factor = k*diff;
         pi.fx -= force_factor*dx;
         pi.fy -= force_factor*dy;

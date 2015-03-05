@@ -24,7 +24,7 @@
 
 #include "pair_lj_potential.hpp"
 
-void PairLJPotential::compute()
+void PairLJPotential::compute(double dt)
 {
   int N = m_system->size();
   bool periodic = m_system->get_periodic();
@@ -33,6 +33,7 @@ void PairLJPotential::compute()
   double eps = m_eps;
   double rcut = m_rcut;
   double sigma_sq = sigma*sigma, rcut_sq = rcut*rcut;
+  double alpha = 1.0;    // Phase in factor 
  
   if (m_system->compute_per_particle_energy())
   {
@@ -48,6 +49,8 @@ void PairLJPotential::compute()
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
+    if (m_phase_in)
+      alpha = m_val->get_val(static_cast<int>(pi.age/dt));
     double ai = pi.get_radius();
     vector<int>& neigh = m_nlist->get_neighbours(i);
     for (unsigned int j = 0; j < neigh.size(); j++)
@@ -86,16 +89,16 @@ void PairLJPotential::compute()
         double inv_r_sq = sigma_sq/r_sq;
         double inv_r_6  = inv_r_sq*inv_r_sq*inv_r_sq;
         // Handle potential 
-        double potential_energy = 4.0*eps*inv_r_6*(inv_r_6 - 1.0);
+        double potential_energy = 4.0*eps*alpha*inv_r_6*(inv_r_6 - 1.0);
         if (m_shifted)
         {
           double inv_r_cut_sq = sigma_sq/rcut_sq;
           double inv_r_cut_6 = inv_r_cut_sq*inv_r_cut_sq*inv_r_cut_sq;
-          potential_energy -= 4.0 * eps * inv_r_cut_6 * (inv_r_cut_6 - 1.0);
+          potential_energy -= 4.0 * eps * alpha * inv_r_cut_6 * (inv_r_cut_6 - 1.0);
         }
         m_potential_energy += potential_energy;
         // Handle force
-        double force_factor = 48.0*eps*inv_r_6*(inv_r_6 - 0.5)*inv_r_sq;
+        double force_factor = 48.0*eps*alpha*inv_r_6*(inv_r_6 - 0.5)*inv_r_sq;
         pi.fx += force_factor*dx;
         pi.fy += force_factor*dy;
         pi.fz += force_factor*dz;
