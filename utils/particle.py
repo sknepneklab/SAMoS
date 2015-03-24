@@ -19,7 +19,7 @@
 
 class Particle:
   
-  def __init__(self, idx, tp=1, R=1.0):
+  def __init__(self, idx, tp=1, R=1.0, l=1.0):
     self.idx = idx
     self.tp = tp
     self.R = R
@@ -27,6 +27,7 @@ class Particle:
     self.v = [0.0,0.0,0.0]
     self.f = [0.0,0.0,0.0]
     self.n = [0.0,0.0,0.0]
+    self.l = l
     self.omega = 0.0
     
   

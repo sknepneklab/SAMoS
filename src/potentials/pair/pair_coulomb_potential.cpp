@@ -27,8 +27,6 @@
 void PairCoulombPotential::compute(double dt)
 {
   int N = m_system->size();
-  bool periodic = m_system->get_periodic();
-  BoxPtr box = m_system->get_box();
   double sigma = m_sigma;
   double alpha = m_alpha;
   double sigma_sq = sigma*sigma;
@@ -60,15 +58,7 @@ void PairCoulombPotential::compute(double dt)
         sigma_sq = sigma*sigma;
       }
       double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
-      if (periodic)
-      {
-        if (dx > box->xhi) dx -= box->Lx;
-        else if (dx < box->xlo) dx += box->Lx;
-        if (dy > box->yhi) dy -= box->Ly;
-        else if (dy < box->ylo) dy += box->Ly;
-        if (dz > box->zhi) dz -= box->Lz;
-        else if (dz < box->zlo) dz += box->Lz;
-      }
+      m_system->apply_periodic(dx,dy,dz);
       double r_sq = dx*dx + dy*dy + dz*dz;
       double r = sqrt(r_sq);
       double inv_r_sq = sigma_sq/r_sq;

@@ -28,8 +28,6 @@
 void PairSoftPotential::compute(double dt)
 {
   int N = m_system->size();
-  bool periodic = m_system->get_periodic();
-  BoxPtr box = m_system->get_box();
   double k = m_k;
   double ai, aj;
   double force_factor;
@@ -59,15 +57,7 @@ void PairSoftPotential::compute(double dt)
       k = m_pair_params[pi.get_type()-1][pj.get_type()-1].k;
       aj = pj.get_radius();
       double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
-      if (periodic)
-      {
-        if (dx > box->xhi) dx -= box->Lx;
-        else if (dx < box->xlo) dx += box->Lx;
-        if (dy > box->yhi) dy -= box->Ly;
-        else if (dy < box->ylo) dy += box->Ly;
-        if (dz > box->zhi) dz -= box->Lz;
-        else if (dz < box->zlo) dz += box->Lz;
-      }
+      m_system->apply_periodic(dx,dy,dz);
       double r_sq = dx*dx + dy*dy + dz*dz;
       double r = sqrt(r_sq);
       double ai_p_aj;

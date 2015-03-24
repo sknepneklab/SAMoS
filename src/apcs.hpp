@@ -73,6 +73,8 @@
 #include "pair_lj_potential.hpp"
 #include "pair_gaussian_potential.hpp"
 #include "pair_morse_potential.hpp"
+#include "pair_active_potential.hpp"
+#include "pair_rod_potential.hpp"
 #include "potential.hpp"
 #include "integrator.hpp"
 #include "integrator_brownian.hpp"

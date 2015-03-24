@@ -41,6 +41,10 @@ void IntegratorNematic::integrate()
 {
   int N = m_system->get_group(m_group_name)->get_size();
   vector<int> particles = m_system->get_group(m_group_name)->get_particles();
+  // reset forces and torques
+  m_system->reset_forces();
+  m_system->reset_torques();
+  
   // No need to compute potential, only compute torques in the current configuration
   if (m_align)
     m_align->compute();

@@ -119,6 +119,10 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
       p.ny = lexical_cast<double>(s_line[10]);
       p.nz = lexical_cast<double>(s_line[11]);
       p.omega = lexical_cast<double>(s_line[12]);
+      if (s_line.size() > 13)
+        p.set_length(lexical_cast<double>(s_line[12]));
+      else
+        p.set_length(1.0);
       p.set_flag(m_current_particle_flag);
       m_current_particle_flag++;
       m_particles.push_back(p);

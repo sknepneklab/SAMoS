@@ -27,8 +27,6 @@
 void PairMorsePotential::compute(double dt)
 {
   int N = m_system->size();
-  bool periodic = m_system->get_periodic();
-  BoxPtr box = m_system->get_box();
   double D = m_D;
   double a = m_a;
   double re = m_re;
@@ -63,15 +61,7 @@ void PairMorsePotential::compute(double dt)
         rcut_sq = rcut*rcut;
       }
       double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
-      if (periodic)
-      {
-        if (dx > box->xhi) dx -= box->Lx;
-        else if (dx < box->xlo) dx += box->Lx;
-        if (dy > box->yhi) dy -= box->Ly;
-        else if (dy < box->ylo) dy += box->Ly;
-        if (dz > box->zhi) dz -= box->Lz;
-        else if (dz < box->zlo) dz += box->Lz;
-      }
+      m_system->apply_periodic(dx,dy,dz);
       double r_sq = dx*dx + dy*dy + dz*dz;
       if (r_sq <= rcut_sq)
       {

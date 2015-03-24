@@ -34,6 +34,11 @@ void IntegratorNVE::integrate()
   int N = m_system->get_group(m_group_name)->get_size();
   vector<int> particles = m_system->get_group(m_group_name)->get_particles();
   double dt_2 = 0.5*m_dt;
+  
+  // reset forces and torques
+  m_system->reset_forces();
+  m_system->reset_torques();
+  
   // Perform first half step for velocity
   for (int i = 0; i < N; i++)
   {

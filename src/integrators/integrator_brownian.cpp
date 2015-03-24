@@ -43,6 +43,11 @@ void IntegratorBrownian::integrate()
   double fd_x, fd_y, fd_z;                    // Deterministic part of the force
   double fr_x = 0.0, fr_y = 0.0, fr_z = 0.0;  // Random part of the force
   vector<int> particles = m_system->get_group(m_group_name)->get_particles();
+  
+  // reset forces and torques
+  m_system->reset_forces();
+  m_system->reset_torques();
+  
   // compute forces in the current configuration
   if (m_potential)
     m_potential->compute(m_dt);
@@ -88,7 +93,7 @@ void IntegratorBrownian::integrate()
     // Project everything back to the manifold
     m_constraint->enforce(p);
     // Update angular velocity
-    p.omega = m_mu*m_constraint->project_torque(p);
+    p.omega = m_mur*m_constraint->project_torque(p);
     //p.omega = m_dt*m_constraint->project_torque(p);
     // Change orientation of the director (in the tangent plane) according to eq. (1b)
     double dtheta = m_dt*p.omega + m_stoch_coeff*m_rng->gauss_rng(1.0);
