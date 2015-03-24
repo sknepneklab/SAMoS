@@ -380,7 +380,7 @@ def findLoop(rval,etheta,ephi,dmax):
     l+=1
   return LoopList,Ival,Jval
     
-def getDefects(f,radius,sigma,outname,debug=False,writeVTK=False):
+def getDefects(f,radius,sigma,outname,symtype='polar',debug=False,writeVTK=False):
   print "Processing file : ", f
   data = ReadData(f)
   if writeVTK:
@@ -395,8 +395,11 @@ def getDefects(f,radius,sigma,outname,debug=False,writeVTK=False):
   rval = np.column_stack((x,y,z))
   vval = np.column_stack((vx,vy,vz))
   nval = np.column_stack((nx,ny,nz))
+  # To be very, very sure that it is exactly normalized
+  nval=((nval).transpose()/(np.sqrt(np.sum(nval**2,axis=1))).transpose()).transpose()
   # Getting the local coordinate system
   rhat=((rval).transpose()/(np.sqrt(np.sum(rval**2,axis=1))).transpose()).transpose()
+  vhat=((vval).transpose()/(np.sqrt(np.sum(vval**2,axis=1))).transpose()).transpose()
   theta=np.arccos(rhat[:,2])
   # From the euler angles: rx = sin theta cos phi
   # Choosing correct quadrant through the sign of ry=sin theta sin phi
@@ -413,46 +416,152 @@ def getDefects(f,radius,sigma,outname,debug=False,writeVTK=False):
   # Trying a simple n^2 algorithm for the defects. Identify all loops by the old trusty Ball-Blumenfeld method
   # Parallel transport each neighbor orientation vector back to it? Then compute the Burgers vector.
   #dmax=(2.4*sigma)**2
-  dmax=(3.9*sigma)**2
+  dmax=(2.0*sigma)**2
   LoopList,Ival,Jval=findLoop(rval,etheta,ephi,dmax)
-  ndefect=0
   
-  # Assuming 4 defect, put into an array for storage
-  defects=np.zeros((100,3))
+  numdefect_n=0
+  numdefect_v=0
+  
+  # Defect storage, up to 100
+  # For n and velocity
+  defects_n=np.zeros((500,4))
+  defects_v=np.zeros((500,4))
+  print len(LoopList)
   for u in range(len(LoopList)):
-  #for u in range(10):
     # Should already be ordered counterclockwise
     # Following a version of the Goldenfeld algorithm, with nx,ny,nz as is playing the role of the order parameter. The sphere is in cartesian space
     thisLoop=LoopList[u]
-    coord=[]
-    coord.append(nval[thisLoop[0],:])
-    ctheta=1
-    for t in range(1,len(thisLoop)):
-      #ctheta0=ctheta
-      ctheta=np.dot(nval[thisLoop[t],:],np.sign(ctheta)*nval[thisLoop[t-1],:])
-      # Nematic: append the order parameter, rotated through the *smaller* angle
-      coord.append(np.sign(ctheta)*nval[thisLoop[t],:])
-    # Find out if the last point and the starting point are in the same hemisphere. 
-    cdefect=np.dot(coord[t],coord[0])
-    if cdefect<0:
-      if ndefect<100:
-        print "Found Defect!"
+    # Generalized algorithm for defects of any type
+    # The old nematic algorithm, based on the hemispheres
+    # Count the defect charge. Times two, to use integers and easier if statements
+    printnow=False
+    if symtype=='oldnematic':
+      # The polarization vector nval
+      ctheta=1
+      coord=[]
+      coord.append(nval[thisLoop[0],:])
+      for t in range(1,len(thisLoop)):
+        ctheta=np.dot(nval[thisLoop[t],:],np.sign(ctheta)*nval[thisLoop[t-1],:])
+        # Nematic: append the order parameter, rotated through the *smaller* angle
+        coord.append(np.sign(ctheta)*nval[thisLoop[t],:])
+      # Find out if the last point and the starting point are in the same hemisphere. 
+      cdefect=np.dot(coord[t],coord[0])
+      if cdefect<0:
+        ndefect=0.5
+      else:
+        ndefect=0.0
+      # The normalized velocity vector vhat
+      ctheta=1
+      coord=[]
+      coord.append(vhat[thisLoop[0],:])
+      for t in range(1,len(thisLoop)):
+        ctheta=np.dot(vhat[thisLoop[t],:],np.sign(ctheta)*vhat[thisLoop[t-1],:])
+        # Nematic: append the order parameter, rotated through the *smaller* angle
+        coord.append(np.sign(ctheta)*vhat[thisLoop[t],:])
+      # Find out if the last point and the starting point are in the same hemisphere. 
+      cdefect=np.dot(coord[t],coord[0])
+      if cdefect<0:
+        vdefect=0.5
+      else:
+        vdefect=0.0
+    elif symtype=='polar':
+      # nval
+      thetatot=0
+      t0=thisLoop[-1]
+      for t in thisLoop[0:len(thisLoop)]:
+        ctheta=np.dot(nval[t,:],nval[t0,:])    
+        stheta=np.dot(rhat[t,:],np.cross(nval[t,:],nval[t0,:]))
+        theta=np.arccos(ctheta)*np.sign(stheta)
+        thetatot+=theta
+        t0=t
+      # Classify according to defects
+      # For a polar one, we can only have integer defects
+      ndefect=int(round(thetatot/(2*np.pi)))
+      # vhat
+      thetatot=0
+      t0=thisLoop[-1]
+      for t in thisLoop[0:len(thisLoop)]:
+        ctheta=np.dot(vhat[t,:],vhat[t0,:])    
+        stheta=np.dot(rhat[t,:],np.cross(vhat[t,:],vhat[t0,:]))
+        theta=np.arccos(ctheta)*np.sign(stheta)
+        thetatot+=theta
+        t0=t
+        #if ctheta<0:
+          #print "candidate: t t0 ctheta stheta theta thetatot"
+          #print t, t0, ctheta, stheta, theta, thetatot
+          #printnow=True
+      # Classify according to defects
+      # For a polar one, we can only have integer defects
+      vdefect=int(round(thetatot/(2*np.pi)))
+      #if printnow:
+        #print thetatot
+        #print thisLoop
+    elif symtype=='nematic':
+      # nval
+      thetatot=0
+      t0=thisLoop[-1]
+      ctheta=1
+      for t in thisLoop[0:len(thisLoop)]:
+        ctheta=np.dot(nval[t,:],np.sign(ctheta)*nval[t0,:])
+        stheta=np.dot(rhat[t,:],np.cross(nval[t,:],nval[t0,:]))
+        theta=np.arccos(np.sign(ctheta)*ctheta)*np.sign(stheta)
+        thetatot+=theta
+        t0=t
+      ndefect=0.5*int(round(thetatot/(np.pi)))
+      ## vhat
+      #thetatot=0
+      #t0=thisLoop[0]
+      ##ctheta=1
+      #for t in thisLoop[1:-1]:
+        #ctheta=abs(np.dot(vhat[t,:],vhat[t0,:]))
+        #stheta=np.dot(rhat[t,:],np.cross(nval[t,:],vhat[t0,:]))
+        #theta=np.arccos(ctheta)*np.sign(stheta)
+        #thetatot+=theta
+        #t0=t
+      #vdefect=0.5*int(round(thetatot/(np.pi)))
+    else:
+      print "Unknown alignment symmetry type! Not tracking defects!"
+      ndefect=0.0
+      vdefect=0.0
+    if abs(ndefect)>0:
+      if numdefect_n<500:
+        print "Found Defect in orientation field!"
+        print ndefect
+        print thetatot
         # Construct the geometric centre of the defect
         rmhat=np.sum(rval[thisLoop],axis=0)
         rmhat/=np.sqrt(np.sum(rmhat**2))
-        defects[ndefect,:]=radius*rmhat
-        ndefect+=1
+        # Charge of the defect
+        defects_n[numdefect_n,0]=ndefect
+        # Coordinates of the defect
+        defects_n[numdefect_n,1:]=radius*rmhat
+        numdefect_n+=1
+    #if abs(vdefect)>0:
+      #if numdefect_v<500:
+        #print "Found Defect in velocity field!"
+        #print vdefect
+        ## Construct the geometric centre of the defect
+        #rmhat=np.sum(rval[thisLoop],axis=0)
+        #rmhat/=np.sqrt(np.sum(rmhat**2))
+        ## Charge of the defect
+        #defects_v[numdefect_v,0]=vdefect
+        ## Coordinates of the defect
+        #defects_v[numdefect_v,1:]=radius*rmhat
+        #numdefect_v+=1
   
   #print defects
-  print 'Nummber of defects: ' + str(ndefect)
+  print 'Number of orientation field defects: ' + str(numdefect_n)
+  print 'Number of velocity field defects: ' + str(numdefect_v)
+  
   # Debugging output
   if debug==True:
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(rval[:,0], rval[:,1], rval[:,2], zdir='z', c='b',s=4)
-    ax.scatter(defects[:,0], defects[:,1], defects[:,2], zdir='z', c='r',s=100)
+    ax.scatter(defects_n[:,1], defects_n[:,2], defects_n[:,3], zdir='z', c='r',s=50)
+    ax.scatter(defects_v[:,1], defects_v[:,2], defects_v[:,3], zdir='z', c='g',s=50)
     
-  return defects,ndefect
+  return defects_n, defects_v,numdefect_n,numdefect_v
       
 
 def writeConfigurationVTK(data,outfile):
@@ -502,13 +611,19 @@ def writeConfigurationVTK(data,outfile):
     Radii.InsertNextValue(rr)
     
   if has_v:
+    #vnorm=np.sqrt(vx**2+vy**2+vz**2)
+    #u=0
     for (vvx,vvy,vvz) in zip(vx,vy,vz):
+      #no=vnorm[u]
+      #u+=1
+      #Velocities.InsertNextTuple3(vvx/no,vvy/no,vvz/no)
       Velocities.InsertNextTuple3(vvx,vvy,vvz)
 
   if has_n:
     for (nnx,nny,nnz) in zip(nx,ny,nz):
       Directors.InsertNextTuple3(0.5*nnx,0.5*nny,0.5*nnz)
       NDirectors.InsertNextTuple3(-0.5*nnx,-0.5*nny,-0.5*nnz)
+      #Directors.InsertNextTuple3(nnx,nny,nnz)
 
   #if args.connected:
     #Lines = vtk.vtkCellArray()
@@ -535,7 +650,7 @@ def writeConfigurationVTK(data,outfile):
     polydata.GetPointData().AddArray(Velocities)
   if has_n:
     polydata.GetPointData().AddArray(Directors)
-    polydata.GetPointData().AddArray(NDirectors)
+    #polydata.GetPointData().AddArray(NDirectors)
     #polydata.GetPointData().AddArray(NDirectors)
   polydata.Modified()
   writer = vtk.vtkXMLPolyDataWriter()
@@ -548,7 +663,7 @@ def writeConfigurationVTK(data,outfile):
   writer.SetDataModeToAscii()
   writer.Write()
   
-def writeDefects(defects,ndefect,outfile):
+def writeDefects(defects_n, defects_v,numdefect_n,numdefect_v,outfile):
 # Preparing the vtp output
   # Create point structure in vtk
   Points = vtk.vtkPoints()
@@ -565,18 +680,27 @@ def writeDefects(defects,ndefect,outfile):
   Points.InsertNextPoint(0,0,0)
   Number.InsertNextValue(0)
   Size.InsertNextValue(0)
-  for u in range(ndefect):
-    Points.InsertNextPoint(defects[u,0],defects[u,1],defects[u,2])
-    Number.InsertNextValue(u+1)
+  for u in range(numdefect_n):
+    Points.InsertNextPoint(defects_n[u,1],defects_n[u,2],defects_n[u,3])
+    Number.InsertNextValue(1)
+    Size.InsertNextValue(1.0)
+  for u in range(numdefect_v):
+    Points.InsertNextPoint(defects_v[u,1],defects_v[u,2],defects_v[u,3])
+    Number.InsertNextValue(2)
     Size.InsertNextValue(1.0)
   print "Added Particles and Numbers"
   
   lines = vtk.vtkCellArray()
   line = vtk.vtkLine()
-  for i in range(ndefect):
+  for i in range(numdefect_n):
     line = vtk.vtkLine()
     line.GetPointIds().SetId(0,0)
     line.GetPointIds().SetId(1,i+1)
+    lines.InsertNextCell(line)
+  for i in range(numdefect_v):
+    line = vtk.vtkLine()
+    line.GetPointIds().SetId(0,0)
+    line.GetPointIds().SetId(1,numdefect_n+i+1)
     lines.InsertNextCell(line)
   print "Added lines"
   
@@ -605,13 +729,13 @@ if __name__ == "__main__":
   parser.add_argument("-i", "--input", type=str, help="Input file with particle velocity field")
   parser.add_argument("-o", "--output", type=str, default="defects", help="Output file (text file)")
   parser.add_argument("-k", "--k", type=float, default=1.0, help="soft potential strength")
-  parser.add_argument("-R", "--sphere_r", type=float, default=28.2094791, help="radius of sphere for spherical system")
+  parser.add_argument("-R", "--sphere_r", type=float, default=30.0, help="radius of sphere for spherical system")
   parser.add_argument("-r", "--particle_r", type=float, default=1.0, help="radius of particle ")
   args = parser.parse_args()
 
   print
   print "\tActive Particles on Curved Spaces (APCS)"
-  print "\tNematic defect finding algoritm"
+  print "\tPolar and nematic defect finding algoritm"
   print 
   print "\tSilke Henkes"
   print "\tUniversity of Aberdeen"
@@ -627,16 +751,17 @@ if __name__ == "__main__":
 
   outname = '.'.join((args.input).split('.')[:-1]) + '_data.vtp'
   print outname
-  defects,ndefect=getDefects(args.input,args.sphere_r,args.particle_r,outname,True,True)
+  
+  defects_n, defects_v,numdefect_n,numdefect_v=getDefects(args.input,args.sphere_r,args.particle_r,outname,'nematic',True,True)
   
   outname = '.'.join((args.input).split('.')[:-1]) + '_defects.vtp'
   print outname
   #writer.SetFileName(args.output+'/'+outname+'.vtp')
   #writer.SetFileName(args.output+'.vtp')
   
-  writeDefects(defects,ndefect,outname)
+  writeDefects(defects_n, defects_v,numdefect_n,numdefect_v,outname)
   
   
   
 
-  #plt.show()
+  plt.show()
