@@ -41,6 +41,11 @@ void IntegratorVicsek::integrate()
   double noise = m_eta*sqrt(m_dt);
   int N = m_system->get_group(m_group_name)->get_size();
   vector<int> particles = m_system->get_group(m_group_name)->get_particles();
+  
+  // reset forces and torques
+  m_system->reset_forces();
+  m_system->reset_torques();
+  
   // compute forces in the current configuration
   if (m_potential)
     m_potential->compute(m_dt);

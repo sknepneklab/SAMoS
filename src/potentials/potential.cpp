@@ -30,7 +30,7 @@
  */
 void Potential::compute(double dt)
 {
-  m_system->reset_forces();
+  //m_system->reset_forces();
   PairPotType::iterator it_pair;
   ExternPotType::iterator it_ext;
   BondPotType::iterator it_bond;

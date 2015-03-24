@@ -56,13 +56,15 @@ public:
   potential_grammar(PotentialData& potential_data) : potential_grammar::base_type(potential)
   {
     potential = (
-                  qi::as_string[keyword["lj"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]       /*! Handles Lennard-Jones potential */
+                  qi::as_string[keyword["lj"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]         /*! Handles Lennard-Jones potential */
                   | qi::as_string[keyword["coulomb"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]  /*! Handles Coulomb potential */
                   | qi::as_string[keyword["debye"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]    /*! Handles Debye-Hueckel potential */
                   | qi::as_string[keyword["morse"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]    /*! Handles Morse potential */
                   | qi::as_string[keyword["soft"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]     /*! Handles soft-core potential */
                   | qi::as_string[keyword["gaussian"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ] /*! Handles Gaussian potential */
-                  | qi::as_string[keyword["morse"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ] /*! Handles Morse potential */
+                  | qi::as_string[keyword["morse"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]    /*! Handles Morse potential */
+                  | qi::as_string[keyword["active"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]   /*! Handles active potential */
+                  | qi::as_string[keyword["rod"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]      /*! Handles soft rod potential */
                   /* to add new potential: | qi::as_string[keyword["newpotential"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&PotentialData::params, phoenix::ref(potential_data)) = qi::_1 ]

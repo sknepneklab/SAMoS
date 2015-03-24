@@ -29,7 +29,7 @@
  */
 void Aligner::compute()
 {
-  m_system->reset_torques();
+  //m_system->reset_torques();
   PairAlignType::iterator it_pair;
   ExternAlignType::iterator it_ext;
   

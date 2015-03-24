@@ -79,6 +79,16 @@ public:
       m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Setting mobility to "+param["mu"]+".");
       m_mu = lexical_cast<double>(param["mu"]);
     }
+    if (param.find("mur") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. Rotational mobility not set. Using default value 1.");
+      m_mur = 1.0;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Setting rotational mobility to "+param["mur"]+".");
+      m_mur = lexical_cast<double>(param["mur"]);
+    }
     if (param.find("seed") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. No random number generator seed specified. Using default 0.");
@@ -121,6 +131,7 @@ private:
   double  m_v0;           //!< Magnitude of the active velocity 
   double  m_nu;           //!< Rotational diffusion 
   double  m_mu;           //!< Mobility 
+  double  m_mur;          //!< Rotational mobility
   double  m_stoch_coeff;  //!< Factor for the stochastic part of the equation of motion (\f$ = \nu \sqrt{dt} \f$)
   bool    m_nematic;      //!< If true; assume that the system is nematic, and the velocity will switch direction randomly
   double  m_tau;          //!< Time scale for the direction flip for nematic systems (flip with probability dt/tau)

@@ -75,6 +75,9 @@ public:
   //! Get particle radius (size)
   double get_radius() const { return m_r; } //!< \return particle radius (m_r)
   
+  //! Get particle length (for rods)
+  double get_length() const { return m_l; } //!< \return rod length (m_l)
+  
   //! Set id (for particle relabelling purposes)
   //! \param id new id
   void set_id(int id) { m_id = id; }
@@ -87,7 +90,10 @@ public:
   //! \param r new type
   void set_radius(double r) { m_r = r; }
   
-  
+  //! Set lenght (for group changes and birth/death)
+  //! \param l new length
+  void set_length(double l) { m_l = l; }
+    
   //! Return potential energy of a given type
   //! \param type potential energy type to return 
   double get_pot_energy(const string& type)
@@ -175,6 +181,7 @@ private:  // Make these attributes immutable
   int m_flag;              //!< This is a unique id which does not change regardless of removal of old and addition of new particles (note: clumsy, needs redesign)
   int m_type;              //!< Particle type
   double m_r;              //!< Particle radius 
+  double m_l;              //!< Length (if particle is actually a rod)
   map<string,double> m_pot_eng;   //!< Holds current value of the potential energy of a given type 
   map<string,double> m_align_eng; //!< Holds alignment potential energy of a given type
     
