@@ -79,17 +79,21 @@ class Sphere:
       n = np.dot(rotation_matrix(axis,theta),n)
       p.n = n
  
+  def set_lens(self,lens):
+    for i in xrange(len(lens)):
+      self.particles[i].l = lens[i]
+      
   def write(self,outfile):
     gentime = datetime.now()
     out = open(outfile,'w')
     out.write('# Total of %d particles\n' % self.N)
     out.write('# Generated on : %s\n' % str(gentime))
-    out.write('# id  type radius  x   y   z   vx   vy   vz   nx   ny   nz   omega\n')
+    out.write('# id  type radius  x   y   z   vx   vy   vz   nx   ny   nz  omega  l\n')
     for p in self.particles:
       x, y, z = p.r
       vx, vy, vz = p.v
       nx, ny, nz = p.n
-      out.write('%d  %d  %f %f  %f  %f  %f  %f  %f  %f  %f  %f   %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz,p.omega))
+      out.write('%d  %d  %f %f  %f  %f  %f  %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz,p.omega,p.l))
     out.close()
     
 
@@ -99,6 +103,7 @@ parser.add_argument("-R", "--radius", type=float, default=10.0, help="sphere rad
 parser.add_argument("-f", "--phi",  type=float, default=0.5, help="packing fraction")
 parser.add_argument("-o", "--output", type=str, default='out.dat', help="output file")
 parser.add_argument("-v", "--vavr", type=float, default=1.0, help="average velocity")
+parser.add_argument("-l", "--length", type=float, default=2.0, help="rod length")
 args = parser.parse_args()
 
 print
@@ -122,6 +127,8 @@ start = datetime.now()
 
 
 s = Sphere(args.radius, N, args.vavr)
+lens = [args.length for i in range(N)]
+s.set_lens(lens)
 s.write(args.output)
 
 end = datetime.now()

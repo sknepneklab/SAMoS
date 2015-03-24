@@ -70,7 +70,7 @@ void PairRodPotential::compute(double dt)
       double drcm_dot_ni = dx_cm*ni_x + dy_cm*ni_y + dz_cm*ni_z;
       double drcm_dot_nj = dx_cm*nj_x + dy_cm*nj_y + dz_cm*nj_z;
       
-      if (1.0 - fabs(ni_dot_nj) == 1e-4) // rods a parallel
+      if (1.0 - fabs(ni_dot_nj) <= 1e-5) // rods are nearly parallel
       {
         si =  li/(li+lj)*drcm_dot_ni;
         sj = -lj/(li+lj)*drcm_dot_nj;
@@ -85,6 +85,7 @@ void PairRodPotential::compute(double dt)
       else if (si < -0.5) si = -0.5;
       if (sj > 0.5) sj = 0.5;
       else if (sj < -0.5) sj = -0.5;
+      
       dx = dx_cm + sj*lj*nj_x - si*li*ni_x;
       dy = dy_cm + sj*lj*nj_y - si*li*ni_y;
       dz = dz_cm + sj*lj*nj_z - si*li*ni_z;
@@ -113,12 +114,12 @@ void PairRodPotential::compute(double dt)
         pj.fy += fy;
         pj.fz += fz;
         // handle torques
-        pi.tau_x -= si*(ni_y*fz - ni_z*fy);
-        pi.tau_y -= si*(ni_z*fx - ni_x*fz);
-        pi.tau_z -= si*(ni_x*fy - ni_y*fx);
-        pj.tau_x += sj*(nj_y*fz - nj_z*fy);
-        pj.tau_y += sj*(nj_z*fx - nj_x*fz);
-        pj.tau_z += sj*(nj_x*fy - nj_y*fx);
+        pi.tau_x -= li*si*(ni_y*fz - ni_z*fy);
+        pi.tau_y -= li*si*(ni_z*fx - ni_x*fz);
+        pi.tau_z -= li*si*(ni_x*fy - ni_y*fx);
+        pj.tau_x += lj*sj*(nj_y*fz - nj_z*fy);
+        pj.tau_y += lj*sj*(nj_z*fx - nj_x*fz);
+        pj.tau_z += lj*sj*(nj_x*fy - nj_y*fx);
         if (m_system->compute_per_particle_energy())
         {
           pi.add_pot_energy("rod",pot_eng);

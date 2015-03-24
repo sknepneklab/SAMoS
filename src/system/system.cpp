@@ -120,7 +120,7 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
       p.nz = lexical_cast<double>(s_line[11]);
       p.omega = lexical_cast<double>(s_line[12]);
       if (s_line.size() > 13)
-        p.set_length(lexical_cast<double>(s_line[12]));
+        p.set_length(lexical_cast<double>(s_line[13]));
       else
         p.set_length(1.0);
       p.set_flag(m_current_particle_flag);
@@ -421,10 +421,10 @@ void System::read_bonds(const string& bond_file)
         m_msg->msg(Messenger::ERROR,"Insufficient number of parameters to define a bond. " + lexical_cast<string>(s_line.size()) + " given, but " + lexical_cast<string>(NUM_BOND_ATTRIB) + " expected.");
         throw runtime_error("Insufficient number of parameters in the bond file.");
       }
-      int id = lexical_cast<int>(s_line[0]);  // read bond id
-      int tp = lexical_cast<int>(s_line[1]);  // read particle type// Handle exclusions
-      int i = lexical_cast<int>(s_line[2]);   // read id of first particle
-      int j = lexical_cast<int>(s_line[3]);   // read id of second particle
+      unsigned int id = lexical_cast<int>(s_line[0]);  // read bond id
+      unsigned int tp = lexical_cast<int>(s_line[1]);  // read particle type// Handle exclusions
+      unsigned int i = lexical_cast<int>(s_line[2]);   // read id of first particle
+      unsigned int j = lexical_cast<int>(s_line[3]);   // read id of second particle
       if (i >= m_particles.size())
       {
         m_msg->msg(Messenger::ERROR,"Index of first particle "+lexical_cast<string>(i)+" is larger than the total number of particles.");
@@ -504,11 +504,11 @@ void System::read_angles(const string& angle_file)
         m_msg->msg(Messenger::ERROR,"Insufficient number of parameters to define an angle. " + lexical_cast<string>(s_line.size()) + " given, but " + lexical_cast<string>(NUM_ANGLE_ATTRIB) + " expected.");
         throw runtime_error("Insufficient number of parameters in the angle file.");
       }
-      int id = lexical_cast<int>(s_line[0]);  // read bond id
-      int tp = lexical_cast<int>(s_line[1]);  // read particle type
-      int i = lexical_cast<int>(s_line[2]);   // read id of first (left) particle
-      int j = lexical_cast<int>(s_line[3]);   // read id of second (middle) particle
-      int k = lexical_cast<int>(s_line[4]);   // read id of third (right) particle
+      unsigned int id = lexical_cast<int>(s_line[0]);  // read bond id
+      unsigned int tp = lexical_cast<int>(s_line[1]);  // read particle type
+      unsigned int i = lexical_cast<int>(s_line[2]);   // read id of first (left) particle
+      unsigned int j = lexical_cast<int>(s_line[3]);   // read id of second (middle) particle
+      unsigned int k = lexical_cast<int>(s_line[4]);   // read id of third (right) particle
       if (i >= m_particles.size())
       {
         m_msg->msg(Messenger::ERROR,"Index of first (m_systemleft) particle "+lexical_cast<string>(i)+" is larger than the total number of particles.");
