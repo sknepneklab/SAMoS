@@ -70,7 +70,7 @@ void PairRodPotential::compute(double dt)
       double drcm_dot_ni = dx_cm*ni_x + dy_cm*ni_y + dz_cm*ni_z;
       double drcm_dot_nj = dx_cm*nj_x + dy_cm*nj_y + dz_cm*nj_z;
       
-      if (1.0 - fabs(ni_dot_nj) <= 1e-5) // rods are nearly parallel
+      if (1.0 - fabs(ni_dot_nj) <= 1e-4) // rods are nearly parallel
       {
         si =  li/(li+lj)*drcm_dot_ni;
         sj = -lj/(li+lj)*drcm_dot_nj;
@@ -96,8 +96,7 @@ void PairRodPotential::compute(double dt)
       double ai_p_aj = ai+aj;
             
       if (r < ai_p_aj)
-      {
-        
+      { 
         // Handle potential 
         double diff = ai_p_aj - r;
         double pot_eng = 0.5*k*alpha*diff*diff;

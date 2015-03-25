@@ -49,7 +49,7 @@ class Plane:
   
   def __generate_director(self):
     for p in self.particles:
-      phi = 0.0 #uniform(0,2*pi)
+      phi = uniform(0,2*pi)
       p.n = [cos(phi),sin(phi),0.0]
   
   def set_radius(self,radii):

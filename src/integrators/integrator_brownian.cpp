@@ -48,6 +48,18 @@ void IntegratorBrownian::integrate()
   m_system->reset_forces();
   m_system->reset_torques();
   
+  // If nematic, attempt to flip directors
+  if (m_nematic)
+    for (int i = 0; i < N; i++)
+    {
+      int pi = particles[i];
+      Particle& p = m_system->get_particle(pi);
+      if (m_rng->drnd() < m_tau)  // Flip direction n with probability m_tua (dt/tau, where tau is the parameter given in the input file).
+      {
+        p.nx = -p.nx;  p.ny = -p.ny;  p.nz = -p.nz;
+      }
+    }
+  
   // compute forces in the current configuration
   if (m_potential)
     m_potential->compute(m_dt);
@@ -59,12 +71,6 @@ void IntegratorBrownian::integrate()
   {
     int pi = particles[i];
     Particle& p = m_system->get_particle(pi);
-    // Check if we have nematic system
-    if (m_nematic)
-      if (m_rng->drnd() < m_tau)  // Flip direction n with probability m_tua (dt/tau, where tau is the parameter given in the input file).
-      {
-        p.nx = -p.nx;  p.ny = -p.ny;  p.nz = -p.nz;
-      }
     // compute deterministic forces
     fd_x = m_v0*p.nx + m_mu*p.fx; 
     fd_y = m_v0*p.ny + m_mu*p.fy;
