@@ -26,12 +26,14 @@
 #define __PAIR_ROD_POTENTIAL_HPP__
 
 #include <cmath>
+#include <string>
 
 #include "pair_potential.hpp"
 
 using std::make_pair;
 using std::sqrt;
 using std::fabs;
+using std::string;
 
 //! Structure that handles parameters for the rod pair potential
 struct RodParameters
@@ -79,6 +81,16 @@ public:
       m_msg->msg(Messenger::INFO,"Rod pair potential. Gradually phasing in the potential for new particles.");
       m_phase_in = true;
     }    
+    if (param.find("model") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"No contact model specified for rod pair potential. Assuming soft potential.");
+      m_model = "soft";
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Contact model for rod pair potential is set to "+param["model"]+".");
+      m_model = param["model"];
+    }
     
     m_pair_params = new RodParameters*[ntypes];
     for (int i = 0; i < ntypes; i++)
@@ -142,7 +154,8 @@ public:
   
 private:
        
-  double m_k;                       //!< potential strength
+  double m_k;                      //!< potential strength
+  string m_model;                  //!< soft potential or Hertzian model
   RodParameters** m_pair_params;   //!< type specific pair parameters 
      
 };

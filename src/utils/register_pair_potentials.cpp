@@ -40,4 +40,6 @@ void register_pair_potentials(PairPotentialMap& pair_potentials)
   pair_potentials["active"] = boost::factory<PairActivePotentialPtr>(); 
   // Register soft rod pair potential with the pair potentials class factory
   pair_potentials["rod"] = boost::factory<PairRodPotentialPtr>(); 
+  // Register Lennard-Jones rod pair potential with the pair potentials class factory
+  pair_potentials["ljrod"] = boost::factory<PairLJRodPotentialPtr>(); 
 }

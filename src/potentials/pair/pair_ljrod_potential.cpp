@@ -16,26 +16,26 @@
  * ************************************************************* */
 
 /*!
- * \file pair_rod_potential.cpp
+ * \file pair_ljrod_potential.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 23-Mar-2015
- * \brief Implementation of PairRodPotential class
+ * \date 25-Mar-2015
+ * \brief Implementation of PairLJRodPotential class
  */ 
 
-#include "pair_rod_potential.hpp"
+#include "pair_ljrod_potential.hpp"
 
 //! \param dt time step sent by the integrator 
-void PairRodPotential::compute(double dt)
+void PairLJRodPotential::compute(double dt)
 {
   int N = m_system->size();
-  double k = m_k;
-  double ai, aj;
+  double sigma = m_sigma;
+  double eps = m_eps;
+  double rcut = m_rcut;
+  double sigma_sq = sigma*sigma, rcut_sq = rcut*rcut;
   double li, lj;
   double si, sj;
   double dx, dy, dz;
   double fx, fy, fz;
-  double force_factor;
-  double pot_eng;
   double alpha = 1.0;  // phase in factor
     
   if (m_system->compute_per_particle_energy())
@@ -43,7 +43,7 @@ void PairRodPotential::compute(double dt)
     for  (int i = 0; i < N; i++)
     {
       Particle& p = m_system->get_particle(i);
-      p.set_pot_energy("rod",0.0);
+      p.set_pot_energy("ljrod",0.0);
     }
   }
   
@@ -53,7 +53,6 @@ void PairRodPotential::compute(double dt)
     Particle& pi = m_system->get_particle(i);
     if (m_phase_in)
       alpha = m_val->get_val(static_cast<int>(pi.age/dt));
-    ai = pi.get_radius();
     li = pi.get_length();
     double ni_x = pi.nx, ni_y = pi.ny, ni_z = pi.nz; 
     vector<int>& neigh = m_nlist->get_neighbours(i);
@@ -61,8 +60,10 @@ void PairRodPotential::compute(double dt)
     {
       Particle& pj = m_system->get_particle(neigh[j]);
       if (m_has_pair_params)
-        k = m_pair_params[pi.get_type()-1][pj.get_type()-1].k;
-      aj = pj.get_radius();
+      {
+        rcut = m_pair_params[pi.get_type()-1][pj.get_type()-1].rcut;
+        rcut_sq = rcut*rcut;
+      }
       lj = pj.get_length();
       double nj_x = pj.nx, nj_y = pj.ny, nj_z = pj.nz;
       double dx_cm = pj.x - pi.x, dy_cm = pj.y - pi.y, dz_cm = pj.z - pi.z;
@@ -94,53 +95,53 @@ void PairRodPotential::compute(double dt)
       m_system->apply_periodic(dx,dy,dz);
       
       double r_sq = dx*dx + dy*dy + dz*dz;
-      double r = sqrt(r_sq);
-      double ai_p_aj = ai+aj;
-     
-      if (r < ai_p_aj)
+      
+      if (r_sq <= rcut_sq)
       { 
-        // Handle potential 
-        double diff = ai_p_aj - r;
-        pot_eng = 0.5*k*alpha*diff*diff;
-        if (m_model == "hertz")
-          pot_eng *= 0.8*sqrt(diff);
-        m_potential_energy += pot_eng;
-        // Handle force
-        
-        if (r >= SMALL_NUMBER)
+        if (m_has_pair_params)
         {
-          force_factor = k*alpha*diff/r;
-          if (m_model == "hertz")
-            force_factor *= sqrt(diff);
-          fx = force_factor*dx; fy = force_factor*dy; fz = force_factor*dz;
+          int pi_t = pi.get_type() - 1, pj_t = pj.get_type() - 1;
+          sigma = m_pair_params[pi_t][pj_t].sigma;
+          eps = m_pair_params[pi_t][pj_t].eps;
+          sigma_sq = sigma*sigma;
         }
-        else
+        if (r_sq <= SMALL_NUMBER)
         {
           r_sq = dx_cm*dx_cm + dy_cm*dy_cm + dz_cm*dz_cm;
-          r = sqrt(r_sq);
-          force_factor = k*alpha*diff/r;
-          if (m_model == "hertz")
-            force_factor *= sqrt(diff);
-          fx = force_factor*dx_cm; fy = force_factor*dy_cm ; fz = force_factor*dz_cm;
+          dx = dx_cm;  dy = dy_cm;  dz = dz_cm;
         }
-        pi.fx -= fx;
-        pi.fy -= fy;
-        pi.fz -= fz;
+        double inv_r_sq = sigma_sq/r_sq;
+        double inv_r_6  = inv_r_sq*inv_r_sq*inv_r_sq;
+        // Handle potential 
+        double potential_energy = 4.0*eps*alpha*inv_r_6*(inv_r_6 - 1.0);
+        if (m_shifted)
+        {
+          double inv_r_cut_sq = sigma_sq/rcut_sq;
+          double inv_r_cut_6 = inv_r_cut_sq*inv_r_cut_sq*inv_r_cut_sq;
+          potential_energy -= 4.0 * eps * alpha * inv_r_cut_6 * (inv_r_cut_6 - 1.0);
+        }
+        m_potential_energy += potential_energy;
+        // Handle force
+        double force_factor = 48.0*eps*alpha*inv_r_6*(inv_r_6 - 0.5)*inv_r_sq;
+        fx = force_factor*dx;  fy = force_factor*dy;  fz = force_factor*dz;
+        pi.fx += fx;
+        pi.fy += fy;
+        pi.fz += fz;
         // Use 3d Newton's law
-        pj.fx += fx;
-        pj.fy += fy;
-        pj.fz += fz;
+        pj.fx -= fx;
+        pj.fy -= fy;
+        pj.fz -= fz;
         // handle torques
-        pi.tau_x -= li*si*(ni_y*fz - ni_z*fy);
-        pi.tau_y -= li*si*(ni_z*fx - ni_x*fz);
-        pi.tau_z -= li*si*(ni_x*fy - ni_y*fx);
-        pj.tau_x += lj*sj*(nj_y*fz - nj_z*fy);
-        pj.tau_y += lj*sj*(nj_z*fx - nj_x*fz);
-        pj.tau_z += lj*sj*(nj_x*fy - nj_y*fx);
+        pi.tau_x += li*si*(ni_y*fz - ni_z*fy);
+        pi.tau_y += li*si*(ni_z*fx - ni_x*fz);
+        pi.tau_z += li*si*(ni_x*fy - ni_y*fx);
+        pj.tau_x -= lj*sj*(nj_y*fz - nj_z*fy);
+        pj.tau_y -= lj*sj*(nj_z*fx - nj_x*fz);
+        pj.tau_z -= lj*sj*(nj_x*fy - nj_y*fx);
         if (m_system->compute_per_particle_energy())
         {
-          pi.add_pot_energy("rod",pot_eng);
-          pj.add_pot_energy("rod",pot_eng);
+          pi.add_pot_energy("ljrod",potential_energy);
+          pj.add_pot_energy("ljrod",potential_energy);
         }
       }
     }
