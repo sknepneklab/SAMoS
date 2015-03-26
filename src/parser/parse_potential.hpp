@@ -65,6 +65,7 @@ public:
                   | qi::as_string[keyword["morse"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]    /*! Handles Morse potential */
                   | qi::as_string[keyword["active"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]   /*! Handles active potential */
                   | qi::as_string[keyword["rod"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]      /*! Handles soft rod potential */
+                  | qi::as_string[keyword["ljrod"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ]    /*! Handles Lennard-Jones rod potential */
                   /* to add new potential: | qi::as_string[keyword["newpotential"]][phoenix::bind(&PotentialData::type, phoenix::ref(potential_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&PotentialData::params, phoenix::ref(potential_data)) = qi::_1 ]

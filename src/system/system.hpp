@@ -48,6 +48,7 @@
 #include "box.hpp"
 #include "messenger.hpp"
 #include "group.hpp"
+#include "defaults.hpp"
 
 #include "parse_parameters.hpp"
 
