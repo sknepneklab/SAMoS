@@ -33,9 +33,10 @@ void PairRodPotential::compute(double dt)
   double li, lj;
   double si, sj;
   double dx, dy, dz;
+  double fx, fy, fz;
   double force_factor;
   double alpha = 1.0;  // phase in factor
-  
+    
   if (m_system->compute_per_particle_energy())
   {
     for  (int i = 0; i < N; i++)
@@ -70,10 +71,10 @@ void PairRodPotential::compute(double dt)
       double drcm_dot_ni = dx_cm*ni_x + dy_cm*ni_y + dz_cm*ni_z;
       double drcm_dot_nj = dx_cm*nj_x + dy_cm*nj_y + dz_cm*nj_z;
       
-      if (1.0 - fabs(ni_dot_nj) <= 1e-4) // rods are nearly parallel
+      if (1.0 - fabs(ni_dot_nj) <= 1e-5) // rods are nearly parallel
       {
-        si =  li/(li+lj)*drcm_dot_ni;
-        sj = -lj/(li+lj)*drcm_dot_nj;
+        si =  drcm_dot_ni/(li+lj);
+        sj = -drcm_dot_nj/(li+lj);
       }
       else    // rods are not parallel
       {
@@ -94,17 +95,30 @@ void PairRodPotential::compute(double dt)
       double r_sq = dx*dx + dy*dy + dz*dz;
       double r = sqrt(r_sq);
       double ai_p_aj = ai+aj;
-            
+     
       if (r < ai_p_aj)
       { 
         // Handle potential 
         double diff = ai_p_aj - r;
-        double pot_eng = 0.5*k*alpha*diff*diff;
+        //double pot_eng = 0.5*k*alpha*diff*diff;
+        double pot_eng = 0.4*k*alpha*diff*diff*sqrt(diff);
         m_potential_energy += pot_eng;
         // Handle force
-        if (r > 0.0) force_factor = k*alpha*diff/r;
-        else force_factor = k*alpha*diff;
-        double fx = force_factor*dx, fy = force_factor*dy, fz = force_factor*dz;
+        
+        if (r >= SMALL_NUMBER)
+        {
+          //force_factor = k*alpha*diff/r;
+          force_factor = k*alpha*diff*sqrt(diff)/r;
+          fx = force_factor*dx; fy = force_factor*dy; fz = force_factor*dz;
+        }
+        else
+        {
+          r_sq = dx_cm*dx_cm + dy_cm*dy_cm + dz_cm*dz_cm;
+          r = sqrt(r_sq);
+          //force_factor = k*alpha*diff/r;
+          force_factor = k*alpha*diff*sqrt(diff)/r;
+          fx = force_factor*dx_cm; fy = force_factor*dy_cm ; fz = force_factor*dz_cm;
+        }
         pi.fx -= fx;
         pi.fy -= fy;
         pi.fz -= fz;
