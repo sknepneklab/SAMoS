@@ -36,7 +36,11 @@ void PairLJRodPotential::compute(double dt)
   double si, sj;
   double dx, dy, dz;
   double fx, fy, fz;
+  double force_factor;
+  double potential_energy;
   double alpha = 1.0;  // phase in factor
+  double k;
+  double inv_core_sq, inv_core_6, lj_core_sq;
     
   if (m_system->compute_per_particle_energy())
   {
@@ -109,35 +113,56 @@ void PairLJRodPotential::compute(double dt)
         {
           r_sq = dx_cm*dx_cm + dy_cm*dy_cm + dz_cm*dz_cm;
           dx = dx_cm;  dy = dy_cm;  dz = dz_cm;
+          potential_energy = 4.0*eps;
+          lj_core_sq = LJ_HARD_CORE_DISTANCE*LJ_HARD_CORE_DISTANCE;
+          inv_core_sq = sigma_sq/lj_core_sq;
+          inv_core_6 = inv_core_sq*inv_core_sq*inv_core_sq;
+          k = 6.0*eps/(lj_core_sq*lj_core_sq)*inv_core_6*(2.0*inv_core_6 - 1.0);
+          force_factor = 4.0*k*r_sq*sqrt(r_sq);   
+          //cout << "Full overlap. k = " << k << endl;
         }
-        double inv_r_sq = sigma_sq/r_sq;
-        double inv_r_6  = inv_r_sq*inv_r_sq*inv_r_sq;
-        // Handle potential 
-        double potential_energy = 4.0*eps*alpha*inv_r_6*(inv_r_6 - 1.0);
-        if (m_shifted)
+        else if (r_sq <= LJ_HARD_CORE_DISTANCE*LJ_HARD_CORE_DISTANCE*sigma_sq)
         {
-          double inv_r_cut_sq = sigma_sq/rcut_sq;
-          double inv_r_cut_6 = inv_r_cut_sq*inv_r_cut_sq*inv_r_cut_sq;
-          potential_energy -= 4.0 * eps * alpha * inv_r_cut_6 * (inv_r_cut_6 - 1.0);
+          potential_energy = 4.0*eps;
+          lj_core_sq = LJ_HARD_CORE_DISTANCE*LJ_HARD_CORE_DISTANCE;
+          inv_core_sq = sigma_sq/lj_core_sq;
+          inv_core_6 = inv_core_sq*inv_core_sq*inv_core_sq;
+          k = 6.0*eps/(lj_core_sq*lj_core_sq)*inv_core_6*(2.0*inv_core_6 - 1.0);
+          force_factor = 4.0*k*r_sq*sqrt(r_sq);
+          //cout << "Too close. F = " << force_factor << endl;
+        }
+        else
+        {
+          double inv_r_sq = sigma_sq/r_sq;
+          double inv_r_6  = inv_r_sq*inv_r_sq*inv_r_sq;
+          // Handle potential 
+          potential_energy = 4.0*eps*alpha*inv_r_6*(inv_r_6 - 1.0);
+          if (m_shifted)
+          {
+            double inv_r_cut_sq = sigma_sq/rcut_sq;
+            double inv_r_cut_6 = inv_r_cut_sq*inv_r_cut_sq*inv_r_cut_sq;
+            potential_energy -= 4.0 * eps * alpha * inv_r_cut_6 * (inv_r_cut_6 - 1.0);
+          }
+          force_factor = 48.0*eps*alpha*inv_r_6*(inv_r_6 - 0.5)*inv_r_sq;
+          //cout << "LJ part with F = " << force_factor << endl;
         }
         m_potential_energy += potential_energy;
         // Handle force
-        double force_factor = 48.0*eps*alpha*inv_r_6*(inv_r_6 - 0.5)*inv_r_sq;
         fx = force_factor*dx;  fy = force_factor*dy;  fz = force_factor*dz;
-        pi.fx += fx;
-        pi.fy += fy;
-        pi.fz += fz;
+        pi.fx -= fx;
+        pi.fy -= fy;
+        pi.fz -= fz;
         // Use 3d Newton's law
-        pj.fx -= fx;
-        pj.fy -= fy;
-        pj.fz -= fz;
+        pj.fx += fx;
+        pj.fy += fy;
+        pj.fz += fz;
         // handle torques
-        pi.tau_x += li*si*(ni_y*fz - ni_z*fy);
-        pi.tau_y += li*si*(ni_z*fx - ni_x*fz);
-        pi.tau_z += li*si*(ni_x*fy - ni_y*fx);
-        pj.tau_x -= lj*sj*(nj_y*fz - nj_z*fy);
-        pj.tau_y -= lj*sj*(nj_z*fx - nj_x*fz);
-        pj.tau_z -= lj*sj*(nj_x*fy - nj_y*fx);
+        pi.tau_x -= li*si*(ni_y*fz - ni_z*fy);
+        pi.tau_y -= li*si*(ni_z*fx - ni_x*fz);
+        pi.tau_z -= li*si*(ni_x*fy - ni_y*fx);
+        pj.tau_x += lj*sj*(nj_y*fz - nj_z*fy);
+        pj.tau_y += lj*sj*(nj_z*fx - nj_x*fz);
+        pj.tau_z += lj*sj*(nj_x*fy - nj_y*fx);
         if (m_system->compute_per_particle_energy())
         {
           pi.add_pot_energy("ljrod",potential_energy);
