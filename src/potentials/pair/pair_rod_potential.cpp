@@ -100,16 +100,16 @@ void PairRodPotential::compute(double dt)
           {
             lambda = copysign(li2,lambda);
             mu = lambda*ni_dot_nj - drcm_dot_nj;
-            if (fabs(mu) > lj2) mu = copysign(lj2,mu);
           }
           else
           {
             mu =  copysign(lj2,mu);
             lambda = mu*ni_dot_nj + drcm_dot_ni;
-            if (fabs(lambda) > li2) lambda = copysign(li2,lambda);
           }
         }
       }
+      if (fabs(mu) > lj2) mu = copysign(lj2,mu);
+      if (fabs(lambda) > li2) lambda = copysign(li2,lambda);
       
       dx = dx_cm + mu*nj_x - lambda*ni_x;
       dy = dy_cm + mu*nj_y - lambda*ni_y;
