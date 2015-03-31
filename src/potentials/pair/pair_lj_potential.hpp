@@ -28,6 +28,8 @@
 #include "pair_potential.hpp"
 
 
+
+
 //! Structure that handles parameters for the Lennard-Jones pair potential
 struct LJParameters
 {

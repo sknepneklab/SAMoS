@@ -67,6 +67,10 @@ void ConstraintPlane::enforce(Particle& p)
       p.vy = -p.vy;
     }
   }
+  // normalize director
+  p.nz = 0.0;
+  double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny);
+  p.nx *= inv_len;  p.ny *= inv_len;  
 }
 
 /*! Rotate director of a particle around the normal vector (z axis)

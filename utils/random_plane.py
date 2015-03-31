@@ -64,6 +64,7 @@ class Plane:
   
   def __generate_director(self):
     for p in self.particles:
+      #phi = uniform(0,2*pi)
       if uniform(-0.5,0.5) < 0.0:
         phi = 0.0 #uniform(0,2*pi)
       else:

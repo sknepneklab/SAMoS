@@ -39,6 +39,7 @@ using std::string;
 struct RodParameters
 {
   double k;    // elastic constant
+  double push; // multiplier when rods are overlapping. Nominally, should be larger than one.
 };
 
 /*! PairRodPotential implements the anisotropic soft repulsion between rods of length \f$ l \f$ 
@@ -75,6 +76,16 @@ public:
     {
       m_msg->msg(Messenger::INFO,"Global potential strength (k) for rod pair potential is set to "+param["k"]+".");
       m_k = lexical_cast<double>(param["k"]);
+    }
+    if (param.find("push") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"No overlap push specified for rod pair potential. Setting it to 5.");
+      m_push = 5.0;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Overlap push for rod pair potential is set to "+param["push"]+".");
+      m_push = lexical_cast<double>(param["push"]);
     }
     if (param.find("phase_in") != param.end())
     {
@@ -137,10 +148,23 @@ public:
       m_msg->msg(Messenger::INFO,"Rod pair potential. Using default strength ("+lexical_cast<string>(m_k)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["k"] = m_k;
     }
+    if (pair_param.find("push") != pair_param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Rod pair potential. Setting overlap push to "+pair_param["push"]+" for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      param["push"] = lexical_cast<double>(pair_param["push"]);
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Rod pair potential. Using default overlap push ("+lexical_cast<string>(m_push)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      param["push"] = m_push;
+    }
            
     m_pair_params[type_1-1][type_2-1].k = param["k"];
     if (type_1 != type_2)
       m_pair_params[type_2-1][type_1-1].k = param["k"];
+    m_pair_params[type_1-1][type_2-1].push = param["push"];
+    if (type_1 != type_2)
+      m_pair_params[type_2-1][type_1-1].push = param["push"];
         
     m_has_pair_params = true;
   }
@@ -155,6 +179,7 @@ public:
 private:
        
   double m_k;                      //!< potential strength
+  double m_push;                   //!< overlap push factor
   string m_model;                  //!< soft potential or Hertzian model
   RodParameters** m_pair_params;   //!< type specific pair parameters 
      

@@ -25,6 +25,9 @@
 #include "pair_ljrod_potential.hpp"
 
 //! \param dt time step sent by the integrator 
+//! Algorithm for determining closest between two rods follows closely 
+//! "A fast algorithm to evaluate the shortest distance between rods",
+//!  C. Vega, S. Lago, Computers & Chemistry, Volume 18, 55–59 (1994)
 void PairLJRodPotential::compute(double dt)
 {
   int N = m_system->size();
@@ -32,8 +35,8 @@ void PairLJRodPotential::compute(double dt)
   double eps = m_eps;
   double rcut = m_rcut;
   double sigma_sq = sigma*sigma, rcut_sq = rcut*rcut;
-  double li, lj;
-  double si, sj;
+  double li2, lj2;
+  double lambda, mu;
   double dx, dy, dz;
   double fx, fy, fz;
   double force_factor;
@@ -57,7 +60,7 @@ void PairLJRodPotential::compute(double dt)
     Particle& pi = m_system->get_particle(i);
     if (m_phase_in)
       alpha = m_val->get_val(static_cast<int>(pi.age/dt));
-    li = pi.get_length();
+    li2 = 0.5*pi.get_length();
     double ni_x = pi.nx, ni_y = pi.ny, ni_z = pi.nz; 
     vector<int>& neigh = m_nlist->get_neighbours(i);
     for (unsigned int j = 0; j < neigh.size(); j++)
@@ -68,7 +71,7 @@ void PairLJRodPotential::compute(double dt)
         rcut = m_pair_params[pi.get_type()-1][pj.get_type()-1].rcut;
         rcut_sq = rcut*rcut;
       }
-      lj = pj.get_length();
+      lj2 = 0.5*pj.get_length();
       double nj_x = pj.nx, nj_y = pj.ny, nj_z = pj.nz;
       double dx_cm = pj.x - pi.x, dy_cm = pj.y - pi.y, dz_cm = pj.z - pi.z;
       m_system->apply_periodic(dx_cm,dy_cm,dz_cm);
@@ -76,29 +79,49 @@ void PairLJRodPotential::compute(double dt)
       double ni_dot_nj = ni_x*nj_x + ni_y*nj_y + ni_z*nj_z; 
       double drcm_dot_ni = dx_cm*ni_x + dy_cm*ni_y + dz_cm*ni_z;
       double drcm_dot_nj = dx_cm*nj_x + dy_cm*nj_y + dz_cm*nj_z;
+      double cc = 1.0 - ni_dot_nj*ni_dot_nj;
       
-      if (1.0 - fabs(ni_dot_nj) <= 1e-5) // rods are nearly parallel
+      if (cc <= 1e-6) // rods are nearly parallel
+        if (drcm_dot_ni != 0.0)
+        {
+          lambda = copysign(li2,drcm_dot_ni);
+          mu = lambda*ni_dot_nj - drcm_dot_nj;
+        }
+        else
+        {
+          lambda = 0.0;
+          mu = 0.0;          
+        }
+      else
       {
-        si =  drcm_dot_ni/(li+lj);
-        sj = -drcm_dot_nj/(li+lj);
+        lambda = (drcm_dot_ni-ni_dot_nj*drcm_dot_nj)/cc;
+        mu = (-drcm_dot_nj+ni_dot_nj*drcm_dot_ni)/cc;
+        if (fabs(lambda) > li2 || fabs(mu) > lj2)
+        {
+          double auxi = fabs(lambda) - li2;
+          double auxj = fabs(mu) - lj2;
+          if (auxi > auxj)
+          {
+            lambda = copysign(li2,lambda);
+            mu = lambda*ni_dot_nj - drcm_dot_nj;
+          }
+          else
+          {
+            mu =  copysign(lj2,mu);
+            lambda = mu*ni_dot_nj + drcm_dot_ni;
+          }
+        }
       }
-      else    // rods are not parallel
-      {
-        double denom = 1.0/(1.0-ni_dot_nj*ni_dot_nj);
-        si = -denom*(drcm_dot_nj*ni_dot_nj-drcm_dot_ni)/li;
-        sj =  denom*(drcm_dot_ni*ni_dot_nj-drcm_dot_nj)/lj;
-      }
-      if (si > 0.5) si = 0.5;
-      else if (si < -0.5) si = -0.5;
-      if (sj > 0.5) sj = 0.5;
-      else if (sj < -0.5) sj = -0.5;
+      if (fabs(mu) > lj2) mu = copysign(lj2,mu);
+      if (fabs(lambda) > li2) lambda = copysign(li2,lambda);
       
-      dx = dx_cm + sj*lj*nj_x - si*li*ni_x;
-      dy = dy_cm + sj*lj*nj_y - si*li*ni_y;
-      dz = dz_cm + sj*lj*nj_z - si*li*ni_z;
+      dx = dx_cm + mu*nj_x - lambda*ni_x;
+      dy = dy_cm + mu*nj_y - lambda*ni_y;
+      dz = dz_cm + mu*nj_z - lambda*ni_z;
       m_system->apply_periodic(dx,dy,dz);
       
       double r_sq = dx*dx + dy*dy + dz*dz;
+           
       
       if (r_sq <= rcut_sq)
       { 
@@ -157,12 +180,12 @@ void PairLJRodPotential::compute(double dt)
         pj.fy += fy;
         pj.fz += fz;
         // handle torques
-        pi.tau_x -= li*si*(ni_y*fz - ni_z*fy);
-        pi.tau_y -= li*si*(ni_z*fx - ni_x*fz);
-        pi.tau_z -= li*si*(ni_x*fy - ni_y*fx);
-        pj.tau_x += lj*sj*(nj_y*fz - nj_z*fy);
-        pj.tau_y += lj*sj*(nj_z*fx - nj_x*fz);
-        pj.tau_z += lj*sj*(nj_x*fy - nj_y*fx);
+        pi.tau_x -= lambda*(ni_y*fz - ni_z*fy);
+        pi.tau_y -= lambda*(ni_z*fx - ni_x*fz);
+        pi.tau_z -= lambda*(ni_x*fy - ni_y*fx);
+        pj.tau_x += mu*(nj_y*fz - nj_z*fy);
+        pj.tau_y += mu*(nj_z*fx - nj_x*fz);
+        pj.tau_z += mu*(nj_x*fy - nj_y*fx);
         if (m_system->compute_per_particle_energy())
         {
           pi.add_pot_energy("ljrod",potential_energy);
