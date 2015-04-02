@@ -27,7 +27,7 @@ from particle import *
 
 class Plane:
   
-  def __init__(self, Lx, Ly, N, v, l=None):
+  def __init__(self, Lx, Ly, N, v, l=None, random_orinet = True):
     self.L = (Lx,Ly)
     self.N = N
     if l == None:
@@ -35,7 +35,7 @@ class Plane:
     else:
       self.__generate_lattice(l)
     self.__generate_vel(v)
-    self.__generate_director()
+    self.__generate_director(random_orinet)
     
   def __generate_pos(self):
     self.particles = [Particle(i) for i in range(self.N)]
@@ -46,14 +46,14 @@ class Plane:
       self.particles[i].r = [x,y,z]
 
   def __generate_lattice(self,l):
-    Nx = int(self.L[0]/(l+1.0))
-    Ny = int(self.L[1]/2**(1.0/6.0))
+    Nx = int(floor(sqrt(self.N/(l+1))))
+    Ny = (l+1)*Nx
     self.particles = [Particle(i) for i in range(Nx*Ny)]
     idx = 0
     for i in range(Nx):
-      x = -0.5*self.L[0] + 0.5*(l+1) + 2**(1.0/6.0)*i*(l+1)
+      x = -0.5*self.L[0] + (0.5+i)*(l+1)
       for j in range(Ny):
-        y = -0.5*self.L[1] + j*2**(1.0/6.0)
+        y = -0.5*self.L[1] + j
         self.particles[idx].r = [x,y,0]
         idx += 1
 
@@ -62,13 +62,15 @@ class Plane:
       phi = uniform(0,2*pi)
       p.v = [vav*cos(phi),vav*sin(phi),0.0]
   
-  def __generate_director(self):
+  def __generate_director(self, random_orinet):
     for p in self.particles:
-      #phi = uniform(0,2*pi)
-      if uniform(-0.5,0.5) < 0.0:
-        phi = 0.0 #uniform(0,2*pi)
+      if random_orinet:
+        phi = uniform(0,2*pi)
       else:
-        phi = pi
+        if uniform(-0.5,0.5) < 0.0:
+          phi = 0.0 
+        else:
+          phi = pi
       p.n = [cos(phi),sin(phi),0.0]
   
   def set_radius(self,radii):
@@ -118,7 +120,7 @@ print "\tBuilding of a random flat configuration (xy plane)"
 print 
 print "\tRastko Sknepnek"
 print "\tUniversity of Dundee"
-print "\t(c) 2013"
+print "\t(c) 2013, 2014, 2015"
 print "\t----------------------------------------------"
 print 
 print "\tLx : ", args.lx
@@ -134,10 +136,14 @@ print
 
 start = datetime.now()
 
+random_orinet = False
+if args.l1 != 1.0 or args.l2 != 1.0:
+  random_orinet = True
+
 if args.lattice:
-  p = Plane(args.lx, args.ly, N, args.vavr, args.l1)
+  p = Plane(args.lx, args.ly, N, args.vavr, args.l1, random_orinet=random_orinet)
 else:
-  p = Plane(args.lx, args.ly, N, args.vavr)
+  p = Plane(args.lx, args.ly, N, args.vavr, random_orinet=random_orinet)
 radii = []
 types = []
 lens = []
