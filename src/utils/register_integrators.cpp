@@ -36,4 +36,6 @@ void register_integrators(IntegratorMap& integrators)
   integrators["nematic"] = boost::factory<IntegratorNematicPtr>();
   // Register actomyo integrator with the integrators class factory
   integrators["actomyo"] = boost::factory<IntegratorActomyoPtr>();
+  // Register Brownian rod dynamics integrator with the integrators class factory
+  integrators["brownian_rod"] = boost::factory<IntegratorBrownianRodPtr>();
 }

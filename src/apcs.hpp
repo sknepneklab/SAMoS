@@ -79,6 +79,7 @@
 #include "potential.hpp"
 #include "integrator.hpp"
 #include "integrator_brownian.hpp"
+#include "integrator_brownian_rod.hpp"
 #include "integrator_vicsek.hpp"
 #include "integrator_nve.hpp"
 #include "integrator_nematic.hpp"

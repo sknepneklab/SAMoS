@@ -27,29 +27,50 @@ from particle import *
 
 class Plane:
   
-  def __init__(self, Lx, Ly, N, v):
+  def __init__(self, Lx, Ly, N, v, l=None, random_orinet = True):
     self.L = (Lx,Ly)
     self.N = N
-    self.particles = [Particle(i) for i in range(N)]
-    self.__generate_pos()
+    if l == None:
+      self.__generate_pos()
+    else:
+      self.__generate_lattice(l)
     self.__generate_vel(v)
-    self.__generate_director()
+    self.__generate_director(random_orinet)
     
   def __generate_pos(self):
+    self.particles = [Particle(i) for i in range(self.N)]
     for i in range(self.N):
       x = uniform(-0.5*self.L[0],0.5*self.L[0])
       y = uniform(-0.5*self.L[1],0.5*self.L[1])
       z = 0
       self.particles[i].r = [x,y,z]
 
+  def __generate_lattice(self,l):
+    Nx = int(floor(sqrt(self.N/(l+1))))
+    Ny = (l+1)*Nx
+    self.particles = [Particle(i) for i in range(Nx*Ny)]
+    idx = 0
+    for i in range(Nx):
+      x = -0.5*self.L[0] + (0.5+i)*(l+1)
+      for j in range(Ny):
+        y = -0.5*self.L[1] + j
+        self.particles[idx].r = [x,y,0]
+        idx += 1
+
   def __generate_vel(self,vav=1.0):
     for p in self.particles:
       phi = uniform(0,2*pi)
       p.v = [vav*cos(phi),vav*sin(phi),0.0]
   
-  def __generate_director(self):
+  def __generate_director(self, random_orinet):
     for p in self.particles:
-      phi = 0.0 #uniform(0,2*pi)
+      if random_orinet:
+        phi = uniform(0,2*pi)
+      else:
+        if uniform(-0.5,0.5) < 0.0:
+          phi = 0.0 
+        else:
+          phi = pi
       p.n = [cos(phi),sin(phi),0.0]
   
   def set_radius(self,radii):
@@ -88,6 +109,7 @@ parser.add_argument("--a2",  type=float, default=0.5, help="radius of particles 
 parser.add_argument("--eta",  type=float, default=0.5, help="fraction of particles of type 1")
 parser.add_argument("--l1",  type=float, default=2.0, help="length of rod of type 1")
 parser.add_argument("--l2",  type=float, default=1.0, help="length of rod of type 2")
+parser.add_argument("-l","--lattice", action='store_true', help="make lattice")
 args = parser.parse_args()
 
 N = int(round(1.0/pi*args.lx*args.ly*args.phi/(args.eta*args.a1**2+(1-args.eta)*args.a2**2)))
@@ -98,7 +120,7 @@ print "\tBuilding of a random flat configuration (xy plane)"
 print 
 print "\tRastko Sknepnek"
 print "\tUniversity of Dundee"
-print "\t(c) 2013"
+print "\t(c) 2013, 2014, 2015"
 print "\t----------------------------------------------"
 print 
 print "\tLx : ", args.lx
@@ -114,11 +136,18 @@ print
 
 start = datetime.now()
 
-p = Plane(args.lx, args.ly, N, args.vavr)
+random_orinet = False
+if args.l1 != 1.0 or args.l2 != 1.0:
+  random_orinet = True
+
+if args.lattice:
+  p = Plane(args.lx, args.ly, N, args.vavr, args.l1, random_orinet=random_orinet)
+else:
+  p = Plane(args.lx, args.ly, N, args.vavr, random_orinet=random_orinet)
 radii = []
 types = []
 lens = []
-for i in xrange(N):
+for i in xrange(len(p.particles)):
   if i < args.eta*N: 
     radii.append(args.a1)
     types.append(1)
