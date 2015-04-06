@@ -99,7 +99,7 @@ void IntegratorNVE::integrate()
       if (fabs(dtheta) > m_theta_limit)
         dtheta = SIGN(dtheta)*m_theta_limit;
     m_constraint->rotate_director(p,dtheta);
-    p.omega = dtheta*m_dt;
+    //p.omega = dtheta*m_dt;
   }
   // Perform second half step for velocity only if there is no limit on particle move
   for (int i = 0; i < N; i++)

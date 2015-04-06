@@ -70,7 +70,7 @@ void PairRodPotential::compute(double dt)
         push = m_pair_params[pi.get_type()-1][pj.get_type()-1].push;
       }
       aj = pj.get_radius();
-      lj2 = 0.2*pj.get_length();
+      lj2 = 0.5*pj.get_length();
       double nj_x = pj.nx, nj_y = pj.ny, nj_z = pj.nz;
       double dx_cm = pj.x - pi.x, dy_cm = pj.y - pi.y, dz_cm = pj.z - pi.z;
       m_system->apply_periodic(dx_cm,dy_cm,dz_cm);
@@ -117,7 +117,12 @@ void PairRodPotential::compute(double dt)
         C = fmax(-lj2,-li2-drcm_dot_nj);
         D = fmin(lj2,li2-drcm_dot_nj);
         overlap = B-A;
-        
+//         cout << "li2 = " << li2 << "  lj2 = " << lj2 << endl;
+//         cout << "ni_dot_nj = " << ni_dot_nj << endl;
+//         cout << "drcm_dot_ni = " << drcm_dot_ni << endl;
+//         cout << "drcm_dot_nj = " << drcm_dot_nj << endl;
+//         cout << "A = " << A << " B = " << B << " C = " << C << " D = " << D << " overlap = " << overlap << endl; 
+//         
       }
       else
       {
@@ -152,7 +157,10 @@ void PairRodPotential::compute(double dt)
         {
           r_sq = dx_cm*dx_cm + dy_cm*dy_cm + dz_cm*dz_cm;
           r = sqrt(r_sq);
-          force_factor = k*alpha*push*diff/r;
+          if (r > 0.0)
+            force_factor = k*alpha*push*diff/r;
+          else
+            force_factor = 0.0;
           if (m_model == "hertz")
             force_factor *= sqrt(diff);
           fx = force_factor*dx_cm; fy = force_factor*dy_cm ; fz = force_factor*dz_cm;
