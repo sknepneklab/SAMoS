@@ -38,6 +38,9 @@ void PairRodPotential::compute(double dt)
   double force_factor;
   double pot_eng;
   double alpha = 1.0;  // phase in factor
+  bool parallel;
+  double A, B, C, D, overlap;
+  double ifact, jfact;
     
   if (m_system->compute_per_particle_energy())
   {
@@ -77,43 +80,51 @@ void PairRodPotential::compute(double dt)
       double drcm_dot_nj = dx_cm*nj_x + dy_cm*nj_y + dz_cm*nj_z;
       double cc = 1.0 - ni_dot_nj*ni_dot_nj;
       
+      parallel = false;
+      
       if (cc <= 1e-6) // rods are nearly parallel
-        if (drcm_dot_ni != 0.0)
-        {
-          lambda = copysign(li2,drcm_dot_ni);
-          mu = lambda*ni_dot_nj - drcm_dot_nj;
-        }
-        else
-        {
-          lambda = 0.0;
-          mu = 0.0;          
-        }
+      {
+        parallel = true;
+      }
       else
       {
         lambda = (drcm_dot_ni-ni_dot_nj*drcm_dot_nj)/cc;
         mu = (-drcm_dot_nj+ni_dot_nj*drcm_dot_ni)/cc;
         if (fabs(lambda) > li2 || fabs(mu) > lj2)
         {
-          double auxi = fabs(lambda) - li2;
-          double auxj = fabs(mu) - lj2;
-          if (auxi > auxj)
+          if (fabs(lambda) - li2 > fabs(mu) - lj2)
           {
             lambda = copysign(li2,lambda);
             mu = lambda*ni_dot_nj - drcm_dot_nj;
+            if (fabs(mu) > lj2) mu = copysign(lj2,mu);
           }
           else
           {
             mu =  copysign(lj2,mu);
             lambda = mu*ni_dot_nj + drcm_dot_ni;
+            if (fabs(lambda) > li2) lambda = copysign(li2,lambda);      
           }
         }
       }
-      if (fabs(mu) > lj2) mu = copysign(lj2,mu);
-      if (fabs(lambda) > li2) lambda = copysign(li2,lambda);
-      
-      dx = dx_cm + mu*nj_x - lambda*ni_x;
-      dy = dy_cm + mu*nj_y - lambda*ni_y;
-      dz = dz_cm + mu*nj_z - lambda*ni_z;
+           
+      if (parallel) // if rods are parallel, distance vector is \delta\vec r = \delta\vec r_cm - (\delta \vec r_cm \dot \vec n_i)\vec n_i
+      {
+        dx = dx_cm - drcm_dot_ni*ni_x;
+        dy = dy_cm - drcm_dot_ni*ni_y;
+        dz = dz_cm - drcm_dot_ni*ni_z;
+        A = fmax(-li2,-lj2+drcm_dot_ni);
+        B = fmin(li2,lj2+drcm_dot_ni);
+        C = fmax(-lj2,-li2-drcm_dot_nj);
+        D = fmin(lj2,li2-drcm_dot_nj);
+        overlap = B-A;
+        
+      }
+      else
+      {
+        dx = dx_cm + mu*nj_x - lambda*ni_x;
+        dy = dy_cm + mu*nj_y - lambda*ni_y;
+        dz = dz_cm + mu*nj_z - lambda*ni_z;
+      }
       m_system->apply_periodic(dx,dy,dz);
       
       double r_sq = dx*dx + dy*dy + dz*dz;
@@ -146,6 +157,10 @@ void PairRodPotential::compute(double dt)
             force_factor *= sqrt(diff);
           fx = force_factor*dx_cm; fy = force_factor*dy_cm ; fz = force_factor*dz_cm;
         }
+        if (parallel)
+        {
+          fx *= overlap;  fy *= overlap;  fz *= overlap;
+        }
         pi.fx -= fx;
         pi.fy -= fy;
         pi.fz -= fz;
@@ -154,12 +169,22 @@ void PairRodPotential::compute(double dt)
         pj.fy += fy;
         pj.fz += fz;
         // handle torques
-        pi.tau_x -= lambda*(ni_y*fz - ni_z*fy);
-        pi.tau_y -= lambda*(ni_z*fx - ni_x*fz);
-        pi.tau_z -= lambda*(ni_x*fy - ni_y*fx);
-        pj.tau_x += mu*(nj_y*fz - nj_z*fy);
-        pj.tau_y += mu*(nj_z*fx - nj_x*fz);
-        pj.tau_z += mu*(nj_x*fy - nj_y*fx);
+        if (parallel)
+        {
+          ifact = 0.5*(B*B - A*A);
+          jfact = 0.5*(D*D - C*C);
+        }
+        else
+        {
+          ifact = lambda;
+          jfact = mu;
+        }
+        pi.tau_x -= ifact*(ni_y*fz - ni_z*fy);
+        pi.tau_y -= ifact*(ni_z*fx - ni_x*fz);
+        pi.tau_z -= ifact*(ni_x*fy - ni_y*fx);
+        pj.tau_x += jfact*(nj_y*fz - nj_z*fy);
+        pj.tau_y += jfact*(nj_z*fx - nj_x*fz);
+        pj.tau_z += jfact*(nj_x*fy - nj_y*fx);
         if (m_system->compute_per_particle_energy())
         {
           pi.add_pot_energy("rod",pot_eng);
