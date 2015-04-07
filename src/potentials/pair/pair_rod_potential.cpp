@@ -116,13 +116,7 @@ void PairRodPotential::compute(double dt)
         B = fmin(li2,lj2+drcm_dot_ni);
         C = fmax(-lj2,-li2-drcm_dot_nj);
         D = fmin(lj2,li2-drcm_dot_nj);
-        overlap = B-A;
-//         cout << "li2 = " << li2 << "  lj2 = " << lj2 << endl;
-//         cout << "ni_dot_nj = " << ni_dot_nj << endl;
-//         cout << "drcm_dot_ni = " << drcm_dot_ni << endl;
-//         cout << "drcm_dot_nj = " << drcm_dot_nj << endl;
-//         cout << "A = " << A << " B = " << B << " C = " << C << " D = " << D << " overlap = " << overlap << endl; 
-//         
+        overlap = fmax(0.0,B-A);
       }
       else
       {

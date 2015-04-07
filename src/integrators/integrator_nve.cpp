@@ -77,9 +77,6 @@ void IntegratorNVE::integrate()
     p.z += dz;
     // Project everything back to the manifold
     m_constraint->enforce(p);
-    // Change orientation of the director (in the tangent plane) according to eq. (1b)
-    double dtheta = m_dt*p.omega;
-    m_constraint->rotate_director(p,dtheta);
   }
   // compute forces in the current configuration
   if (m_potential)
@@ -94,7 +91,7 @@ void IntegratorNVE::integrate()
     Particle& p = m_system->get_particle(pi);
     //Particle& p = m_system->get_particle(i);
     // Change orientation of the velocity (in the tangent plane) according to eq. (1b)
-    double dtheta = m_dt*m_constraint->project_torque(p);
+    double dtheta = m_dt*p.omega; //m_constraint->project_torque(p);
     if (m_has_theta_limit)
       if (fabs(dtheta) > m_theta_limit)
         dtheta = SIGN(dtheta)*m_theta_limit;
