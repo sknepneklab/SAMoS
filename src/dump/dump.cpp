@@ -354,11 +354,11 @@ void Dump::dump_input()
 {
   int N = m_system->size();
   if (m_print_header)
-    m_out << "# id type  radius x y z vx vy vz nx ny nz  omega" << endl;
+    m_out << "# id type  radius x y z vx vy vz nx ny nz  omega length" << endl;
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(i);
-    m_out << format("%5d  %2d  %8.4f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f") % p.get_id() % p.get_type() % p.get_radius() % p.x % p.y % p.z % p.vx % p.vy % p.vz % p.nx % p.ny % p.nz % p.omega << endl;
+    m_out << format("%5d  %2d  %8.4f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f") % p.get_id() % p.get_type() % p.get_radius() % p.x % p.y % p.z % p.vx % p.vy % p.vz % p.nx % p.ny % p.nz % p.omega % p.get_length() << endl;
   }
 }
 
