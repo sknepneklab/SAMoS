@@ -148,11 +148,16 @@ void PairLJRodPotential::compute(double dt)
         }
         if (r_sq <= LJ_HARD_CORE_DISTANCE*LJ_HARD_CORE_DISTANCE*sigma_sq)
         {
-          potential_energy = 4.0*eps;
           lj_core_sq = LJ_HARD_CORE_DISTANCE*LJ_HARD_CORE_DISTANCE;
           inv_core_sq = sigma_sq/lj_core_sq;
           inv_core_6 = inv_core_sq*inv_core_sq*inv_core_sq;
           k = 6.0*eps/(lj_core_sq*lj_core_sq)*inv_core_6*(2.0*inv_core_6 - 1.0);
+          potential_energy = 4.0*eps*alpha*inv_core_6*(inv_core_6 - 1.0);
+          if (r_sq <= SMALL_NUMBER)
+          {
+            dx = dx_cm; dy = dy_cm; dz = dz_cm;
+            r_sq = dx_cm*dx_cm + dy_cm*dy_cm + dz_cm*dz_cm;
+          }
           force_factor = 4.0*k*r_sq*sqrt(r_sq);
           //cout << "Too close. F = " << force_factor << endl;
         }
