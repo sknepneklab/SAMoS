@@ -123,6 +123,8 @@ void IntegratorBrownianRod::integrate()
     
     // Project everything back to the manifold
     m_constraint->enforce(p);
+    // Compute angular velocity
+    p.omega += m_dt*m_constraint->project_torque(p);
     // Update rod age   
     p.age += m_dt;
   }
