@@ -125,3 +125,29 @@ double ConstraintPlane::project_torque(Particle& p)
 {
   return p.tau_z;  
 }
+
+/*! Rescale box size and make sure that all particles fit in it.
+ *  Rescaling is done only at certain steps and only if rescale 
+ *  factor is not equal to 1.
+*/
+bool ConstraintPlane::rescale()
+{
+  if (m_rescale != 1.0)
+  {
+    int step = m_system->get_step();
+    if (step % m_rescale_freq == 0 && step < m_rescale_steps)
+    {
+      m_system->get_box()->rescale(m_scale);
+      for  (int i = 0; i < m_system->size(); i++)
+      {
+        Particle& p = m_system->get_particle(i);
+        p.x *= m_scale; 
+        p.y *= m_scale; 
+        p.z *= m_scale;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+

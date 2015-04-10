@@ -814,6 +814,11 @@ int main(int argc, char* argv[])
               {
                 sys->set_step(time_step);
                 sys->set_run_step(t);
+                if (constraint->rescale())
+                {
+                  nlist->build();
+                  nlist_builds++;
+                }
                 for (vector<DumpPtr>::iterator it_d = dump.begin(); it_d != dump.end(); it_d++)
                   (*it_d)->dump(time_step);
                 for (vector<LoggerPtr>::iterator it_l = log.begin(); it_l != log.end(); it_l++)

@@ -354,7 +354,10 @@ void Dump::dump_input()
 {
   int N = m_system->size();
   if (m_print_header)
+  {
+    m_out << "# " << format(" Lx = %10.6f, Ly = %10.6f, Lz = %10.6f") % m_system->get_box()->Lx % m_system->get_box()->Ly % m_system->get_box()->Lz << endl;
     m_out << "# id type  radius x y z vx vy vz nx ny nz  omega length" << endl;
+  }
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(i);

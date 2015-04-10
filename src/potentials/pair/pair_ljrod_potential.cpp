@@ -124,14 +124,18 @@ void PairLJRodPotential::compute(double dt)
       }
       else
       {
-        dx = dx_cm + mu*nj_x - lambda*ni_x;
-        dy = dy_cm + mu*nj_y - lambda*ni_y;
-        dz = dz_cm + mu*nj_z - lambda*ni_z;
+        double x1 = pi.x + lambda*ni_x, y1 = pi.y + lambda*ni_y, z1 = pi.z + lambda*ni_z;
+        double x2 = pj.x + mu*nj_x, y2 = pj.y + mu*nj_y, z2 = pj.z + mu*nj_z;
+        m_system->apply_periodic(x1,y1,z1);
+        m_system->apply_periodic(x2,y2,z2);
+        dx = x2 - x1; dy = y2 - y1; dz = z2 - z1;
+        //dx = dx_cm + mu*nj_x - lambda*ni_x;
+        //dy = dy_cm + mu*nj_y - lambda*ni_y;
+        //dz = dz_cm + mu*nj_z - lambda*ni_z;
       }
       m_system->apply_periodic(dx,dy,dz);
       
       double r_sq = dx*dx + dy*dy + dz*dz;
-           
       
       if (r_sq <= rcut_sq)
       { 
@@ -142,19 +146,7 @@ void PairLJRodPotential::compute(double dt)
           eps = m_pair_params[pi_t][pj_t].eps;
           sigma_sq = sigma*sigma;
         }
-        if (r_sq <= SMALL_NUMBER)
-        {
-          r_sq = dx_cm*dx_cm + dy_cm*dy_cm + dz_cm*dz_cm;
-          dx = dx_cm;  dy = dy_cm;  dz = dz_cm;
-          potential_energy = 4.0*eps;
-          lj_core_sq = LJ_HARD_CORE_DISTANCE*LJ_HARD_CORE_DISTANCE;
-          inv_core_sq = sigma_sq/lj_core_sq;
-          inv_core_6 = inv_core_sq*inv_core_sq*inv_core_sq;
-          k = 6.0*eps/(lj_core_sq*lj_core_sq)*inv_core_6*(2.0*inv_core_6 - 1.0);
-          force_factor = 4.0*k*r_sq*sqrt(r_sq);   
-          //cout << "Full overlap. k = " << k << endl;
-        }
-        else if (r_sq <= LJ_HARD_CORE_DISTANCE*LJ_HARD_CORE_DISTANCE*sigma_sq)
+        if (r_sq <= LJ_HARD_CORE_DISTANCE*LJ_HARD_CORE_DISTANCE*sigma_sq)
         {
           potential_energy = 4.0*eps;
           lj_core_sq = LJ_HARD_CORE_DISTANCE*LJ_HARD_CORE_DISTANCE;

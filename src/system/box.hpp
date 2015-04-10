@@ -50,7 +50,7 @@ struct Box
   */
   Box(double lx, double ly, double lz) : Lx(lx), Ly(ly), Lz(lz)
   {
-    assert(Lx >= 0.0 && Ly >= 0.0 && Lz >- 0.0);
+    assert(Lx >= 0.0 && Ly >= 0.0 && Lz >= 0.0);
     xlo = -0.5*Lx;  xhi = 0.5*Lx;
     ylo = -0.5*Ly;  yhi = 0.5*Ly;
     zlo = -0.5*Lz;  zhi = 0.5*Lz;
@@ -62,6 +62,15 @@ struct Box
     Ly = yhi - ylo;
     Lz = zhi - zlo;
   }
+  //! Rescale Box
+  //! \param a amount by which to rescale box
+  void rescale(double a)
+  {
+    Lx *= a; Ly *= a; Lz *= a;
+    xlo *= a;  ylo *= a;  zlo *= a;
+    xhi *= a;  yhi *= a;  zhi *= a;
+  }
+  
   double xlo;         //!< low value of the x-coordinates of the box
   double xhi;         //!< high value of the x-coordinates of the box
   double ylo;         //!< low value of the y-coordinates of the box
