@@ -44,10 +44,7 @@ void PairLJRodPotential::compute(double dt)
   double alpha = 1.0;  // phase in factor
   double k;
   double inv_core_sq, inv_core_6, lj_core_sq;
-  bool parallel;
-  double A, B, C, D, overlap;
-  double ifact, jfact;
-    
+  
   if (m_system->compute_per_particle_energy())
   {
     for  (int i = 0; i < N; i++)
@@ -84,11 +81,12 @@ void PairLJRodPotential::compute(double dt)
       double drcm_dot_nj = dx_cm*nj_x + dy_cm*nj_y + dz_cm*nj_z;
       double cc = 1.0 - ni_dot_nj*ni_dot_nj;
       
-      parallel = false;
-      
       if (cc <= 1e-6) // rods are nearly parallel
       {
-        parallel = true;
+        lambda = 0.5*drcm_dot_ni;
+        mu = -0.5*drcm_dot_nj;
+        if (fabs(lambda) > li2) lambda = copysign(li2,lambda); 
+        if (fabs(mu) > lj2) mu = copysign(lj2,mu);
       }
       else
       {
@@ -111,29 +109,9 @@ void PairLJRodPotential::compute(double dt)
         }
       }
       
-      if (parallel) // if rods are parallel, distance vector is \delta\vec r = \delta\vec r_cm - (\delta \vec r_cm \dot \vec n_i)\vec n_i
-      {
-        dx = dx_cm - drcm_dot_ni*ni_x;
-        dy = dy_cm - drcm_dot_ni*ni_y;
-        dz = dz_cm - drcm_dot_ni*ni_z;
-        A = fmax(-li2,-lj2+drcm_dot_ni);
-        B = fmin(li2,lj2+drcm_dot_ni);
-        C = fmax(-lj2,-li2-drcm_dot_nj);
-        D = fmin(lj2,li2-drcm_dot_nj);
-        overlap = fmax(0.0,B-A);
-      }
-      else
-      {
-        double x1 = pi.x + lambda*ni_x, y1 = pi.y + lambda*ni_y, z1 = pi.z + lambda*ni_z;
-        double x2 = pj.x + mu*nj_x, y2 = pj.y + mu*nj_y, z2 = pj.z + mu*nj_z;
-        m_system->apply_periodic(x1,y1,z1);
-        m_system->apply_periodic(x2,y2,z2);
-        dx = x2 - x1; dy = y2 - y1; dz = z2 - z1;
-        //dx = dx_cm + mu*nj_x - lambda*ni_x;
-        //dy = dy_cm + mu*nj_y - lambda*ni_y;
-        //dz = dz_cm + mu*nj_z - lambda*ni_z;
-      }
-      m_system->apply_periodic(dx,dy,dz);
+      dx = dx_cm + mu*nj_x - lambda*ni_x;
+      dy = dy_cm + mu*nj_y - lambda*ni_y;
+      dz = dz_cm + mu*nj_z - lambda*ni_z;
       
       double r_sq = dx*dx + dy*dy + dz*dz;
       
@@ -159,7 +137,6 @@ void PairLJRodPotential::compute(double dt)
             r_sq = dx_cm*dx_cm + dy_cm*dy_cm + dz_cm*dz_cm;
           }
           force_factor = 4.0*k*r_sq*sqrt(r_sq);
-          //cout << "Too close. F = " << force_factor << endl;
         }
         else
         {
@@ -174,15 +151,10 @@ void PairLJRodPotential::compute(double dt)
             potential_energy -= 4.0 * eps * alpha * inv_r_cut_6 * (inv_r_cut_6 - 1.0);
           }
           force_factor = 48.0*eps*alpha*inv_r_6*(inv_r_6 - 0.5)*inv_r_sq;
-          //cout << "LJ part with F = " << force_factor << endl;
         }
         m_potential_energy += potential_energy;
         // Handle force
         fx = force_factor*dx;  fy = force_factor*dy;  fz = force_factor*dz;
-        if (parallel)
-        {
-          fx *= overlap;  fy *= overlap;  fz *= overlap;
-        }
         pi.fx -= fx;
         pi.fy -= fy;
         pi.fz -= fz;
@@ -191,22 +163,12 @@ void PairLJRodPotential::compute(double dt)
         pj.fy += fy;
         pj.fz += fz;
         // handle torques
-        if (parallel)
-        {
-          ifact = 0.5*(B*B - A*A);
-          jfact = 0.5*(D*D - C*C);
-        }
-        else
-        {
-          ifact = lambda;
-          jfact = mu;
-        }
-        pi.tau_x -= ifact*(ni_y*fz - ni_z*fy);
-        pi.tau_y -= ifact*(ni_z*fx - ni_x*fz);
-        pi.tau_z -= ifact*(ni_x*fy - ni_y*fx);
-        pj.tau_x += jfact*(nj_y*fz - nj_z*fy);
-        pj.tau_y += jfact*(nj_z*fx - nj_x*fz);
-        pj.tau_z += jfact*(nj_x*fy - nj_y*fx);
+        pi.tau_x -= lambda*(ni_y*fz - ni_z*fy);
+        pi.tau_y -= lambda*(ni_z*fx - ni_x*fz);
+        pi.tau_z -= lambda*(ni_x*fy - ni_y*fx);
+        pj.tau_x += mu*(nj_y*fz - nj_z*fy);
+        pj.tau_y += mu*(nj_z*fx - nj_x*fz);
+        pj.tau_z += mu*(nj_x*fy - nj_y*fx);
         if (m_system->compute_per_particle_energy())
         {
           pi.add_pot_energy("ljrod",potential_energy);
