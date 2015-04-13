@@ -61,7 +61,7 @@ bool ConstraintSphere::rescale()
   if (m_rescale != 1.0)
   {
     int step = m_system->get_step();
-    if (step % m_rescale_freq == 0 && step <= m_rescale_steps)
+    if ((step % m_rescale_freq == 0) && (step < m_rescale_steps))
     {
       m_r *= m_scale;
       for  (int i = 0; i < m_system->size(); i++)

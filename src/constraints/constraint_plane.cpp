@@ -31,19 +31,16 @@
 void ConstraintPlane::enforce(Particle& p)
 {
   bool periodic = m_system->get_periodic();
-  double xlo = -0.5*m_lx, xhi = 0.5*m_lx;
-  double ylo = -0.5*m_ly, yhi = 0.5*m_ly;
+  double Lx = m_system->get_box()->Lx;
+  double Ly = m_system->get_box()->Ly;
+  double xlo = -0.5*Lx, xhi = 0.5*Lx;
+  double ylo = -0.5*Ly, yhi = 0.5*Ly;
   p.z = 0.0;
   p.vz = 0.0;
   p.fz = 0.0;
   // Check periodic boundary conditions 
   if (periodic)
-  {
-    if (p.x <= xlo) p.x += m_lx;
-    else if (p.x >= xhi) p.x -= m_lx;
-    if (p.y <= ylo) p.y += m_ly;
-    else if (p.y >= yhi) p.y -= m_ly;
-  }
+    m_system->enforce_periodic(p);
   else // reflective boundary conditions
   {
     if (p.x < xlo) 
@@ -135,7 +132,7 @@ bool ConstraintPlane::rescale()
   if (m_rescale != 1.0)
   {
     int step = m_system->get_step();
-    if (step % m_rescale_freq == 0 && step < m_rescale_steps)
+    if ((step % m_rescale_freq == 0) && (step < m_rescale_steps))
     {
       m_system->get_box()->rescale(m_scale);
       for  (int i = 0; i < m_system->size(); i++)
@@ -144,6 +141,7 @@ bool ConstraintPlane::rescale()
         p.x *= m_scale; 
         p.y *= m_scale; 
         p.z *= m_scale;
+        this->enforce(p);
       }
       return true;
     }

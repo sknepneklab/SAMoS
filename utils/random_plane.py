@@ -114,7 +114,7 @@ args = parser.parse_args()
 
 V = args.lx*args.ly
 
-N = int(round(0.5*args.phi*V/((args.eta*args.a1*(args.l1 + 0.5*(pi-4)*args.a1)+(1-args.eta)*args.a2**2*(args.l2 + 0.5*(pi-4)*args.a2)))))
+N = int(round(0.5*args.phi*V/((args.eta*args.a1*(args.l1 + 0.5*pi*args.a1)+(1-args.eta)*args.a2**2*(args.l2 + 0.5*pi*args.a2)))))
 
 #N = int(round(1.0/pi*args.lx*args.ly*args.phi/(args.eta*args.a1**2+(1-args.eta)*args.a2**2)))
 

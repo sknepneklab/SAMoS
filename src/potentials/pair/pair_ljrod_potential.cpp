@@ -108,11 +108,10 @@ void PairLJRodPotential::compute(double dt)
           }
         }
       }
-      
       dx = dx_cm + mu*nj_x - lambda*ni_x;
       dy = dy_cm + mu*nj_y - lambda*ni_y;
       dz = dz_cm + mu*nj_z - lambda*ni_z;
-      
+
       double r_sq = dx*dx + dy*dy + dz*dz;
       
       if (r_sq <= rcut_sq)
