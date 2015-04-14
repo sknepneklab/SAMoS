@@ -78,12 +78,23 @@ void PairRodPotential::compute(double dt)
       double cc = 1.0 - ni_dot_nj*ni_dot_nj;
       
       
-      if (cc <= 1e-6) // rods are nearly parallel
+      if (cc <= 1e-10) // rods are nearly parallel
       {
-        lambda = 0.5*drcm_dot_ni;
-        mu = -0.5*drcm_dot_nj;
-        if (fabs(lambda) > li2) lambda = copysign(li2,lambda); 
-        if (fabs(mu) > lj2) mu = copysign(lj2,mu);
+        if (fabs(drcm_dot_ni) > 1e-10)
+        {
+          lambda = copysign(li2,drcm_dot_ni);
+          mu = lambda*ni_dot_nj - drcm_dot_nj;
+          if (fabs(mu) > lj2) mu = copysign(lj2,mu);
+        }
+        else
+        {
+          lambda = 0.0;
+          mu = 0.0;
+        }
+//         lambda = 0.5*drcm_dot_ni;
+//         mu = -0.5*drcm_dot_nj;
+//         if (fabs(lambda) > li2) lambda = copysign(li2,lambda); 
+//         if (fabs(mu) > lj2) mu = copysign(lj2,mu);
       }
       else
       {

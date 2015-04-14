@@ -35,7 +35,7 @@ using std::sqrt;
 using std::fabs;
 using std::string;
 
-const double LJ_HARD_CORE_DISTANCE = 0.75;   // Distance (in units of sigma) at which we assume potential is effectively infinite
+const double LJ_HARD_CORE_DISTANCE = 0.5;   // Distance (in units of sigma) at which we assume potential is effectively infinite
 
 //! Structure that handles parameters for the rod pair potential
 struct LJRodParameters
