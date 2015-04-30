@@ -77,6 +77,9 @@ public:
   
   // Value of the constraint
   double constraint_value(Particle& p) { return 0.0; }
+  
+  // Rescale constraint
+  bool rescale();
       
 private:
   

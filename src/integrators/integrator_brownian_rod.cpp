@@ -25,9 +25,8 @@
 #include "integrator_brownian_rod.hpp"
 
 /*! This function integrates equations of motion as introduced in the 
- *  "Brownian dynamics and dynamic Monte Carlo simulations of isotropic
- *   and liquid crystal phases of anisotropic colloidal particles: A comparative 
- *   study", A. Patti, A. Cuetos, Phys. Rev. E 86, 011403 (2012)
+ *  "Brownian dynamics of hard spherocylinders", H. Loewen
+ *   Phys. Rev. E 50, 1232 (1994)
 **/
 void IntegratorBrownianRod::integrate()
 {
@@ -35,6 +34,7 @@ void IntegratorBrownianRod::integrate()
   //double T = m_temp->get_val(m_system->get_run_step());
   double fd_x, fd_y, fd_z;                    // Deterministic part of the force
   vector<int> particles = m_system->get_group(m_group_name)->get_particles();
+  double R1, R2;
   
   // reset forces and torques
   m_system->reset_forces();
@@ -64,13 +64,10 @@ void IntegratorBrownianRod::integrate()
     int pi = particles[i];
     Particle& p = m_system->get_particle(pi);
     double nx = p.nx, ny = p.ny, nz = p.nz;
-    double a = 0.5*p.get_length();
-    double b = p.get_radius();
-    double denom = a*a - b*b;
-    double S = 2.0/sqrt(denom)*log((a+sqrt(denom))/b);
-    double D_perp = m_D0*b*((2*a*a-3*b*b)*S+2*a)/(16*M_PI*denom);
-    double D_par = m_D0*b*((2*a*a-b*b)*S-2*a)/(8*M_PI*denom);
-    double D_rot = 3.0*m_D0*b*((2*a*a-b*b)*S-2*a)/(16*M_PI*(a*a*a*a-b*b*b*b));
+    double P = 0.5*p.get_length()/p.get_radius();    // aspect ration defined as length over diameter
+    double D_perp = m_D0/(4.0*M_PI)*(log(P) + 0.839 + 0.185/P + 0.233/(P*P));
+    double D_par = m_D0/(2.0*M_PI)*(log(P) - 0.207 + 0.980/P - 0.133/(P*P));
+    double D_rot = 3.0*m_D0/(M_PI*p.get_length())*(log(P) - 0.662 + 0.917/P - 0.050/(P*P));
     
     // Project force onto director
     double f_dot_n = p.fx*nx + p.fy*ny + p.fz*nz;
@@ -99,20 +96,35 @@ void IntegratorBrownianRod::integrate()
     double w2_y = nz*w1_x - nx*w1_z;
     double w2_z = nx*w1_y - ny*w1_x;
     
+    if (m_pos_noise)
+    {
+      double stoch_par  = sqrt(2.0*D_par*m_dt);
+      double stoch_perp = sqrt(2.0*D_perp*m_dt);
+      R1 = m_rng->gauss_rng(1.0);
+      R2 = m_rng->gauss_rng(1.0);
+      
+      p.x += stoch_par*m_rng->gauss_rng(1.0)*nx + stoch_perp*(R1*w1_x + R2*w2_x);
+      p.y += stoch_par*m_rng->gauss_rng(1.0)*ny + stoch_perp*(R1*w1_y + R2*w2_y);
+      p.z += stoch_par*m_rng->gauss_rng(1.0)*nz + stoch_perp*(R1*w1_z + R2*w2_z);
+    }
+    
     double stoch = sqrt(2.0*D_rot*m_dt);
-    double R1 = m_rng->gauss_rng(1.0), R2 = m_rng->gauss_rng(1.0);
+    R1 = m_rng->gauss_rng(1.0);
+    R2 = m_rng->gauss_rng(1.0);
     
     double dnx = p.tau_y*nz - p.tau_z*ny;
     double dny = p.tau_z*nx - p.tau_x*nz;
     double dnz = p.tau_x*ny - p.tau_y*nx;
     
-    p.nx += D_rot*dnx + stoch*(R1*w1_x + R2*w2_x);
-    p.ny += D_rot*dny + stoch*(R1*w1_y + R2*w2_y);
-    p.nz += D_rot*dnz + stoch*(R1*w1_z + R2*w2_z);
+    p.nx += D_rot*dnx*m_dt + stoch*(R1*w1_x + R2*w2_x);
+    p.ny += D_rot*dny*m_dt + stoch*(R1*w1_y + R2*w2_y);
+    p.nz += D_rot*dnz*m_dt + stoch*(R1*w1_z + R2*w2_z);
    
     
     // Project everything back to the manifold
     m_constraint->enforce(p);
+    // Compute angular velocity
+    p.omega += m_dt*m_constraint->project_torque(p);
     // Update rod age   
     p.age += m_dt;
   }

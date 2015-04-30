@@ -91,6 +91,7 @@
 #include "pair_vicsek_aligner.hpp"
 #include "external_aligner.hpp"
 #include "external_ajpolar_aligner.hpp"
+#include "external_field_aligner.hpp"
 #include "population.hpp"
 #include "population_random.hpp"
 #include "population_density.hpp"

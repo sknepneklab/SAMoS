@@ -52,3 +52,26 @@ void ConstraintSphere::enforce(Particle& p)
   p.nx *= inv_len;  p.ny *= inv_len;  p.nz *= inv_len;
 }
 
+/*! Rescale sphere size and make sure that all particles are still on it.
+ *  Rescaling is done only at certain steps and only if rescale 
+ *  factor is not equal to 1.
+ */
+bool ConstraintSphere::rescale()
+{
+  if (m_rescale != 1.0)
+  {
+    int step = m_system->get_step();
+    if ((step % m_rescale_freq == 0) && (step < m_rescale_steps))
+    {
+      m_r *= m_scale;
+      for  (int i = 0; i < m_system->size(); i++)
+      {
+        Particle& p = m_system->get_particle(i);
+        this->enforce(p);
+      }
+      return true;
+    }
+  }
+  return false;
+}
+

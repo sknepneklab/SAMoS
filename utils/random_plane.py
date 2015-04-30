@@ -107,12 +107,16 @@ parser.add_argument("-v", "--vavr", type=float, default=1.0, help="average veloc
 parser.add_argument("--a1",  type=float, default=1.0, help="radius of particles of type 1")
 parser.add_argument("--a2",  type=float, default=0.5, help="radius of particles of type 2")
 parser.add_argument("--eta",  type=float, default=0.5, help="fraction of particles of type 1")
-parser.add_argument("--l1",  type=float, default=2.0, help="length of rod of type 1")
+parser.add_argument("--l1",  type=float, default=2.0, help="length of rod of type 1 (in terms of particle radius)")
 parser.add_argument("--l2",  type=float, default=1.0, help="length of rod of type 2")
 parser.add_argument("-l","--lattice", action='store_true', help="make lattice")
 args = parser.parse_args()
 
-N = int(round(1.0/pi*args.lx*args.ly*args.phi/(args.eta*args.a1**2+(1-args.eta)*args.a2**2)))
+V = args.lx*args.ly
+
+N = int(round(0.5*args.phi*V/((args.eta*args.a1*(args.l1 + 0.5*pi*args.a1)+(1-args.eta)*args.a2**2*(args.l2 + 0.5*pi*args.a2)))))
+
+#N = int(round(1.0/pi*args.lx*args.ly*args.phi/(args.eta*args.a1**2+(1-args.eta)*args.a2**2)))
 
 print
 print "\tActive Particles on Curved Spaces (APCS)"
@@ -132,13 +136,15 @@ print "\tOutput file : ", args.output
 print "\tFraction of particles of type 1 : ", args.eta
 print "\tRadius of particles of type 1 : ", args.a1
 print "\tRadius of particles of type 2 : ", args.a2
+print "\tLength of particles of type 1 (in units of radius) : ", args.l1
+print "\tLength of particles of type 2 (in units of radius) : ", args.l2
 print 
 
 start = datetime.now()
 
-random_orinet = False
-if args.l1 != 1.0 or args.l2 != 1.0:
-  random_orinet = True
+random_orinet = True
+#if args.l1 != 2.0 or args.l2 != 1.0:
+  #random_orinet = True
 
 if args.lattice:
   p = Plane(args.lx, args.ly, N, args.vavr, args.l1, random_orinet=random_orinet)

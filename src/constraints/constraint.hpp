@@ -48,7 +48,7 @@ public:
   //! \param sys pointer to the system object
   //! \param msg Pointer to the internal state messenger
   //! \param param parameters that define the manifolds (e.g., sphere radius)
-  Constraint(SystemPtr sys, MessengerPtr msg, pairs_type& param) : m_system(sys), m_msg(msg) 
+  Constraint(SystemPtr sys, MessengerPtr msg, pairs_type& param) : m_system(sys), m_msg(msg), m_rescale(1.0), m_rescale_steps(1000), m_rescale_freq(10) 
   { 
     if (param.find("maxiter") == param.end())
     {
@@ -69,7 +69,25 @@ public:
     {
       m_msg->msg(Messenger::INFO,"Constraint. Tolerance set to "+param["tol"]+".");
       m_tol = lexical_cast<int>(param["tol"]);
-    }    
+    }
+    if (param.find("rescale") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Constraint. Rescaling constraint by factor "+param["rescale"]+".");
+      m_rescale = lexical_cast<double>(param["rescale"]);
+    }
+    if (param.find("rescale_steps") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Constraint. Rescaling of the constraint done over "+param["rescale_steps"]+" time steps.");
+      m_rescale_steps = lexical_cast<double>(param["rescale_steps"]);
+    }
+    if (param.find("rescale_freq") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Constraint. Rescaling constraint every "+param["rescale_freq"]+" time steps.");
+      m_rescale_freq = lexical_cast<double>(param["rescale_freq"]);
+    }
+    m_scale = pow(m_rescale,static_cast<double>(m_rescale_freq)/static_cast<double>(m_rescale_steps));
+    if (m_scale != 1.0)
+      m_msg->msg(Messenger::INFO,"Constraint. Rescaling constraint with scale factor"+lexical_cast<string>(m_scale)+" per time steps.");
   }
   
   //! Enforce constraint
@@ -93,12 +111,19 @@ public:
   // Value of the constraint
   virtual double constraint_value(Particle&) = 0;
   
+  // Rescale constraint
+  virtual bool rescale() { return false;}
+  
 protected:
   
   SystemPtr  m_system;              //!< Pointer to the system object
   MessengerPtr m_msg;               //!< Handles internal messages
-  int m_max_iter; //!< Maximum number of iterations to enforce the constraint
-  double m_tol;   //!< Tolerance for the constraint to be satisfied. 
+  int m_max_iter;                   //!< Maximum number of iterations to enforce the constraint
+  double m_tol;                     //!< Tolerance for the constraint to be satisfied. 
+  double m_rescale;                 //!< Rescale the constraint (e.g., sphere radius) by this much in total
+  int m_rescale_steps;              //!< Rescale constrain over this many step
+  int m_rescale_freq;               //!< Skip this many steps between rescaling constrain
+  double m_scale;                   //!< Rescale the constraint (e.g., sphere radius) by this much in each step (=m_rescale**(m_rescale_freq/m_rescale_steps))
   
 };
 

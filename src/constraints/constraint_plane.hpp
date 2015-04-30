@@ -49,9 +49,7 @@ public:
   //! \param param parameters that define the manifolds (e.g., sphere radius)
   ConstraintPlane(SystemPtr sys, MessengerPtr msg, pairs_type& param) : Constraint(sys,msg,param)
   { 
-    m_lx = m_system->get_box()->Lx;
-    m_ly = m_system->get_box()->Ly;
-    m_msg->msg(Messenger::INFO,"Planar constraint. Setting plane dimensions to lx = "+lexical_cast<string>(m_lx)+" and ly = "+lexical_cast<string>(m_ly)+".");
+    m_msg->msg(Messenger::INFO,"Planar constraint. Setting plane dimensions to lx = "+lexical_cast<string>(m_system->get_box()->Lx)+" and ly = "+lexical_cast<string>(m_system->get_box()->Ly)+".");
   }
   
   //! Enforce constraint
@@ -74,12 +72,11 @@ public:
   
   // Value of the constraint
   double constraint_value(Particle& p) { return 0.0; }
-    
-private:
   
-  double m_lx;     //!< box size in x direction 
-  double m_ly;     //!< box size in y direction 
-  
+  // Rescale constraint
+  bool rescale();
+   
+
 };
 
 typedef shared_ptr<ConstraintPlane> ConstraintPlanePtr;  //!< Shared pointer to the Constraint object

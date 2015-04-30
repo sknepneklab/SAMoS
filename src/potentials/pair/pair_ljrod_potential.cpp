@@ -44,7 +44,7 @@ void PairLJRodPotential::compute(double dt)
   double alpha = 1.0;  // phase in factor
   double k;
   double inv_core_sq, inv_core_6, lj_core_sq;
-    
+  
   if (m_system->compute_per_particle_energy())
   {
     for  (int i = 0; i < N; i++)
@@ -81,47 +81,49 @@ void PairLJRodPotential::compute(double dt)
       double drcm_dot_nj = dx_cm*nj_x + dy_cm*nj_y + dz_cm*nj_z;
       double cc = 1.0 - ni_dot_nj*ni_dot_nj;
       
-      if (cc <= 1e-6) // rods are nearly parallel
-        if (drcm_dot_ni != 0.0)
+      if (cc <= 1e-10) // rods are nearly parallel
+      {
+        if (fabs(drcm_dot_ni) > 1e-10)
         {
           lambda = copysign(li2,drcm_dot_ni);
           mu = lambda*ni_dot_nj - drcm_dot_nj;
+          if (fabs(mu) > lj2) mu = copysign(lj2,mu);
         }
         else
         {
           lambda = 0.0;
-          mu = 0.0;          
+          mu = 0.0;
         }
+//         lambda = 0.5*drcm_dot_ni;
+//         mu = -0.5*drcm_dot_nj;
+//         if (fabs(lambda) > li2) lambda = copysign(li2,lambda); 
+//         if (fabs(mu) > lj2) mu = copysign(lj2,mu);
+      }
       else
       {
         lambda = (drcm_dot_ni-ni_dot_nj*drcm_dot_nj)/cc;
         mu = (-drcm_dot_nj+ni_dot_nj*drcm_dot_ni)/cc;
         if (fabs(lambda) > li2 || fabs(mu) > lj2)
         {
-          double auxi = fabs(lambda) - li2;
-          double auxj = fabs(mu) - lj2;
-          if (auxi > auxj)
+          if (fabs(lambda) - li2 > fabs(mu) - lj2)
           {
             lambda = copysign(li2,lambda);
             mu = lambda*ni_dot_nj - drcm_dot_nj;
+            if (fabs(mu) > lj2) mu = copysign(lj2,mu);
           }
           else
           {
             mu =  copysign(lj2,mu);
             lambda = mu*ni_dot_nj + drcm_dot_ni;
+            if (fabs(lambda) > li2) lambda = copysign(li2,lambda);      
           }
         }
       }
-      if (fabs(mu) > lj2) mu = copysign(lj2,mu);
-      if (fabs(lambda) > li2) lambda = copysign(li2,lambda);
-      
       dx = dx_cm + mu*nj_x - lambda*ni_x;
       dy = dy_cm + mu*nj_y - lambda*ni_y;
       dz = dz_cm + mu*nj_z - lambda*ni_z;
-      m_system->apply_periodic(dx,dy,dz);
-      
+
       double r_sq = dx*dx + dy*dy + dz*dz;
-           
       
       if (r_sq <= rcut_sq)
       { 
@@ -132,27 +134,19 @@ void PairLJRodPotential::compute(double dt)
           eps = m_pair_params[pi_t][pj_t].eps;
           sigma_sq = sigma*sigma;
         }
-        if (r_sq <= SMALL_NUMBER)
+        if (r_sq <= LJ_HARD_CORE_DISTANCE*LJ_HARD_CORE_DISTANCE*sigma_sq)
         {
-          r_sq = dx_cm*dx_cm + dy_cm*dy_cm + dz_cm*dz_cm;
-          dx = dx_cm;  dy = dy_cm;  dz = dz_cm;
-          potential_energy = 4.0*eps;
           lj_core_sq = LJ_HARD_CORE_DISTANCE*LJ_HARD_CORE_DISTANCE;
           inv_core_sq = sigma_sq/lj_core_sq;
           inv_core_6 = inv_core_sq*inv_core_sq*inv_core_sq;
           k = 6.0*eps/(lj_core_sq*lj_core_sq)*inv_core_6*(2.0*inv_core_6 - 1.0);
-          force_factor = 4.0*k*r_sq*sqrt(r_sq);   
-          //cout << "Full overlap. k = " << k << endl;
-        }
-        else if (r_sq <= LJ_HARD_CORE_DISTANCE*LJ_HARD_CORE_DISTANCE*sigma_sq)
-        {
-          potential_energy = 4.0*eps;
-          lj_core_sq = LJ_HARD_CORE_DISTANCE*LJ_HARD_CORE_DISTANCE;
-          inv_core_sq = sigma_sq/lj_core_sq;
-          inv_core_6 = inv_core_sq*inv_core_sq*inv_core_sq;
-          k = 6.0*eps/(lj_core_sq*lj_core_sq)*inv_core_6*(2.0*inv_core_6 - 1.0);
+          potential_energy = 4.0*eps*alpha*inv_core_6*(inv_core_6 - 1.0);
+          if (r_sq <= SMALL_NUMBER)
+          {
+            dx = dx_cm; dy = dy_cm; dz = dz_cm;
+            r_sq = dx_cm*dx_cm + dy_cm*dy_cm + dz_cm*dz_cm;
+          }
           force_factor = 4.0*k*r_sq*sqrt(r_sq);
-          //cout << "Too close. F = " << force_factor << endl;
         }
         else
         {
@@ -167,7 +161,6 @@ void PairLJRodPotential::compute(double dt)
             potential_energy -= 4.0 * eps * alpha * inv_r_cut_6 * (inv_r_cut_6 - 1.0);
           }
           force_factor = 48.0*eps*alpha*inv_r_6*(inv_r_6 - 0.5)*inv_r_sq;
-          //cout << "LJ part with F = " << force_factor << endl;
         }
         m_potential_energy += potential_energy;
         // Handle force

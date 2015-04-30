@@ -38,6 +38,7 @@ parser.add_argument("-C", "--contact", type=str, default=None, help="contact net
 parser.add_argument("-e", "--exclude", type=float, default=None, help="exclude all contact line that are longer than this value")
 parser.add_argument("--connected", action='store_true', default=False, help="Include Delaunay triangulation data")
 parser.add_argument("--nematic", action='store_true', default=False, help="Shift n vectors such that particle is in the middle of director.")
+parser.add_argument("-l", "--length", type=float, default=1.0, help="rod length")
 args = parser.parse_args()
 
 print
@@ -143,12 +144,13 @@ for f in files:
       Velocities.InsertNextTuple3(vvx,vvy,vvz)
 
   if has_n:
+    rod_len = args.length
     for (nnx,nny,nnz) in zip(nx,ny,nz):
       if args.nematic:
-        Directors.InsertNextTuple3(0.5*nnx,0.5*nny,0.5*nnz)
-        NDirectors.InsertNextTuple3(-0.5*nnx,-0.5*nny,-0.5*nnz)
+        Directors.InsertNextTuple3(0.5*rod_len*nnx,0.5*rod_len*nny,0.5*rod_len*nnz)
+        NDirectors.InsertNextTuple3(-0.5*rod_len*nnx,-0.5*rod_len*nny,-0.5*rod_len*nnz)
       else:
-        Directors.InsertNextTuple3(nnx,nny,nnz)        
+        Directors.InsertNextTuple3(rod_len*nnx,rod_len*nny,rod_len*nnz)        
 
   if args.contact != None:
     if args.connected:

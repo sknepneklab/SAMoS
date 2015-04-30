@@ -48,7 +48,7 @@ public:
   //! \param cons Enforces constraints to the manifold surface
   //! \param temp Temperature control object
   //! \param param Contains information about all parameters 
-  IntegratorBrownianRod(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstraintPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
+  IntegratorBrownianRod(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstraintPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param), m_pos_noise(false)
   { 
     if (param.find("v0") == param.end())
     {
@@ -100,6 +100,11 @@ public:
         m_tau = m_dt/lexical_cast<double>(param["tau"]);
       }
     }
+    if (param.find("positional_noise") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Brownian rod dynamics integrator. Adding positional random noise.");
+      m_pos_noise = true;
+    }
   }
   
   //! Propagate system for a time step
@@ -111,6 +116,7 @@ private:
   double  m_v0;           //!< Magnitude of the active velocity 
   double  m_D0;           //!< Bare diffusion constant 
   bool    m_nematic;      //!< If true; assume that the system is nematic, and the velocity will switch direction randomly
+  bool    m_pos_noise;    //!< If true, add noise to the rod's position
   double  m_tau;          //!< Time scale for the direction flip for nematic systems (flip with probability dt/tau)
   
 };
