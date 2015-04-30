@@ -79,9 +79,12 @@ cdict = {'red':   [(0.0,  0.25, 0.25),
 
 # Default geometry class: 3 dimensional unconstrained space
 class Geometry:
-    def __init__(self,manifold):
-        self.manifold=manifold
-        print "Created new geometry " + str(manifold)
+    def __init__(self,gparams):
+        try:
+            self.manifold=gparams['manifold']
+            print "Created new geometry " + manifold
+        except:
+            pass
      
     def RotateMatrixVectorial(self,axis,theta):
         axlen=np.sqrt(axis[:,0]**2+axis[:,1]**2+axis[:,2]**2)
@@ -128,9 +131,10 @@ class Geometry:
         
 # Spherical geometry   
 class GeometrySphere(Geometry):
-    def __init__(self,R):
-        self.R=R
+    def __init__(self,gparams):
+        self.R=gparams['R']
         print "Created new geometry sphere with radius " + str(R)
+        super(GeometrySphere,self).__init__('sphere')
         
     # Fully vectorial version of parallel transport
     # 1.determine the cross product of the origins
@@ -190,9 +194,9 @@ class GeometrySphere(Geometry):
         
 # Plane with periodic boundary conditions. By default, the plane is along x and y
 class GeometryPeriodicPlane(Geometry):
-    def __init__(self,Lx,Ly):
-        self.Lx=Lx
-        self.Ly=Ly
+    def __init__(self,gparams):
+        self.Lx=gparams['Lx']
+        self.Ly=gparams['Ly']
         print "Created new geometry periodic plane with Lx = " + str(Lx) + " and Ly = " +str(Ly)
         
     def TangentBundle(self,rval):
@@ -220,6 +224,7 @@ class Configuration:
     def __init__(self,param,filename):
         self.param=param
         # Read the local data
+        geometries={'Sphere':GeometrySphere,'Plane':GeometryPeriodicPlane,'Space':Geometry}
         print "Processing file : ", filename
         data = ReadData(filename)
         x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
@@ -229,7 +234,8 @@ class Configuration:
         self.vval = np.column_stack((vx,vy,vz))
         self.nval = np.column_stack((nx,ny,nz))
         # Create the right geometry environment (TBC):
-        self.geom=Geometry(param.simtype)
+        # !! To be made: A dictionary of geometry gparams which is a member of the param class
+        self.geom=geometries[param.simtype](param.gparams)
         
     # Tangent bundle: Coordinates in an appropriate coordinate system defined on the manifold
     # and the coordinate vectors themselves, for all the particles
