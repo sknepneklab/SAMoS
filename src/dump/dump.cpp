@@ -300,6 +300,9 @@ void Dump::dump_xyz()
 //! Dump selected set of data
 void Dump::dump_data()
 {
+  double Lx = m_system->get_box()->Lx;
+  double Ly = m_system->get_box()->Ly;
+  double Lz = m_system->get_box()->Lz;
   int N = m_system->size();
   if (m_print_header)
   {
@@ -338,7 +341,12 @@ void Dump::dump_data()
     if (m_params.find("radius") != m_params.end())
       m_out << format("%8.5f ") % p.get_radius();
     if (m_params.find("coordinate") != m_params.end())
-      m_out << format(" %10.6f  %10.6f  %10.6f") % p.x % p.y % p.z;
+    {
+      if (m_params.find("unwrap") != m_params.end())
+        m_out << format(" %10.6f  %10.6f  %10.6f") % (p.x + p.ix*Lx) % (p.y + p.iy*Ly) % (p.z + p.iz*Lz);
+      else
+        m_out << format(" %10.6f  %10.6f  %10.6f") % p.x % p.y % p.z;
+    }
     if (m_params.find("velocity") != m_params.end())
       m_out << format(" %10.6f  %10.6f  %10.6f") % p.vx % p.vy % p.vz;
     if (m_params.find("force") != m_params.end())
