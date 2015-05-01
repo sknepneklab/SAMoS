@@ -168,6 +168,9 @@ public:
   ///@{
   double nx, ny, nz;           //!< Particle direction vector (not necessarily equal to velocity direction)
   //@}
+  ///@{
+  int ix, iy, iz;              //!< Periodic box image flags (to enable unwrapping of particle coordinates)
+  //@}
   double omega;                //!< Magnitude of the angular velocity (in the direction of the normal to the surface)
   double age;                  //!< Particle age (used when deciding to remove and split the particle)
   list<string> groups;         //!< List of all groups particle belongs to.

@@ -123,6 +123,7 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         p.set_length(lexical_cast<double>(s_line[13]));
       else
         p.set_length(1.0);
+      p.ix = 0; p.iy = 0; p.iz = 0;    // All particles are in the box, so all image flags are set to 0
       p.set_flag(m_current_particle_flag);
       m_current_particle_flag++;
       m_particles.push_back(p);
@@ -628,12 +629,36 @@ void System::enforce_periodic(Particle& p)
 {
   if (m_periodic)
   {
-    if (p.x < m_box->xlo) p.x += m_box->Lx;
-    else if (p.x > m_box->xhi) p.x -= m_box->Lx;
-    if (p.y < m_box->ylo) p.y += m_box->Ly;
-    else if (p.y > m_box->yhi) p.y -= m_box->Ly;
-    if (p.z < m_box->zlo) p.z += m_box->Lz;
-    else if (p.z > m_box->zhi) p.z -= m_box->Lz;
+    if (p.x < m_box->xlo) 
+    {
+      p.x += m_box->Lx;
+      p.ix--;
+    }
+    else if (p.x > m_box->xhi)
+    {
+      p.x -= m_box->Lx;
+      p.ix++;
+    }
+    if (p.y < m_box->ylo)
+    {
+      p.y += m_box->Ly;
+      p.iy--;
+    }
+    else if (p.y > m_box->yhi)
+    {
+      p.y -= m_box->Ly;
+      p.iy++;
+    }
+    if (p.z < m_box->zlo)
+    {
+      p.z += m_box->Lz;
+      p.iz--;
+    }
+    else if (p.z > m_box->zhi)
+    {
+      p.z -= m_box->Lz;
+      p.iz++;
+    }
   }
 }
 

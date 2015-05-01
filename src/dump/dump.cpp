@@ -322,6 +322,8 @@ void Dump::dump_data()
       m_out << " nx  ny  nz ";
     if (m_params.find("omega") != m_params.end())
       m_out << " omega ";
+    if (m_params.find("image_flags") != m_params.end())
+      m_out << " ix  iy  iz ";
     m_out << endl;
   }
   for (int i = 0; i < N; i++)
@@ -345,6 +347,8 @@ void Dump::dump_data()
       m_out << format(" %10.6f  %10.6f  %10.6f") % p.nx % p.ny % p.nz;
     if (m_params.find("omega") != m_params.end())
       m_out << format("%8.5f ") % p.omega;
+    if (m_params.find("image_flags") != m_params.end())
+      m_out << format(" %3d  %3d  %3d ") % p.ix % p.iy % p.iz;
     m_out << endl;
   }
 }
