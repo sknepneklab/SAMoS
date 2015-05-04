@@ -17,7 +17,7 @@
 # 
 #    This is an example of a parsing tree (of level 2).                                                                                           	
 #    The ReadConf class has a dictionary called key_words. These keywords refer to the 
-#    first words in non-commented lines, of the type pair_align polar { j = 0.1 }                                                                                           
+#    first words in non-commented lines, of the type "pair_align polar { j = 0.1 }"                                                                                          
 #    so here this would be the keyword 'pair_align'. Certain keywords, like for example
 #    'dump', can have multiple lines associated to them. Ater creating an instance of the
 #    class, e.g. conf=ReadConf(conffile), they can be found under conf.key_words,                                  
@@ -48,9 +48,9 @@ class Attribute:
     else:
       self.val = None
 
-# 	This bit parses the 'rest' part of each line. If there are no {}, the paramter name is just the first element (word)
+# 	This bit parses the 'rest' part of each line. If there are no {}, the parameter name is just the first element (word)
 # 	Otherwise, we'll have at least one attribute. Look for anything within double braces, and split them along the ; signs. Each ' j = 1 ' bit then 
-# 	Goes to make an attribute, with a name made from the fist part and a value from the second
+# 	Goes to make an attribute, with a name made from the first part and a value from the second
 class Parameter:
   
   def __init__(self,line):
