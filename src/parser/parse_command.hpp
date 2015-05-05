@@ -86,6 +86,7 @@ public:
                  | qi::as_string[keyword["angle_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]     /*! Handles angle potential parameters. */
                  | qi::as_string[keyword["read_bonds"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles bonds file. */
                  | qi::as_string[keyword["read_angles"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]     /*! Handles angles file. */
+                 | qi::as_string[keyword["ntypes"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]          /*! Handles number of types. */
                  /* to add new command: | qi::as_string[keyword["newcommand"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ] */
                )
                >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&CommandData::attrib_param_complex, phoenix::ref(command_data)) = qi::_1 ]

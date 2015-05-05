@@ -1169,6 +1169,18 @@ int main(int argc, char* argv[])
               throw std::runtime_error("Error parsing zero_momentum parameters.");
             }
           }
+          else if (command_data.command == "ntypes")       // run actual simulation
+          {
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), run_parser, qi::space))
+            {
+              msg->msg(Messenger::INFO,"Reading dummy keyword ntypes.");
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Could not parse number of types for the dummy command ntypes in line : "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing number of types.");
+            }
+          }
         }
         else
         {
