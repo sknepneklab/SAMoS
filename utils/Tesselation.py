@@ -91,8 +91,8 @@ class Tesselation:
 				drhat=((drvec).transpose()/(np.sqrt(np.sum(drvec**2,axis=1))).transpose()).transpose()
 				cbeta=np.einsum('kj,j->k',drhat,self.conf.e2[self.Jval[idx],:])
 				sbeta=np.einsum('kj,j->k',drhat,self.conf.e1[self.Jval[idx],:])
-				cbeta0=np.dot(dr0hat,self.conf.e1[self.Jval[idx],:])
-				sbeta0=np.dot(dr0hat,self.conf.e2[self.Jval[idx],:])
+				cbeta0=np.dot(dr0hat,self.conf.e2[self.Jval[idx],:])
+				sbeta0=np.dot(dr0hat,self.conf.e1[self.Jval[idx],:])
 			
 				# arccos returns between 0 and pi. Just multiply by the sign of the sine
 				beta=np.arccos(cbeta)*np.sign(sbeta)
