@@ -15,6 +15,7 @@
 # ################################################################
 
 from Configuration import *
+from CellList import *
 
 class Tesselation:
     
@@ -22,7 +23,7 @@ class Tesselation:
 		self.conf=conf
 		self.rval=self.conf.rval
 		
-	def findLoop(self,dmax):
+	def findLoop(self):
 		neighList=[]
 		self.Ival=[]
 		self.Jval=[]
@@ -31,31 +32,36 @@ class Tesselation:
 		# Identify all neighbours and add them to a list. Keep i->j and j->i separate
 		# The label is in neighList, the particle numbers are in Ival and Jval
 		if self.conf.monodisperse:
-			if self.conf.potential=='soft':
-				dmax=4*self.sigma**2
-			elif self.conf.potential=='morse':
-				dmax=16*self.sigma**2
+			if self.conf.param.potential=='soft':
+				dmax=4*self.conf.sigma**2
+			elif self.conf.param.potential=='morse':
+				dmax=16*self.conf.sigma**2
 			else:
-				dmax=4*self.sigma**2
+				dmax=4*self.conf.sigma**2
 				print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
-		if self.conf.potential=='morse':
+		if self.conf.param.potential=='morse':
 			re=self.conf.param.pot_param['re']
+		cl = CellList(2.0*np.sqrt(dmax),self.conf.param.box)
 		for i in range(len(self.rval)):
-			#dist=np.sum((self.rval-self.rval[i,:])**2,axis=1)
-			dist=self.conf.geom.GeodesicDistance(self.rval,self.rval[i,:])
+			cl.add_vertex(self.rval[i,:],i)
+		for i in range(len(self.rval)):
+			dist=np.sum((self.rval-self.rval[i,:])**2,axis=1)
+			#neighs = np.array(cl.get_neighbours(self.rval[i,:]))
+			#dist=self.conf.geom.GeodesicDistance(self.rval[neighs,:],self.rval[i,:])
+			#dist=self.conf.geom.GeodesicDistance(self.rval[neighs,:],self.rval[i,:])
 			if self.conf.monodisperse:		
 				neighbours=[index for index,value in enumerate(dist) if value <dmax]
 			else:
-				if self.conf.potential=='soft':
+				if self.conf.param.potential=='soft':
 					neighbours=[index for index,value in enumerate(dist) if value < (self.conf.radius[i]+self.conf.radius[index])**2]
-				elif self.conf.potential=='morse':	
+				elif self.conf.param.potential=='morse':	
 					neighbours=[index for index,value in enumerate(dist) if value < (re*self.conf.radius[i]+re*self.conf.radius[index])**2]
 				else:
 					neighbours=[index for index,value in enumerate(dist) if value < (self.conf.radius[i]+self.conf.radius[index])**2]
 					print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
-			neighbours.remove(i)
 			neighList.extend([u for u in range(count,count+len(neighbours))])
 			self.Ival.extend([i for k in range(len(neighbours))])
+			#self.Jval.extend(neighs[neighbours])
 			self.Jval.extend(neighbours)
 			Inei.append([u for u in range(count,count+len(neighbours))])
 			count+=len(neighbours)
@@ -121,7 +127,7 @@ class Tesselation:
 				neighList.remove(idxkeep)
 			except ValueError:
 				pass
-			looppos=rval[llist]
+			looppos=self.rval[llist]
 			self.LoopCen.append([np.mean(looppos[:,0]), np.mean(looppos[:,1]),np.mean(looppos[:,2])])
 			self.LoopList.append(llist)
 			l+=1
@@ -168,6 +174,7 @@ class Tesselation:
 		LoopCen1=np.array(self.LoopCen)
 		for i in range(len(self.rval)):
 			parray=np.array(self.ParList[i])
+			print parray
 			drvec=LoopCen1[self.ParList[i]]-self.rval[i,:]
 			# Optionally Take care of irregularities (in the form of too long bonds) here. These happen at the edges of connected stuff
 			# The tesselation is correct, it's just not what we want

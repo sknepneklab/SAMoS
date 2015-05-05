@@ -23,7 +23,7 @@
 import numpy as np
 
 # Default geometry class: 3 dimensional unconstrained space
-class Geometry:
+class Geometry(object):
 	def __init__(self,manifold):
 		try:
 			self.manifold=manifold
@@ -71,14 +71,14 @@ class Geometry:
 		return a2
 		
 	# Default: just the cartesian distance
-	def GeodesicDistance(r1,r2):
-		return np.sqrt(np.sum((r2-r1)**2))
+	def GeodesicDistance(self,r1,r2):
+		return np.sqrt(np.sum((r2-r1)**2,axis=1))
         
 # Spherical geometry   
 class GeometrySphere(Geometry):
 	def __init__(self,param):
 		self.R=param.r
-		print "Created new geometry sphere with radius " + str(R)
+		print "Created new geometry sphere with radius " + str(self.R)
 		super(GeometrySphere,self).__init__('sphere')
 		
 	# Fully vectorial version of parallel transport
@@ -148,21 +148,23 @@ class GeometryPeriodicPlane(Geometry):
 	def TangentBundle(self,rval):
 		x=rval[:,0]
 		y=rval[:,1]
-		ex[:,0]=1.0*np.ones(shape(rval))
-		ex[:,1]=1.0*np.zeros(shape(rval))
-		ex[:,2]=1.0*np.zeros(shape(rval))
-		ey[:,0]=1.0*np.zeros(shape(rval))
-		ey[:,1]=1.0*np.ones(shape(rval))
-		ey[:,2]=1.0*np.zeros(shape(rval))
+		ex = np.empty(np.shape(rval))
+		ex[:,0]=1.0*np.ones(len(rval))
+		ex[:,1]=1.0*np.zeros(len(rval))
+		ex[:,2]=1.0*np.zeros(len(rval))
+		ey = np.empty(np.shape(rval))
+		ey[:,0]=1.0*np.zeros(len(rval))
+		ey[:,1]=1.0*np.ones(len(rval))
+		ey[:,2]=1.0*np.zeros(len(rval))
 		return x,y,ex,ey
 		
-	# Just the cartesian distance in the plane, modulo periodic boundary conditions
-	def GeodesicDistance(r1,r2):
-		drx=r2[0]-r1[0]
-		drx-=self.Lx*round(drx)
-		dry=r2[1]-r1[1]
-		dry-=self.Ly*round(dry)
-		return np.sqrt(drx**2+dry**2)
+	## Just the cartesian distance in the plane, modulo periodic boundary conditions
+	#def GeodesicDistance(self,r1,r2):
+		#drx=r2[0]-r1[0]
+		#drx-=self.Lx*np.round(drx)
+		#dry=r2[1]-r1[1]
+		#dry-=self.Ly*np.round(dry)
+		#return np.sqrt(drx**2+dry**2)
 
 class GeometryTube(Geometry):
 	def __init__(self,param):

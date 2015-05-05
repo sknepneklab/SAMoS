@@ -22,6 +22,7 @@
 
 from Geometry import *
 from read_param import *
+from read_data import *
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -36,9 +37,10 @@ class Configuration:
 		vx, vy, vz = np.array(data.data[data.keys['vx']]), np.array(data.data[data.keys['vy']]), np.array(data.data[data.keys['vz']])
 		nx, ny, nz = np.array(data.data[data.keys['nx']]), np.array(data.data[data.keys['ny']]), np.array(data.data[data.keys['nz']])
 		self.monodisperse=False
+		self.N=len(x)
 		if not data.keys.has_key('radius'): 
 			# MISSING: read them in from the initial configuration
-			self.radius = np.array([1.0 for i in range(self.param.N)])
+			self.radius = np.array([1.0 for i in range(self.N)])
 			self.monodisperse=True
 			self.sigma=1.0
 		else: 
@@ -52,6 +54,10 @@ class Configuration:
 		self.nval = np.column_stack((nx,ny,nz))
 		# Create the right geometry environment (TBC):
 		self.geom=geometries[param.constraint](param)
+		
+		fig = plt.figure()
+		ax = fig.add_subplot(111, projection='3d')
+		ax.scatter(self.rval[:,0], self.rval[:,1], self.rval[:,2], zdir='z', c='b')
 		
 	# Tangent bundle: Coordinates in an appropriate coordinate system defined on the manifold
 	# and the coordinate vectors themselves, for all the particles
@@ -68,9 +74,9 @@ class Configuration:
         
 
 	def compute_energy_and_pressure(self):
-		eng = np.zeros(self.param.N)
-		press = np.zeros(self.param.N)
-		stress = np.zeros((self.param.N,3,3))
+		eng = np.zeros(self.N)
+		press = np.zeros(self.N)
+		stress = np.zeros((self.N,3,3))
 		# Establish how many types of particles we have
 		# If it's only one, use the current setup
 		if self.param.ntypes==1:
@@ -84,7 +90,7 @@ class Configuration:
 					if self.monodisperse: 
 						neighbours=[index for index,value in enumerate(dist) if value <dmax]
 					else:
-						neighbours=[index for index,value in enumerate(dist) if value < (radius[i]+radius[j])**2]
+						neighbours=[index for index,value in enumerate(dist) if value < (radius[i]+radius[index])**2]
 					neighbours.remove(i)
 					dr=np.sqrt(dist[neighbours])
 					diff=radius[i]+radius[j]-dr
@@ -106,7 +112,7 @@ class Configuration:
 				a=self.param.pot.param['a']
 				if self.monodisperse:
 					dmax=16*self.sigma**2
-				for i in range(self.param.N):
+				for i in range(self.N):
 				#for i in range(10):
 					#dist=np.sum((r-r[i,:])**2,axis=1)
 					dist=self.geom.GeodesicDistance(r,r[i,:])

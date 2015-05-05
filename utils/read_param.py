@@ -375,7 +375,10 @@ class Param:
 				# now sort them into groups
 				# first in case it's all of them
 				# I don't care if some idiot has added more integrators on top of it. That's their problem.
-				mygroup = int_params['group']
+				try:
+					mygroup = int_params['group']
+				except KeyError:
+					mygroup='all'
 				if mygroup =='all':
 					self.integrator=conf.key_words['integrator'][k].name
 					print "Main integrator: " + self.integrator
