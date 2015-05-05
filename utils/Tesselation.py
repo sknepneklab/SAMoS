@@ -59,6 +59,7 @@ class Tesselation:
 				else:
 					neighbours=[index for index,value in enumerate(dist) if value < (self.conf.radius[i]+self.conf.radius[index])**2]
 					print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
+			neighbours.remove(i)
 			neighList.extend([u for u in range(count,count+len(neighbours))])
 			self.Ival.extend([i for k in range(len(neighbours))])
 			#self.Jval.extend(neighs[neighbours])
