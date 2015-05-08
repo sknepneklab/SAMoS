@@ -59,37 +59,38 @@ public:
   command_grammar(CommandData& command_data) : command_grammar::base_type(command)
   {
     command = (
-                 qi::as_string[keyword["pair_potential"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]    /*! Handles pair potential, such as Lennard-Jones or Coulomb */
-                 | qi::as_string[keyword["pair_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles parameters for the pair potentials */
-                 | qi::as_string[keyword["align_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]     /*! Handles parameters for the alignment */
-                 | qi::as_string[keyword["external"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]        /*! Handles external potentials */
-                 | qi::as_string[keyword["external_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]  /*! Handles parameters for external potentials */
-                 | qi::as_string[keyword["integrator"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles integrators (NVE, NTV, etc.) */
-                 | qi::as_string[keyword["input"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]           /*! Handles input file. */
-                 | qi::as_string[keyword["constraint"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles constraints. */
-                 | qi::as_string[keyword["run"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]             /*! Execute simulation. */
-                 | qi::as_string[keyword["log"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]             /*! Handles various measurement logs. */
-                 | qi::as_string[keyword["dump"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]            /*! Handles coordinate dumps. */
-                 | qi::as_string[keyword["messages"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]        /*! Handles internal messages. */
-                 | qi::as_string[keyword["box"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]             /*! Handles simulation box. */
-                 | qi::as_string[keyword["nlist"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]           /*! Handles neighbour list. */
-                 | qi::as_string[keyword["pair_align"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles pairwise alignment. */
-                 | qi::as_string[keyword["external_align"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]  /*! Handles external alignment. */
-                 | qi::as_string[keyword["external_align_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]  /*! Handles external alignment parameters. */
-                 | qi::as_string[keyword["group"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]           /*! Handles particle groups. */
-                 | qi::as_string[keyword["disable"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]         /*! Handles disabling integrators. */
-                 | qi::as_string[keyword["population"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles population control. */
-                 | qi::as_string[keyword["zero_momentum"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]   /*! Handles zeroing momentum of a group of particles. */
-                 | qi::as_string[keyword["bond"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]            /*! Handles bond potentials. */
-                 | qi::as_string[keyword["bond_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles bond potential parameters. */
-                 | qi::as_string[keyword["angle"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]           /*! Handles angle potentials. */
-                 | qi::as_string[keyword["angle_param"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]     /*! Handles angle potential parameters. */
-                 | qi::as_string[keyword["read_bonds"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]      /*! Handles bonds file. */
-                 | qi::as_string[keyword["read_angles"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]     /*! Handles angles file. */
-                 | qi::as_string[keyword["ntypes"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ]          /*! Handles number of types. */
-                 /* to add new command: | qi::as_string[keyword["newcommand"]][ phoenix::bind(&CommandData::command, phoenix::ref(command_data)) = qi::_1 ] */
+                 qi::as_string[keyword["pair_potential"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]    /*! Handles pair potential, such as Lennard-Jones or Coulomb */
+                 | qi::as_string[keyword["pair_param"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]      /*! Handles parameters for the pair potentials */
+                 | qi::as_string[keyword["align_param"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]     /*! Handles parameters for the alignment */
+                 | qi::as_string[keyword["external"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]        /*! Handles external potentials */
+                 | qi::as_string[keyword["external_param"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]  /*! Handles parameters for external potentials */
+                 | qi::as_string[keyword["integrator"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]      /*! Handles integrators (NVE, NTV, etc.) */
+                 | qi::as_string[keyword["input"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]           /*! Handles input file. */
+                 | qi::as_string[keyword["constraint"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]      /*! Handles constraints. */
+                 | qi::as_string[keyword["run"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]             /*! Execute simulation. */
+                 | qi::as_string[keyword["log"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]             /*! Handles various measurement logs. */
+                 | qi::as_string[keyword["dump"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]            /*! Handles coordinate dumps. */
+                 | qi::as_string[keyword["messages"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]        /*! Handles internal messages. */
+                 | qi::as_string[keyword["box"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]             /*! Handles simulation box. */
+                 | qi::as_string[keyword["nlist"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]           /*! Handles neighbour list. */
+                 | qi::as_string[keyword["pair_align"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]      /*! Handles pairwise alignment. */
+                 | qi::as_string[keyword["external_align"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]  /*! Handles external alignment. */
+                 | qi::as_string[keyword["external_align_param"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]  /*! Handles external alignment parameters. */
+                 | qi::as_string[keyword["group"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]           /*! Handles particle groups. */
+                 | qi::as_string[keyword["disable"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]         /*! Handles disabling integrators. */
+                 | qi::as_string[keyword["population"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]      /*! Handles population control. */
+                 | qi::as_string[keyword["zero_momentum"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]   /*! Handles zeroing momentum of a group of particles. */
+                 | qi::as_string[keyword["bond"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]            /*! Handles bond potentials. */
+                 | qi::as_string[keyword["bond_param"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]      /*! Handles bond potential parameters. */
+                 | qi::as_string[keyword["angle"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]           /*! Handles angle potentials. */
+                 | qi::as_string[keyword["angle_param"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]     /*! Handles angle potential parameters. */
+                 | qi::as_string[keyword["read_bonds"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]      /*! Handles bonds file. */
+                 | qi::as_string[keyword["read_angles"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]     /*! Handles angles file. */
+                 | qi::as_string[keyword["ntypes"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]          /*! Handles number of types. */
+                 | qi::as_string[keyword["config"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]          /*! Handles configuration file. */
+                 /* to add new command: | qi::as_string[keyword["newcommand"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ] */
                )
-               >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&CommandData::attrib_param_complex, phoenix::ref(command_data)) = qi::_1 ]
+               >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&CommandData::attrib_param_complex, phx::ref(command_data)) = qi::_1 ]
                >> (qi::eol || qi::eoi);
   }
 

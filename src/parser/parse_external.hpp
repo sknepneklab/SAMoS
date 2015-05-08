@@ -56,10 +56,10 @@ public:
   external_grammar(ExternalData& external_data) : external_grammar::base_type(external)
   {
     external = (
-                  qi::as_string[keyword["gravity"]][phoenix::bind(&ExternalData::type, phoenix::ref(external_data)) = qi::_1 ]       /*! Handles gravitational potential */
-                  /* to add new potential: | qi::as_string[keyword["newpotential"]][phoenix::bind(&ExternalData::type, phoenix::ref(external_data)) = qi::_1 ] */
+                  qi::as_string[keyword["gravity"]][phx::bind(&ExternalData::type, phx::ref(external_data)) = qi::_1 ]       /*! Handles gravitational potential */
+                  /* to add new potential: | qi::as_string[keyword["newpotential"]][phx::bind(&ExternalData::type, phx::ref(external_data)) = qi::_1 ] */
                 )
-                >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&ExternalData::params, phoenix::ref(external_data)) = qi::_1 ]
+                >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&ExternalData::params, phx::ref(external_data)) = qi::_1 ]
                 >> (qi::eol || qi::eoi);
   }
   

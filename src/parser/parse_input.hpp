@@ -54,7 +54,7 @@ class input_grammar : public qi::grammar<std::string::iterator, qi::space_type>
 public:
   input_grammar(InputData& input_data) : input_grammar::base_type(input)
   {
-    input = qi::as_string[+qi::char_][phoenix::bind(&InputData::name, phoenix::ref(input_data)) = qi::_1 ]
+    input = qi::as_string[+qi::char_][phx::bind(&InputData::name, phx::ref(input_data)) = qi::_1 ]
             >> (qi::eol || qi::eoi);
   }
 

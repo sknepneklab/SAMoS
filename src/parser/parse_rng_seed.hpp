@@ -49,7 +49,7 @@ class rng_seed_grammar : public qi::grammar<std::string::iterator, qi::space_typ
 public:
   rng_seed_grammar(RngSeedData& rng_seed_data) : potential_grammar::base_type(rng_seed)
   {
-    rng_seed =   qi::int_[phoenix::bind(&RngSeedData::seed, phoenix::ref(rng_seed_data)) = qi::_1 ]
+    rng_seed =   qi::int_[phx::bind(&RngSeedData::seed, phx::ref(rng_seed_data)) = qi::_1 ]
                  >> (qi::eol || qi::eoi);
   }
 

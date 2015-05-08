@@ -49,7 +49,7 @@ class run_grammar : public qi::grammar<std::string::iterator, qi::space_type>
 public:
   run_grammar(RunData& run_data) : run_grammar::base_type(run)
   {
-    run =    qi::int_[phoenix::bind(&RunData::steps, phoenix::ref(run_data)) = qi::_1 ]
+    run =    qi::int_[phx::bind(&RunData::steps, phx::ref(run_data)) = qi::_1 ]
           >> (qi::eol || qi::eoi);
   }
 

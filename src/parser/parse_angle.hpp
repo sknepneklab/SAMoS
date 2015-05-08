@@ -56,11 +56,11 @@ public:
   angle_grammar(AngleData& angle_data) : angle_grammar::base_type(angle)
   {
     angle = (
-              qi::as_string[keyword["harmonic"]][phoenix::bind(&AngleData::type, phoenix::ref(angle_data)) = qi::_1 ]       /*! Handles harmonic angles */
-            | qi::as_string[keyword["cosine"]][phoenix::bind(&AngleData::type, phoenix::ref(angle_data)) = qi::_1 ]         /*! Handles cosine angles */
-             /* to add new angle potential: | qi::as_string[keyword["newpotential"]][phoenix::bind(&AngleData::type, phoenix::ref(angle_data)) = qi::_1 ] */
+              qi::as_string[keyword["harmonic"]][phx::bind(&AngleData::type, phx::ref(angle_data)) = qi::_1 ]       /*! Handles harmonic angles */
+            | qi::as_string[keyword["cosine"]][phx::bind(&AngleData::type, phx::ref(angle_data)) = qi::_1 ]         /*! Handles cosine angles */
+             /* to add new angle potential: | qi::as_string[keyword["newpotential"]][phx::bind(&AngleData::type, phx::ref(angle_data)) = qi::_1 ] */
             )
-            >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&AngleData::params, phoenix::ref(angle_data)) = qi::_1 ]
+            >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&AngleData::params, phx::ref(angle_data)) = qi::_1 ]
             >> (qi::eol || qi::eoi);
   }
 

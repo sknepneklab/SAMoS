@@ -56,12 +56,12 @@ public:
   external_align_grammar(ExternalAlignData& external_align_data) : external_align_grammar::base_type(external_align)
   {
     external_align = (
-                       qi::as_string[keyword["gravity"]][phoenix::bind(&ExternalAlignData::type, phoenix::ref(external_align_data)) = qi::_1 ]  /*! Handles gravitational alignment */
-                     | qi::as_string[keyword["aj"]][phoenix::bind(&ExternalAlignData::type, phoenix::ref(external_align_data)) = qi::_1 ]       /*! Handles active jamming alignment */
-                     | qi::as_string[keyword["field"]][phoenix::bind(&ExternalAlignData::type, phoenix::ref(external_align_data)) = qi::_1 ]    /*! Handles alignment to external vector field */
-                       /* to add new potential: | qi::as_string[keyword["newpotential"]][phoenix::bind(&ExternalAlignData::type, phoenix::ref(external_align_data)) = qi::_1 ] */
+                       qi::as_string[keyword["gravity"]][phx::bind(&ExternalAlignData::type, phx::ref(external_align_data)) = qi::_1 ]  /*! Handles gravitational alignment */
+                     | qi::as_string[keyword["aj"]][phx::bind(&ExternalAlignData::type, phx::ref(external_align_data)) = qi::_1 ]       /*! Handles active jamming alignment */
+                     | qi::as_string[keyword["field"]][phx::bind(&ExternalAlignData::type, phx::ref(external_align_data)) = qi::_1 ]    /*! Handles alignment to external vector field */
+                       /* to add new potential: | qi::as_string[keyword["newpotential"]][phx::bind(&ExternalAlignData::type, phx::ref(external_align_data)) = qi::_1 ] */
                      )
-                     >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&ExternalAlignData::params, phoenix::ref(external_align_data)) = qi::_1 ]
+                     >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&ExternalAlignData::params, phx::ref(external_align_data)) = qi::_1 ]
                      >> (qi::eol || qi::eoi);
   }
   

@@ -52,14 +52,14 @@ public:
   disable_grammar(DisableData& disable_data) : disable_grammar::base_type(disable)
   {
     disable = (
-                  qi::as_string[keyword["nve"]][phoenix::bind(&DisableData::type, phoenix::ref(disable_data)) = qi::_1 ]           /*! Disables NVE integrator */
-                  | qi::as_string[keyword["nvt"]][phoenix::bind(&DisableData::type, phoenix::ref(disable_data)) = qi::_1 ]         /*! Disables NVT integrator */
-                  | qi::as_string[keyword["brownian"]][phoenix::bind(&DisableData::type, phoenix::ref(disable_data)) = qi::_1 ]    /*! Disables stochastic integrator */
-                  | qi::as_string[keyword["vicsek"]][phoenix::bind(&DisableData::type, phoenix::ref(disable_data)) = qi::_1 ]      /*! Disables Vicsek integrator */
-                  | qi::as_string[keyword["nematic"]][phoenix::bind(&DisableData::type, phoenix::ref(disable_data)) = qi::_1 ]     /*! Disables nematic integrator */
-                  /* to add new integrator: | qi::as_string[keyword["newintegrator"]][phoenix::bind(&DisableData::type, phoenix::ref(disable_data)) = qi::_1 ] */
+                  qi::as_string[keyword["nve"]][phx::bind(&DisableData::type, phx::ref(disable_data)) = qi::_1 ]           /*! Disables NVE integrator */
+                  | qi::as_string[keyword["nvt"]][phx::bind(&DisableData::type, phx::ref(disable_data)) = qi::_1 ]         /*! Disables NVT integrator */
+                  | qi::as_string[keyword["brownian"]][phx::bind(&DisableData::type, phx::ref(disable_data)) = qi::_1 ]    /*! Disables stochastic integrator */
+                  | qi::as_string[keyword["vicsek"]][phx::bind(&DisableData::type, phx::ref(disable_data)) = qi::_1 ]      /*! Disables Vicsek integrator */
+                  | qi::as_string[keyword["nematic"]][phx::bind(&DisableData::type, phx::ref(disable_data)) = qi::_1 ]     /*! Disables nematic integrator */
+                  /* to add new integrator: | qi::as_string[keyword["newintegrator"]][phx::bind(&DisableData::type, phx::ref(disable_data)) = qi::_1 ] */
                  )
-                 >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&DisableData::params, phoenix::ref(disable_data)) = qi::_1 ]
+                 >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&DisableData::params, phx::ref(disable_data)) = qi::_1 ]
                  >> (qi::eol || qi::eoi);
   }
 

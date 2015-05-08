@@ -56,12 +56,12 @@ public:
   align_grammar(AlignData& align_data) : align_grammar::base_type(align)
   {
     align = (
-                qi::as_string[keyword["polar"]][phoenix::bind(&AlignData::type, phoenix::ref(align_data)) = qi::_1 ]       /*! Handles polar alignment */
-              | qi::as_string[keyword["nematic"]][phoenix::bind(&AlignData::type, phoenix::ref(align_data)) = qi::_1 ]       /*! Handles nematic alignment */
-              | qi::as_string[keyword["vicsek"]][phoenix::bind(&AlignData::type, phoenix::ref(align_data)) = qi::_1 ]       /*! Handles Vicsek alignment */
-             /* to add new potential: | qi::as_string[keyword["newalign"]][phoenix::bind(&AlignData::type, phoenix::ref(align_data)) = qi::_1 ] */
+                qi::as_string[keyword["polar"]][phx::bind(&AlignData::type, phx::ref(align_data)) = qi::_1 ]       /*! Handles polar alignment */
+              | qi::as_string[keyword["nematic"]][phx::bind(&AlignData::type, phx::ref(align_data)) = qi::_1 ]       /*! Handles nematic alignment */
+              | qi::as_string[keyword["vicsek"]][phx::bind(&AlignData::type, phx::ref(align_data)) = qi::_1 ]       /*! Handles Vicsek alignment */
+             /* to add new potential: | qi::as_string[keyword["newalign"]][phx::bind(&AlignData::type, phx::ref(align_data)) = qi::_1 ] */
             )
-            >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&AlignData::params, phoenix::ref(align_data)) = qi::_1 ]
+            >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&AlignData::params, phx::ref(align_data)) = qi::_1 ]
             >> (qi::eol || qi::eoi);
   }
 

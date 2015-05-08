@@ -26,7 +26,7 @@
 
 //! Construct Messenger object
 //! \param name file name to which to send messages or "terminal" to send it to terminal
-Messenger::Messenger(const string& name) : m_file_name(name) //, m_out( (to_lower_copy(name) == "terminal")  ? cout : *(new ofstream(m_file_name.c_str())) )
+Messenger::Messenger(const string& name) : m_file_name(name), m_has_config(false) //, m_out( (to_lower_copy(name) == "terminal")  ? cout : *(new ofstream(m_file_name.c_str())) )
 { 
   if (to_lower_copy(name) != "terminal")
   {
@@ -44,6 +44,13 @@ Messenger::~Messenger()
 {
   if (!m_to_terminal)
     m_out.close();
+  if (m_has_config)
+  {
+    if (m_config_type == "json")
+      pt::write_json(m_config_file+".json",m_config);
+    else 
+      pt::write_xml(m_config_file+".xml",m_config);
+  }
 }
 
 //! output message

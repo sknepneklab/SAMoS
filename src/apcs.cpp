@@ -1174,11 +1174,41 @@ int main(int argc, char* argv[])
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), run_parser, qi::space))
             {
               msg->msg(Messenger::INFO,"Reading dummy keyword ntypes.");
+              msg->write_config("ntypes",lexical_cast<string>(run_data.steps));
             }
             else
             {
               msg->msg(Messenger::ERROR,"Could not parse number of types for the dummy command ntypes in line : "+lexical_cast<string>(current_line)+".");
               throw std::runtime_error("Error parsing number of types.");
+            }
+          }
+          else if (command_data.command == "config")   // parse dump commands by adding list of logs
+          {
+            if (!defined["messages"])
+            {
+              std::cerr << "Messages file needs to be defined before we can write out configurations. Please use \"messages\" command before adding configs." << std::endl;
+              throw std::runtime_error("Messages not defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), log_dump_parser, qi::space))
+            {
+              if (qi::phrase_parse(log_dump_data.params.begin(), log_dump_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                std::string config_file_type = "xml";
+                if (parameter_data.find("type") != parameter_data.end())
+                 config_file_type = parameter_data["type"];
+                msg->add_config(log_dump_data.name,config_file_type);
+                msg->msg(Messenger::INFO,"Adding config file "+log_dump_data.name+" of type "+config_file_type+".");
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse parameters for config file "+log_dump_data.name+" at line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing confing parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing config command as line "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing config line.");
             }
           }
         }

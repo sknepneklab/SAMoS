@@ -56,11 +56,11 @@ public:
   box_grammar(BoxData& box_data) : box_grammar::base_type(box)
   {
     box  = (
-              qi::as_string[keyword["periodic"]][phoenix::bind(&BoxData::type, phoenix::ref(box_data)) = qi::_1 ]       /*! Handles periodic box */
-            | qi::as_string[keyword["fixed"]][phoenix::bind(&BoxData::type, phoenix::ref(box_data)) = qi::_1 ]          /*! Handles periodic potential */
-            /* to add new box type: | qi::as_string[keyword["newboxtype"]][phoenix::bind(&BoxData::type, phoenix::ref(box_data)) = qi::_1 ] */
+              qi::as_string[keyword["periodic"]][phx::bind(&BoxData::type, phx::ref(box_data)) = qi::_1 ]       /*! Handles periodic box */
+            | qi::as_string[keyword["fixed"]][phx::bind(&BoxData::type, phx::ref(box_data)) = qi::_1 ]          /*! Handles periodic potential */
+            /* to add new box type: | qi::as_string[keyword["newboxtype"]][phx::bind(&BoxData::type, phx::ref(box_data)) = qi::_1 ] */
            )
-           >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&BoxData::params, phoenix::ref(box_data)) = qi::_1 ]
+           >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&BoxData::params, phx::ref(box_data)) = qi::_1 ]
            >> (qi::eol || qi::eoi);
   }
 

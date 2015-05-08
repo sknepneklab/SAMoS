@@ -53,8 +53,8 @@ class group_grammar : public qi::grammar<std::string::iterator, qi::space_type>
 public:
   group_grammar(GroupData& group_data) : group_grammar::base_type(group)
   {
-    group = qi::as_string[+qi::char_("a-zA-Z_0-9.")][phoenix::bind(&GroupData::name, phoenix::ref(group_data)) = qi::_1 ]
-                >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&GroupData::params, phoenix::ref(group_data)) = qi::_1 ]
+    group = qi::as_string[+qi::char_("a-zA-Z_0-9.")][phx::bind(&GroupData::name, phx::ref(group_data)) = qi::_1 ]
+                >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&GroupData::params, phx::ref(group_data)) = qi::_1 ]
                 >> (qi::eol || qi::eoi);
   }
   

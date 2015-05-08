@@ -56,10 +56,10 @@ public:
   bond_grammar(BondData& bond_data) : bond_grammar::base_type(bond)
   {
     bond = (
-              qi::as_string[keyword["harmonic"]][phoenix::bind(&BondData::type, phoenix::ref(bond_data)) = qi::_1 ]       /*! Handles harmonic bonds */
-            /* to add new bond potential: | qi::as_string[keyword["newpotential"]][phoenix::bind(&BondData::type, phoenix::ref(bond_data)) = qi::_1 ] */
+              qi::as_string[keyword["harmonic"]][phx::bind(&BondData::type, phx::ref(bond_data)) = qi::_1 ]       /*! Handles harmonic bonds */
+            /* to add new bond potential: | qi::as_string[keyword["newpotential"]][phx::bind(&BondData::type, phx::ref(bond_data)) = qi::_1 ] */
            )
-           >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&BondData::params, phoenix::ref(bond_data)) = qi::_1 ]
+           >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&BondData::params, phx::ref(bond_data)) = qi::_1 ]
            >> (qi::eol || qi::eoi);
   }
 

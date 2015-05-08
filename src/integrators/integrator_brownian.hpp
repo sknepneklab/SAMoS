@@ -120,7 +120,21 @@ public:
       }
     }
     m_stoch_coeff = sqrt(m_nu*m_dt);
+    m_msg->write_config("integrator.brownian.v0",lexical_cast<string>(m_v0));
+    m_msg->write_config("integrator.brownian.mu",lexical_cast<string>(m_mu));
+    m_msg->write_config("integrator.brownian.nu",lexical_cast<string>(m_nu));
+    m_msg->write_config("integrator.brownian.mur",lexical_cast<string>(m_mur));
+    m_msg->write_config("integrator.brownian.tau",lexical_cast<string>(m_tau));
+    if (param.find("seed") == param.end())
+      m_msg->write_config("integrator.brownian.seed",lexical_cast<string>(0));
+    else
+      m_msg->write_config("integrator.brownian.seed",param["seed"]);
+    if (param.find("nematic") == param.end())
+      m_msg->write_config("integrator.brownian.seed","false");
+    else
+      m_msg->write_config("integrator.brownian.seed","true");
   }
+  
   
   //! Propagate system for a time step
   void integrate();

@@ -55,8 +55,8 @@ class log_dump_grammar : public qi::grammar<std::string::iterator, qi::space_typ
 public:
   log_dump_grammar(LogDumpData& log_dump_data) : log_dump_grammar::base_type(log_dump)
   {
-    log_dump = qi::as_string[+qi::char_("a-zA-Z_0-9.")][phoenix::bind(&LogDumpData::name, phoenix::ref(log_dump_data)) = qi::_1 ]
-                >> qi::as_string[qi::no_skip[+qi::char_]][phoenix::bind(&LogDumpData::params, phoenix::ref(log_dump_data)) = qi::_1 ]
+    log_dump = qi::as_string[+qi::char_("a-zA-Z_0-9.")][phx::bind(&LogDumpData::name, phx::ref(log_dump_data)) = qi::_1 ]
+                >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&LogDumpData::params, phx::ref(log_dump_data)) = qi::_1 ]
                 >> (qi::eol || qi::eoi);
   }
   

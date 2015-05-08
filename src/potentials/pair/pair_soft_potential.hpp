@@ -68,6 +68,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global potential strength (k) for soft pair potential is set to "+param["k"]+".");
       m_k = lexical_cast<double>(param["k"]);
     }
+    m_msg->write_config("pair_potential.soft.k",lexical_cast<string>(m_k));
     if (param.find("a") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No potential range (a) specified for soft pair potential. Setting it to 2.");
@@ -78,15 +79,18 @@ public:
       m_msg->msg(Messenger::INFO,"Global potential range (a) for soft pair potential is set to "+param["a"]+".");
       m_a = lexical_cast<double>(param["a"]);
     }
+    m_msg->write_config("pair_potential.soft.a",lexical_cast<string>(m_a));
     if (param.find("use_particle_radii") != param.end())
     {
       m_msg->msg(Messenger::WARNING,"Soft pair potential is set to use particle radii to control its range. Parameter a will be ignored.");
       m_use_particle_radii = true;
+      m_msg->write_config("pair_potential.soft.use_radii","true");
     }
     if (param.find("phase_in") != param.end())
     {
       m_msg->msg(Messenger::INFO,"Soft pair potential. Gradually phasing in the potential for new particles.");
       m_phase_in = true;
+      m_msg->write_config("pair_potential.soft.phase_in","true");
     }    
     
     m_pair_params = new SoftParameters*[ntypes];
@@ -96,6 +100,7 @@ public:
       for (int j = 0; j < ntypes; j++)
         m_pair_params[i][j].k = m_k;
     }
+    
   }
   
   virtual ~PairSoftPotential()
@@ -134,6 +139,7 @@ public:
       m_msg->msg(Messenger::INFO,"Soft pair potential. Using default strength ("+lexical_cast<string>(m_k)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["k"] = m_k;
     }
+    m_msg->write_config("pair_potential.soft.pair_param."+pair_param["type_1"]+"_and_"+pair_param["type_2"]+".k",pair_param["k"]);
     if (pair_param.find("a") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"Soft pair potential. Setting range to "+pair_param["a"]+" for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
@@ -144,6 +150,7 @@ public:
       m_msg->msg(Messenger::INFO,"Soft pair potential. Using default range ("+lexical_cast<string>(m_a)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["a"] = m_a;
     }
+    m_msg->write_config("pair_potential.soft.pair_param."+pair_param["type_1"]+"_and_"+pair_param["type_2"]+".a",pair_param["a"]);
         
     m_pair_params[type_1-1][type_2-1].k = param["k"];
     if (type_1 != type_2)

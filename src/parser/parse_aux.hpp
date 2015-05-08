@@ -45,7 +45,7 @@
 /*! \note Adopted from http://www.boost.org/doc/libs/1_53_0/libs/spirit/repository/test/qi/distinct.cpp */
 
 namespace qi = boost::spirit::qi;
-namespace phoenix= boost::phoenix;
+namespace phx = boost::phoenix;
 
 namespace spirit = boost::spirit;
 namespace ascii = boost::spirit::ascii;
