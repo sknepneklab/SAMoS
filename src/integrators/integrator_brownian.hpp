@@ -130,9 +130,9 @@ public:
     else
       m_msg->write_config("integrator.brownian.seed",param["seed"]);
     if (param.find("nematic") == param.end())
-      m_msg->write_config("integrator.brownian.seed","false");
+      m_msg->write_config("integrator.brownian.nematic","false");
     else
-      m_msg->write_config("integrator.brownian.seed","true");
+      m_msg->write_config("integrator.brownian.nematic","true");
   }
   
   
