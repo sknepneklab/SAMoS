@@ -77,6 +77,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global first potential depth (A) for Gaussian pair potential is set to "+param["A"]+".");
       m_A = lexical_cast<double>(param["A"]);
     }
+    m_msg->write_config("potential.pair.gaussian.A",lexical_cast<string>(m_A));
     if (param.find("B") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No second potential depth (B) specified for the Gaussian pair potential. Setting it to -1.");
@@ -87,6 +88,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global second potential depth (B) for Gaussian pair potential is set to "+param["B"]+".");
       m_B = lexical_cast<double>(param["B"]);
     }
+    m_msg->write_config("potential.pair.gaussian.B",lexical_cast<string>(m_B));
     if (param.find("alpha") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No first potential width (alpha) specified for the Gaussian pair potential. Setting it to 1.");
@@ -97,6 +99,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global first potential width (alpha) for Gaussian pair potential is set to "+param["alpha"]+".");
       m_alpha = lexical_cast<double>(param["alpha"]);
     }
+    m_msg->write_config("potential.pair.gaussian.alpha",lexical_cast<string>(m_alpha));
     if (param.find("beta") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No second potential width (beta) specified for the Gaussian pair potential. Setting it to 3.");
@@ -107,6 +110,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global second potential width (beta) for Gaussian pair potential is set to "+param["beta"]+".");
       m_beta = lexical_cast<double>(param["beta"]);
     }
+    m_msg->write_config("potential.pair.gaussian.beta",lexical_cast<string>(m_beta));
     if (param.find("rA") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No first potential peak position (rA) specified for the Gaussian pair potential. Setting it to 0.");
@@ -117,6 +121,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global first potential peak position (rA) for Gaussian pair potential is set to "+param["rA"]+".");
       m_rA = lexical_cast<double>(param["rA"]);
     }
+    m_msg->write_config("potential.pair.gaussian.rA",lexical_cast<string>(m_rA));
     if (param.find("rB") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No second potential peak position (rB) specified for the Gaussian pair potential. Setting it to 1.5.");
@@ -127,6 +132,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global second potential peak position (rB) for Gaussian pair potential is set to "+param["rB"]+".");
       m_rB = lexical_cast<double>(param["rB"]);
     }
+    m_msg->write_config("potential.pair.gaussian.rB",lexical_cast<string>(m_rB));
     
     if (param.find("rcut") == param.end())
     {
@@ -138,17 +144,20 @@ public:
       m_msg->msg(Messenger::INFO,"Global cutoff distance (rcut) for Gaussian pair potential is set to "+param["rcut"]+".");
       m_rcut = lexical_cast<double>(param["rcut"]);
     }
+    m_msg->write_config("potential.pair.gaussian.rcut",lexical_cast<string>(m_rcut));
     
     if (param.find("use_particle_radii") != param.end())
     {
       m_msg->msg(Messenger::WARNING,"Gaussian pair potential is set to use particle radii to control its range. Parameter rB will be ignored.");
       m_use_particle_radii = true;
+      m_msg->write_config("potential.pair.gaussian.use_particle_radii","true");
     }
     
     if (param.find("phase_in") != param.end())
     {
       m_msg->msg(Messenger::INFO,"Gaussian pair potential. Gradually phasing in the potential for new particles.");
       m_phase_in = true;
+      m_msg->write_config("potential.pair.gaussian.phase_in","true");
     }   
     
     m_pair_params = new GaussianParameters*[ntypes];
@@ -217,6 +226,7 @@ public:
       m_msg->msg(Messenger::INFO,"Gaussian pair potential. Using default A ("+lexical_cast<string>(m_A)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["A"] = m_A;
     }
+    m_msg->write_config("potential.pair.gaussian.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".A",lexical_cast<string>(param["A"]));
     if (pair_param.find("B") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"Gaussian pair potential. Setting B to "+pair_param["B"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
@@ -227,6 +237,7 @@ public:
       m_msg->msg(Messenger::INFO,"Gaussian pair potential. Using default B ("+lexical_cast<string>(m_B)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["B"] = m_B;
     }
+    m_msg->write_config("potential.pair.gaussian.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".B",lexical_cast<string>(param["B"]));
     if (pair_param.find("alpha") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"Gaussian pair potential. Setting alpha to "+pair_param["alpha"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
@@ -237,6 +248,7 @@ public:
       m_msg->msg(Messenger::INFO,"Gaussian pair potential. Using default alpha ("+lexical_cast<string>(m_alpha)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["alpha"] = m_alpha;
     }
+    m_msg->write_config("potential.pair.gaussian.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".alpha",lexical_cast<string>(param["alpha"]));
     if (pair_param.find("beta") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"Gaussian pair potential. Setting beta to "+pair_param["beta"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
@@ -247,6 +259,7 @@ public:
       m_msg->msg(Messenger::INFO,"Gaussian pair potential. Using default beta ("+lexical_cast<string>(m_beta)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["beta"] = m_beta;
     }
+    m_msg->write_config("potential.pair.gaussian.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".beta",lexical_cast<string>(param["beta"]));
     if (pair_param.find("rA") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"Gaussian pair potential. Setting rA to "+pair_param["rA"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
@@ -257,6 +270,7 @@ public:
       m_msg->msg(Messenger::INFO,"Gaussian pair potential. Using default rA ("+lexical_cast<string>(m_rA)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["rA"] = m_rA;
     }
+    m_msg->write_config("potential.pair.gaussian.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".rA",lexical_cast<string>(param["rA"]));
     if (pair_param.find("rB") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"Gaussian pair potential. Setting rB to "+pair_param["rB"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
@@ -267,6 +281,7 @@ public:
       m_msg->msg(Messenger::INFO,"Gaussian pair potential. Using default rB ("+lexical_cast<string>(m_rB)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["rB"] = m_rB;
     }
+    m_msg->write_config("potential.pair.gaussian.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".rB",lexical_cast<string>(param["rB"]));
     
     if (pair_param.find("rcut") != pair_param.end())
     {
@@ -278,6 +293,7 @@ public:
       m_msg->msg(Messenger::INFO,"Gaussian pair potential. Using default rcut ("+lexical_cast<string>(m_rcut)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["rcut"] = m_rcut;
     }
+    m_msg->write_config("potential.pair.gaussian.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".rcut",lexical_cast<string>(param["rcut"]));
     
     m_pair_params[type_1-1][type_2-1].A = param["A"];
     if (type_1 != type_2)

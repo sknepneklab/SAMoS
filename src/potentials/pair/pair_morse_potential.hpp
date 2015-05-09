@@ -72,6 +72,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global potential depth (D) for Morse pair potential is set to "+param["D"]+".");
       m_D = lexical_cast<double>(param["D"]);
     }
+    m_msg->write_config("potential.pair.morse.D",lexical_cast<string>(m_D));
     
     if (param.find("a") == param.end())
     {
@@ -83,6 +84,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global width parameter (a) for morse pair potential is set to "+param["a"]+".");
       m_a = lexical_cast<double>(param["a"]);
     }
+    m_msg->write_config("potential.pair.morse.a",lexical_cast<string>(m_a));
     
     if (param.find("re") == param.end())
     {
@@ -94,6 +96,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global position of the minimum (re) for morse pair potential is set to "+param["re"]+".");
       m_re = lexical_cast<double>(param["re"]);
     }
+    m_msg->write_config("potential.pair.morse.re",lexical_cast<string>(m_re));
     
     if (param.find("rcut") == param.end())
     {
@@ -105,16 +108,19 @@ public:
       m_msg->msg(Messenger::INFO,"Global cutoff distance (rcut) for Lennard Jones pair potential is set to "+param["rcut"]+".");
       m_rcut = lexical_cast<double>(param["rcut"]);
     }
+    m_msg->write_config("potential.pair.morse.rcut",lexical_cast<string>(m_rcut));
     
     if (param.find("use_particle_radii") != param.end())
     {
       m_msg->msg(Messenger::WARNING,"Morse pair potential is set to use particle radii to control its range. Parameter re will be ignored.");
       m_use_particle_radii = true;
+      m_msg->write_config("potential.pair.morse.use_particle_radii","true");
     }
     if (param.find("phase_in") != param.end())
     {
       m_msg->msg(Messenger::INFO,"Morse pair potential. Gradually phasing in the potential for new particles.");
       m_phase_in = true;
+      m_msg->write_config("potential.pair.morse.phase_in","true");
     }    
     
     if (m_rcut > m_nlist->get_cutoff())
@@ -179,6 +185,7 @@ public:
       m_msg->msg(Messenger::INFO,"Morse pair potential. Using default D ("+lexical_cast<string>(m_D)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["D"] = m_D;
     }
+    m_msg->write_config("potential.pair.morse.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".D",lexical_cast<string>(param["D"]));
     if (pair_param.find("a") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"Morse pair potential. Setting a to "+pair_param["a"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
@@ -189,6 +196,7 @@ public:
       m_msg->msg(Messenger::INFO,"Morse pair potential. Using default a ("+lexical_cast<string>(m_a)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["a"] = m_a;
     }
+    m_msg->write_config("potential.pair.morse.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".a",lexical_cast<string>(param["a"]));
     if (pair_param.find("re") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"Morse pair potential. Setting re to "+pair_param["re"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
@@ -199,6 +207,7 @@ public:
       m_msg->msg(Messenger::INFO,"Morse pair potential. Using default re ("+lexical_cast<string>(m_re)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["re"] = m_re;
     }
+    m_msg->write_config("potential.pair.morse.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".re",lexical_cast<string>(param["re"]));
     
     if (pair_param.find("rcut") != pair_param.end())
     {
@@ -210,6 +219,7 @@ public:
       m_msg->msg(Messenger::INFO,"Morse pair potential. Using default rcut ("+lexical_cast<string>(m_rcut)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["rcut"] = m_rcut;
     }
+    m_msg->write_config("potential.pair.morse.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".rcut",lexical_cast<string>(param["rcut"]));
         
     m_pair_params[type_1-1][type_2-1].D = param["D"];
     if (type_1 != type_2)

@@ -66,6 +66,7 @@ public:
         m_l = l;
       m_msg->msg(Messenger::INFO,"Plane walls constraint. Wall position set to "+param["l"]+".");
     }
+    m_msg->write_config("constraint.plane_wall.l",lexical_cast<string>(m_l));
   }
   
   //! Enforce constraint

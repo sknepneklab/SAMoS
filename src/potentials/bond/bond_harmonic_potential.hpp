@@ -64,7 +64,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global spring constant (k) for harmonic bond potential is set to "+param["k"]+".");
       m_k = lexical_cast<double>(param["k"]);
     }
-    
+    m_msg->write_config("potential.bond.harmonic.k",lexical_cast<string>(m_k));
     if (param.find("l_eq") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No rest length (l0) specified for harmonic bond potential. Setting it to 1.");
@@ -75,6 +75,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global rest length (l0) for harmonic bond potential is set to "+param["l_eq"]+".");
       m_l0 = lexical_cast<double>(param["l_eq"]);
     }
+    m_msg->write_config("potential.bond.harmonic.l_eq",lexical_cast<string>(m_l0));
     m_bond_params = new BondHarmoicParameters[ntypes];
     for (int i = 0; i < ntypes; i++)
     {
@@ -122,6 +123,8 @@ public:
       m_msg->msg(Messenger::INFO,"Harmonic bond potential. Using default rest length ("+lexical_cast<string>(m_l0)+") for bonds of types "+lexical_cast<string>(type)+".");
       param["l_eq"] = m_l0;
     }
+    m_msg->write_config("potential.bond.harmonic.type_"+bond_param["type"]+".k",lexical_cast<string>(param["k"]));
+    m_msg->write_config("potential.bond.harmonic.type_"+bond_param["type"]+".l_eq",lexical_cast<string>(param["l_eq"]));
     
     m_bond_params[type-1].k = param["k"];
     m_bond_params[type-1].l0 = param["l_eq"];

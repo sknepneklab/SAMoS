@@ -69,11 +69,14 @@ public:
       m_msg->msg(Messenger::INFO,"Global contractile/extensile stress (alpha) for active pair potential is set to "+param["alpha"]+".");
       m_alpha = lexical_cast<double>(param["alpha"]);
     }
+    m_msg->write_config("potential.pair.active.alpha",lexical_cast<string>(m_alpha));
     
     if (m_rcut > m_nlist->get_cutoff())
       m_msg->msg(Messenger::WARNING,"Neighbour list cutoff distance (" + lexical_cast<string>(m_nlist->get_cutoff())+
       " is smaller than the active cuttof distance ("+lexical_cast<string>(m_rcut)+
       "). Results will not be reliable.");
+    
+    m_msg->write_config("potential.pair.active.rcut",lexical_cast<string>(m_rcut));
     
     m_pair_params = new ActiveParameters*[ntypes];
     for (int i = 0; i < ntypes; i++)
@@ -134,7 +137,8 @@ public:
       m_msg->msg(Messenger::INFO,"Active pair potential. Using default rcut ("+lexical_cast<string>(m_rcut)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["rcut"] = m_rcut;
     }
-       
+    m_msg->write_config("potential.pair.active.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".alpha",lexical_cast<string>(param["alpha"]));
+    m_msg->write_config("potential.pair.active.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".rcut",lexical_cast<string>(param["rcut"]));   
     
     m_pair_params[type_1-1][type_2-1].alpha = param["alpha"];
     if (type_1 != type_2)

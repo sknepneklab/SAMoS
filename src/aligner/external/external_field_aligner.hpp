@@ -66,6 +66,7 @@ public:
       m_msg->msg(Messenger::INFO,"External field aligner. x component of the external field set to "+param["hx"]+".");
       m_hx = lexical_cast<double>(param["hx"]);
     }
+    m_msg->write_config("aligner.external.field.hx",lexical_cast<string>(m_hx));
     if (param.find("hy") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"External field aligner. No y component of external field given. Assuming 0.");
@@ -76,6 +77,7 @@ public:
       m_msg->msg(Messenger::INFO,"External field aligner. y component of the external field set to "+param["hy"]+".");
       m_hy = lexical_cast<double>(param["hy"]);
     }
+    m_msg->write_config("aligner.external.field.hy",lexical_cast<string>(m_hy));
     if (param.find("hz") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"External field aligner. No z component of external field given. Assuming 0.");
@@ -86,6 +88,7 @@ public:
       m_msg->msg(Messenger::INFO,"External field aligner. z component of the external field set to "+param["hz"]+".");
       m_hz = lexical_cast<double>(param["hz"]);
     }
+    m_msg->write_config("aligner.external.field.hz",lexical_cast<string>(m_hz));
     
     m_type_params = new FieldAlignParameters[ntypes];
     for (int i = 0; i < ntypes; i++)
@@ -126,6 +129,7 @@ public:
       m_msg->msg(Messenger::INFO,"External field aligner. Using default x component of external filed ("+lexical_cast<string>(m_hx)+") for particle pair of types ("+lexical_cast<string>(type)+")");
       param["hx"] = m_hx;
     }
+    m_msg->write_config("aligner.external.field.type."+self_param["type"]+".hx",lexical_cast<string>(param["hx"]));
     if (self_param.find("hy") != self_param.end())
     {
       m_msg->msg(Messenger::INFO,"External field aligner. Setting y component of external filed to "+self_param["hy"]+" for particle pair of type ("+lexical_cast<string>(type)+").");
@@ -136,6 +140,7 @@ public:
       m_msg->msg(Messenger::INFO,"External field aligner. Using default y component of external filed ("+lexical_cast<string>(m_hy)+") for particle pair of types ("+lexical_cast<string>(type)+")");
       param["hy"] = m_hy;
     }
+    m_msg->write_config("aligner.external.field.type."+self_param["type"]+".hy",lexical_cast<string>(param["hy"]));
     if (self_param.find("hz") != self_param.end())
     {
       m_msg->msg(Messenger::INFO,"External field aligner. Setting z component of external filed to "+self_param["hz"]+" for particle pair of type ("+lexical_cast<string>(type)+").");
@@ -146,6 +151,7 @@ public:
       m_msg->msg(Messenger::INFO,"External field aligner. Using default z component of external filed ("+lexical_cast<string>(m_hz)+") for particle pair of types ("+lexical_cast<string>(type)+")");
       param["hz"] = m_hz;
     }
+    m_msg->write_config("aligner.external.field.type."+self_param["type"]+".hz",lexical_cast<string>(param["hz"]));
     
     m_type_params[type].hx = param["hx"];
     m_type_params[type].hy = param["hy"];

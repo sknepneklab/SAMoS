@@ -59,6 +59,7 @@ public:
       m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Setting magnitude of active velocity to "+param["v0"]+".");
       m_v0 = lexical_cast<double>(param["v0"]);
     }
+    m_msg->write_config("integrator.brownian.v0",lexical_cast<string>(m_v0));
     if (param.find("nu") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. Rotational diffusion rate not set. Using default value 1.");
@@ -69,6 +70,7 @@ public:
       m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Setting rotational diffusion rate to "+param["nu"]+".");
       m_nu = lexical_cast<double>(param["nu"]);
     }
+    m_msg->write_config("integrator.brownian.nu",lexical_cast<string>(m_nu));
     if (param.find("mu") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. Mobility not set. Using default value 1.");
@@ -79,6 +81,7 @@ public:
       m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Setting mobility to "+param["mu"]+".");
       m_mu = lexical_cast<double>(param["mu"]);
     }
+    m_msg->write_config("integrator.brownian.mu",lexical_cast<string>(m_mu));
     if (param.find("mur") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. Rotational mobility not set. Using default value 1.");
@@ -89,15 +92,18 @@ public:
       m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Setting rotational mobility to "+param["mur"]+".");
       m_mur = lexical_cast<double>(param["mur"]);
     }
+    m_msg->write_config("integrator.brownian.mur",lexical_cast<string>(m_mur));
     if (param.find("seed") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. No random number generator seed specified. Using default 0.");
       m_rng = make_shared<RNG>(0);
+      m_msg->write_config("integrator.brownian.seed",lexical_cast<string>(0));
     }
     else
     {
       m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Setting random number generator seed to "+param["seed"]+".");
       m_rng = make_shared<RNG>(lexical_cast<int>(param["seed"]));
+      m_msg->write_config("integrator.brownian.seed",param["seed"]);
     }
     if (param.find("nematic") == param.end())
     {
@@ -108,6 +114,7 @@ public:
     {
       m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Assuming nematic order parameter.");
       m_nematic = true;
+      m_msg->write_config("integrator.brownian.nematic","true");
       if (param.find("tau") == param.end())
       {
         m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. Nematic systems No flip rate given. Assuming default 1.");
@@ -118,21 +125,9 @@ public:
         m_msg->msg(Messenger::INFO,"Brownian dynamics integrator. Nematic system. Setting flip rate to "+param["tau"]+".");
         m_tau = m_dt/lexical_cast<double>(param["tau"]);
       }
+      m_msg->write_config("integrator.brownian.tau",lexical_cast<string>(m_tau));
     }
     m_stoch_coeff = sqrt(m_nu*m_dt);
-    m_msg->write_config("integrator.brownian.v0",lexical_cast<string>(m_v0));
-    m_msg->write_config("integrator.brownian.mu",lexical_cast<string>(m_mu));
-    m_msg->write_config("integrator.brownian.nu",lexical_cast<string>(m_nu));
-    m_msg->write_config("integrator.brownian.mur",lexical_cast<string>(m_mur));
-    m_msg->write_config("integrator.brownian.tau",lexical_cast<string>(m_tau));
-    if (param.find("seed") == param.end())
-      m_msg->write_config("integrator.brownian.seed",lexical_cast<string>(0));
-    else
-      m_msg->write_config("integrator.brownian.seed",param["seed"]);
-    if (param.find("nematic") == param.end())
-      m_msg->write_config("integrator.brownian.nematic","false");
-    else
-      m_msg->write_config("integrator.brownian.nematic","true");
   }
   
   

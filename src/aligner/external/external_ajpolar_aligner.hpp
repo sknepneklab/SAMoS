@@ -68,6 +68,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global coupling constant (tau) for active jamming polar alignment is set to "+param["tau"]+".");
       m_tau = lexical_cast<double>(param["tau"]);
     }
+    m_msg->write_config("aligner.external.ajpolar.tau",lexical_cast<string>(m_tau));
     m_type_params = new PolarAJAlignParameters[ntypes];
     for (int i = 0; i < ntypes; i++)
     {
@@ -105,6 +106,7 @@ public:
       m_msg->msg(Messenger::INFO,"External active jamming polar aligner. Using default strength ("+lexical_cast<string>(m_tau)+") for particle pair of types ("+lexical_cast<string>(type)+")");
       param["tau"] = m_tau;
     }
+    m_msg->write_config("aligner.external.ajpolar.type."+self_param["type"]+".tau",lexical_cast<string>(param["tau"]));
     
     m_type_params[type].tau = param["tau"];
         

@@ -58,11 +58,13 @@ public:
     {
       m_msg->msg(Messenger::WARNING,"Density population control. No random number generator seed specified. Using default 0.");
       m_rng = make_shared<RNG>(0);
+      m_msg->write_config("population.density.seed",lexical_cast<string>(0));
     }
     else
     {
       m_msg->msg(Messenger::INFO,"Density population control. Setting random number generator seed to "+param["seed"]+".");
       m_rng = make_shared<RNG>(lexical_cast<int>(param["seed"]));
+      m_msg->write_config("population.density.seed",param["seed"]);
     }
     if (param.find("division_rate") == param.end())
     {
@@ -79,6 +81,7 @@ public:
         throw runtime_error("Wrong division probability.");
       }
     }
+    m_msg->write_config("population.density.division_rate",lexical_cast<string>(m_div_rate));
     if (param.find("death_rate") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Density population control. No death rate set. Using default 0.001.");
@@ -89,6 +92,7 @@ public:
       m_msg->msg(Messenger::INFO,"Density population control. Setting death rate "+param["death_rate"]+".");
       m_death_rate =  lexical_cast<double>(param["death_rate"]);
     }
+    m_msg->write_config("population.density.death_rate",lexical_cast<string>(m_death_rate));
     if (param.find("change_prob_1") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Density population control. No particle type change probability for first child set. Using default 0.");
@@ -99,6 +103,7 @@ public:
       m_msg->msg(Messenger::INFO,"Density population control. Setting particle type change probability for first child to "+param["change_prob_1"]+".");
       m_type_change_prob_1 =  lexical_cast<double>(param["change_prob_1"]);
     }
+    m_msg->write_config("population.density.change_prob_1",lexical_cast<string>(m_type_change_prob_1));
     if (param.find("change_prob_2") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Density population control. No particle type change probability for second child set. Using default 0.");
@@ -109,6 +114,7 @@ public:
       m_msg->msg(Messenger::INFO,"Density population control. Setting particle type change probability for second child to "+param["change_prob_2"]+".");
       m_type_change_prob_2 =  lexical_cast<double>(param["change_prob_2"]);
     }    
+    m_msg->write_config("population.density.change_prob_2",lexical_cast<string>(m_type_change_prob_2));
     if (param.find("new_type") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Density population control. No new particle type set. Using default 0.");
@@ -119,6 +125,7 @@ public:
       m_msg->msg(Messenger::INFO,"Density population control. Type of new particle type set to "+param["new_type"]+".");
       m_new_type =  lexical_cast<int>(param["new_type"]);
     }
+    m_msg->write_config("population.density.new_type",lexical_cast<string>(m_new_type));
     if (param.find("new_r") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Density population control. No new particle radius set. Using default 0.");
@@ -129,6 +136,7 @@ public:
       m_msg->msg(Messenger::INFO,"Density population control. Radius of new particle set to "+param["new_r"]+".");
       m_new_radius =  lexical_cast<double>(param["new_r"]);
     }
+    m_msg->write_config("population.density.new_radius",lexical_cast<string>(m_new_radius));
     if (param.find("old_group") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Density population control. No old group set. Using default \"all\".");
@@ -139,6 +147,7 @@ public:
       m_msg->msg(Messenger::INFO,"Density population control. Old group set to "+param["old_group"]+".");
       m_old_group = param["old_group"];
     }
+    m_msg->write_config("population.density.old_group",m_old_group);
     if (param.find("new_group") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Density population control. No new group set. Using default \"all\".");
@@ -149,6 +158,7 @@ public:
       m_msg->msg(Messenger::INFO,"Density population control. New group set to "+param["new_group"]+".");
       m_new_group = param["new_group"];
     }
+    m_msg->write_config("population.density.new_group",m_new_group);
     if (param.find("split_distance") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Density population control. No split distance set. Using default 0.5.");
@@ -159,6 +169,7 @@ public:
       m_msg->msg(Messenger::INFO,"Density population control. Split distance set to "+param["split_distance"]+".");
       m_split_distance = lexical_cast<double>(param["split_distance"]);
     }
+    m_msg->write_config("population.density.split_distance",lexical_cast<string>(m_split_distance));
     if (param.find("rho_max") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Density population control. No maximum density set. Using default 8.");
@@ -169,6 +180,7 @@ public:
       m_msg->msg(Messenger::INFO,"Density population control. Maximum density set to "+param["rho_max"]+".");
       m_rho_max = lexical_cast<double>(param["rho_max"]);
     }
+    m_msg->write_config("population.density.rho_max",lexical_cast<string>(m_rho_max));
     if (param.find("move_split") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Random population control. No split of the offspring separation set. Assuming 0.5.");
@@ -179,6 +191,7 @@ public:
       m_msg->msg(Messenger::INFO,"Random population control. Split of the offspring separation set to "+param["move_split"]+".");
       m_alpha = lexical_cast<double>(param["move_split"]);
     }
+    m_msg->write_config("population.density.move_split",lexical_cast<string>(m_alpha));
     
   }
   

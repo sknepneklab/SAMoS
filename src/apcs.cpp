@@ -804,6 +804,7 @@ int main(int argc, char* argv[])
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), run_parser, qi::space))
             {
               msg->msg(Messenger::INFO,"Starting simulation run for "+lexical_cast<string>(run_data.steps)+" steps.");
+              msg->add_config("run.steps",lexical_cast<string>(run_data.steps));
               // Precompute forces and torques
               if (pot)
                 pot->compute(1e-3);  // Some value to make sure phase in is working.
@@ -1196,7 +1197,7 @@ int main(int argc, char* argv[])
                 std::string config_file_type = "xml";
                 if (parameter_data.find("type") != parameter_data.end())
                  config_file_type = parameter_data["type"];
-                msg->add_config(log_dump_data.name,config_file_type);
+                msg->add_config_file(log_dump_data.name,config_file_type);
                 msg->msg(Messenger::INFO,"Adding config file "+log_dump_data.name+" of type "+config_file_type+".");
               }
               else

@@ -50,6 +50,8 @@ public:
   ConstraintPlane(SystemPtr sys, MessengerPtr msg, pairs_type& param) : Constraint(sys,msg,param)
   { 
     m_msg->msg(Messenger::INFO,"Planar constraint. Setting plane dimensions to lx = "+lexical_cast<string>(m_system->get_box()->Lx)+" and ly = "+lexical_cast<string>(m_system->get_box()->Ly)+".");
+    m_msg->write_config("constraint.plane.lx",lexical_cast<string>(m_system->get_box()->Lx));
+    m_msg->write_config("constraint.plane.ly",lexical_cast<string>(m_system->get_box()->Ly));
   }
   
   //! Enforce constraint

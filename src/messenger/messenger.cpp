@@ -48,6 +48,8 @@ Messenger::~Messenger()
   {
     if (m_config_type == "json")
       pt::write_json(m_config_file+".json",m_config);
+    else if (m_config_type == "info")
+      pt::write_info(m_config_file+".info",m_config);
     else 
       pt::write_xml(m_config_file+".xml",m_config);
   }

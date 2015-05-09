@@ -73,7 +73,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   }
   
   string line;
-  msg->msg(Messenger::INFO,"Reading particle coordinates from file: "+input_filename);
+  m_msg->msg(Messenger::INFO,"Reading particle coordinates from file: "+input_filename);
+  m_msg->write_config("system.input_file",input_filename);
   
   inp.exceptions ( std::ifstream::badbit ); // need to reset ios exceptions to avoid EOF failure of getline
   while ( getline(inp, line) )
@@ -85,7 +86,7 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
       s_line = split_line(line);
       if (s_line.size() < NUM_PART_ATTRIB)
       {
-        msg->msg(Messenger::ERROR,"Insufficient number of parameters to define a particle. " + lexical_cast<string>(s_line.size()) + " given, but " + lexical_cast<string>(NUM_PART_ATTRIB) + " expected.");
+        m_msg->msg(Messenger::ERROR,"Insufficient number of parameters to define a particle. " + lexical_cast<string>(s_line.size()) + " given, but " + lexical_cast<string>(NUM_PART_ATTRIB) + " expected.");
         throw runtime_error("Insufficient number of parameters in the input file.");
       }
       const int id = lexical_cast<int>(s_line[0]);  // read particle id
@@ -129,7 +130,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
       m_particles.push_back(p);
     }
   }
-  msg->msg(Messenger::INFO,"Read data for "+lexical_cast<string>(m_particles.size())+" particles.");
+  m_msg->msg(Messenger::INFO,"Read data for "+lexical_cast<string>(m_particles.size())+" particles.");
+  m_msg->write_config("system.n_particles",lexical_cast<string>(m_particles.size()));
   inp.close();
   
   // Populate group 'all'
@@ -141,12 +143,12 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   }
   m_num_groups = 1;
   
-  msg->msg(Messenger::INFO,"Generated group 'all' containing all particles.");
+  m_msg->msg(Messenger::INFO,"Generated group 'all' containing all particles.");
   
   m_n_types = types.size();
    
-  msg->msg(Messenger::INFO,"There are " + lexical_cast<string>(m_n_types) + " distinct particle types in the system.");
-  
+  m_msg->msg(Messenger::INFO,"There are " + lexical_cast<string>(m_n_types) + " distinct particle types in the system.");
+  m_msg->write_config("system.n_types",lexical_cast<string>(m_n_types));
   
   this->disable_per_particle_eng();
   
@@ -260,6 +262,7 @@ void System::make_group(const string name, pairs_type& param)
   }
   
   m_msg->msg(Messenger::INFO,"Added "+lexical_cast<string>(m_group[name]->get_size())+" particles to group "+name+".");
+  m_msg->add_config("system.group.name",name);
       
 }
 
@@ -403,6 +406,7 @@ void System::read_bonds(const string& bond_file)
   
   string line;
   m_msg->msg(Messenger::INFO,"Reading bond information from file: "+bond_file);
+  m_msg->write_config("system.bond_file",bond_file);
   
   // Handle exclusions
   if (m_exclusions.size() == 0)
@@ -448,6 +452,7 @@ void System::read_bonds(const string& bond_file)
     }
   }
   m_msg->msg(Messenger::INFO,"Read data for "+lexical_cast<string>(m_bonds.size())+" bonds.");
+  m_msg->write_config("system.n_bonds",lexical_cast<string>(m_bonds.size()));
   inp.close();
   
   m_n_bond_types = types.size();
@@ -486,6 +491,7 @@ void System::read_angles(const string& angle_file)
   
   string line;
   m_msg->msg(Messenger::INFO,"Reading angle information from file: "+angle_file);
+  m_msg->write_config("system.angle_file",angle_file);
   
   // Handle exclusions
   if (m_exclusions.size() == 0)
@@ -546,6 +552,7 @@ void System::read_angles(const string& angle_file)
     }
   }
   m_msg->msg(Messenger::INFO,"Read data for "+lexical_cast<string>(m_angles.size())+" angles.");
+  m_msg->write_config("system.n_angles",lexical_cast<string>(m_angles.size()));
   inp.close();
   m_has_exclusions = true;
   m_n_angle_types = types.size();

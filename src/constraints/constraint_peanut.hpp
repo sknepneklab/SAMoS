@@ -64,6 +64,7 @@ public:
       m_msg->msg(Messenger::INFO,"Peanut constraint. Parameter a set to "+param["a"]+".");
       m_a = lexical_cast<double>(param["a"]);
     }
+    m_msg->write_config("constraint.peanut.a",lexical_cast<string>(m_a));
     if (param.find("b") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Peanut constraint. Parameter b has not been set. Assuming 10.0");
@@ -74,6 +75,7 @@ public:
       m_msg->msg(Messenger::INFO,"Peanut constraint. Parameter b set to "+param["b"]+".");
       m_b = lexical_cast<double>(param["b"]);
     }
+    m_msg->write_config("constraint.peanut.b",lexical_cast<string>(m_b));
     if (m_b <= m_a)
     {
       m_msg->msg(Messenger::ERROR,"Parameter b has to be larger than parameter a. Otherwise the surface will be disconnected.");

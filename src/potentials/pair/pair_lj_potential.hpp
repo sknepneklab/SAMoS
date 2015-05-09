@@ -71,6 +71,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global potential depth (epsilon) for Lennard Jones pair potential is set to "+param["epsilon"]+".");
       m_eps = lexical_cast<double>(param["epsilon"]);
     }
+    m_msg->write_config("potential.pair.lj.epsilon",lexical_cast<string>(m_eps));
     
     if (param.find("sigma") == param.end())
     {
@@ -82,6 +83,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global particle diameter (sigma) for Lennard Jones pair potential is set to "+param["sigma"]+".");
       m_sigma = lexical_cast<double>(param["sigma"]);
     }
+    m_msg->write_config("potential.pair.lj.sigma",lexical_cast<string>(m_sigma));
     
     if (param.find("rcut") == param.end())
     {
@@ -93,16 +95,19 @@ public:
       m_msg->msg(Messenger::INFO,"Global cutoff distance (rcut) for Lennard Jones pair potential is set to "+param["rcut"]+".");
       m_rcut = lexical_cast<double>(param["rcut"]);
     }
+    m_msg->write_config("potential.pair.lj.rcut",lexical_cast<string>(m_rcut));
     
     if (param.find("use_particle_radii") != param.end())
     {
       m_msg->msg(Messenger::WARNING,"Lennard-Jones pair potential is set to use particle radii to control its range. Parameter sigma will be ignored.");
       m_use_particle_radii = true;
+      m_msg->write_config("potential.pair.lj.use_particle_radii","true");
     }
     if (param.find("phase_in") != param.end())
     {
       m_msg->msg(Messenger::INFO,"Lennard Jones pair potential. Gradually phasing in the potential for new particles.");
       m_phase_in = true;
+      m_msg->write_config("potential.pair.lj.phase_in","true");
     }    
     
     if (m_rcut > m_nlist->get_cutoff())
@@ -166,6 +171,7 @@ public:
       m_msg->msg(Messenger::INFO,"Lennard Jones pair potential. Using default epsilon ("+lexical_cast<string>(m_eps)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["epsilon"] = m_eps;
     }
+    m_msg->write_config("potential.pair.lj.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".epsilon",lexical_cast<string>(param["epsilon"]));
     if (pair_param.find("sigma") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"Lennard Jones pair potential. Setting sigma to "+pair_param["sigma"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
@@ -176,6 +182,7 @@ public:
       m_msg->msg(Messenger::INFO,"Lennard Jones pair potential. Using default sigma ("+lexical_cast<string>(m_sigma)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["sigma"] = m_sigma;
     }
+    m_msg->write_config("potential.pair.lj.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".sigma",lexical_cast<string>(param["sigma"]));
     if (pair_param.find("rcut") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"Lennard Jones pair potential. Setting rcut to "+pair_param["rcut"]+" for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
@@ -186,6 +193,7 @@ public:
       m_msg->msg(Messenger::INFO,"Lennard Jones pair potential. Using default rcut ("+lexical_cast<string>(m_rcut)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["rcut"] = m_rcut;
     }
+    m_msg->write_config("potential.pair.lj.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".rcut",lexical_cast<string>(param["rcut"]));
        
     
     m_pair_params[type_1-1][type_2-1].eps = param["epsilon"];

@@ -61,7 +61,7 @@ Logger::Logger(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr ali
     
   m_msg->msg(Messenger::INFO,"Added logger. Logged quantities will be sent to "+file_name+".");
   m_out.open(m_file_name.c_str()); 
-  
+  m_msg->write_config("logger."+file_name+".file_name",file_name);
   // Always log step
   m_to_log.push_back("step");
   
@@ -75,6 +75,7 @@ Logger::Logger(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr ali
     m_msg->msg(Messenger::INFO,"Logs will be produced every "+params["freq"]+" time steps.");
     m_freq = lexical_cast<int>(params["freq"]);
   }
+  m_msg->write_config("logger."+file_name+".freq",lexical_cast<string>(m_freq));
   for (pairs_type::iterator it_l = params.begin(); it_l != params.end(); it_l++)
   {
     string logme = to_lower_copy((*it_l).first);
@@ -84,6 +85,7 @@ Logger::Logger(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr ali
       {
         m_msg->msg(Messenger::INFO,"Adding log quantity : "+logme+".");
         m_to_log.push_back(logme);
+        m_msg->add_config("logger."+file_name+".quantity",logme);
       }
       else
       {

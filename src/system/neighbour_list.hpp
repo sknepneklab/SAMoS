@@ -68,18 +68,21 @@ public:
   //! \param pad Padding distance
   NeighbourList(SystemPtr sys, MessengerPtr msg, double cutoff, double pad) : m_system(sys), m_msg(msg), m_cut(cutoff), m_pad(pad)
   {
-   
+    m_msg->write_config("nlist.cut",lexical_cast<string>(m_cut));
+    m_msg->write_config("nlist.pad",lexical_cast<string>(m_pad));
     // Check if box is large enough for cell list
     if (m_system->get_box()->Lx > 2.0*(cutoff+pad) && m_system->get_box()->Ly > 2.0*(cutoff+pad) && m_system->get_box()->Lz > 2.0*(cutoff+pad))
     {
       m_use_cell_list = true;
       m_cell_list = boost::shared_ptr<CellList>(new CellList(m_system,m_msg,cutoff+pad));
       m_msg->msg(Messenger::INFO,"Using cell lists for neighbour list builds.");
+      m_msg->write_config("nlist.build_type","cell");
     }
     else
     {
       m_use_cell_list = false;
       m_msg->msg(Messenger::INFO,"Box dimensions are too small to be able to use cell lists. Neighbour list will be built using N^2 algorithm.");
+      m_msg->write_config("nlist.build_type","n_square");
     }
     this->build();
   }

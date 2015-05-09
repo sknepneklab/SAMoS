@@ -54,6 +54,9 @@ public:
     m_ly = m_system->get_box()->Ly;
     m_lz = m_system->get_box()->Lz;
     m_msg->msg(Messenger::INFO,"Actomyosin constraint. Setting box dimensions to lx = "+lexical_cast<string>(m_lx)+", ly = "+lexical_cast<string>(m_ly)+", and lz ="+lexical_cast<string>(m_lz)+".");
+    m_msg->write_config("constraint.actomyo.lx",lexical_cast<string>(m_lx));
+    m_msg->write_config("constraint.actomyo.ly",lexical_cast<string>(m_ly));
+    m_msg->write_config("constraint.actomyo.lz",lexical_cast<string>(m_lz));
   }
   
   //! Enforce constraint

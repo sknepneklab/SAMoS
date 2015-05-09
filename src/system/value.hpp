@@ -118,6 +118,8 @@ public:
   ValueConstant(MessengerPtr msg, pairs_type& param) : Value(msg, param)  
   {  
     m_msg->msg(Messenger::INFO,"Using constant value object.");
+    m_msg->write_config("value.constant.val",lexical_cast<string>(m_min_val));
+    m_msg->write_config("value.constant.steps",lexical_cast<string>(m_steps));
   }
         
   //! Return current value
@@ -152,6 +154,10 @@ public:
       throw runtime_error("Value parameters. Zero steps given.");
     }
     m_dv = (m_max_val - m_min_val)/static_cast<double>(m_steps);
+    m_msg->write_config("value.linear.min_val",lexical_cast<string>(m_min_val));
+    m_msg->write_config("value.linear.max_val",lexical_cast<string>(m_max_val));
+    m_msg->write_config("value.linear.steps",lexical_cast<string>(m_steps));
+    m_msg->write_config("value.linear.dv",lexical_cast<string>(m_dv));
   }
         
   //! Return current value

@@ -60,15 +60,18 @@ public:
       m_msg->msg(Messenger::INFO,"Actomyo dynamics integrator. Setting zeta to "+param["zeta"]+".");
       m_zeta = lexical_cast<double>(param["zeta"]);
     }
+    m_msg->write_config("integrator.actomyo.zeta",lexical_cast<string>(m_zeta));
     if (param.find("seed") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Actomyo dynamics integrator. No random number generator seed specified. Using default 0.");
       m_rng = make_shared<RNG>(0);
+      m_msg->write_config("integrator.actomyo.seed",lexical_cast<string>(0));
     }
     else
     {
       m_msg->msg(Messenger::INFO,"Actomyo dynamics integrator. Setting random number generator seed to "+param["seed"]+".");
       m_rng = make_shared<RNG>(lexical_cast<int>(param["seed"]));
+      m_msg->write_config("integrator.actomyo.seed",param["seed"]);
     }
     if (param.find("f") == param.end())
     {
@@ -80,6 +83,7 @@ public:
       m_msg->msg(Messenger::INFO,"Actomyo dynamics integrator. Setting active force on myosin to "+param["f"]+".");
       m_f_active = lexical_cast<double>(param["f"]);
     }
+    m_msg->write_config("integrator.actomyo.f",lexical_cast<string>(m_f_active));
   }
   
   //! Propagate system for a time step

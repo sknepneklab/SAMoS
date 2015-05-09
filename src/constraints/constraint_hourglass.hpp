@@ -67,6 +67,7 @@ public:
       m_msg->msg(Messenger::INFO,"Hourglass constraint. Radius set to "+param["R"]+".");
       m_R = lexical_cast<double>(param["R"]);
     }
+    m_msg->write_config("constraint.hourglass.R",lexical_cast<string>(m_R));
     if (param.find("A") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Hourglass constraint. Amplitude has not been set. Assuming 1.0");
@@ -82,6 +83,7 @@ public:
         throw runtime_error("Hourglass constraint. Amplitude too large.");
       }
     }
+    m_msg->write_config("constraint.hourglass.A",lexical_cast<string>(m_A));
     if (param.find("n") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Hourglass constraint. Number of nodes not set. Assuming 1.");
@@ -92,6 +94,7 @@ public:
       m_msg->msg(Messenger::INFO,"Hourglass constraint. Number of nodes set to "+param["n"]+".");
       m_n = lexical_cast<double>(param["n"]);
     }
+    m_msg->write_config("constraint.hourglass.n",lexical_cast<string>(m_n));
   }
   
   //! Computes normal to the surface

@@ -68,6 +68,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global potential strength (alpha) for Coulomb pair potential is set to "+param["alpha"]+".");
       m_alpha = lexical_cast<double>(param["alpha"]);
     }
+    m_msg->write_config("potential.pair.coulomb.alpha",lexical_cast<string>(m_alpha));
     
     if (param.find("sigma") == param.end())
     {
@@ -79,10 +80,12 @@ public:
       m_msg->msg(Messenger::INFO,"Global particle diameter (sigma) for Coulomb pair potential is set to "+param["sigma"]+".");
       m_sigma = lexical_cast<double>(param["sigma"]);
     }
+    m_msg->write_config("potential.pair.coulomb.sigma",lexical_cast<string>(m_sigma));
     if (param.find("phase_in") != param.end())
     {
       m_msg->msg(Messenger::INFO,"Coulomb pair potential. Gradually phasing in the potential for new particles.");
       m_phase_in = true;
+      m_msg->write_config("potential.pair.coulomb.phase_in","true");
     }    
     
     m_pair_params = new CoulombParameters*[ntypes];
@@ -144,7 +147,9 @@ public:
       m_msg->msg(Messenger::INFO,"Coulomb pair potential. Using default sigma ("+lexical_cast<string>(m_sigma)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["sigma"] = m_sigma;
     }
-    
+    m_msg->write_config("potential.pair.coulomb.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".alpha",lexical_cast<string>(param["alpha"]));
+    m_msg->write_config("potential.pair.coulomb.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".sigma",lexical_cast<string>(param["sigma"]));
+        
     m_pair_params[type_1-1][type_2-1].alpha = param["alpha"];
     if (type_1 != type_2)
       m_pair_params[type_2-1][type_1-1].alpha = param["alpha"];

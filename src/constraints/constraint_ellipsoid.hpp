@@ -61,6 +61,7 @@ public:
       m_msg->msg(Messenger::INFO,"Ellipsoid constraint. Parameter a set to "+param["a"]+".");
       m_a = lexical_cast<double>(param["a"]);
     }
+    m_msg->write_config("constraint.ellipsoid.a",lexical_cast<string>(m_a));
     if (param.find("b") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Ellipsoid constraint. No parameter b. Assuming 1.");
@@ -71,6 +72,7 @@ public:
       m_msg->msg(Messenger::INFO,"Ellipsoid constraint. Parameter b set to "+param["b"]+".");
       m_b = lexical_cast<double>(param["b"]);
     }
+    m_msg->write_config("constraint.ellipsoid.b",lexical_cast<string>(m_b));
     if (param.find("c") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Ellipsoid constraint. No parameter c. Assuming 1.");
@@ -81,6 +83,7 @@ public:
       m_msg->msg(Messenger::INFO,"Ellipsoid constraint. Parameter c set to "+param["c"]+".");
       m_c = lexical_cast<double>(param["c"]);
     }
+    m_msg->write_config("constraint.ellipsoid.c",lexical_cast<string>(m_c));
   }
   
   //! Computes normal to the surface

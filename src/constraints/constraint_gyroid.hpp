@@ -52,7 +52,7 @@ public:
   //! \param param parameters that define the manifolds 
   ConstraintGyroid(SystemPtr sys, MessengerPtr msg, pairs_type& param) : Constraint(sys,msg,param)
   { 
-    
+    m_msg->write_config("constraint.gyroid.type","gyroid");
   }
   
   //! Computes normal to the surface

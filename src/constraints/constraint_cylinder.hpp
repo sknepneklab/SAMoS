@@ -61,6 +61,7 @@ public:
       m_msg->msg(Messenger::INFO,"Cylindrical constraint. Radius set to "+param["r"]+".");
       m_r = lexical_cast<double>(param["r"]);
     }
+    m_msg->write_config("constraint.cylinder.r",lexical_cast<string>(m_r));
   }
   
   //! Enforce constraint

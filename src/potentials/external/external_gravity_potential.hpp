@@ -54,6 +54,7 @@ public:
       m_msg->msg(Messenger::INFO,"Strength of the gravitational potential set to "+param["g"]+".");
       m_g = lexical_cast<double>(param["g"]);
     }
+    m_msg->write_config("potential.external.gravity.g",lexical_cast<string>(m_g));
   }
                                                                                                                 
   //! Get the total potential energy
@@ -82,6 +83,7 @@ public:
       m_msg->msg(Messenger::INFO,"External gravitational potential. Using default g ("+lexical_cast<string>(m_g)+") for particle pair of type "+lexical_cast<string>(type)+").");
       param["g"] = m_g;
     }
+    m_msg->write_config("potential.external.gravity.type_"+pair_param["type"]+".g",lexical_cast<string>(param["g"]));
 
     m_type_params[type]["g"] = param["g"];
     

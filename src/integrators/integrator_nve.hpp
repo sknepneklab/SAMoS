@@ -53,17 +53,20 @@ public:
   //! \param param Contains information about all parameters 
   IntegratorNVE(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstraintPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
   { 
+    m_msg->write_config("integrator.nve","");
     if (param.find("limit") != param.end())
     {
       m_msg->msg(Messenger::WARNING,"NVE integrator has limit on the maximum particle displacement. It is set to "+param["limit"]+".");
       m_limit = lexical_cast<double>(param["limit"]);;
       m_has_limit = true;
+      m_msg->write_config("integrator.nve.limit",lexical_cast<string>(m_limit));
     }
     if (param.find("angle_limit") != param.end())
     {
       m_msg->msg(Messenger::WARNING,"NVE integrator has limit on the maximum rotation of the director. It is set to "+param["angle_limit"]+".");
       m_theta_limit = lexical_cast<double>(param["angle_limit"]);;
       m_has_theta_limit = true;
+      m_msg->write_config("integrator.nve.angle_limit",lexical_cast<string>(m_theta_limit));
     }
   }
   

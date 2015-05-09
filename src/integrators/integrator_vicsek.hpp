@@ -59,6 +59,7 @@ public:
       m_msg->msg(Messenger::INFO,"Vicsek dynamic integrator. Setting random noise distribution width to "+param["eta"]+".");
       m_eta = lexical_cast<double>(param["eta"]);
     }
+    m_msg->write_config("integrator.vicsek.eta",lexical_cast<string>(m_eta));
     if (param.find("mu") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Vicsek dynamic integrator. Mobility not set. Using default value 0.");
@@ -71,15 +72,18 @@ public:
       if (m_mu != 0.0)
         m_msg->msg(Messenger::WARNING,"Original Vicsek dynamics has no pairwise interaction term beyond the alignment. Using modified approach");
     }
+    m_msg->write_config("integrator.vicsek.mu",lexical_cast<string>(m_mu));
     if (param.find("seed") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Vicsek dynamic integrator. No random number generator seed specified. Using default 0.");
       m_rng = make_shared<RNG>(0);
+      m_msg->write_config("integrator.vicsek.seed",lexical_cast<string>(0));
     }
     else
     {
       m_msg->msg(Messenger::INFO,"Vicsek dynamic integrator. Setting random number generator seed to "+param["seed"]+".");
       m_rng = make_shared<RNG>(lexical_cast<int>(param["seed"]));
+      m_msg->write_config("integrator.vicsek.seed",param["seed"]);
     }
     if (param.find("v0") == param.end())
     {
@@ -91,6 +95,7 @@ public:
       m_msg->msg(Messenger::INFO,"Velocity magnitude (v0) for Vicsek integrator is set to "+param["v0"]+".");
       m_v0 = lexical_cast<double>(param["v0"]);
     }
+    m_msg->write_config("integrator.vicsek.v0",lexical_cast<string>(m_v0));
   }
   
   //! Propagate system for a time step

@@ -82,6 +82,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_ext = m_type_ext[m_type];
     m_msg->msg(Messenger::INFO,"Dump will be sent to the file with base name "+m_file_name+" with extension "+m_ext+".");
   }
+  m_msg->write_config("dump."+m_type+".extension",m_ext);
   if (params.find("start") == params.end())
   {
     m_msg->msg(Messenger::WARNING,"No starting step for dump specified. Using default 0, i.e., start dumping after at the beginning of the simulation.");
@@ -92,6 +93,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_msg->msg(Messenger::INFO,"Dumping will start after "+params["start"]+" time steps.");
     m_start = lexical_cast<int>(params["start"]);
   }
+  m_msg->write_config("dump."+m_type+".start",lexical_cast<string>(m_start));
   if (params.find("freq") == params.end())
   {
     m_msg->msg(Messenger::WARNING,"No dump frequency specified. Using default of dumping each 100 time steps.");
@@ -102,6 +104,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_msg->msg(Messenger::INFO,"Dump will be produced every "+params["freq"]+" time steps.");
     m_freq = lexical_cast<int>(params["freq"]);
   }
+  m_msg->write_config("dump."+m_type+".freq",lexical_cast<string>(m_freq));
   if (params.find("multi") == params.end())
   {
     m_msg->msg(Messenger::WARNING,"All time steps will be concatenated to a single file.");
@@ -114,10 +117,12 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_msg->msg(Messenger::INFO,"Each dumped time step will be stored in a separate file labelled by the time step.");
     m_multi_print = true;
   }
+  m_msg->write_config("dump."+m_type+".file_name",m_file_name);
   if (params.find("header") != params.end())
   {
     m_print_header = true;
     m_msg->msg(Messenger::INFO,"Include info header into the dump file.");
+    m_msg->write_config("dump."+m_type+".header","true");
   }
   if (m_type == "dcd")
   {

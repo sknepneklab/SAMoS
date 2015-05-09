@@ -77,6 +77,8 @@ public:
       m_msg->msg(Messenger::INFO,"Global potential strength (k) for rod pair potential is set to "+param["k"]+".");
       m_k = lexical_cast<double>(param["k"]);
     }
+    m_msg->write_config("potential.pair.rod.k",lexical_cast<string>(m_k));
+    
     if (param.find("push") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No overlap push specified for rod pair potential. Setting it to 5.");
@@ -87,10 +89,13 @@ public:
       m_msg->msg(Messenger::INFO,"Overlap push for rod pair potential is set to "+param["push"]+".");
       m_push = lexical_cast<double>(param["push"]);
     }
+    m_msg->write_config("potential.pair.rod.push",lexical_cast<string>(m_push));
+    
     if (param.find("phase_in") != param.end())
     {
       m_msg->msg(Messenger::INFO,"Rod pair potential. Gradually phasing in the potential for new particles.");
       m_phase_in = true;
+      m_msg->write_config("potential.pair.rod.phase_in","true");
     }    
     if (param.find("model") == param.end())
     {
@@ -102,6 +107,7 @@ public:
       m_msg->msg(Messenger::INFO,"Contact model for rod pair potential is set to "+param["model"]+".");
       m_model = param["model"];
     }
+    m_msg->write_config("potential.pair.rod.model",m_model);
     
     m_pair_params = new RodParameters*[ntypes];
     for (int i = 0; i < ntypes; i++)
@@ -148,6 +154,7 @@ public:
       m_msg->msg(Messenger::INFO,"Rod pair potential. Using default strength ("+lexical_cast<string>(m_k)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["k"] = m_k;
     }
+    m_msg->write_config("potential.pair.rod.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".k",lexical_cast<string>(param["k"]));
     if (pair_param.find("push") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"Rod pair potential. Setting overlap push to "+pair_param["push"]+" for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
@@ -158,6 +165,7 @@ public:
       m_msg->msg(Messenger::INFO,"Rod pair potential. Using default overlap push ("+lexical_cast<string>(m_push)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["push"] = m_push;
     }
+    m_msg->write_config("potential.pair.rod.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".push",lexical_cast<string>(param["push"]));
            
     m_pair_params[type_1-1][type_2-1].k = param["k"];
     if (type_1 != type_2)

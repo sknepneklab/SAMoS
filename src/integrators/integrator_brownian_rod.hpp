@@ -60,6 +60,7 @@ public:
       m_msg->msg(Messenger::INFO,"Brownian rod dynamics integrator. Setting magnitude of active velocity to "+param["v0"]+".");
       m_v0 = lexical_cast<double>(param["v0"]);
     }
+    m_msg->write_config("integrator.brownian_rod.v0",lexical_cast<string>(m_v0));
     if (param.find("D0") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Brownian rod dynamics integrator. Bare diffusion constant D0 not set. Using default value 1.");
@@ -70,15 +71,18 @@ public:
       m_msg->msg(Messenger::INFO,"Brownian rod dynamics integrator. Setting bare diffusion constant to "+param["D0"]+".");
       m_D0 = lexical_cast<double>(param["D0"]);
     }
+    m_msg->write_config("integrator.brownian_rod.D0",lexical_cast<string>(m_D0));
     if (param.find("seed") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Brownian rod dynamics integrator. No random number generator seed specified. Using default 0.");
       m_rng = make_shared<RNG>(0);
+      m_msg->write_config("integrator.brownian_rod.seed",lexical_cast<string>(0));
     }
     else
     {
       m_msg->msg(Messenger::INFO,"Brownian rod dynamics integrator. Setting random number generator seed to "+param["seed"]+".");
       m_rng = make_shared<RNG>(lexical_cast<int>(param["seed"]));
+      m_msg->write_config("integrator.brownian_rod.seed",param["seed"]);
     }
     if (param.find("nematic") == param.end())
     {
@@ -89,21 +93,25 @@ public:
     {
       m_msg->msg(Messenger::INFO,"Brownian rod dynamics integrator. Assuming nematic order parameter.");
       m_nematic = true;
+      m_msg->write_config("integrator.brownian_rod.nematic","true");
       if (param.find("tau") == param.end())
       {
         m_msg->msg(Messenger::WARNING,"Brownian rod dynamics integrator. Nematic systems No flip rate given. Assuming default 1.");
         m_tau = m_dt/1.0;
+        m_msg->write_config("integrator.brownian_rod.tau",lexical_cast<string>(1));
       }
       else
       {
         m_msg->msg(Messenger::INFO,"Brownian rod dynamics integrator. Nematic system. Setting flip rate to "+param["tau"]+".");
         m_tau = m_dt/lexical_cast<double>(param["tau"]);
       }
+       m_msg->write_config("integrator.brownian_rod.tau",param["tau"]);
     }
     if (param.find("positional_noise") != param.end())
     {
       m_msg->msg(Messenger::INFO,"Brownian rod dynamics integrator. Adding positional random noise.");
       m_pos_noise = true;
+      m_msg->write_config("integrator.brownian_rod.positional_noise","true");
     }
   }
   

@@ -61,6 +61,7 @@ public:
       m_msg->msg(Messenger::INFO,"Toroidal constraint. Radius set to "+param["c"]+".");
       m_c = lexical_cast<double>(param["c"]);
     }
+    m_msg->write_config("constraint.torus.c",lexical_cast<string>(m_c));
     if (param.find("a") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Toroidal constraint. No tube radius set. Assuming 0.5.");
@@ -71,6 +72,7 @@ public:
       m_msg->msg(Messenger::INFO,"Toroidal constraint. Tube radius set to "+param["a"]+".");
       m_a = lexical_cast<double>(param["a"]);
     }
+    m_msg->write_config("constraint.torus.a",lexical_cast<string>(m_a));
     if (m_a >= m_c)
     {
       m_msg->msg(Messenger::ERROR,"Toroidal constraint. Tube radius has to be smaller than torus radius.");

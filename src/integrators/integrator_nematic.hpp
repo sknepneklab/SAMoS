@@ -61,6 +61,7 @@ public:
       m_msg->msg(Messenger::INFO,"Nematic dynamic integrator. Setting elementary displacement d0 to "+param["d0"]+".");
       m_d0 = lexical_cast<double>(param["d0"]);
     }
+    m_msg->write_config("integrator.nematic.d0",lexical_cast<string>(m_d0));
     if (param.find("nu") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Nematic dynamic integrator. Rotational diffusion rate not set. Using default value 1.");
@@ -71,6 +72,7 @@ public:
       m_msg->msg(Messenger::INFO,"Nematic dynamic integrator. Setting rotational diffusion rate to "+param["nu"]+".");
       m_nu = lexical_cast<double>(param["nu"]);
     }
+    m_msg->write_config("integrator.nematic.nu",lexical_cast<string>(m_nu));
     if (param.find("mu") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Nematic dynamic integrator. Mobility not set. Using default value 1.");
@@ -81,15 +83,18 @@ public:
       m_msg->msg(Messenger::INFO,"Nematic dynamic integrator. Setting mobility to "+param["mu"]+".");
       m_mu = lexical_cast<double>(param["mu"]);
     }
+    m_msg->write_config("integrator.nematic.mu",lexical_cast<string>(m_mu));
     if (param.find("seed") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Nematic dynamic integrator. No random number generator seed specified. Using default 0.");
       m_rng = make_shared<RNG>(0);
+      m_msg->write_config("integrator.nematic.seed",lexical_cast<string>(0));
     }
     else
     {
       m_msg->msg(Messenger::INFO,"Nematic dynamic integrator. Setting random number generator seed to "+param["seed"]+".");
       m_rng = make_shared<RNG>(lexical_cast<int>(param["seed"]));
+      m_msg->write_config("integrator.nematic.seed",param["seed"]);
     }
     m_stoch_coeff = sqrt(m_nu*m_dt);
   }

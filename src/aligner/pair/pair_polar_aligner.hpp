@@ -70,6 +70,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global coupling constant (J) for polar alignment is set to "+param["J"]+".");
       m_J = lexical_cast<double>(param["J"]);
     }
+    m_msg->write_config("aligner.pair.polar.J",lexical_cast<string>(m_J));
     if (param.find("rcut") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No cutoff distance (rcut) specified for polar alignment. Setting it to the global neighbour list cutoff.");
@@ -80,6 +81,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global cutoff distance (rcut) for polar alignment is set to "+param["rcut"]+".");
       m_rcut = lexical_cast<double>(param["rcut"]);
     }
+    m_msg->write_config("aligner.pair.polar.rcut",lexical_cast<string>(m_rcut));
     m_pair_params = new PolarAlignParameters*[ntypes];
     for (int i = 0; i < ntypes; i++)
     {
@@ -128,6 +130,7 @@ public:
       m_msg->msg(Messenger::INFO,"Polar pairwise alignment. Using default strength ("+lexical_cast<string>(m_J)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["J"] = m_J;
     }
+    m_msg->write_config("aligner.pair.polar.types."+pair_param["type_1"]+"_and_"+pair_param["type_2"]+".J",lexical_cast<string>(param["J"]));
     if (pair_param.find("rcut") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"Polar pairwise alignment. Setting cutoff distance to "+pair_param["rcut"]+" for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
@@ -137,7 +140,8 @@ public:
     {
       m_msg->msg(Messenger::INFO,"Polar pairwise alignment. Using default cutoff distance ("+lexical_cast<string>(m_rcut)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["rcut"] = m_rcut;
-    }    
+    } 
+    m_msg->write_config("aligner.pair.polar.types."+pair_param["type_1"]+"_and_"+pair_param["type_2"]+".rcut",lexical_cast<string>(param["rcut"]));
     
     m_pair_params[type_1-1][type_2-1].J = param["J"];
     if (type_1 != type_2)

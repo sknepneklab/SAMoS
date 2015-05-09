@@ -36,6 +36,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+#include <boost/property_tree/info_parser.hpp>
 
 using std::ostream;
 using std::cout;
@@ -76,20 +77,29 @@ public:
   //! Add configuration file handling
   //! \param filename configuration file
   //! \param type type of the configuration file (XML or JSON)
-  void add_config(const string& filename, const string& type)
+  void add_config_file(const string& filename, const string& type)
   {
     m_config_type = type;
     m_config_file = filename;
     m_has_config = true;
   }
   
-  //! Writes a note to the configuration file
+  //! Writes a node to the configuration file
   //! \param key name of the node to write
   //! \param val value to write
   void write_config(const string& key, const string& val)
   {
     if (m_has_config)
       m_config.put(key,val);
+  }
+  
+  //! Adds a node to the configuration file (does not overwrite)
+  //! \param key name of the node to write
+  //! \param val value to write
+  void add_config(const string& key, const string& val)
+  {
+    if (m_has_config)
+      m_config.add(key,val);
   }
   
   //! Output message

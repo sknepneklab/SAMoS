@@ -65,7 +65,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global stiffness (k) for cosine angle potential is set to "+param["k"]+".");
       m_k = lexical_cast<double>(param["k"]);
     }
-    
+    m_msg->write_config("potential.angle.cosine.k",lexical_cast<string>(m_k));
     m_angle_params = new AngleCosineParameters[ntypes];
     for (int i = 0; i < ntypes; i++)
     {
@@ -102,6 +102,7 @@ public:
       m_msg->msg(Messenger::INFO,"Cosine angle potential. Using default stiffness ("+lexical_cast<string>(m_k)+") for angles of types "+lexical_cast<string>(type)+".");
       param["k"] = m_k;
     }
+    m_msg->write_config("potential.angle.cosine.type_"+angle_param["type"]+".k",lexical_cast<string>(param["k"]));
         
     m_angle_params[type-1].k = param["k"];
          

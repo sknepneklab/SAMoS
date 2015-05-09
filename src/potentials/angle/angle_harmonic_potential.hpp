@@ -66,7 +66,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global stiffness (k) for harmonic angle potential is set to "+param["k"]+".");
       m_k = lexical_cast<double>(param["k"]);
     }
-    
+    m_msg->write_config("potential.angle.harmonic.k",lexical_cast<string>(m_k));
     if (param.find("t_eq") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No equilibrium angle (t0) specified for harmonic angle potential. Setting it to pi.");
@@ -77,6 +77,7 @@ public:
       m_msg->msg(Messenger::INFO,"Global equilibrium angle (t0) for harmonic angle potential is set to "+param["t_eq"]+".");
       m_t0 = lexical_cast<double>(param["t_eq"]);
     }
+    m_msg->write_config("potential.angle.harmonic.t_eq",lexical_cast<string>(m_t0));
     m_angle_params = new AngleHarmoicParameters[ntypes];
     for (int i = 0; i < ntypes; i++)
     {
@@ -124,6 +125,8 @@ public:
       m_msg->msg(Messenger::INFO,"Harmonic angle potential. Using default equilibrium angle ("+lexical_cast<string>(m_t0)+") for angles of types "+lexical_cast<string>(type)+".");
       param["t_eq"] = m_t0;
     }
+    m_msg->write_config("potential.angle.harmonic.type_"+angle_param["type"]+".k",lexical_cast<string>(param["k"]));
+    m_msg->write_config("potential.angle.harmonic.type_"+angle_param["type"]+".t_eq",lexical_cast<string>(param["t_eq"]));
     
     m_angle_params[type-1].k = param["k"];
     m_angle_params[type-1].t0 = param["t_eq"];
