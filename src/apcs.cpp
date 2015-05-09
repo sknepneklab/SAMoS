@@ -804,7 +804,11 @@ int main(int argc, char* argv[])
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), run_parser, qi::space))
             {
               msg->msg(Messenger::INFO,"Starting simulation run for "+lexical_cast<string>(run_data.steps)+" steps.");
-              msg->add_config("run.steps",lexical_cast<string>(run_data.steps));
+              for (std::map<std::string, IntegratorPtr>::iterator it_integ = integrator.begin(); it_integ != integrator.end(); it_integ++)
+              {
+                std::string integrator_name = (*it_integ).first;
+                msg->add_config("run."+integrator_name+".steps",lexical_cast<string>(run_data.steps));
+              }
               // Precompute forces and torques
               if (pot)
                 pot->compute(1e-3);  // Some value to make sure phase in is working.
