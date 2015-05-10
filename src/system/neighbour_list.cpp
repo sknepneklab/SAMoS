@@ -68,11 +68,18 @@ bool NeighbourList::build_faces()
   int N = m_system->size(); 
   graph g(N);
   
+  // wipe old face list
+  if (m_faces.faces.size() > 0)
+  {
+    for (unsigned int i = 0; i < m_faces.faces.size(); i++)
+      m_faces.faces[i].clear();
+    m_faces.faces.clear();
+  }
+  
   for (int i = 0; i < N; i++)
     for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
       boost::add_edge(i,m_contact_list[i][j],g);
-      
-   
+  
   // Initialize the interior edge index
   boost::property_map<graph, boost::edge_index_t>::type e_index = boost::get(boost::edge_index, g);
   boost::graph_traits<graph>::edges_size_type edge_count = 0;
