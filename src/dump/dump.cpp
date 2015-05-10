@@ -54,6 +54,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
   m_type_ext["xyzc"] = "xyzc";
   m_type_ext["mol2"] = "mol2";
   m_type_ext["contact"] = "con";
+  m_type_ext["face"] = "fc";
   
   if (nlist)
     m_nlist = nlist;
@@ -244,6 +245,8 @@ void Dump::dump(int step)
     this->dump_mol2();
   else if (m_type == "contact")
     this->dump_contact();
+  else if (m_type == "face")
+    this->dump_faces();
   
   if (m_multi_print)
     m_out.close();
@@ -590,6 +593,34 @@ void Dump::dump_contact()
             m_out << format("\t%d\t%d") % pi.get_flag() % pj.get_flag();
           m_out << endl;
         }
+      }
+    }
+  }
+}
+
+//! Dump faces based on the contact network for particles
+//! Format is a simple text file with f+1 columns, where f in the number of vertices in a face
+//! Column 1: contact id (starting with 0)
+void Dump::dump_faces()
+{
+  if (!m_nlist)
+  {
+    m_msg->msg(Messenger::ERROR,"In order to produce faces based on the contact network you need to specify neighbour list. Please use nlist command.");
+    throw runtime_error("No neighbour list specified for faces dump.");
+  }
+  else if (m_nlist->has_faces())
+  {
+    if (m_print_header)
+       m_out << "#  face_id   partice_ids";
+    if (m_nlist->build_faces())
+    {
+      vector<vector<int> > faces = m_nlist->get_faces();
+      for (unsigned int i = 0; i < faces.size(); i++)
+      {
+        m_out << format("%d  ") % i;
+        for (unsigned int j = 0; j < faces[i].size(); j++)
+          m_out << format("%d ") % faces[i][j];
+        m_out << endl;
       }
     }
   }

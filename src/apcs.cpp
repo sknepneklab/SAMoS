@@ -300,12 +300,6 @@ int main(int argc, char* argv[])
                 std::cerr << "System has not been defined. Please define system using \"input\" command before adding any pair potentials." << std::endl;
               throw std::runtime_error("System not defined.");
             }
-            if (!defined["nlist"]) // Create a default neighbour list if none has been defined
-            {
-              msg->msg(Messenger::WARNING,"No neighbour list defined. Some pair potentials (e.g. Lennard-Jones) need it. We are making one with default cutoff and padding.");
-              nlist = boost::make_shared<NeighbourList>(NeighbourList(sys,msg,DEFAULT_CUTOFF,DEFAULT_PADDING));
-              defined["nlist"] = true;
-            }
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), potential_parser, qi::space))
             {
               if (!has_potential) 
@@ -315,6 +309,12 @@ int main(int argc, char* argv[])
               }
               if (qi::phrase_parse(potential_data.params.begin(), potential_data.params.end(), param_parser, qi::space, parameter_data))
               {
+                if (!defined["nlist"]) // Create a default neighbour list if none has been defined
+                {
+                  msg->msg(Messenger::WARNING,"No neighbour list defined. Some pair potentials (e.g. Lennard-Jones) need it. We are making one with default cutoff and padding.");
+                  nlist = boost::make_shared<NeighbourList>(NeighbourList(sys,msg,DEFAULT_CUTOFF,DEFAULT_PADDING,parameter_data));
+                  defined["nlist"] = true;
+                }
                 std::string phase_in = "constant";
                 if (parameter_data.find("phase_in") != parameter_data.end())
                     phase_in = parameter_data["phase_in"];                
@@ -518,7 +518,7 @@ int main(int argc, char* argv[])
               double pad = DEFAULT_PADDING;
               if (parameter_data.find("rcut") != parameter_data.end()) rcut = lexical_cast<double>(parameter_data["rcut"]);
               if (parameter_data.find("pad") != parameter_data.end())  pad = lexical_cast<double>(parameter_data["pad"]);
-              nlist = boost::make_shared<NeighbourList>(NeighbourList(sys,msg,rcut,pad));
+              nlist = boost::make_shared<NeighbourList>(NeighbourList(sys,msg,rcut,pad,parameter_data));
               msg->msg(Messenger::INFO,"Created neighbour list with cutoff "+lexical_cast<string>(rcut)+" and padding distance "+lexical_cast<string>(pad)+".");
               defined["nlist"] = true;
             }
@@ -884,12 +884,6 @@ int main(int argc, char* argv[])
                 std::cerr << "System has not been defined. Please define system using \"input\" command before adding any pairwise aligners." << std::endl;
               throw std::runtime_error("System not defined.");
             }
-            if (!defined["nlist"]) // Create a default neighbour list if non has been defined
-            {
-              msg->msg(Messenger::WARNING,"No neighbour list defined. Some pair aligners (e.g. mf) need it. We are making one with default cutoff and padding.");
-              nlist = boost::make_shared<NeighbourList>(NeighbourList(sys,msg,DEFAULT_CUTOFF,DEFAULT_PADDING));
-              defined["nlist"] = true;
-            }
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), align_parser, qi::space))
             {
               if (!has_aligner) 
@@ -899,6 +893,12 @@ int main(int argc, char* argv[])
               }
               if (qi::phrase_parse(pair_align_data.params.begin(), pair_align_data.params.end(), param_parser, qi::space, parameter_data))
               {
+                if (!defined["nlist"]) // Create a default neighbour list if non has been defined
+                {
+                  msg->msg(Messenger::WARNING,"No neighbour list defined. Some pair aligners (e.g. mf) need it. We are making one with default cutoff and padding.");
+                  nlist = boost::make_shared<NeighbourList>(NeighbourList(sys,msg,DEFAULT_CUTOFF,DEFAULT_PADDING, parameter_data));
+                  defined["nlist"] = true;
+                }
                 aligner->add_pair_align(pair_align_data.type, pair_aligners[pair_align_data.type](sys,msg,nlist,parameter_data));
                 msg->msg(Messenger::INFO,"Added "+pair_align_data.type+" to the list of pairwise aligners.");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)

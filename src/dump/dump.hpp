@@ -109,6 +109,8 @@ private:
   void dump_mol2();
   //! Dump contact network for further analysis
   void dump_contact();
+  //! Dump faces based on the contact network
+  void dump_faces();
   
 };
 

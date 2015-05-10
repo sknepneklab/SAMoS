@@ -30,18 +30,66 @@ void NeighbourList::build()
 {
  
  m_list.clear();
+ if (m_build_contacts)
+   m_contact_list.clear();
   
  for (int i = 0; i < m_system->size(); i++)
  {
    Particle& p = m_system->get_particle(i);
    p.coordination = 0;
    m_list.push_back(vector<int>());
+   if (m_build_contacts)
+     m_contact_list.push_back(vector<int>());
  }
   
  if (m_use_cell_list) 
     this->build_cell();
   else
     this->build_nsq();
+  
+  if (m_build_contacts)
+    this->build_contacts();
+}
+
+/*! Build faces using contact network 
+ *  Assumes that contacts have been built. 
+**/
+bool NeighbourList::build_faces()
+{
+  typedef boost::adjacency_list
+       <  boost::vecS, 
+          boost::vecS, 
+          boost::undirectedS, 
+          boost::property<boost::vertex_index_t, int>,
+          boost::property<boost::edge_index_t, int>
+        > 
+        graph;
+  
+  int N = m_system->size(); 
+  graph g(N);
+  
+  for (int i = 0; i < N; i++)
+    for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
+      boost::add_edge(i,m_contact_list[i][j],g);
+      
+   
+  // Initialize the interior edge index
+  boost::property_map<graph, boost::edge_index_t>::type e_index = boost::get(boost::edge_index, g);
+  boost::graph_traits<graph>::edges_size_type edge_count = 0;
+  boost::graph_traits<graph>::edge_iterator ei, ei_end;
+  for(boost::tie(ei, ei_end) = boost::edges(g); ei != ei_end; ++ei)
+    boost::put(e_index, *ei, edge_count++);
+  
+  // compute the planar embedding as a side-effect
+  typedef vector< boost::graph_traits<graph>::edge_descriptor > vec_t;
+  vector<vec_t> embedding(boost::num_vertices(g));
+  if(boost::boyer_myrvold_planarity_test(boost::boyer_myrvold_params::graph = g, boost::boyer_myrvold_params::embedding = &embedding[0]))
+    boost::planar_face_traversal(g, &embedding[0], m_faces);
+  else
+    return false;
+  
+  return true;
+   
 }
 
 /* Do actual building. */
@@ -190,4 +238,28 @@ bool NeighbourList::need_update(Particle& p)
     return false;
   else
     return true;
+}
+
+//! Builds contact list based on particle distance
+void NeighbourList::build_contacts()
+{
+  int N = m_system->size();
+  double dist = m_contact_dist;
+  for (int i = 0; i < N; i++)
+  {
+    Particle& pi = m_system->get_particle(i);
+    double ri = pi.get_radius();
+    vector<int>& neigh = this->get_neighbours(i);
+    for (unsigned int j = 0; j < neigh.size(); j++)
+    {
+      Particle& pj = m_system->get_particle(neigh[j]);
+      double rj = pj.get_radius();
+      if (m_contact_dist == 0.0)  dist = ri+rj;
+      double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
+      m_system->apply_periodic(dx,dy,dz);
+      double r_sq = dx*dx + dy*dy + dz*dz;
+      if (r_sq <= dist*dist)
+        m_contact_list[i].push_back(pj.get_id());
+    }
+  }
 }
