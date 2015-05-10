@@ -611,7 +611,7 @@ void Dump::dump_faces()
   else if (m_nlist->has_faces())
   {
     if (m_print_header)
-       m_out << "#  face_id   partice_ids";
+       m_out << "#  face_id   partice_ids" << endl;
     if (m_nlist->build_faces())
     {
       vector<vector<int> > faces = m_nlist->get_faces();
