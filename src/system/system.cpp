@@ -90,7 +90,12 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         throw runtime_error("Insufficient number of parameters in the input file.");
       }
       const int id = lexical_cast<int>(s_line[0]);  // read particle id
-      const int tp = lexical_cast<int>(s_line[1]);  // read particle type
+      const int tp = lexical_cast<int>(s_line[1]);  // read particle 
+      if (tp < 1)
+      {
+        m_msg->msg(Messenger::ERROR,"Particle type has to be positive integer.");
+        throw runtime_error("Wrong particle type.");
+      }
       const double r = lexical_cast<double>(s_line[2]);  // read particle radius
       Particle p(id, tp, r);
       p.x = lexical_cast<double>(s_line[3]);
