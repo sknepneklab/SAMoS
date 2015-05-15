@@ -836,6 +836,11 @@ int main(int argc, char* argv[])
                   {
                     (*it_pop)->divide(time_step);
                     (*it_pop)->remove(time_step);
+                    if ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist()))
+                    {
+                      nlist->build();
+                      nlist_builds++;
+                    }
                   }
                 }
                 // Check the neighbour list rebuild only if necessary 
