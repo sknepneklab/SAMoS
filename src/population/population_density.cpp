@@ -112,7 +112,6 @@ void PopulationDensity::divide(int t)
       cout << "After Divide P: Group info mismatch for group : " << m_group_name << endl;
       throw runtime_error("Group mismatch.");
     }
-    m_system->set_force_nlist_rebuild(true);
   }
 }
 
@@ -159,6 +158,5 @@ void PopulationDensity::remove(int t)
       cout << "After Remove P: Group info mismatch for group : " << m_group_name << endl;
       throw runtime_error("Group mismatch.");
     }
-    m_system->set_force_nlist_rebuild(true);
   }
 }
