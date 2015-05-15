@@ -117,6 +117,7 @@ void PopulationRandom::divide(int t)
         }
       }
     }
+    m_system->set_force_nlist_rebuild(true);
   }
 }
 
@@ -158,5 +159,6 @@ void PopulationRandom::remove(int t)
       cout << "Remove P: Group info mismatch for group : " << m_group_name << endl;
       throw runtime_error("Group mismatch.");
     }
+    m_system->set_force_nlist_rebuild(true);
   }
 }
