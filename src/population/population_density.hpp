@@ -183,7 +183,7 @@ public:
     m_msg->write_config("population.density.rho_max",lexical_cast<string>(m_rho_max));
     if (param.find("move_split") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Random population control. No split of the offspring separation set. Assuming 0.5.");
+      m_msg->msg(Messenger::WARNING,"Density population control. No split of the offspring separation set. Assuming 0.5.");
       m_alpha = 0.5;
     }
     else
