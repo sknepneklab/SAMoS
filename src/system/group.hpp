@@ -66,7 +66,7 @@ public:
   string get_name() const { return m_name; } //!< \return group name
   
   //! Get size of the group (number of particles)
-  int get_size() const { return m_size; } //!< \return group size
+  int get_size() const { return m_particles.size(); } //!< \return group size
   
   //! Add particle to a group
   //! \param id particle id to add
@@ -81,8 +81,11 @@ public:
   void remove_particle(int id) 
   { 
     vector<int>::iterator it_p = find(m_particles.begin(), m_particles.end(), id);
-    m_particles.erase(it_p);
-    m_size--;
+    if (it_p != m_particles.end())
+    {
+      m_particles.erase(it_p);
+      m_size--;
+    }
   }
   
   
@@ -94,11 +97,13 @@ public:
   {
     vector<int>::iterator it_e = find(m_particles.begin(), m_particles.end(), id);
     if (it_e != m_particles.end())
+    {
       m_particles.erase(it_e);
+      m_size--;
+    }
     for (unsigned int i = 0; i < m_particles.size(); i++)
       if (m_particles[i] > id)
         m_particles[i]--;
-      m_size--;
   }
   
   //! Get particles in the group

@@ -36,6 +36,7 @@ ostream& operator<<(ostream& out, const Particle& p)
   << format("(nx,ny,nz) : (%15.9e,%15.9e,%15.9e)\n") % p.nx % p.ny % p.nz
   << format("(fx,fy,fz) : (%15.9e,%15.9e,%15.9e)\n") % p.fx % p.fy % p.fz
   << format("omega : %15.9e\n") % p.omega
+  << format("coordination : %d\n") % p.coordination
   << format("groups : ");
   for (list<string>::const_iterator it = p.groups.begin(); it != p.groups.end(); it++)
     out << format(" %s ") % (*it);

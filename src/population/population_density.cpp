@@ -40,7 +40,7 @@
 */
 void PopulationDensity::divide(int t)
 {
-  if (t % m_freq == 0)  // Attempt division only at certain time steps
+  if (t % m_freq == 0 && m_div_rate > 0.0)  // Attempt division only at certain time steps
   { 
     if (!m_system->group_ok(m_group_name))
     {
@@ -51,7 +51,6 @@ void PopulationDensity::divide(int t)
     double new_r;   // radius of newly formed particle
     int N = m_system->get_group(m_group_name)->get_size();
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();
-    bool periodic = m_system->get_periodic();
     BoxPtr box = m_system->get_box();
     for (int i = 0; i < N; i++)
     {
@@ -63,27 +62,13 @@ void PopulationDensity::divide(int t)
         p_new.x = p.x + m_alpha*m_split_distance*p.get_radius()*p.nx;
         p_new.y = p.y + m_alpha*m_split_distance*p.get_radius()*p.ny;
         p_new.z = p.z + m_alpha*m_split_distance*p.get_radius()*p.nz;
-        if (periodic)
-        {
-          if (p_new.x > box->xhi) p_new.x -= box->Lx;
-          else if (p_new.x < box->xlo) p_new.x += box->Lx;
-          if (p_new.y > box->yhi) p_new.y -= box->Ly;
-          else if (p_new.y < box->ylo) p_new.y += box->Ly;
-          if (p_new.z > box->zhi) p_new.z -= box->Lz;
-          else if (p_new.z < box->zlo) p_new.z += box->Lz;
-        }
+        m_system->apply_periodic(p_new.x,p_new.y,p_new.z);
+        
         p.x -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.nx;
         p.y -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.ny;
         p.z -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.nz;
-        if (periodic)
-        {
-          if (p.x > box->xhi) p.x -= box->Lx;
-          else if (p.x < box->xlo) p.x += box->Lx;
-          if (p.y > box->yhi) p.y -= box->Ly;
-          else if (p.y < box->ylo) p.y += box->Ly;
-          if (p.z > box->zhi) p.z -= box->Lz;
-          else if (p.z < box->zlo) p.z += box->Lz;
-        }
+        m_system->apply_periodic(p.x,p.y,p.z);
+        
         p_new.nx = p.nx; p_new.ny = p.ny; p_new.nz = p.nz;
         p_new.vx = p.vx; p_new.vy = p.vy; p_new.vz = p.vz;
         p.age = 0.0;
@@ -141,7 +126,7 @@ void PopulationDensity::divide(int t)
 */
 void PopulationDensity::remove(int t)
 {
-  if (t % m_freq == 0)  // Attempt removal only at certain time steps
+  if (t % m_freq == 0 && m_death_rate > 0.0)  // Attempt removal only at certain time steps
   { 
     if (!m_system->group_ok(m_group_name))
     {
