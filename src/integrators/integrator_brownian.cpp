@@ -38,7 +38,7 @@ void IntegratorBrownian::integrate()
 {
   int N = m_system->get_group(m_group_name)->get_size();
   double T = m_temp->get_val(m_system->get_run_step());
-  double B = sqrt(3.0*m_mu*T);
+  double B = sqrt(2.0*m_mu*T);
   double sqrt_dt = sqrt(m_dt);
   double fd_x, fd_y, fd_z;                    // Deterministic part of the force
   double fr_x = 0.0, fr_y = 0.0, fr_z = 0.0;  // Random part of the force
@@ -86,9 +86,9 @@ void IntegratorBrownian::integrate()
     // Check is non-zero T
     if (T > 0.0)
     {
-      fr_x = B*2.0*(m_rng->drnd() - 0.5);//m_rng->gauss_rng(1.0);
-      fr_y = B*2.0*(m_rng->drnd() - 0.5);//m_rng->gauss_rng(1.0);
-      fr_z = B*2.0*(m_rng->drnd() - 0.5);//m_rng->gauss_rng(1.0);
+      fr_x = B*m_rng->gauss_rng(1.0);
+      fr_y = B*m_rng->gauss_rng(1.0);
+      fr_z = B*m_rng->gauss_rng(1.0);
       p.vx += fr_x; 
       p.vy += fr_y;
       p.vz += fr_z;  
