@@ -66,6 +66,7 @@ public:
                   | qi::as_string[keyword["active"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]   /*! Handles active potential */
                   | qi::as_string[keyword["rod"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]      /*! Handles soft rod potential */
                   | qi::as_string[keyword["ljrod"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]    /*! Handles Lennard-Jones rod potential */
+                  | qi::as_string[keyword["soft_attractive"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]    /*! Handles soft attractive potential */
                   /* to add new potential: | qi::as_string[keyword["newpotential"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&PotentialData::params, phx::ref(potential_data)) = qi::_1 ]

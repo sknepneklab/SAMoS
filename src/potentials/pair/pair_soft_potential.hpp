@@ -98,7 +98,10 @@ public:
     {
       m_pair_params[i] = new SoftParameters[ntypes];
       for (int j = 0; j < ntypes; j++)
+      {
         m_pair_params[i][j].k = m_k;
+        m_pair_params[i][j].a = m_a;
+      }
     }
     
   }
@@ -155,9 +158,9 @@ public:
     m_pair_params[type_1-1][type_2-1].k = param["k"];
     if (type_1 != type_2)
       m_pair_params[type_2-1][type_1-1].k = param["k"];
-    m_pair_params[type_1-1][type_2-1].k = param["a"];
+    m_pair_params[type_1-1][type_2-1].a = param["a"];
     if (type_1 != type_2)
-      m_pair_params[type_2-1][type_1-1].k = param["a"];
+      m_pair_params[type_2-1][type_1-1].a = param["a"];
     
     m_has_pair_params = true;
   }

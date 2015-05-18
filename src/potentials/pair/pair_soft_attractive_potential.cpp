@@ -16,16 +16,16 @@
  * ************************************************************* */
 
 /*!
- * \file pair_soft_potential.cpp
+ * \file pair_soft_attractive_potential.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 31-Oct-2013
- * \brief Implementation of PairSoftPotential class
+ * \date 18-May-2015
+ * \brief Implementation of PairSoftAttractivePotential class
  */ 
 
-#include "pair_soft_potential.hpp"
+#include "pair_soft_attractive_potential.hpp"
 
 //! \param dt time step sent by the integrator 
-void PairSoftPotential::compute(double dt)
+void PairSoftAttractivePotential::compute(double dt)
 {
   int N = m_system->size();
   double k = m_k;
@@ -38,7 +38,7 @@ void PairSoftPotential::compute(double dt)
     for  (int i = 0; i < N; i++)
     {
       Particle& p = m_system->get_particle(i);
-      p.set_pot_energy("soft",0.0);
+      p.set_pot_energy("soft_attractive",0.0);
     }
   }
   
@@ -54,6 +54,7 @@ void PairSoftPotential::compute(double dt)
     {
       Particle& pj = m_system->get_particle(neigh[j]);
       k = m_pair_params[pi.get_type()-1][pj.get_type()-1].k;
+      double fact = m_pair_params[pi.get_type()-1][pj.get_type()-1].fact;
       aj = pj.get_radius();
       double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
       m_system->apply_periodic(dx,dy,dz);
@@ -64,15 +65,27 @@ void PairSoftPotential::compute(double dt)
         ai_p_aj = m_pair_params[pi.get_type()-1][pj.get_type()-1].a;
       else
         ai_p_aj = ai+aj;
-      if (r < ai_p_aj)
+      double r_turn = fact*ai_p_aj;
+      double r_f = 2.0*r_turn - ai_p_aj;
+      double diff;
+      double pot_eng;
+      if (r < r_f)
       {
-        // Handle potential 
-        double diff = ai_p_aj - r;
-        double pot_eng = 0.5*k*alpha*diff*diff;
+        if (r <= r_turn)
+        {
+          diff = ai_p_aj - r;
+          pot_eng = 0.5*k*alpha*diff*diff;
+          if (r > 0.0) force_factor = k*alpha*diff/r;
+          else force_factor = k*diff;
+        }
+        else if (r > r_turn && r < r_f)
+        {
+          diff = r_f - r;
+          pot_eng = -0.5*k*alpha*diff*diff;
+          force_factor = -k*alpha*diff/r;
+        }
         m_potential_energy += pot_eng;
         // Handle force
-        if (r > 0.0) force_factor = k*alpha*diff/r;
-        else force_factor = k*diff;
         pi.fx -= force_factor*dx;
         pi.fy -= force_factor*dy;
         pi.fz -= force_factor*dz;
@@ -82,8 +95,8 @@ void PairSoftPotential::compute(double dt)
         pj.fz += force_factor*dz;
         if (m_system->compute_per_particle_energy())
         {
-          pi.add_pot_energy("soft",pot_eng);
-          pj.add_pot_energy("soft",pot_eng);
+          pi.add_pot_energy("soft_attractive",pot_eng);
+          pj.add_pot_energy("soft_attractive",pot_eng);
         }
       }
     }
