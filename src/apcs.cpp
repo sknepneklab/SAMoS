@@ -835,16 +835,18 @@ int main(int argc, char* argv[])
                   for (vector<PopulationPtr>::iterator it_pop = population.begin(); it_pop != population.end(); it_pop++)
                   {
                     (*it_pop)->divide(time_step);
-                    if ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist()))
+                    if (sys->get_force_nlist_rebuild() && ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist())))
                     {
                       nlist->build();
                       nlist_builds++;
+                      sys->set_force_nlist_rebuild(false);
                     }
                     (*it_pop)->remove(time_step);
-                    if ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist()))
+                    if (sys->get_force_nlist_rebuild() && ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist())))
                     {
                       nlist->build();
                       nlist_builds++;
+                      sys->set_force_nlist_rebuild(false);
                     }
                   }
                 }
