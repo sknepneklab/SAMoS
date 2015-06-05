@@ -20,10 +20,19 @@
 from datetime import *
 from random import uniform 
 from math import *
+from scipy.integrate import dblquad
 import argparse
 
 
 from particle import *
+
+def bump(x,y,*args):
+    A, a, b = args
+    fact = -2 * A * exp(-x*x/(a*a) - y*y/(b*b))
+    hx = x*fact/(a*a)
+    hy = y*fact/(b*b)
+    return sqrt(1.0 + hx*hx + hy*hy)
+
 
 class Plane:
   
@@ -120,13 +129,19 @@ parser.add_argument("-a", "--ga",  type=float, default=1.0, help="Gaussian bump 
 parser.add_argument("-b", "--gb",  type=float, default=1.0, help="Gaussian bump y width")
 parser.add_argument("-l","--lattice", action='store_true', help="make lattice")
 parser.add_argument("-g","--gaussian", action='store_true', help="make Gaussian bump")
+parser.add_argument("-r","--rods", action='store_true', help="make rods")
 args = parser.parse_args()
 
-V = args.lx*args.ly
+if args.gaussian:
+    V = dblquad(bump,-0.5*args.lx,0.5*args.lx,lambda x: -0.5*args.ly, lambda x: 0.5*args.ly,args=(args.amplitude,args.ga,args.gb))[0]
+    print 'Area : ', V
+else:
+    V = args.lx*args.ly
 
-#N = int(round(0.5*args.phi*V/((args.eta*args.a1*(args.l1 + 0.5*pi*args.a1)+(1-args.eta)*args.a2**2*(args.l2 + 0.5*pi*args.a2)))))
-
-N = int(round(1.0/pi*args.lx*args.ly*args.phi/(args.eta*args.a1**2+(1-args.eta)*args.a2**2)))
+if args.rods:
+    N = int(round(0.5*args.phi*V/((args.eta*args.a1*(args.l1 + 0.5*pi*args.a1)+(1-args.eta)*args.a2**2*(args.l2 + 0.5*pi*args.a2)))))
+else:
+    N = int(round(1.0/pi*V*args.phi/(args.eta*args.a1**2+(1-args.eta)*args.a2**2)))
 
 print
 print "\tActive Particles on Curved Spaces (APCS)"
