@@ -59,6 +59,7 @@
 #include "constraint_gyroid.hpp"
 #include "constraint_actomyo.hpp"
 #include "constraint_hourglass.hpp"
+#include "constraint_gaussian_bump.hpp"
 #include "constraint_none.hpp"
 #include "rng.hpp"
 #include "particle.hpp"

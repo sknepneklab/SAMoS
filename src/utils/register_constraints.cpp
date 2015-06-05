@@ -46,6 +46,8 @@ void register_constraints(ConstraintMap& constraints)
   constraints["actomyo"] = boost::factory<ConstraintActomyoPtr>();
   // Register hourglass constraint with the constraint class factory
   constraints["hourglass"] = boost::factory<ConstraintHourglassPtr>();
+  // Register Gaussian bump constraint with the constraint class factory
+  constraints["gaussian_bump"] = boost::factory<ConstraintGaussianBumpPtr>();
   // Register dummy constraint with the constraint class factory
   constraints["none"] = boost::factory<ConstraintNonePtr>();
 }

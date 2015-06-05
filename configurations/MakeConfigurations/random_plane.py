@@ -85,6 +85,12 @@ class Plane:
     for i in xrange(len(lens)):
       self.particles[i].l = lens[i]
   
+  def gaussian_bump(self,A=1.0,a=1.0,b=1.0):
+    for i in xrange(len(self.particles)):
+      x, y, z = self.particles[i].r
+      z = A*exp(-x*x/(a*a) - y*y/(b*b))
+      self.particles[i].r = [x,y,z]
+  
   def write(self,outfile):
     gentime = datetime.now()
     out = open(outfile,'w')
@@ -109,14 +115,18 @@ parser.add_argument("--a2",  type=float, default=0.5, help="radius of particles 
 parser.add_argument("--eta",  type=float, default=0.5, help="fraction of particles of type 1")
 parser.add_argument("--l1",  type=float, default=2.0, help="length of rod of type 1 (in terms of particle radius)")
 parser.add_argument("--l2",  type=float, default=1.0, help="length of rod of type 2")
+parser.add_argument("--amplitude",  type=float, default=1.0, help="Gaussian bump amplitude")
+parser.add_argument("-a", "--ga",  type=float, default=1.0, help="Gaussian bump x width")
+parser.add_argument("-b", "--gb",  type=float, default=1.0, help="Gaussian bump y width")
 parser.add_argument("-l","--lattice", action='store_true', help="make lattice")
+parser.add_argument("-g","--gaussian", action='store_true', help="make Gaussian bump")
 args = parser.parse_args()
 
 V = args.lx*args.ly
 
-N = int(round(0.5*args.phi*V/((args.eta*args.a1*(args.l1 + 0.5*pi*args.a1)+(1-args.eta)*args.a2**2*(args.l2 + 0.5*pi*args.a2)))))
+#N = int(round(0.5*args.phi*V/((args.eta*args.a1*(args.l1 + 0.5*pi*args.a1)+(1-args.eta)*args.a2**2*(args.l2 + 0.5*pi*args.a2)))))
 
-#N = int(round(1.0/pi*args.lx*args.ly*args.phi/(args.eta*args.a1**2+(1-args.eta)*args.a2**2)))
+N = int(round(1.0/pi*args.lx*args.ly*args.phi/(args.eta*args.a1**2+(1-args.eta)*args.a2**2)))
 
 print
 print "\tActive Particles on Curved Spaces (APCS)"
@@ -165,6 +175,8 @@ for i in xrange(len(p.particles)):
 p.set_radius(radii)
 p.set_type(types)
 p.set_lens(lens)
+if args.gaussian:
+  p.gaussian_bump(args.amplitude,args.ga,args.gb)
 p.write(args.output)
 
 end = datetime.now()

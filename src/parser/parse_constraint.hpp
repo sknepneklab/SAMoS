@@ -63,6 +63,7 @@ public:
                   | qi::as_string[keyword["gyroid"]][phx::bind(&ConstraintlData::type, phx::ref(constraint_data)) = qi::_1 ]      /*! Handles constraint on a gyroid */
                   | qi::as_string[keyword["actomyo"]][phx::bind(&ConstraintlData::type, phx::ref(constraint_data)) = qi::_1 ]     /*! Handles constraint actomyo */
                   | qi::as_string[keyword["hourglass"]][phx::bind(&ConstraintlData::type, phx::ref(constraint_data)) = qi::_1 ]   /*! Handles constraint on a hourglass */
+                  | qi::as_string[keyword["gaussian_bump"]][phx::bind(&ConstraintlData::type, phx::ref(constraint_data)) = qi::_1 ]   /*! Handles constraint on a Gaussian bump */
                   | qi::as_string[keyword["none"]][phx::bind(&ConstraintlData::type, phx::ref(constraint_data)) = qi::_1 ]        /*! Handles dummy constraint */
                   /* to add new constraint: | qi::as_string[keyword["newconstraint"]][phx::bind(&ConstraintlData::type, phx::ref(constraint_data)) = qi::_1 ] */
                  )
