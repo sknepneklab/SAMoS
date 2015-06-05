@@ -1,0 +1,15 @@
+In this exaple we perform a simulation of 796 particles confined to move
+on the surface of a Guassian bump centred at the origin.
+
+In order to generate initial configuration you can use:
+
+python /path/to/SAMoS/configurations/MakeConfigurations/random_plane.py -x 50 -y 50 -o bump.dat --eta=1.0 -f 1.0 -g --amplitude=6.0 -a 4.0 -b 4.0 
+
+This will gererate randomly placed particles in a square (projected onto xy plane) of size 50x50 at density f=1.0. 
+All particles (eta) will be of the same type (type 1)
+
+Particles will be placed onto the surface of a Gaussian bump (-g)
+
+Amplitude (height) of the bump will be 6.0, and the widths in x (a) and y (b) direction will be 4.0.
+
+
