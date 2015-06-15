@@ -84,6 +84,28 @@ public:
       m_f_active = lexical_cast<double>(param["f"]);
     }
     m_msg->write_config("integrator.actomyo.f",lexical_cast<string>(m_f_active));
+    if (param.find("actin_type") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Actomyo dynamics integrator. Actin particle type not set. Using default value 1.");
+      m_actin_type = 1;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Actomyo dynamics integrator. Actin particle types set to "+param["actin_type"]+".");
+      m_actin_type = lexical_cast<int>(param["actin_type"]);
+    }
+    m_msg->write_config("integrator.actomyo.actin_type",lexical_cast<string>(m_actin_type));
+    if (param.find("myosin_site") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Actomyo dynamics integrator. Active myosin site particle type not set. Using default value 3.");
+      m_mysoin_site_type = 3;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Actomyo dynamics integrator. Active myosin site particle types set to "+param["myosin_site"]+".");
+      m_mysoin_site_type = lexical_cast<int>(param["myosin_site"]);
+    }
+    m_msg->write_config("integrator.actomyo.myosin_site",lexical_cast<string>(m_actin_type));
   }
   
   //! Propagate system for a time step
@@ -91,11 +113,13 @@ public:
   
 private:
   
-  RNGPtr  m_rng;          //!< Random number generator 
-  double  m_zeta;         //!< "Friction", prefactor for velocity
-  double  m_stoch_coeff;  //!< Factor for the stochastic part of the equation of motion (\f$ = \nu \sqrt{dt} \f$)
-  double  m_f_active;     //!< strength of the active force acting on actin filament
-  double  m_D;            //!< Diffusion coefficient
+  RNGPtr  m_rng;               //!< Random number generator 
+  double  m_zeta;              //!< "Friction", prefactor for velocity
+  double  m_stoch_coeff;       //!< Factor for the stochastic part of the equation of motion (\f$ = \nu \sqrt{dt} \f$)
+  double  m_f_active;          //!< strength of the active force acting on actin filament
+  double  m_D;                 //!< Diffusion coefficient
+  int     m_actin_type;        //!< Type of the particles representing actin
+  int     m_mysoin_site_type;  //!< Type of the particles representing active site on myosin
   
 };
 

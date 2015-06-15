@@ -55,7 +55,7 @@ void IntegratorActomyo::integrate()
   {
     Particle& p = m_system->get_particle(i);
     // If particle is actin particle (type 1) add actin force to it
-    if (p.get_type() == 1)
+    if (p.get_type() == m_actin_type)
     {
       double tx, ty, tz;
       m_system->compute_tangent(p.get_id(),tx,ty,tz);
@@ -69,7 +69,7 @@ void IntegratorActomyo::integrate()
         double dx = pj.x - p.x, dy = pj.y - p.y, dz = pj.z - p.z; 
         m_system->apply_periodic(dx,dy,dz);
         double l = sqrt(dx*dx + dy*dy + dz*dz);
-        if (l < min_dist && pj.get_type() == 3)  // Type 3 is active site on myosin
+        if (l < min_dist && pj.get_type() == m_mysoin_site_type)  // Type 3 is active site on myosin
         {
           min_dist = l;
           min_j = j;
