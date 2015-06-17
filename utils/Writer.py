@@ -31,7 +31,7 @@ class Writer:
 		self.nematic=nematic
 		self.connected=connected
 		
-	def writeConfigurationVTK(conf,outfile):
+	def writeConfigurationVTK(self,conf,outfile):
 		# Data which goes into file: positions, directors, velocities
 		# radii
 		r = conf.radius
@@ -198,7 +198,12 @@ class Writer:
 				# Create the points of the polygon: the loop centers
 				polygon = vtk.vtkPolygon()
 				for l in tess.ParList[k]:
-					points.InsertNextPoint(tess.LoopCen[l][0],tess.LoopCen[l][1],tess.LoopCen[l][2])
+					if tess.geom.periodic:
+						dl=tess.geom.ApplyPeriodic11(tess.rval[k,:],tess.LoopCen[l])
+						dl+=tess.rval[k,:]
+						points.InsertNextPoint(dl[0],dl[1],dl[2])
+					else:
+						points.InsertNextPoint(tess.LoopCen[l][0],tess.LoopCen[l][1],tess.LoopCen[l][2])
 				polygon.GetPointIds().SetNumberOfIds(nedge)
 				for l in range(nedge):
 					#print l
@@ -218,6 +223,14 @@ class Writer:
 		for k in havePoly:
 			pressure.InsertNextValue(press[k])
 		polygonPolyData.GetCellData().AddArray(pressure)
+		
+		# Add type
+		ptype = vtk.vtkDoubleArray()
+		ptype.SetNumberOfComponents(1)
+		ptype.SetName('Type')	
+		for k in havePoly:
+			ptype.InsertNextValue(tess.conf.ptype[k])
+		polygonPolyData.GetCellData().AddArray(ptype)
 			
 		writer = vtk.vtkXMLPolyDataWriter()
 		writer.SetFileName(outname)

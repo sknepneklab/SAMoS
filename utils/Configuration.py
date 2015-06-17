@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 class Configuration:
-	def __init__(self,param,filename):
+	def __init__(self,param,filename,debug=False):
 		self.param=param
 		# Read the local data
 		geometries={'sphere':GeometrySphere,'plane':GeometryPeriodicPlane,'none':Geometry,'tube':GeometryTube,'peanut':GeometryPeanut,'hourglass':GeometryHourglass}
@@ -45,6 +45,7 @@ class Configuration:
 			self.sigma=1.0
 		else: 
 			self.radius = data.data[data.keys['radius']]	
+			self.sigma = np.mean(self.radius)
 		if data.keys.has_key('type'):
 			self.ptype = data.data[data.keys['type']]
 		if data.keys.has_key('flag'):
@@ -55,9 +56,10 @@ class Configuration:
 		# Create the right geometry environment (TBC):
 		self.geom=geometries[param.constraint](param)
 		
-		fig = plt.figure()
-		ax = fig.add_subplot(111, projection='3d')
-		ax.scatter(self.rval[:,0], self.rval[:,1], self.rval[:,2], zdir='z', c='b')
+		if debug:
+			fig = plt.figure()
+			ax = fig.add_subplot(111, projection='3d')
+			ax.scatter(self.rval[:,0], self.rval[:,1], self.rval[:,2], zdir='z', c='b')
 		
 	# Tangent bundle: Coordinates in an appropriate coordinate system defined on the manifold
 	# and the coordinate vectors themselves, for all the particles
@@ -94,7 +96,7 @@ class Configuration:
 					neighbours.remove(i)
 					dr=np.sqrt(dist[neighbours])
 					diff=radius[i]+radius[j]-dr
-					fact = 0.5*self.param.pot_param['k']*diff
+					fact = 0.5*self.param.pot_params['k']*diff
 					eng_val = fact*diff
 					press_val = fact*dr
 					# Stress (force moment) has to be element by element) r_a F_b = -k r_a dist_b 
@@ -107,9 +109,9 @@ class Configuration:
 					press[neighbours]+=press_val
 			elif self.param.potential=='morse':
 				# We are morse by hand right now ...
-				D=self.param.pot_param['D']
-				re=self.param.pot_param['re']
-				a=self.param.pot.param['a']
+				D=self.param.pot_params['D']
+				re=self.param.pot_params['re']
+				a=self.param.pot.params['a']
 				if self.monodisperse:
 					dmax=16*self.sigma**2
 				for i in range(self.N):
@@ -139,6 +141,7 @@ class Configuration:
 			else:
 				print "Warning! Unknown interaction type! Returning zero energy and stresses"
 		else:
+			# Do the Morse right now only ... will serve as a template
 			print "Warning! Multiple types of particles interacting have not yet been implemented! Returning zero energy and stresses"
 		return [eng, press, stress]
 	

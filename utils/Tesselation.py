@@ -19,9 +19,11 @@ from CellList import *
 
 class Tesselation:
     
-	def __init__(self,conf):
+	def __init__(self,conf,debug=False):
 		self.conf=conf
 		self.rval=self.conf.rval
+		self.geom=self.conf.geom
+		self.debug=debug
 		
 	def findLoop(self):
 		neighList=[]
@@ -31,21 +33,25 @@ class Tesselation:
 		count=0
 		# Identify all neighbours and add them to a list. Keep i->j and j->i separate
 		# The label is in neighList, the particle numbers are in Ival and Jval
-		if self.conf.monodisperse:
-			if self.conf.param.potential=='soft':
-				dmax=4*self.conf.sigma**2
-			elif self.conf.param.potential=='morse':
-				dmax=16*self.conf.sigma**2
-			else:
-				dmax=4*self.conf.sigma**2
-				print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
+		#if self.conf.monodisperse:
+		if self.conf.param.potential=='soft':
+			dmax=4*self.conf.sigma**2
+		elif self.conf.param.potential=='morse':
+			#dmax=16*self.conf.sigma**2
+			dmax=4*self.conf.sigma**2
+		else:
+			dmax=4*self.conf.sigma**2
+			print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
+			
 		if self.conf.param.potential=='morse':
-			re=self.conf.param.pot_param['re']
+			re=self.conf.param.pot_params['re']
 		cl = CellList(2.0*np.sqrt(dmax),self.conf.param.box)
 		for i in range(len(self.rval)):
 			cl.add_vertex(self.rval[i,:],i)
 		for i in range(len(self.rval)):
-			dist=np.sum((self.rval-self.rval[i,:])**2,axis=1)
+			#dist=np.sum((self.rval-self.rval[i,:])**2,axis=1)
+			dist=self.geom.GeodesicDistance12(self.rval[i,:],self.rval)
+			#print dist
 			#neighs = np.array(cl.get_neighbours(self.rval[i,:]))
 			#dist=self.conf.geom.GeodesicDistance(self.rval[neighs,:],self.rval[i,:])
 			#dist=self.conf.geom.GeodesicDistance(self.rval[neighs,:],self.rval[i,:])
@@ -53,11 +59,11 @@ class Tesselation:
 				neighbours=[index for index,value in enumerate(dist) if value <dmax]
 			else:
 				if self.conf.param.potential=='soft':
-					neighbours=[index for index,value in enumerate(dist) if value < (self.conf.radius[i]+self.conf.radius[index])**2]
+					neighbours=[index for index,value in enumerate(dist) if value < (self.conf.radius[i]+self.conf.radius[index])]
 				elif self.conf.param.potential=='morse':	
-					neighbours=[index for index,value in enumerate(dist) if value < (re*self.conf.radius[i]+re*self.conf.radius[index])**2]
+					neighbours=[index for index,value in enumerate(dist) if value < (re*self.conf.radius[i]+re*self.conf.radius[index])]
 				else:
-					neighbours=[index for index,value in enumerate(dist) if value < (self.conf.radius[i]+self.conf.radius[index])**2]
+					neighbours=[index for index,value in enumerate(dist) if value < (self.conf.radius[i]+self.conf.radius[index])]
 					print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
 			neighbours.remove(i)
 			neighList.extend([u for u in range(count,count+len(neighbours))])
@@ -83,12 +89,18 @@ class Tesselation:
 			goneround=False
 			while goneround==False:  
 				# Sort neighbours counterclockwise according to their local angle  
-				dr0hat=self.rval[self.Jval[idx],:]-self.rval[self.Ival[idx],:]
+				if self.conf.geom.periodic:
+					dr0hat=self.geom.ApplyPeriodic11(self.rval[self.Ival[idx],:],self.rval[self.Jval[idx],:])
+				else:
+					dr0hat=self.rval[self.Jval[idx],:]-self.rval[self.Ival[idx],:]
 				dr0hat/=np.sqrt(np.sum(dr0hat**2))
 				jnei0=Inei[self.Jval[idx]]
 				jnei=list(Jarray[jnei0])  
 		
-				drvec=self.rval[jnei,:]-self.rval[self.Jval[idx],:]
+				if self.conf.geom.periodic:
+					drvec=self.geom.ApplyPeriodic12(self.rval[self.Jval[idx],:],self.rval[jnei,:])
+				else:
+					drvec=self.rval[jnei,:]-self.rval[self.Jval[idx],:]
 				drhat=((drvec).transpose()/(np.sqrt(np.sum(drvec**2,axis=1))).transpose()).transpose()
 				cbeta=np.einsum('kj,j->k',drhat,self.conf.e2[self.Jval[idx],:])
 				sbeta=np.einsum('kj,j->k',drhat,self.conf.e1[self.Jval[idx],:])
@@ -129,6 +141,11 @@ class Tesselation:
 			except ValueError:
 				pass
 			looppos=self.rval[llist]
+			# Apply periodic boundary conditions here too ...
+			# Arbitrary decision - go with the side of the first one
+			if self.geom.periodic:
+				dl=self.geom.ApplyPeriodic12(looppos[0,:],looppos)
+				looppos=looppos[0,:]+dl
 			self.LoopCen.append([np.mean(looppos[:,0]), np.mean(looppos[:,1]),np.mean(looppos[:,2])])
 			self.LoopList.append(llist)
 			l+=1
@@ -140,7 +157,10 @@ class Tesselation:
 		for l0 in range(len(self.LoopList)):
 			llist=self.LoopList[l0]
 			looppos=self.rval[llist]
-			dlvec=looppos-self.LoopCen[l0]
+			if self.geom.periodic:
+				dlvec=self.geom.ApplyPeriodic12(self.LoopCen[l0],looppos)
+			else:
+				dlvec=looppos-self.LoopCen[l0]
 			isLong=np.sqrt(np.sum(np.sum(dlvec**2,axis=1)))/len(llist)
 			if len(llist)>5:
 				print llist
@@ -175,8 +195,11 @@ class Tesselation:
 		LoopCen1=np.array(self.LoopCen)
 		for i in range(len(self.rval)):
 			parray=np.array(self.ParList[i])
-			print parray
-			drvec=LoopCen1[self.ParList[i]]-self.rval[i,:]
+			#print parray
+			if self.geom.periodic:
+				drvec=self.geom.ApplyPeriodic12(self.rval[i,:],LoopCen1[self.ParList[i]])
+			else:
+				drvec=LoopCen1[self.ParList[i]]-self.rval[i,:]
 			# Optionally Take care of irregularities (in the form of too long bonds) here. These happen at the edges of connected stuff
 			# The tesselation is correct, it's just not what we want
 			drlen=np.sqrt(np.sum(drvec**2,axis=1))
@@ -188,6 +211,6 @@ class Tesselation:
 			beta=np.arccos(cbeta)*np.sign(sbeta)
 			# sort by angle and put back in ParList
 			lorder=np.argsort(beta)
-			ParList[i]=parray[lorder] 
+			self.ParList[i]=parray[lorder] 
 			# Use the new ParList structure where loops belong to particles are stored
 		return self.LoopList,self.LoopCen,self.ParList,self.Ival,self.Jval

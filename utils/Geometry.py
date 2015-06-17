@@ -24,13 +24,13 @@ import numpy as np
 
 # Default geometry class: 3 dimensional unconstrained space
 class Geometry(object):
-	def __init__(self,manifold):
+	def __init__(self,manifold,periodic):
 		try:
 			self.manifold=manifold
-			print "Created new geometry " + manifold
+			self.periodic=periodic
+			print "Created new geometry " + manifold + "for which periodic = " + self.periodic
 		except:
 			pass
-		
 	def RotateMatrixVectorial(self,axis,theta):
 		axlen=np.sqrt(axis[:,0]**2+axis[:,1]**2+axis[:,2]**2)
 		#print axlen
@@ -70,6 +70,11 @@ class Geometry(object):
 	def ParallelTransportSingle(self,r1,r2,a2):
 		return a2
 		
+	def GeodesicDistance11(self,r1,r2):
+		return self.GeodesicDistance(r1,r2)
+	
+	def GeodesicDistance21(self,r1,r2):
+		return self.GeodesicDistance(r1,r2)
 	# Default: just the cartesian distance
 	def GeodesicDistance(self,r1,r2):
 		return np.sqrt(np.sum((r2-r1)**2,axis=1))
@@ -78,8 +83,9 @@ class Geometry(object):
 class GeometrySphere(Geometry):
 	def __init__(self,param):
 		self.R=param.r
+		self.periodic=False
 		print "Created new geometry sphere with radius " + str(self.R)
-		super(GeometrySphere,self).__init__('sphere')
+		super(GeometrySphere,self).__init__('sphere',self.periodic)
 		
 	# Fully vectorial version of parallel transport
 	# 1.determine the cross product of the origins
@@ -142,8 +148,10 @@ class GeometryPeriodicPlane(Geometry):
 	def __init__(self,param):
 		self.Lx=param.lx
 		self.Ly=param.ly
+		self.periodic=True
 		print "Created new geometry periodic plane with Lx = " + str(self.Lx) + " and Ly = " +str(self.Ly)
-		super(GeometryPeriodicPlane,self).__init__('plane')
+		super(GeometryPeriodicPlane,self).__init__('plane',self.periodic)
+		
 		
 	def TangentBundle(self,rval):
 		x=rval[:,0]
@@ -158,17 +166,34 @@ class GeometryPeriodicPlane(Geometry):
 		ey[:,2]=1.0*np.zeros(len(rval))
 		return x,y,ex,ey
 		
-	## Just the cartesian distance in the plane, modulo periodic boundary conditions
-	#def GeodesicDistance(self,r1,r2):
-		#drx=r2[0]-r1[0]
-		#drx-=self.Lx*np.round(drx)
-		#dry=r2[1]-r1[1]
-		#dry-=self.Ly*np.round(dry)
-		#return np.sqrt(drx**2+dry**2)
+	# Just the cartesian distance in the plane, modulo periodic boundary conditions
+	# Problem true to type right now ...
+	# assume the first is a vector, the second a scalar
+	# NEED TO GENERALIZE
+	def ApplyPeriodic11(self,r1,r2):
+		dr=r2-r1
+		dr[0]-=self.Lx*np.round(dr[0]/self.Lx)
+		dr[1]-=self.Ly*np.round(dr[1]/self.Ly)
+		return dr
+	
+	def ApplyPeriodic12(self,r1,r2):
+		dr=r2-r1
+		dr[:,0]-=self.Lx*np.round(dr[:,0]/self.Lx)
+		dr[:,1]-=self.Ly*np.round(dr[:,1]/self.Ly)
+		return dr
+		
+	def GeodesicDistance12(self,r1,r2):
+		dr=self.ApplyPeriodic12(r1,r2)
+		return np.sqrt(dr[:,0]**2+dr[:,1]**2)
+	
+	def GeodesicDistance11(self,r1,r2):
+		dr=self.ApplyPeriodic11(r1,r2)
+		return np.sqrt(dr[0]**2+dr[1]**2)
 
 class GeometryTube(Geometry):
 	def __init__(self,param):
 		self.R=param.const_param['r']
+		#self.periodic=False
 		print "Created new geometry tube with radius = " + str(self.R)
 		super(GeometryTube,self).__init__('tube')
 		print "ERROR: Tube geometry has not yet been implemented! Geometry will default to 3d space."

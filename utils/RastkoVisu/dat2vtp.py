@@ -109,6 +109,11 @@ for f in files:
     tp = np.array(data.data[data.keys['type']])
   else:
     tp = np.ones(len(x))
+    
+  if (data.keys.has_key('flag')):
+    flag = np.array(data.data[data.keys['flag']])
+  else:
+    flag = np.arange(len(x))
   
 
   Radii = vtk.vtkDoubleArray()
@@ -118,6 +123,10 @@ for f in files:
   Types = vtk.vtkDoubleArray()
   Types.SetNumberOfComponents(1)
   Types.SetName('Type')
+  
+  Flags = vtk.vtkDoubleArray()
+  Flags.SetNumberOfComponents(1)
+  Flags.SetName('Flag')
 
   if has_v:
     Velocities = vtk.vtkDoubleArray()
@@ -134,10 +143,11 @@ for f in files:
       NDirectors.SetNumberOfComponents(3)
       NDirectors.SetName("NDirectors")
 
-  for (xx,yy,zz,rr,t) in zip(x,y,z,r,tp):
+  for (xx,yy,zz,rr,t,f) in zip(x,y,z,r,tp,flag):
     Points.InsertNextPoint(xx,yy,zz)
     Radii.InsertNextValue(rr)
     Types.InsertNextValue(t)
+    Flags.InsertNextValue(f)
     
   if has_v:
     for (vvx,vvy,vvz) in zip(vx,vy,vz):
@@ -234,6 +244,7 @@ for f in files:
 
   polydata.GetPointData().AddArray(Radii)
   polydata.GetPointData().AddArray(Types)
+  polydata.GetPointData().AddArray(Flags)
 
   if has_v:
     polydata.GetPointData().AddArray(Velocities)
