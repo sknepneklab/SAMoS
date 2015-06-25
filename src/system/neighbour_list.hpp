@@ -169,6 +169,27 @@ public:
   //! Get neighbour list cutoff distance
   double get_cutoff() { return m_cut;  }  //!< \return neighbour list cutoff distance
   
+  //! Rescales neigbour list cutoff
+  //! \param scale scale factor
+  void rescale_cutoff(double scale)
+  {
+    m_cut *= scale;
+    if (m_use_cell_list && m_system->get_box()->Lx > 2.0*(m_cut+m_pad) && m_system->get_box()->Ly > 2.0*(m_cut+m_pad) && m_system->get_box()->Lz > 2.0*(m_cut+m_pad))
+    {
+      m_cell_list = boost::shared_ptr<CellList>(new CellList(m_system,m_msg,m_cut+m_pad));
+      m_msg->msg(Messenger::INFO,"Rescaling neighbour list cutoff.");
+      m_msg->msg(Messenger::INFO,"Still using cell lists for neighbour list builds.");
+    }
+    else
+    {
+      m_use_cell_list = false;
+      m_msg->msg(Messenger::INFO,"Rescaling neighbour list cutoff.");
+      m_msg->msg(Messenger::INFO,"No longer possible to use cell lists for neighbour list builds.");
+    }
+    this->build();
+  }
+  
+  
   //! Build neighbour list
   void build();
   

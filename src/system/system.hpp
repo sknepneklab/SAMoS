@@ -253,6 +253,13 @@ public:
   //! enforce period boundary conditions
   void enforce_periodic(Particle&);
   
+  //! Set the neighbour list cutoff rescale parameter
+  //! \param scale scale parameter
+  void set_nlist_rescale(double scale) { m_nlist_rescale = scale; }
+  
+  //! Get value of the n_list rescale parameter
+  double get_nlist_rescale() { return m_nlist_rescale; }
+  
 private:
   
   vector<Particle> m_particles;         //!< Contains all particle in the system 
@@ -267,6 +274,7 @@ private:
   bool m_compute_per_particle_eng;      //!< If true, compute per particle potential and alignment energy (we need to be able to turn it on and off since it is slow - STL map in the inner loop!)
   int m_num_groups;                     //!< Total number of groups in the system
   bool m_force_nlist_rebuild;           //!< Forced rebuilding of neighbour list
+  double m_nlist_rescale;               //!< Rescale neighbour list cutoff by this much
   int m_n_types;                        //!< Number of different particle types (used to set pair parameters) 
   int m_n_bond_types;                   //!< Number of different bond types
   int m_n_angle_types;                  //!< Number of different angle types

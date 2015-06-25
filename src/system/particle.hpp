@@ -90,10 +90,18 @@ public:
   //! \param r new type
   void set_radius(double r) { m_r = r; }
   
+  //! Scale particle radius
+  //! \param scale scale factor
+  void scale_radius(double scale) { m_r *= scale; }
+  
   //! Set lenght (for group changes and birth/death)
   //! \param l new length
   void set_length(double l) { m_l = l; }
-    
+  
+  //! Scale lenght of the paricle (rod)
+  //! \param scale scale factor
+  void scale_length(double scale) { m_l *= scale; }
+  
   //! Return potential energy of a given type
   //! \param type potential energy type to return 
   double get_pot_energy(const string& type)

@@ -848,6 +848,28 @@ int main(int argc, char* argv[])
                       nlist_builds++;
                       sys->set_force_nlist_rebuild(false);
                     }
+                    (*it_pop)->grow(time_step);
+                    if (sys->get_force_nlist_rebuild() && ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist())))
+                    {
+                      if (sys->get_nlist_rescale() != 1.0)
+                        nlist->rescale_cutoff(sys->get_nlist_rescale());
+                      else
+                        nlist->build();
+                      nlist_builds++;
+                      sys->set_force_nlist_rebuild(false);
+                      sys->set_nlist_rescale(1.0);
+                    }
+                    (*it_pop)->elongate(time_step);
+                    if (sys->get_force_nlist_rebuild() && ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist())))
+                    {
+                      if (sys->get_nlist_rescale() != 1.0)
+                        nlist->rescale_cutoff(sys->get_nlist_rescale());
+                      else
+                        nlist->build();
+                      nlist_builds++;
+                      sys->set_force_nlist_rebuild(false);
+                      sys->set_nlist_rescale(1.0);
+                    }
                   }
                 }
                 // Check the neighbour list rebuild only if necessary 
