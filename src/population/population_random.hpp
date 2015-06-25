@@ -176,6 +176,11 @@ public:
   //! Add particle (has no direct biological application)
   void add(int t) { }
   
+  //! Change particle radius
+  void grow(int time) { }
+  
+  //! Change particle length
+  void elongate(int time) { }
   
   
 private:

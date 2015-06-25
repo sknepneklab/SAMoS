@@ -56,8 +56,10 @@ public:
   population_grammar(PopulationData& population_data) : population_grammar::base_type(population)
   {
     population = (
-                    qi::as_string[keyword["random"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ]         /*! Handles random population control */
-                  | qi::as_string[keyword["density"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ]        /*! Handles density population control */
+                    qi::as_string[keyword["random"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ]      /*! Handles random population control */
+                  | qi::as_string[keyword["density"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ]     /*! Handles density population control */
+                  | qi::as_string[keyword["grow"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ]        /*! Handles particle growth */
+                  | qi::as_string[keyword["elongate"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ]    /*! Handles rod elongation population control */
                   /* to add new population: | qi::as_string[keyword["newpopulation"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&PopulationData::params, phx::ref(population_data)) = qi::_1 ]

@@ -56,7 +56,7 @@ static vector<string> split_line(const string& str)
  * \param msg Pointer to the Messenger object
  * \param box Pointer to the simulation box object
  */
-System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_msg(msg), m_box(box), m_periodic(false), m_force_nlist_rebuild(false), m_current_particle_flag(0)
+System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_msg(msg), m_box(box), m_periodic(false), m_force_nlist_rebuild(false), m_current_particle_flag(0), m_nlist_rescale(1.0)
 {
   vector<int> types;
   vector<string> s_line;

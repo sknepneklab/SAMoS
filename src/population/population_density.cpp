@@ -40,7 +40,7 @@
 */
 void PopulationDensity::divide(int t)
 {
-  if (t % m_freq == 0 && m_div_rate > 0.0)  // Attempt division only at certain time steps
+  if (m_freq > 0 && t % m_freq == 0 && m_div_rate > 0.0)  // Attempt division only at certain time steps
   { 
     if (!m_system->group_ok(m_group_name))
     {
@@ -126,7 +126,7 @@ void PopulationDensity::divide(int t)
 */
 void PopulationDensity::remove(int t)
 {
-  if (t % m_freq == 0 && m_death_rate > 0.0)  // Attempt removal only at certain time steps
+  if (m_freq > 0 && t % m_freq == 0 && m_death_rate > 0.0)  // Attempt removal only at certain time steps
   { 
     if (!m_system->group_ok(m_group_name))
     {
