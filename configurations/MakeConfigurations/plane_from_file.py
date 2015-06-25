@@ -38,11 +38,16 @@ class Plane:
         
   def __read_pos_dir(self):
     data = np.loadtxt(self.inp)
+    min_x, max_x = np.min(data[:,0]), np.max(data[:,0])
+    min_y, max_y = np.min(data[:,1]), np.max(data[:,1])
+    Lx, Ly = max_x - min_x, max_y - min_y
+    print "Lx = ", Lx
+    print "Ly = ", Ly
     N = data.shape[0]
     self.particles = [Particle(i) for i in xrange(N)]
     for i in range(N):
       x, y, nx, ny = data[i]
-      self.particles[i].r = [x,y,0.0]
+      self.particles[i].r = [x-0.5*Lx,y-0.5*Ly,0.0]
       len_n = np.sqrt(nx*nx + ny*ny)
       self.particles[i].n = [nx/len_n,ny/len_n,0.0]
 
