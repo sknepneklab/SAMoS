@@ -97,7 +97,7 @@ class Sphere:
       x, y, z = p.r
       vx, vy, vz = p.v
       nx, ny, nz = p.n
-      out.write('%d  %d  %f %f  %f  %f  %f  %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz,p.omega,p.l))
+      out.write('%d  %d  %f %f  %f  %f  %f  %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz,p.omega,p.l+2*p.R))
     out.close()
     
 
@@ -107,7 +107,7 @@ parser.add_argument("-R", "--radius", type=float, default=10.0, help="sphere rad
 parser.add_argument("-f", "--phi",  type=float, default=0.5, help="packing fraction")
 parser.add_argument("-o", "--output", type=str, default='out.dat', help="output file")
 parser.add_argument("-v", "--vavr", type=float, default=1.0, help="average velocity")
-parser.add_argument("-l", "--length", type=float, default=2.0, help="rod length")
+parser.add_argument("-l", "--length", type=float, default=2.0, help="rod length (straight part)")
 parser.add_argument("-a", "--rod_rad", type=float, default=0.5, help="rod radius")
 args = parser.parse_args()
 
@@ -120,10 +120,12 @@ print "\tUniversity of Dundee"
 print "\t(c) 2013"
 print "\t----------------------------------------------"
 print 
+V = 4.0*args.radius**2*pi
+part_area = args.rod_rad*(2*args.length + pi*args.rod_rad)
+N = int(round(args.phi*V/part_area))
 print "\tRadius : ", args.radius
 print "\tPacking fraction : ", args.phi
 print "\tAverage velocity : ", args.vavr
-N=int(round(4.0*args.radius**2*args.phi))
 print "\tTotal number of particles : ", N
 print "\tOutput file : ", args.output
 print 
