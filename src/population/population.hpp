@@ -66,20 +66,15 @@ public:
     }
     if (param.find("freq") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Population. No population frequency has been set. Assuming default 100.");
+      m_msg->msg(Messenger::WARNING,"Population. No population control frequency has been set. Assuming default 100.");
       m_freq = 100;
     }
     else
     {
       m_freq = lexical_cast<int>(param["freq"]);
-      if (m_freq == 0)
-      {
-        m_msg->msg(Messenger::WARNING,"Population. Attempted to set zero frequency! Assuming default 100.");
-        m_freq = 100;
-      }
-      else
-        m_msg->msg(Messenger::INFO,"Population. Population control frequency set to "+param["freq"]+".");     
+      m_msg->msg(Messenger::INFO,"Population. Population control frequency set to "+param["freq"]+".");     
     }
+    m_msg->write_config("population.freq",lexical_cast<string>(m_freq));
   }
   
   //! Particle division (emulates cell division)
@@ -91,14 +86,21 @@ public:
   //! Add particle (has no direct biological application)
   virtual void add(int) = 0;
   
+  //! Change particle radius
+  virtual void grow(int) = 0;
   
+  //! Change particle length
+  virtual void elongate(int) = 0;
   
 protected:
   
   SystemPtr m_system;            //!< Contains pointer to the System object
   MessengerPtr m_msg;            //!< Handles messages sent to output
   string m_group_name;           //!< Name of the group to apply this population to
-  int m_freq;                    //!< Frequency (in the number of time steps) with which to attempt population control 
+  int m_freq;                    //!< Frequency (in the number of time steps) with which to attempt population control
+  double m_l_rescale;            //!< Rescale particle length by total of this amount
+  int m_l_rescale_steps;         //!< Rescale particle lenght over this many steps
+  double m_l_scale;              //!< Rescale particle lenth by this much in each step (=m_l_rescale**(m_grow_l_freq/m_l_rescale_steps))
    
 };
 

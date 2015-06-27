@@ -40,7 +40,7 @@
 */
 void PopulationRandom::divide(int t)
 {
-  if (t % m_freq == 0)  // Attempt division only at certain time steps
+  if (m_freq > 0 && t % m_freq == 0)  // Attempt division only at certain time steps
   { 
     int new_type;   // type of new particle
     double new_r;   // radius of newly formed particle
@@ -131,7 +131,7 @@ void PopulationRandom::divide(int t)
 */
 void PopulationRandom::remove(int t)
 {
-  if (t % m_freq == 0)  // Attempt removal only at certain time steps
+  if (m_freq > 0 && t % m_freq == 0)  // Attempt removal only at certain time steps
   { 
     int N = m_system->get_group(m_group_name)->get_size();
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();

@@ -97,6 +97,8 @@
 #include "population.hpp"
 #include "population_random.hpp"
 #include "population_density.hpp"
+#include "population_growth.hpp"
+#include "population_elongation.hpp"
 #include "bond_potential.hpp" 
 #include "bond_harmonic_potential.hpp"
 #include "angle_potential.hpp"
