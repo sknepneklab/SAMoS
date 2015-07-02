@@ -27,7 +27,9 @@
 void register_external_aligners(ExternalAlignerMap& external_aligners)
 {
   // Register active jamming polar external alignment to the external align class factory
-  external_aligners["aj"] = boost::factory<ExternalAJPolarAlignPtr>();
+  external_aligners["ajpolar"] = boost::factory<ExternalAJPolarAlignPtr>();
   // Register external alignment a vector filed to the external align class factory
   external_aligners["field"] = boost::factory<ExternalFieldAlignPtr>();
+  // Register active jamming nematic external alignment to the external align class factory
+  external_aligners["ajnematic"] = boost::factory<ExternalAJNematicAlignPtr>();
 }
