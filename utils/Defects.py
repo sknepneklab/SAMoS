@@ -56,7 +56,8 @@ class Defects:
 				print ndefect
 				# Construct the geometric centre of the defect
 				r0s=self.conf.rval[thisLoop]
-				r0s[1:,:]=self.conf.geom.ApplyPeriodic12(r0s[0,:],r0s[1:,:])+r0s[0,:]
+				if self.conf.geom.periodic:
+					r0s[1:,:]=self.conf.geom.ApplyPeriodic12(r0s[0,:],r0s[1:,:])+r0s[0,:]
 				rmval=np.mean(r0s,axis=0)
 				# Charge of the defect
 				defbit=[ndefect]
@@ -71,7 +72,8 @@ class Defects:
 				print vdefect
 				# Construct the geometric centre of the defect
 				r0s=self.conf.rval[thisLoop]
-				r0s[1:,:]=self.conf.geom.ApplyPeriodic12(r0s[0,:],r0s[1:,:])+r0s[0,:]
+				if self.conf.geom.periodic:
+					r0s[1:,:]=self.conf.geom.ApplyPeriodic12(r0s[0,:],r0s[1:,:])+r0s[0,:]
 				rmval=np.mean(r0s,axis=0)
 				# Charge of the defect
 				defbit=[vdefect]
