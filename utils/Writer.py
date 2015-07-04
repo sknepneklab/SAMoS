@@ -123,49 +123,51 @@ class Writer:
 	def writeDefects(self,defects_n, defects_v,numdefect_n,numdefect_v,outfile):
 		# Preparing the vtp output
 		# Create point structure in vtk
-		Points = vtk.vtkPoints()
+		Points_n = vtk.vtkPoints()
 		print "Created Points"
-		# Create (something) associated to the points, with different values for each
-		Number = vtk.vtkDoubleArray()
-		Number.SetNumberOfComponents(1)
-		Number.SetName('Number')
-		Size = vtk.vtkDoubleArray()
-		Size.SetNumberOfComponents(1)
-		Size.SetName('Size')
-		print "Created Number"
+		Charge_n = vtk.vtkDoubleArray()
+		Charge_n.SetNumberOfComponents(1)
+		Charge_n.SetName('Charge')
 		# Put one point at the centre, and the ndefect ones around it
-		Points.InsertNextPoint(0,0,0)
-		Number.InsertNextValue(0)
-		Size.InsertNextValue(0)
 		for u in range(numdefect_n):
-			Points.InsertNextPoint(defects_n[u,1],defects_n[u,2],defects_n[u,3])
-			Number.InsertNextValue(1)
-			Size.InsertNextValue(1.0)
-		for u in range(numdefect_v):
-			Points.InsertNextPoint(defects_v[u,1],defects_v[u,2],defects_v[u,3])
-			Number.InsertNextValue(2)
-			Size.InsertNextValue(1.0)
+			Points_n.InsertNextPoint(defects_n[u][1],defects_n[u][2],defects_n[u][3])
+			Charge_n.InsertNextValue(defects_n[u][0])
+		if not self.nematic:
+			Points_v = vtk.vtkPoints()
+			print "Created Points"
+			Charge_v = vtk.vtkDoubleArray()
+			Charge_v.SetNumberOfComponents(1)
+			Charge_v.SetName('Charge')
+			# Put one point at the centre, and the ndefect ones around it
+			for u in range(numdefect_v):
+				Points_v.InsertNextPoint(defects_v[u][1],defects_v[u][2],defects_v[u][3])
+				Charge_v.InsertNextValue(defects_v[u][0])
 		print "Added Particles and Numbers"
 		
-		lines = vtk.vtkCellArray()
-		line = vtk.vtkLine()
-		for i in range(numdefect_n):
-			line = vtk.vtkLine()
-			line.GetPointIds().SetId(0,0)
-			line.GetPointIds().SetId(1,i+1)
-			lines.InsertNextCell(line)
-		for i in range(numdefect_v):
-			line = vtk.vtkLine()
-			line.GetPointIds().SetId(0,0)
-			line.GetPointIds().SetId(1,numdefect_n+i+1)
-			lines.InsertNextCell(line)
-		print "Added lines"
+		#lines = vtk.vtkCellArray()
+		#line = vtk.vtkLine()
+		#for i in range(numdefect_n):
+			#line = vtk.vtkLine()
+			#line.GetPointIds().SetId(0,0)
+			#line.GetPointIds().SetId(1,i+1)
+			#lines.InsertNextCell(line)
+		#for i in range(numdefect_v):
+			#line = vtk.vtkLine()
+			#line.GetPointIds().SetId(0,0)
+			#line.GetPointIds().SetId(1,numdefect_n+i+1)
+			#lines.InsertNextCell(line)
+		#print "Added lines"
 		
 		polydata = vtk.vtkPolyData()
-		polydata.SetPoints(Points)
-		polydata.SetLines(lines)
-		polydata.GetPointData().AddArray(Number)
-		polydata.GetPointData().AddArray(Size)
+		polydata.SetPoints(Points_n)
+		#polydata.SetLines(lines)
+		polydata.GetPointData().AddArray(Charge_n)
+		
+		if not self.nematic:
+			polydata = vtk.vtkPolyData()
+			polydata.SetPoints(Points_v)
+			#polydata.SetLines(lines)
+			polydata.GetPointData().AddArray(Charge_v)
 		print "Finished Polydata"
 		polydata.Modified()
 		writer = vtk.vtkXMLPolyDataWriter()

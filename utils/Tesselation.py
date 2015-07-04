@@ -35,12 +35,12 @@ class Tesselation:
 		# The label is in neighList, the particle numbers are in Ival and Jval
 		#if self.conf.monodisperse:
 		if self.conf.param.potential=='soft':
-			dmax=4*self.conf.sigma**2
+			dmax=2*self.conf.sigma
 		elif self.conf.param.potential=='morse':
 			#dmax=16*self.conf.sigma**2
-			dmax=4*self.conf.sigma**2
+			dmax=2*self.conf.sigma
 		else:
-			dmax=4*self.conf.sigma**2
+			dmax=2*self.conf.sigma
 			print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
 			
 		if self.conf.param.potential=='morse':
@@ -63,8 +63,8 @@ class Tesselation:
 				elif self.conf.param.potential=='morse':	
 					neighbours=[index for index,value in enumerate(dist) if value < (re*self.conf.radius[i]+re*self.conf.radius[index])]
 				else:
-					neighbours=[index for index,value in enumerate(dist) if value < (self.conf.radius[i]+self.conf.radius[index])]
-					print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
+					neighbours=[index for index,value in enumerate(dist) if value < 0.8*(self.conf.radius[i]+self.conf.radius[index])]
+					#print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
 			neighbours.remove(i)
 			neighList.extend([u for u in range(count,count+len(neighbours))])
 			self.Ival.extend([i for k in range(len(neighbours))])
@@ -72,13 +72,14 @@ class Tesselation:
 			self.Jval.extend(neighbours)
 			Inei.append([u for u in range(count,count+len(neighbours))])
 			count+=len(neighbours)
+			#print len(neighbours)
 		# Identify loops based on the neighbour list. Kick out any (one-way) contacts that have occured so far
 		Jarray=np.array(self.Jval)
 		self.LoopList=[]
 		# The dual: which loops belong to which particle
 		self.ParList=[[] for k in range(len(self.rval))]
 		self.LoopCen=[]
-		l=0
+		self.l=0
 		while len(neighList)>0:
 			idx=neighList[0]
 			idxkeep=idx
@@ -123,7 +124,7 @@ class Tesselation:
 				if goneround==False:
 					idx0.append(idx)
 					llist.append(Jarray[idx])
-					self.ParList[Jarray[idx]].append(l)
+					self.ParList[Jarray[idx]].append(self.l)
 			#print idx0
 			#print llist
 			#print len(neighList)
@@ -148,7 +149,7 @@ class Tesselation:
 				looppos=looppos[0,:]+dl
 			self.LoopCen.append([np.mean(looppos[:,0]), np.mean(looppos[:,1]),np.mean(looppos[:,2])])
 			self.LoopList.append(llist)
-			l+=1
+			self.l+=1
 		return self.LoopList,self.Ival,self.Jval
       
 	# Much prettier: a loop that is too big (as measured by the mean square distance of the distances to the particles)
@@ -162,10 +163,11 @@ class Tesselation:
 			else:
 				dlvec=looppos-self.LoopCen[l0]
 			isLong=np.sqrt(np.sum(np.sum(dlvec**2,axis=1)))/len(llist)
-			if len(llist)>5:
-				print llist
-				print isLong
-			if isLong>rmax:
+			#if len(llist)>5:
+				#print llist
+				#print isLong
+			#if isLong>rmax:
+			if len(llist)>20:
 				print "Loop " + str(l0) + " with particles " + str(llist) + " is too big! "
 				for k in range(len(llist)):
 					kside=k-1
@@ -173,21 +175,21 @@ class Tesselation:
 						kside=len(llist)-1
 					# Attempting to catch the inward pointing loops: the have to be global boundary ~sqrt(N)
 					if len(llist)<0.5*np.sqrt(len(self.rval)):
-						newcen=0.5*(self.rval[llist[k]]+self.rval[llist[kside]])-conf.param.sigma*dlvec[k,:]/np.sqrt(np.sum(dlvec[k,:]**2))
+						newcen=0.5*(self.rval[llist[k]]+self.rval[llist[kside]])-self.conf.sigma*dlvec[k,:]/np.sqrt(np.sum(dlvec[k,:]**2))
 					else:
-						newcen=0.5*(self.rval[llist[k]]+self.rval[llist[kside]])+conf.param.sigma*dlvec[k,:]/np.sqrt(np.sum(dlvec[k,:]**2))
+						newcen=0.5*(self.rval[llist[k]]+self.rval[llist[kside]])+self.conf.sigma*dlvec[k,:]/np.sqrt(np.sum(dlvec[k,:]**2))
 					self.LoopCen.append(newcen)
 					try:
-						ParList[llist[k]].remove(l0)
+						self.ParList[llist[k]].remove(l0)
 					except ValueError:
 						pass
-					self.ParList[llist[k]].append(l)
+					self.ParList[llist[k]].append(self.l)
 					try:
-						ParList[llist[kside]].remove(l0)
+						self.ParList[llist[kside]].remove(l0)
 					except ValueError:
 						pass
-					self.ParList[llist[kside]].append(l)
-					l+=1
+					self.ParList[llist[kside]].append(self.l)
+					self.l+=1
         
 	# While we are at it, we can construct the dual tesselation here.
 	# All that's missing is to order the patches for the particles counterclockwise

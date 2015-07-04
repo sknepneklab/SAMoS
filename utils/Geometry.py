@@ -73,7 +73,7 @@ class Geometry(object):
 	def GeodesicDistance11(self,r1,r2):
 		return self.GeodesicDistance(r1,r2)
 	
-	def GeodesicDistance21(self,r1,r2):
+	def GeodesicDistance12(self,r1,r2):
 		return self.GeodesicDistance(r1,r2)
 	# Default: just the cartesian distance
 	def GeodesicDistance(self,r1,r2):
@@ -142,6 +142,12 @@ class GeometrySphere(Geometry):
 		ephi[:,1]=np.cos(phi)
 		ephi[:,2]=0
 		return theta,phi,etheta,ephi
+	
+	# Complementary: The unit normal
+	def UnitNormal(self,rval):
+		rs = np.sqrt(rval[:,0]**2 + rval[:,1]**2 + rval[:,2]**2)
+		rhat=((rval).transpose()/(rs).transpose()).transpose()
+		return rhat
         
 # Plane with periodic boundary conditions. By default, the plane is along x and y
 class GeometryPeriodicPlane(Geometry):
@@ -165,6 +171,12 @@ class GeometryPeriodicPlane(Geometry):
 		ey[:,1]=1.0*np.ones(len(rval))
 		ey[:,2]=1.0*np.zeros(len(rval))
 		return x,y,ex,ey
+	
+	# Unit normal: just the z direction
+	def UnitNormal(self,rval):
+		nvec=np.zeros(np.shape(rval))
+		nvec[:,2]=1.0
+		return nvec
 		
 	# Just the cartesian distance in the plane, modulo periodic boundary conditions
 	# Problem true to type right now ...

@@ -346,6 +346,8 @@ class Param:
 				print self.type_aligner
 				print "Type J" 
 				print self.type_J
+		else:
+			self.ntypes=1
 				
 		# Main integrator(s)
 		# Define straightforward paramters for the most common Brownian one

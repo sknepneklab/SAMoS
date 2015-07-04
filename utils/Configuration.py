@@ -48,6 +48,8 @@ class Configuration:
 			self.sigma = np.mean(self.radius)
 		if data.keys.has_key('type'):
 			self.ptype = data.data[data.keys['type']]
+		else:
+			self.ptype = np.ones((self.N,))
 		if data.keys.has_key('flag'):
 			self.flag = data.data[data.keys['flag']]
 		self.rval = np.column_stack((x,y,z))
@@ -55,6 +57,13 @@ class Configuration:
 		self.nval = np.column_stack((nx,ny,nz))
 		# Create the right geometry environment (TBC):
 		self.geom=geometries[param.constraint](param)
+		print self.geom
+		if self.geom.periodic:
+			self.rval=self.geom.ApplyPeriodic12(np.array([0.0,0.0,0.0]),self.rval)
+		# unit normal to the surface (only sphere so far)
+		vel = np.sqrt(self.vval[:,0]**2 + self.vval[:,1]**2 + self.vval[:,2]**2)
+		self.vhat=((self.vval).transpose()/(vel).transpose()).transpose()
+		
 		
 		if debug:
 			fig = plt.figure()
@@ -83,24 +92,25 @@ class Configuration:
 		# If it's only one, use the current setup
 		if self.param.ntypes==1:
 			if self.param.potential=='soft':
+				k=self.param.pot_params['k']
 				if self.monodisperse:
 					dmax=4*self.sigma**2
-				for i in range(len(r)):
+				for i in range(self.N):
 				#for i in range(10):
 					#dist=np.sum((r-r[i,:])**2,axis=1)
-					dist=self.geom.GeodesicDistance(r,r[i,:])
+					dist=self.geom.GeodesicDistance(self.rval,self.rval[i,:])
 					if self.monodisperse: 
 						neighbours=[index for index,value in enumerate(dist) if value <dmax]
 					else:
-						neighbours=[index for index,value in enumerate(dist) if value < (radius[i]+radius[index])**2]
+						neighbours=[index for index,value in enumerate(dist) if value < (self.radius[i]+self.radius[index])**2]
 					neighbours.remove(i)
 					dr=np.sqrt(dist[neighbours])
-					diff=radius[i]+radius[j]-dr
+					diff=self.radius[i]+self.radius[neighbours]-dr
 					fact = 0.5*self.param.pot_params['k']*diff
 					eng_val = fact*diff
 					press_val = fact*dr
 					# Stress (force moment) has to be element by element) r_a F_b = -k r_a dist_b 
-					drvec=r[neighbours,:]-r[i,:]
+					drvec=self.rval[neighbours,:]-self.rval[i,:]
 					Fvec=k*((diff/dr).transpose()*(drvec).transpose()).transpose()
 					for u in range(3):
 						for v in range(3):
@@ -117,16 +127,16 @@ class Configuration:
 				for i in range(self.N):
 				#for i in range(10):
 					#dist=np.sum((r-r[i,:])**2,axis=1)
-					dist=self.geom.GeodesicDistance(r,r[i,:])
+					dist=self.geom.GeodesicDistance(self.rval,self.rval[i,:])
 					if self.monodisperse: 
 						neighbours=[index for index,value in enumerate(dist) if value <dmax]
 					else:
-						neighbours=[index for index,value in enumerate(dist) if value < (re*radius[i]+re*radius[j])**2]
+						neighbours=[index for index,value in enumerate(dist) if value < (re*self.radius[i]+re*self.radius[j])**2]
 					neighbours.remove(i)
 					dr=np.sqrt(dist[neighbours])
 					eng_val=D*(1-np.exp(-a*(dr-re)))**2
 					fnorm=-2*a*D*np.exp(-a*(dr-re))*(1-np.exp(-a*(dr-re)))
-					drvec=r[neighbours,:]-r[i,:]
+					drvec=self.rval[neighbours,:]-self.rval[i,:]
 					Fvec=((fnorm/dr).transpose()*(drvec).transpose()).transpose()
 					press_val=fnorm*dr
 					for u in range(3):

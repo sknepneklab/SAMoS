@@ -23,13 +23,14 @@ class Defects:
 	def __init__(self,tess,conf):
 		self.LoopList=tess.LoopList
 		self.conf=conf
+		self.normal=conf.geom.UnitNormal(conf.rval)
 		
 		self.numdefect_n=0
 		self.numdefect_v=0
 		# Defect storage, up to 100
 		# For n and velocity
-		self.defects_n=np.zeros((100,4))
-		self.defects_v=np.zeros((100,4))
+		self.defects_n=[]
+		self.defects_v=[]
 		self.printnow=False
        
     # MISSING: getting the symmetry type directly from the parameter list, not as an input parameter
@@ -51,29 +52,35 @@ class Defects:
 				ndefect=0.0
 				vdefect=0.0
 			if abs(ndefect)>0:
-				if self.numdefect_n<100:
-					print "Found Defect in orientation field!"
-					print ndefect
-					# Construct the geometric centre of the defect
-					rmhat=np.sum(self.conf.rval[thisLoop],axis=0)
-					rmhat/=np.sqrt(np.sum(rmhat**2))
-					# Charge of the defect
-					self.defects_n[self.numdefect_n,0]=ndefect
-					# Coordinates of the defect
-					self.defects_n[self.numdefect_n,1:]=radius*rmhat
-					self.numdefect_n+=1
+				print "Found Defect in orientation field!"
+				print ndefect
+				# Construct the geometric centre of the defect
+				r0s=self.conf.rval[thisLoop]
+				r0s[1:,:]=self.conf.geom.ApplyPeriodic12(r0s[0,:],r0s[1:,:])+r0s[0,:]
+				rmval=np.mean(r0s,axis=0)
+				# Charge of the defect
+				defbit=[ndefect]
+				defbit.extend(list(rmval))
+				self.defects_n.append(defbit)
+				#self.defects_n[self.numdefect_n,0]=ndefect
+				# Coordinates of the defect
+				#self.defects_n[self.numdefect_n,1:]=radius*rmhat
+				self.numdefect_n+=1
 			if abs(vdefect)>0:
-				if self.numdefect_v<100:
-					print "Found Defect in velocity field!"
-					print vdefect
-					# Construct the geometric centre of the defect
-					rmhat=np.sum(self.conf.rval[thisLoop],axis=0)
-					rmhat/=np.sqrt(np.sum(rmhat**2))
-					# Charge of the defect
-					self.defects_v[self.numdefect_v,0]=vdefect
-					# Coordinates of the defect
-					self.defects_v[self.numdefect_v,1:]=radius*rmhat
-					self.numdefect_v+=1
+				print "Found Defect in velocity field!"
+				print vdefect
+				# Construct the geometric centre of the defect
+				r0s=self.conf.rval[thisLoop]
+				r0s[1:,:]=self.conf.geom.ApplyPeriodic12(r0s[0,:],r0s[1:,:])+r0s[0,:]
+				rmval=np.mean(r0s,axis=0)
+				# Charge of the defect
+				defbit=[vdefect]
+				defbit.extend(list(rmval))
+				self.defects_v.append(defbit)
+				# self.defects_v[self.numdefect_v,0]=vdefect
+				# Coordinates of the defect
+				# self.defects_v[self.numdefect_v,1:]=radius*rmhat
+				self.numdefect_v+=1
 
 		#print defects
 		print 'Number of orientation field defects: ' + str(self.numdefect_n)
@@ -85,26 +92,30 @@ class Defects:
 		# Count the defect charge. Times two, to use integers and easier if statements
 		# nval
 		thetatot=0
-		t0=thisloop[0]
-		ctheta=1
-		for t in thisLoop[1:-1]:
-			ctheta=np.dot(self.conf.nval[t,:],np.sign(ctheta)*self.conf.nval[t0,:])
-			stheta=np.dot(self.conf.rhat[t,:],np.cross(self.conf.nval[t,:],self.conf.nval[t0,:]))
-			theta=np.arccos(ctheta)*np.sign(stheta)
+		t0=thisLoop[-1]
+		thetadum=[]
+		for t in thisLoop[0:len(thisLoop)]:
+			ctheta=np.dot(self.conf.nval[t0,:],self.conf.nval[t,:])
+			stheta=np.dot(self.normal[t,:],np.cross(self.conf.nval[t0,:],self.conf.nval[t,:]))
+			if abs(stheta)>1:
+				stheta=np.sign(stheta)
+			theta=np.arcsin(stheta*np.sign(ctheta))
+			thetadum.append(theta)
 			thetatot+=theta
 			t0=t
-		ndefect=0.5*int(round(thetatot/(np.pi)))
-		# vhat
+		# the stupid loops are the wrong way round ...
+		ndefect=-0.5*int(round(thetatot/(np.pi)))
 		thetatot=0
-		t0=thisloop[0]
-		ctheta=1
-		for t in thisLoop[1:-1]:
-			ctheta=np.dot(self.conf.vhat[t,:],np.sign(ctheta)*self.conf.vhat[t0,:])
-			stheta=np.dot(self.conf.rhat[t,:],np.cross(self.conf.nval[t,:],self.conf.vhat[t0,:]))
-			theta=np.arccos(ctheta)*np.sign(stheta)
+		t0=thisLoop[-1]
+		for t in thisLoop[0:len(thisLoop)]:
+			ctheta=np.dot(self.conf.nval[t0,:],self.conf.nval[t,:])
+			stheta=np.dot(self.normal[t,:],np.cross(self.conf.vhat[t0,:],self.conf.vhat[t,:]))
+			if abs(stheta)>1:
+				stheta=np.sign(stheta)
+			theta=np.arcsin(stheta*np.sign(ctheta))
 			thetatot+=theta
 			t0=t
-		vdefect=0.5*int(round(thetatot/(np.pi)))
+		vdefect=-0.5*int(round(thetatot/(np.pi)))
 		return ndefect,vdefect
 			
             
@@ -151,7 +162,7 @@ class Defects:
 		t0=thisLoop[-1]
 		for t in thisLoop[0:len(thisLoop)]:
 			ctheta=np.dot(self.conf.nval[t,:],self.conf.nval[t0,:])    
-			stheta=np.dot(self.conf.rhat[t,:],np.cross(self.conf.nval[t,:],self.conf.nval[t0,:]))
+			stheta=np.dot(self.normal[t,:],np.cross(self.conf.nval[t,:],self.conf.nval[t0,:]))
 			theta=np.arccos(ctheta)*np.sign(stheta)
 			thetatot+=theta
 			t0=t
@@ -163,7 +174,7 @@ class Defects:
 		t0=thisLoop[-1]
 		for t in thisLoop[0:len(thisLoop)]:
 			ctheta=np.dot(self.conf.vhat[t,:],self.conf.vhat[t0,:])    
-			stheta=np.dot(self.conf.rhat[t,:],np.cross(self.conf.vhat[t,:],self.conf.vhat[t0,:]))
+			stheta=np.dot(self.normal[t,:],np.cross(self.conf.vhat[t,:],self.conf.vhat[t0,:]))
 			theta=np.arccos(ctheta)*np.sign(stheta)
 			thetatot+=theta
 			t0=t
@@ -182,7 +193,8 @@ class Defects:
 	def PlotDefects(self):
 		fig = plt.figure()
 		ax = fig.add_subplot(111, projection='3d')
+		print self.defects_n
 		ax.scatter(self.conf.rval[:,0], self.conf.rval[:,1], self.conf.rval[:,2], zdir='z', c='b',s=4)
-		ax.scatter(defects_n[:,1], defects_n[:,2], defects_n[:,3], zdir='z', c='r',s=50)
-		ax.scatter(defects_v[:,1], defects_v[:,2], defects_v[:,3], zdir='z', c='g',s=50)
+		ax.scatter(self.defects_n[:][1], self.defects_n[:][2], self.defects_n[:][3], zdir='z', c='r',s=50)
+		ax.scatter(self.defects_v[:][1], self.defects_v[:][2], self.defects_v[:][3], zdir='z', c='g',s=50)
 		
