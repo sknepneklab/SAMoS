@@ -59,6 +59,9 @@ class Defects:
 				if self.conf.geom.periodic:
 					r0s[1:,:]=self.conf.geom.ApplyPeriodic12(r0s[0,:],r0s[1:,:])+r0s[0,:]
 				rmval=np.mean(r0s,axis=0)
+				if self.conf.geom.manifold=='sphere':
+					rabs=np.sqrt(rmval[0]**2+rmval[1]**2+rmval[2]**2)
+					rmval=rmval/rabs*self.conf.geom.R
 				# Charge of the defect
 				defbit=[ndefect]
 				defbit.extend(list(rmval))
@@ -75,6 +78,9 @@ class Defects:
 				if self.conf.geom.periodic:
 					r0s[1:,:]=self.conf.geom.ApplyPeriodic12(r0s[0,:],r0s[1:,:])+r0s[0,:]
 				rmval=np.mean(r0s,axis=0)
+				if self.conf.geom.manifold=='sphere':
+					rabs=np.sqrt(rmval[0]**2+rmval[1]**2+rmval[2]**2)
+					rmval=rmval/rabs*self.conf.geom.R
 				# Charge of the defect
 				defbit=[vdefect]
 				defbit.extend(list(rmval))

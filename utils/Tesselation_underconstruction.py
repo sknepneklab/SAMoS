@@ -33,34 +33,39 @@ class Tesselation:
 		count=0
 		# Identify all neighbours and add them to a list. Keep i->j and j->i separate
 		# The label is in neighList, the particle numbers are in Ival and Jval
-		if self.conf.monodisperse:
-			if self.conf.param.potential=='soft':
-				dmax=2*self.conf.sigma
-			elif self.conf.param.potential=='morse':
-				#dmax=16*self.conf.sigma**2
-				dmax=2*self.conf.sigma
-			else:
-				dmax=2*self.conf.sigma
-				print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
-				
+		#if self.conf.monodisperse:
+		if self.conf.param.potential=='soft':
+			dmax=2*self.conf.sigma
+		elif self.conf.param.potential=='morse':
+			#dmax=16*self.conf.sigma**2
+			dmax=2*self.conf.sigma
+		else:
+			dmax=2*self.conf.sigma
+			print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
+			
 		if self.conf.param.potential=='morse':
 			re=self.conf.param.pot_params['re']
-		##cl = CellList(2.0*np.sqrt(dmax),self.conf.param.box)
-		##for i in range(len(self.rval)):
-			##cl.add_vertex(self.rval[i,:],i)
+		cl = CellList(2.0*np.sqrt(dmax),self.conf.param.box)
 		for i in range(len(self.rval)):
-			dist=self.geom.GeodesicDistance12(self.rval[i,:],self.rval)
-			if self.conf.monodisperse:
-				neighbours=[index for index,value in enumerate(dist) if value <dmax]
-			else:
-				if self.conf.param.potential=='soft':
-					neighbours=[index for index,value in enumerate(dist) if value <(self.conf.radius[i]+self.conf.radius[index])]
-					
-				elif self.conf.param.potential=='morse':
-					neighbours=[index for index,value in enumerate(dist) if value <(re*self.conf.radius[i]+re*self.conf.radius[index])]
-				else:
-					neighbours=[index for index,value in enumerate(dist) if value <0.8*(self.conf.radius[i]+self.conf.radius[index])]	
-			neighbours.remove(i)
+			cl.add_vertex(self.rval[i,:],i)
+		for i in range(len(self.rval)):
+			neighbours=[]
+			mult=1.0
+			while len(neighbours)<2:
+				if not self.conf.monodisperse:
+					if self.conf.param.potential=='soft':
+						dmax=(self.conf.radius[i]+self.conf.radius[index])
+					elif self.conf.param.potential=='morse':
+						dmax=(re*self.conf.radius[i]+re*self.conf.radius[index])
+					else:
+						dmax=0.8*(self.conf.radius[i]+self.conf.radius[index])
+				dist=self.geom.GeodesicDistance12(self.rval[i,:],self.rval)
+				neighbours=[index for index,value in enumerate(dist) if value <dmax*mult]
+				neighbours.remove(i)
+				mult=1.1*mult
+				if mult>1.1:
+					print mult
+					print neighbours
 			neighList.extend([u for u in range(count,count+len(neighbours))])
 			self.Ival.extend([i for k in range(len(neighbours))])
 			#self.Jval.extend(neighs[neighbours])
@@ -110,8 +115,11 @@ class Tesselation:
 				dbeta=beta-beta0
 				dbeta-=2*np.pi*np.round((dbeta-np.pi)/(2*np.pi))
 				# and throwing out the particle itself
-				itself=jnei.index(self.Ival[idx])
-				dbeta[itself]=-1
+				try:
+					itself=jnei.index(self.Ival[idx])
+					dbeta[itself]=-1
+				except:
+					pass
 				cnt=np.argmax(dbeta)
 			
 				idx=jnei0[cnt]

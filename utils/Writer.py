@@ -191,9 +191,10 @@ class Writer:
 		for k in range(len(tess.ParList)):
 			nedge=len(tess.ParList[k])
 			if nedge<2:
-				print nedge
-				print k
-				print tess.ParList[k]
+				huh=0
+				#print nedge
+				#print k
+				#print tess.ParList[k]
 			else:
 				havePoly.append(k)
 				#for k in range(300):
