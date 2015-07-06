@@ -16,7 +16,7 @@ import argparse
 
 from Geometry import *
 from Configuration import *
-from Tesselation import *
+from Tesselation_underconstruction import *
 from Defects import *
 from Writer import *
 
@@ -27,6 +27,7 @@ parser.add_argument("-d", "--directory", type=str, help="input directory")
 parser.add_argument("-o", "--output", type=str, help="output directory")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
 parser.add_argument("--nematic", action='store_true', default=False, help="Shift n vectors such that particle is in the middle of director.")
+parser.add_argument("--closeHoles", action='store_true', default=False, help="Closes the holes in the tesselation to help tracking of defects (recommended for low density and/or nematic)")
 parser.add_argument("--writeP",action='store_true', default=False, help="Output particle positions velocities directors.")
 parser.add_argument("--writeT",action='store_true', default=False, help="Output tesselation")
 parser.add_argument("--writeD",action='store_true', default=False, help="Output defects")
@@ -36,7 +37,12 @@ args = parser.parse_args()
 params = Param(args.directory+args.conffile)
 
 files = sorted(glob(args.directory + args.input+'*.dat'))[args.skip:]
-    
+
+defects_n_out=[]
+defects_v_out=[]
+numdefects_n_out=[]
+numdefects_v_out=[]
+
 u=0
 for f in files:
 	conf = Configuration(params,f)
@@ -50,7 +56,7 @@ for f in files:
 		conf.getTangentBundle()
 		tess = Tesselation(conf)
 		print "initialized tesselation"
-		LoopList,Ival,Jval = tess.findLoop()
+		LoopList,Ival,Jval = tess.findLoop(args.closeHoles)
 		print "found loops"
 		#print LoopList
 		if args.writeD:
@@ -74,5 +80,8 @@ for f in files:
 			writeme.writePatches(tess,outpatches)
 	
 	u+=1
+data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out}
+outpickle=args.directory+'defect_data.p'
+pickle.dump(data,open(outpickle,'wb'))
 	
 	

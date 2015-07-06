@@ -84,9 +84,9 @@ for J in Jlist:
 				writeme.writePatches(tess,outpatches)
 			
 			u+=1
-			data={'J':J,'v':v,'k':params.pot_params['k'],'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out}
-			outpickle=directory+'defect_data.p'
-			pickle.dump(data,open(outpickle,'wb'))
+		data={'J':J,'v':v,'k':params.pot_params['k'],'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out}
+		outpickle=directory+'defect_data.p'
+		pickle.dump(data,open(outpickle,'wb'))
 			
 		
 

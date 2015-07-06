@@ -71,8 +71,8 @@ class Defects:
 				#self.defects_n[self.numdefect_n,1:]=radius*rmhat
 				self.numdefect_n+=1
 			if abs(vdefect)>0:
-				print "Found Defect in velocity field!"
-				print vdefect
+				#print "Found Defect in velocity field!"
+				#print vdefect
 				# Construct the geometric centre of the defect
 				r0s=self.conf.rval[thisLoop]
 				if self.conf.geom.periodic:
