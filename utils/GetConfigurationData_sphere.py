@@ -14,7 +14,7 @@
 import sys
 import argparse
 import pickle as pickle
-sys.path.append('/home/silke/Documents/CurrentProjects/Rastko/source_git/apcs/utils/') 
+#sys.path.append('/home/silke/Documents/CurrentProjects/Rastko/source_git/apcs/utils/') 
 
 from Geometry import *
 from Configuration import *
@@ -22,16 +22,33 @@ from Tesselation import *
 from Defects import *
 from Writer import *
 
-basefolder='/home/silke/Documents/CurrentProjects/Rastko/nematic/NEWRUNS/2015-07-04/'
-Jlist=['0.1','0.5','1.0','5.0']
-vlist=['0.5','1.0','1.5','2.0','2.5','5.0']
+parser = argparse.ArgumentParser()
+parser.add_argument("-b", "--basefolder", type=str, help="Base folder with all data files")
+parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
+parser.add_argument("--writeP", action='store_true', default=True, help="write pressure")
+parser.add_argument("--writeT", action='store_true', default=True, help="write T (??)")
+parser.add_argument("--writeD", action='store_true', default=True, help="write D (??)")
+parser.add_argument("--nematic", action='store_true', default=True, help="Assume nematic.")
+parser.add_argument("--outD", action='store_true', default=True, help="Output D (??).")
+parser.add_argument("--name_1", type=str,default='J_', help="Name of the first quantity to loop over")
+parser.add_argument("--name_2", type=str,default='v0_', help="Name of the second quantity to loop over")
+parser.add_argument("--val_1", type=str, action='append', help="Values of quantity one to loop over")
+parser.add_argument("--val_2", type=str, action='append', help="Values of quantity two to loop over")
+args = parser.parse_args()
 
-writeP=True
-writeT=True
-writeD=True
+
+
+basefolder=args.basefolder
+
+Jlist=args.val_1
+vlist=args.val_2
+
+writeP=args.writeP
+writeT=args.writeT
+writeD=args.writeD
 outD=True
-nematic=True
-skip=0
+nematic=args.nematic
+skip=args.skip
 
 defects_n_out=[]
 defects_v_out=[]
@@ -39,9 +56,9 @@ numdefects_n_out=[]
 numdefects_v_out=[]
 for J in Jlist:
 	for v in vlist:
-		directory=basefolder+'J_' + J + '/v0_' + v +'/'
-		conffile='nematic_J_' + J+ '_v0_' + v +'.conf'
-		finput='nematic_J_'+J+'_v0_'+v+'_0'
+		directory=basefolder+args.name_1 + J + '/'+args.name_2 + v +'/'
+		conffile='nematic_'+args.name_1 + '_' + J + '_'+args.name_2+'_' + v +'.conf'
+		finput='nematic_'+args.name_1+'_'+J+'_'+args.name_2+'_'+v+'_0'
 		params = Param(directory+conffile)
 		files = sorted(glob(directory + finput+'*.dat'))[skip:]
 		u=0
@@ -84,7 +101,7 @@ for J in Jlist:
 				writeme.writePatches(tess,outpatches)
 			
 			u+=1
-		data={'J':J,'v':v,'k':params.pot_params['k'],'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out}
+		data={args.name_1:J,args.name_2:v,'k':params.pot_params['k'],'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out}
 		outpickle=directory+'defect_data.p'
 		pickle.dump(data,open(outpickle,'wb'))
 			
