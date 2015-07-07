@@ -30,8 +30,8 @@ parser.add_argument("--writeT", action='store_true', default=True, help="write T
 parser.add_argument("--writeD", action='store_true', default=True, help="write D (??)")
 parser.add_argument("--nematic", action='store_true', default=True, help="Assume nematic.")
 parser.add_argument("--outD", action='store_true', default=True, help="Output D (??).")
-parser.add_argument("--name_1", type=str,default='J_', help="Name of the first quantity to loop over")
-parser.add_argument("--name_2", type=str,default='v0_', help="Name of the second quantity to loop over")
+parser.add_argument("--name_1", type=str,default='J', help="Name of the first quantity to loop over")
+parser.add_argument("--name_2", type=str,default='v0', help="Name of the second quantity to loop over")
 parser.add_argument("--val_1", type=str, action='append', help="Values of quantity one to loop over")
 parser.add_argument("--val_2", type=str, action='append', help="Values of quantity two to loop over")
 args = parser.parse_args()
@@ -56,9 +56,10 @@ numdefects_n_out=[]
 numdefects_v_out=[]
 for J in Jlist:
 	for v in vlist:
-		directory=basefolder+args.name_1 + J + '/'+args.name_2 + v +'/'
+		directory=basefolder+'/' + args.name_1 +'_' + J + '/'+args.name_2 + '_' + v +'/'
 		conffile='nematic_'+args.name_1 + '_' + J + '_'+args.name_2+'_' + v +'.conf'
 		finput='nematic_'+args.name_1+'_'+J+'_'+args.name_2+'_'+v+'_0'
+		print finput
 		params = Param(directory+conffile)
 		files = sorted(glob(directory + finput+'*.dat'))[skip:]
 		u=0
@@ -66,7 +67,7 @@ for J in Jlist:
 			conf = Configuration(params,f)
 			writeme = Writer(nematic)
 			if writeP:
-				outparticles = directory + '/frame' + str(u) + '_particles.vtp'
+				outparticles = directory + 'frame' + str(u) + '_particles.vtp'
 				print outparticles
 				writeme.writeConfigurationVTK(conf,outparticles)
 			#plt.show()
