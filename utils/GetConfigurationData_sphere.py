@@ -25,11 +25,12 @@ from Writer import *
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--basefolder", type=str, help="Base folder with all data files")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
-parser.add_argument("--writeP", action='store_true', default=True, help="write pressure")
-parser.add_argument("--writeT", action='store_true', default=True, help="write T (??)")
-parser.add_argument("--writeD", action='store_true', default=True, help="write D (??)")
+parser.add_argument("--writeP", action='store_true', default=True, help="write particle positions velocities directors vtp file")
+parser.add_argument("--writeT", action='store_true', default=True, help="write Tesselation vtp file")
+parser.add_argument("--writeD", action='store_true', default=True, help="write Defects vtp file")
 parser.add_argument("--nematic", action='store_true', default=True, help="Assume nematic.")
-parser.add_argument("--outD", action='store_true', default=True, help="Output D (??).")
+parser.add_argument("--closeHoles", action='store_true', default=True, help="Closes the holes in the tesselation to help tracking of defects (recommended for low density and/or nematic)")
+parser.add_argument("--makeEdges",action='store_true', default=False, help="Make edges to the tesselation along borders")
 parser.add_argument("--name_1", type=str,default='J', help="Name of the first quantity to loop over")
 parser.add_argument("--name_2", type=str,default='v0', help="Name of the second quantity to loop over")
 parser.add_argument("--val_1", type=str, action='append', help="Values of quantity one to loop over")
@@ -46,7 +47,6 @@ vlist=args.val_2
 writeP=args.writeP
 writeT=args.writeT
 writeD=args.writeD
-outD=True
 nematic=args.nematic
 skip=args.skip
 
@@ -74,7 +74,7 @@ for J in Jlist:
 			conf.getTangentBundle()
 			tess = Tesselation(conf)
 			print "initialized tesselation"
-			LoopList,Ival,Jval = tess.findLoop()
+			LoopList,Ival,Jval = tess.findLoop(args.closeHoles)
 			print "found loops"
 			#print LoopList
 			if writeD:
@@ -96,7 +96,8 @@ for J in Jlist:
 			if writeT:
 				outpatches = directory + '/frame' + str(u) + '_patches.vtp'
 				print outpatches
-				#tess.makeEdges(0.85)   
+				if args.makeEdges:
+					tess.makeEdges(0.85)   
 				tess.OrderPatches()
 				print "ordered patches"
 				writeme.writePatches(tess,outpatches)

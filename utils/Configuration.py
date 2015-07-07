@@ -23,8 +23,13 @@
 from Geometry import *
 from read_param import *
 from read_data import *
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+try:
+	import matplotlib.pyplot as plt
+	from mpl_toolkits.mplot3d import Axes3D
+	HAS_MATPLOTLIB=True
+except:
+	HAS_MATPLOTLIB=False
+	pass
 
 class Configuration:
 	def __init__(self,param,filename,debug=False):
@@ -201,9 +206,12 @@ class Configuration:
 		
 		# Debugging output
 		if debug==True:
-			fig = plt.figure()
-			ax = fig.add_subplot(111, projection='3d')
-			ax.scatter(rval[:,0], rval[:,1], rval[:,2], zdir='z', c='b')
+			if HAS_MATPLOTLIB:
+				fig = plt.figure()
+				ax = fig.add_subplot(111, projection='3d')
+				ax.scatter(rval[:,0], rval[:,1], rval[:,2], zdir='z', c='b')
+			else:
+				print 'Error: Matplotlib does not exist on this machine, cannot plot system'
 			
 		return [vel_av,eng_av,press_av,s_tt_av,s_tp_av,s_pt_av,s_pp_av,alpha,direction,directionV,orderpar,orderparV]
 	

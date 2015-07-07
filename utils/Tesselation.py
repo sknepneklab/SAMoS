@@ -30,7 +30,10 @@ class Tesselation:
 		neighList=[]
 		self.Ival=[]
 		self.Jval=[]
-		Inei=[[] for k in range(len(self.rval))]
+		if closeHoles:
+			Inei=[[] for k in range(len(self.rval))]
+		else:
+			Inei=[]
 		count=0
 		# Identify all neighbours and add them to a list. Keep i->j and j->i separate
 		# The label is in neighList, the particle numbers are in Ival and Jval
@@ -52,9 +55,9 @@ class Tesselation:
 			#cl.add_vertex(self.rval[i,:],i)
 		for i in range(len(self.rval)):
 			neighbours=[]
-			mult=1.0
 			dist=self.geom.GeodesicDistance12(self.rval[i,:],self.rval)
 			if closeHoles:
+				mult=1.0
 				while len(neighbours)<3 and mult<MMAX:
 					if self.conf.monodisperse:
 						neighbours=[index for index,value in enumerate(dist) if value <mult*dmax]
@@ -128,7 +131,6 @@ class Tesselation:
 				dr0hat/=np.sqrt(np.sum(dr0hat**2))
 				jnei0=Inei[self.Jval[idx]]
 				jnei=list(Jarray[jnei0])  
-		
 				if self.conf.geom.periodic:
 					drvec=self.geom.ApplyPeriodic12(self.rval[self.Jval[idx],:],self.rval[jnei,:])
 				else:

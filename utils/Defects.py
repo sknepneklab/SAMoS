@@ -16,8 +16,13 @@
 
 from Configuration import *
 from Tesselation import *
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+try:
+	import matplotlib.pyplot as plt
+	from mpl_toolkits.mplot3d import Axes3D
+	HAS_MATPLOTLIB=True
+except:
+	HAS_MATPLOTLIB=False
+	pass
 
 class Defects:
 	def __init__(self,tess,conf):
@@ -199,10 +204,13 @@ class Defects:
 		return ndefect,vdefect            
 
 	def PlotDefects(self):
-		fig = plt.figure()
-		ax = fig.add_subplot(111, projection='3d')
-		print self.defects_n
-		ax.scatter(self.conf.rval[:,0], self.conf.rval[:,1], self.conf.rval[:,2], zdir='z', c='b',s=4)
-		ax.scatter(self.defects_n[:][1], self.defects_n[:][2], self.defects_n[:][3], zdir='z', c='r',s=50)
-		ax.scatter(self.defects_v[:][1], self.defects_v[:][2], self.defects_v[:][3], zdir='z', c='g',s=50)
+		if HAS_MATPLOTLIB:
+			fig = plt.figure()
+			ax = fig.add_subplot(111, projection='3d')
+			print self.defects_n
+			ax.scatter(self.conf.rval[:,0], self.conf.rval[:,1], self.conf.rval[:,2], zdir='z', c='b',s=4)
+			ax.scatter(self.defects_n[:][1], self.defects_n[:][2], self.defects_n[:][3], zdir='z', c='r',s=50)
+			ax.scatter(self.defects_v[:][1], self.defects_v[:][2], self.defects_v[:][3], zdir='z', c='g',s=50)
+		else:
+			print 'Error: Matplotlib does not exist on this machine, cannot plot system and defects'
 		

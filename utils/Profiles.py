@@ -15,8 +15,13 @@
 # ################################################################
 from Geometry import *
 from Configuration import *
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+try:
+	import matplotlib.pyplot as plt
+	from mpl_toolkits.mplot3d import Axes3D
+	HAS_MATPLOTLIB=True
+except:
+	HAS_MATPLOTLIB=False
+	pass
 
 # Profiles for the spherical case. 
 # Warning: Implicitly spherical geometry. Results in other geometries will be garbage (should not crash though)
@@ -100,9 +105,12 @@ class Profiles:
 		
 		# Debugging output
 		if debug==True:
-			fig = plt.figure()
-			ax = fig.add_subplot(111, projection='3d')
-			ax.scatter(self.conf.rval[:,0], self.conf.rval[:,1], self.conf.rval[:,2], zdir='z', c='b')
+			if HAS_MATPLOTLIB:
+				fig = plt.figure()
+				ax = fig.add_subplot(111, projection='3d')
+				ax.scatter(self.conf.rval[:,0], self.conf.rval[:,1], self.conf.rval[:,2], zdir='z', c='b')
+			else:
+				print 'Error: Matplotlib does not exist on this machine, cannot plot system'
 			
 		return [theta_out,rho_profile,vel_profile,eng_profile,press_profile,s_tt_profile,s_tp_profile,s_pt_profile,s_pp_profile,alpha_profile,alpha_v_profile,self.direction,self.orderpar]
         
