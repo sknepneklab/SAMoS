@@ -16,7 +16,7 @@ import argparse
 
 from Geometry import *
 from Configuration import *
-from Tesselation_underconstruction import *
+from Tesselation import *
 from Defects import *
 from Writer import *
 
