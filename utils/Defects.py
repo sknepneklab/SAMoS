@@ -44,6 +44,21 @@ class Defects:
 	def getDefects(self,symtype): 
 		# Generalized algorithm for defects of any type
 		# Count the defect charge. Times two, to use integers and easier if statements
+		# Need to reinitialize defects in case multiple trackings are done on the same system
+		self.numdefect_n=0
+		self.numdefect_v=0
+		self.defects_n=[]
+		self.defects_v=[]
+		char_n=0
+		char_v=0
+		if symtype=='oldnematic':
+			print "Tracking nematic defects with the Goldenfeld algorithm!"
+		elif symtype=='polar':
+			print "Tracking polar defects!"
+		elif symtype=='nematic':
+			print "Tracking nematic defects!"
+		else:
+			print "Unknown alignment symmetry type! Not tracking defects!"
 		for u in range(len(self.LoopList)):
 			thisLoop=self.LoopList[u]
 			if symtype=='oldnematic':
@@ -53,12 +68,12 @@ class Defects:
 			elif symtype=='nematic':
 				ndefect,vdefect=self.getDefectsNematic(thisLoop)
 			else:
-				print "Unknown alignment symmetry type! Not tracking defects!"
 				ndefect=0.0
 				vdefect=0.0
 			if abs(ndefect)>0:
 				print "Found Defect in orientation field!"
 				print ndefect
+				char_n+=ndefect
 				# Construct the geometric centre of the defect
 				r0s=self.conf.rval[thisLoop]
 				if self.conf.geom.periodic:
@@ -76,8 +91,9 @@ class Defects:
 				#self.defects_n[self.numdefect_n,1:]=radius*rmhat
 				self.numdefect_n+=1
 			if abs(vdefect)>0:
-				#print "Found Defect in velocity field!"
-				#print vdefect
+				print "Found Defect in velocity field!"
+				print vdefect
+				char_v+=vdefect
 				# Construct the geometric centre of the defect
 				r0s=self.conf.rval[thisLoop]
 				if self.conf.geom.periodic:
@@ -98,6 +114,8 @@ class Defects:
 		#print defects
 		print 'Number of orientation field defects: ' + str(self.numdefect_n)
 		print 'Number of velocity field defects: ' + str(self.numdefect_v)
+		print 'Total charge of orientation field defects: ' + str(char_n)
+		print 'Total charge of velocity field defects: ' + str(char_v)
 		return self.defects_n, self.defects_v,self.numdefect_n,self.numdefect_v
         
 	def getDefectsNematic(self,thisLoop): 
@@ -121,7 +139,7 @@ class Defects:
 		thetatot=0
 		t0=thisLoop[-1]
 		for t in thisLoop[0:len(thisLoop)]:
-			ctheta=np.dot(self.conf.nval[t0,:],self.conf.nval[t,:])
+			ctheta=np.dot(self.conf.vhat[t0,:],self.conf.vhat[t,:])
 			stheta=np.dot(self.normal[t,:],np.cross(self.conf.vhat[t0,:],self.conf.vhat[t,:]))
 			if abs(stheta)>1:
 				stheta=np.sign(stheta)

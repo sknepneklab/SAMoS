@@ -13,6 +13,7 @@
 
 import sys
 import argparse
+import pickle
 
 from Geometry import *
 from Configuration import *
@@ -39,13 +40,14 @@ params = Param(args.directory+args.conffile)
 
 files = sorted(glob(args.directory + args.input+'*.dat'))[args.skip:]
 
-defects_n_out=[]
-defects_v_out=[]
-numdefects_n_out=[]
-numdefects_v_out=[]
+defects_n_out=[[] for u in range(len(files))]
+defects_v_out=[[] for u in range(len(files))]
+numdefects_n_out=np.zeros(len(files))
+numdefects_v_out=np.zeros(len(files))
 
 u=0
 for f in files:
+	print f
 	conf = Configuration(params,f)
 	writeme = Writer(args.nematic)
 	if args.writeP:
@@ -70,6 +72,10 @@ for f in files:
 			else:
 				defects_n, defects_v,numdefect_n,numdefect_v=defects.getDefects('polar')
 			print "found defects"
+			defects_n_out[u]=defects_n
+			defects_v_out[u]=defects_v
+			numdefects_n_out[u]=numdefect_n
+			numdefects_v_out[u]=numdefect_v
 			#defects.PlotDefects()
 			writeme.writeDefects(defects_n, defects_v,numdefect_n,numdefect_v,outdefects)
 		if args.writeT:
@@ -82,7 +88,7 @@ for f in files:
 			writeme.writePatches(tess,outpatches)
 	
 	u+=1
-data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out}
+data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out,'numdefects_v':numdefects_v_out}
 outpickle=args.directory+'defect_data.p'
 pickle.dump(data,open(outpickle,'wb'))
 	
