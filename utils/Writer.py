@@ -234,7 +234,26 @@ class Writer:
 		for k in havePoly:
 			ptype.InsertNextValue(tess.conf.ptype[k])
 		polygonPolyData.GetCellData().AddArray(ptype)
-			
+		
+                # Add denisity
+                tess.ComputePatchArea()
+            	density = vtk.vtkDoubleArray()
+		density.SetNumberOfComponents(1)
+		density.SetName('Density')
+		for k in havePoly:
+                    if tess.conf.geom.manifold=='sphere':
+                        N = tess.conf.N
+                        R = tess.conf.geom.R
+                        A0 = 4.0*np.pi*R**2/N
+                        if tess.area[k] < 0.1*A0:
+			   density.InsertNextValue(10.0)
+                        else:
+			   density.InsertNextValue(A0/tess.area[k])
+                    else:
+			density.InsertNextValue(1.0/tess.area[k])
+		polygonPolyData.GetCellData().AddArray(density)
+
+
 		writer = vtk.vtkXMLPolyDataWriter()
 		writer.SetFileName(outname)
 		if vtk.VTK_MAJOR_VERSION <= 5:

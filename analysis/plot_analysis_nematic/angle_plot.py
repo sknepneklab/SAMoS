@@ -20,7 +20,6 @@
 
 import sys
 import argparse
-from read_data import *
 import numpy as np
 import numpy.linalg as lin
 import matplotlib.pyplot as plt
@@ -34,6 +33,7 @@ parser.add_argument("-o", "--output", type=str, default='out.png', help="output 
 parser.add_argument("-d", "--data", type=str, default='out.dat', help="textual output")
 parser.add_argument("-a", "--autocorrel", type=str, default='autocorrel.dat', help="name of the autocorrelation data file")
 parser.add_argument("-H", "--histogram", type=str, default='hist.dat', help="name of the time histogram file")
+parser.add_argument("-D", "--defname", type=str, default='def.dat', help="name of the defect number vs. time file")
 parser.add_argument("-b", "--bins", type=int, default=25, help="number of bins in the histogram")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many time steps")
 parser.add_argument("-S", "--step", type=float, default=5000, help="Time step multiplier")
@@ -198,6 +198,19 @@ plt.xlabel('time step',fontsize=20)
 plt.ylabel(r'$\left<\alpha\right>({}^\circ)$',fontsize=20)
 plt.legend(loc=4)
 plt.savefig(args.output,format='png')
+plt.clf()
+
+plt.rc('text', usetex=True)
+plt.xlim((0,max(steps)))
+plt.ylim((0,20))
+plt.title('Number of defects vs. time')
+plt.plot(steps,ndef,'r-', linewidth=2)
+plt.tick_params(axis='both', which='major', labelsize=20)
+plt.xlabel('time step',fontsize=20)
+plt.ylabel(r'$N_{def}$',fontsize=20)
+defname = '.'.join(args.defname.split('.')[:-1])
+plt.savefig(defname+'.png',format='png')
+
 #plt.show()
 
 

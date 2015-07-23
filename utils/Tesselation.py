@@ -25,6 +25,7 @@ class Tesselation:
 		self.rval=self.conf.rval
 		self.geom=self.conf.geom
 		self.debug=debug
+                self.ordered_patches = False
 		
 	def findLoop(self,closeHoles=False):
 		neighList=[]
@@ -57,8 +58,8 @@ class Tesselation:
 			neighbours=[]
 			dist=self.geom.GeodesicDistance12(self.rval[i,:],self.rval)
 			if closeHoles:
-				mult=1.0
-				while len(neighbours)<3 and mult<MMAX:
+				mult=0.25
+				while len(neighbours)<4 and mult<MMAX:
 					if self.conf.monodisperse:
 						neighbours=[index for index,value in enumerate(dist) if value <mult*dmax]
 					else:
@@ -253,4 +254,34 @@ class Tesselation:
 			lorder=np.argsort(beta)
 			self.ParList[i]=parray[lorder] 
 			# Use the new ParList structure where loops belong to particles are stored
-		return self.LoopList,self.LoopCen,self.ParList,self.Ival,self.Jval
+		self.ordered_patches = True
+                return self.LoopList,self.LoopCen,self.ParList,self.Ival,self.Jval
+
+
+        def ComputePatchArea(self):
+            if not self.ordered_patches: 
+                raise Exception('Patches have to be ordered in order to cumpute their area.')
+            self.area = []
+            for k in xrange(len(self.ParList)):
+                xc, yc, zc = 0.0, 0.0, 0.0
+                for l in self.ParList[k]:
+                    xc += self.LoopCen[l][0]
+                    yc += self.LoopCen[l][1]
+                    zc += self.LoopCen[l][2]
+                xc /= len(self.ParList[k])
+                yc /= len(self.ParList[k])
+                zc /= len(self.ParList[k])
+                N = len(self.ParList[k])
+                area = 0.0
+                for i in xrange(N):
+                    #print self.ParList[i]
+                    x1 = self.LoopCen[self.ParList[k][i]][0] - xc
+                    y1 = self.LoopCen[self.ParList[k][i]][1] - yc
+                    z1 = self.LoopCen[self.ParList[k][i]][2] - zc
+                    x2 = self.LoopCen[self.ParList[k][(i+1)%N]][0] - xc
+                    y2 = self.LoopCen[self.ParList[k][(i+1)%N]][1] - yc 
+                    z2 = self.LoopCen[self.ParList[k][(i+1)%N]][2] - zc
+                    n = np.cross([x1,y1,z1],[x2,y2,z2])
+                    area += 0.5*np.sqrt(np.dot(n,n))
+                self.area.append(area)
+               
