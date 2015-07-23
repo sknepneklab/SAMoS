@@ -183,7 +183,7 @@ class Tesselation:
 			lcen=[np.mean(looppos[:,0]), np.mean(looppos[:,1]),np.mean(looppos[:,2])]
 			if self.conf.geom.manifold=='sphere':
 				llen=np.sqrt(lcen[0]**2+lcen[1]**2+lcen[2]**2)
-				lcen/=lcen
+				lcen/=llen
 				lcen*=self.conf.geom.R
 			self.LoopCen.append(lcen)
 			self.LoopList.append(llist)
