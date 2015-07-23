@@ -180,7 +180,12 @@ class Tesselation:
 			if self.geom.periodic:
 				dl=self.geom.ApplyPeriodic12(looppos[0,:],looppos)
 				looppos=looppos[0,:]+dl
-			self.LoopCen.append([np.mean(looppos[:,0]), np.mean(looppos[:,1]),np.mean(looppos[:,2])])
+			lcen=[np.mean(looppos[:,0]), np.mean(looppos[:,1]),np.mean(looppos[:,2])]
+			if self.conf.geom.manifold=='sphere':
+				llen=np.sqrt(lcen[0]**2+lcen[1]**2+lcen[2]**2)
+				lcen/=lcen
+				lcen*=self.conf.geom.R
+			self.LoopCen.append(lcen)
 			self.LoopList.append(llist)
 			self.l+=1
 		return self.LoopList,self.Ival,self.Jval
