@@ -117,7 +117,9 @@ class Writer:
 			writer.SetInput(polydata)
 		else:
 			writer.SetInputData(polydata)
-		writer.SetDataModeToAscii()
+		#writer.SetDataModeToAscii()
+		writer.SetDataModeToBinary()
+                writer.SetCompressorTypeToZLib()
 		writer.Write()
 		
 	def writeDefects(self,defects_n, defects_v,numdefect_n,numdefect_v,outfile):
@@ -177,7 +179,9 @@ class Writer:
 			writer.SetInput(polydata)
 		else:
 			writer.SetInputData(polydata)
-		writer.SetDataModeToAscii()
+		#writer.SetDataModeToAscii()
+		writer.SetDataModeToBinary()
+                writer.SetCompressorTypeToZLib()
 		writer.Write()
 		print "Wrote File"
 		
@@ -260,5 +264,7 @@ class Writer:
 			writer.SetInput(polygonPolyData)
 		else:
 			writer.SetInputData(polygonPolyData)
-		writer.SetDataModeToAscii()
+		#writer.SetDataModeToAscii()
+		writer.SetDataModeToBinary()
+                writer.SetCompressorTypeToZLib()
 		writer.Write()	

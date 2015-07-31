@@ -71,6 +71,7 @@ class Tesselation:
 							neighbours=[index for index,value in enumerate(dist) if value <0.8*mult*(self.conf.radius[i]+self.conf.radius[index])]	
 					neighbours.remove(i)
 					mult=1.1*mult
+                                #print i, ' --> ', neighbours
 				# find the new neighbours (because of our asymmetric contact algorithm there are neighbours which haven't been found
 				# for a particle if it is far away from the others, and the others are in a high density region)
 				jexisting=[]
