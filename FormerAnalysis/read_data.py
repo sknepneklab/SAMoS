@@ -17,16 +17,20 @@
 
 # Reads in data files. Base handler for data analysis
 
+import gzip
+
 class ReadData:
   
   def __init__(self, filename):
-    with open(filename,'r') as self.inp:
-      self.__read_data()
-      self.inp.close()
+    if filename.split('.')[-1] == 'gz':
+       self.lines = gzip.open(filename,'rb').read()
+    else:
+       self.lines = open(filename,'r').read()
+    self.__read_data()
     self.N = len(self.data[0])
       
   def __read_data(self):
-    lines = self.inp.readlines()
+    lines = self.lines.split('\n')
     lines = map(lambda x: x.strip(), lines)
     if lines[0][0] == '#':
       self.has_header = True
