@@ -42,7 +42,11 @@ static void write_int(ofstream &file, unsigned int val)
  *  \param fname Base file name for the output 
  *  \param params list of parameters that control dump (e.g., frequency, output type, etc.)
 */
-Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string& fname, pairs_type& params) : m_system(sys), m_msg(msg), m_file_name(fname), m_params(params)
+Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string& fname, pairs_type& params) : m_system(sys), 
+                                                                                                               m_msg(msg), 
+                                                                                                               m_file_name(fname), 
+                                                                                                               m_params(params),
+                                                                                                               m_compress(false)
 {
   m_type_ext["velocity"] = "vel";
   m_type_ext["xyz"] = "xyz";
@@ -107,12 +111,28 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_freq = lexical_cast<int>(params["freq"]);
   }
   m_msg->write_config("dump."+fname+".freq",lexical_cast<string>(m_freq));
+  if (params.find("compress") != params.end())
+  {
+    m_msg->msg(Messenger::INFO,"Output data will be compressed.");
+    m_msg->write_config("dump.compress","true");
+    m_out.push(bo::gzip_compressor(9)); 
+    m_compress = true;
+  }
+  else
+    m_msg->write_config("dump.compress","false");  
   if (params.find("multi") == params.end())
   {
     m_msg->msg(Messenger::WARNING,"All time steps will be concatenated to a single file.");
     m_multi_print = false;
     string file_name = m_file_name+"."+m_ext;
-    m_out.open(file_name.c_str()); 
+    if (m_compress)
+    {
+      m_file.open(file_name.c_str(),std::ios_base::out | std::ios_base::binary);
+      m_ext += ".gz";
+    }
+    else
+      m_file.open(file_name.c_str()); 
+    m_out.push(m_file);
   }
   else
   {
@@ -148,61 +168,66 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
   
   if (m_type == "dcd")
   {
+    if (m_compress)
+    {
+      m_msg->msg(Messenger::ERROR,"DCD files does not support data compression.");
+      throw runtime_error("Attempted to compress DCD output.");
+    }
     if (m_multi_print)
     {
       m_msg->msg(Messenger::ERROR,"DCD files cannot be split. mulifile flag is not permitted.");
-      runtime_error("Attempted to spread DCD output into multiple files.");
+      throw runtime_error("Attempted to spread DCD output into multiple files.");
     }
     else
     {
-      write_int(m_out, 84);
+      write_int(m_file, 84);
       
       // the next 4 bytes in the file must be "CORD"
       char cord_data[] = "CORD";
       m_out.write(cord_data, 4);
-      write_int(m_out, 0);      // Number of frames in file, none written yet
-      write_int(m_out, m_start); // Starting timestep
-      write_int(m_out, m_freq);  // Timesteps between frames written to the file
-      write_int(m_out, 0);      // Number of timesteps in simulation
-      write_int(m_out, 0);
-      write_int(m_out, 0);
-      write_int(m_out, 0);
-      write_int(m_out, 0);
-      write_int(m_out, 0);
-      write_int(m_out, 0);                  // timestep (unused)
-      write_int(m_out, 1);                  // include unit cell
-      write_int(m_out, 0);
-      write_int(m_out, 0);
-      write_int(m_out, 0);
-      write_int(m_out, 0);
-      write_int(m_out, 0);
-      write_int(m_out, 0);
-      write_int(m_out, 0);
-      write_int(m_out, 0);
-      write_int(m_out, 24); // Pretend to be CHARMM version 24
-      write_int(m_out, 84);
-      write_int(m_out, 164);
-      write_int(m_out, 2);
+      write_int(m_file, 0);      // Number of frames in file, none written yet
+      write_int(m_file, m_start); // Starting timestep
+      write_int(m_file, m_freq);  // Timesteps between frames written to the file
+      write_int(m_file, 0);      // Number of timesteps in simulation
+      write_int(m_file, 0);
+      write_int(m_file, 0);
+      write_int(m_file, 0);
+      write_int(m_file, 0);
+      write_int(m_file, 0);
+      write_int(m_file, 0);                  // timestep (unused)
+      write_int(m_file, 1);                  // include unit cell
+      write_int(m_file, 0);
+      write_int(m_file, 0);
+      write_int(m_file, 0);
+      write_int(m_file, 0);
+      write_int(m_file, 0);
+      write_int(m_file, 0);
+      write_int(m_file, 0);
+      write_int(m_file, 0);
+      write_int(m_file, 24); // Pretend to be CHARMM version 24
+      write_int(m_file, 84);
+      write_int(m_file, 164);
+      write_int(m_file, 2);
     
       char title_string[81];
       char remarks[] = "Created by APCS";
       strncpy(title_string, remarks, 80);
       title_string[79] = '\0';
-      m_out.write(title_string, 80);
+      m_file.write(title_string, 80);
   
       char time_str[81];
       time_t cur_time = time(NULL);
       tm *tmbuf=localtime(&cur_time);
       strftime(time_str, 80, "REMARKS Created  %d %B, %Y at %H:%M", tmbuf);
-      m_out.write(time_str, 80);
+      m_file.write(time_str, 80);
       
-      write_int(m_out, 164);
-      write_int(m_out, 4);
-      write_int(m_out, m_system->size());
-      write_int(m_out, 4);
+      write_int(m_file, 164);
+      write_int(m_file, 4);
+      write_int(m_file, m_system->size());
+      write_int(m_file, 4);
       
       // check for errors
-      if (!m_out.good())
+      if (!m_file.good())
       {
         m_msg->msg(Messenger::ERROR,"Error writing DCD header");
         throw runtime_error("Error writing DCD file");
@@ -222,7 +247,14 @@ void Dump::dump(int step)
   if (m_multi_print)
   {
     string file_name = m_file_name+"_"+lexical_cast<string>(format("%010d") % step)+"."+m_ext;
-    m_out.open(file_name.c_str());
+    if (m_compress)
+    {
+      file_name += ".gz";
+      m_file.open(file_name.c_str(),std::ios_base::out | std::ios_base::binary);
+    }
+    else
+      m_file.open(file_name.c_str()); 
+    m_out.push(m_file);
   }
   
   if (m_type == "xyz")
@@ -249,7 +281,10 @@ void Dump::dump(int step)
     this->dump_faces();
   
   if (m_multi_print)
-    m_out.close();
+  {
+    if (m_compress) m_out.pop();
+    m_file.close();
+  }
 }
 
 // Private functions 
@@ -268,9 +303,9 @@ void Dump::dump_dcd()
   unitcell[1] = 0.0f;
   unitcell[3] = 0.0f;
   unitcell[4] = 0.0f;
-  write_int(m_out, 48);
+  write_int(m_file, 48);
   m_out.write((char *)unitcell, 48);
-  write_int(m_out, 48);
+  write_int(m_file, 48);
   // check for errors
   if (!m_out.good())
   {
@@ -284,9 +319,9 @@ void Dump::dump_dcd()
     buffer[i] = static_cast<float>(p.x);
   }
   // write x coords
-  write_int(m_out, N * sizeof(float));
-  m_out.write((char *) buffer, N * sizeof(float));
-  write_int(m_out, N * sizeof(float));
+  write_int(m_file, N * sizeof(float));
+  m_file.write((char *) buffer, N * sizeof(float));
+  write_int(m_file, N * sizeof(float));
   
   // Prepare y coordinate
   for (int i = 0; i < N; i++)
@@ -295,9 +330,9 @@ void Dump::dump_dcd()
     buffer[i] = static_cast<float>(p.y);
   }
   // write y coords
-  write_int(m_out, N * sizeof(float));
-  m_out.write((char *) buffer, N * sizeof(float));
-  write_int(m_out, N * sizeof(float));
+  write_int(m_file, N * sizeof(float));
+  m_file.write((char *) buffer, N * sizeof(float));
+  write_int(m_file, N * sizeof(float));
   
   // Prepare z coordinate
   for (int i = 0; i < N; i++)
@@ -306,9 +341,9 @@ void Dump::dump_dcd()
     buffer[i] = static_cast<float>(p.z);
   }
   // write z coords
-  write_int(m_out, N * sizeof(float));
-  m_out.write((char *) buffer, N * sizeof(float));
-  write_int(m_out, N * sizeof(float));
+  write_int(m_file, N * sizeof(float));
+  m_file.write((char *) buffer, N * sizeof(float));
+  write_int(m_file, N * sizeof(float));
   
   delete [] buffer;
 }

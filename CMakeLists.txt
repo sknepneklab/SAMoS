@@ -43,7 +43,7 @@ include (CMakeSRCSetup.txt)
 
 ################################
 ## Define common libraries used by every target in MEMBRANE
-set(BOOST_LIBS 	${Boost_REGEX_LIBRARY} )
+set(BOOST_LIBS 	${Boost_REGEX_LIBRARY} ${Boost_IOSTREAMS_LIBRARY} )
 set(GSL_LIBS ${GSL_LIBRARIES})
 set(MATH_LIB -lm)
 set(APCS_LIBS ${GSL_LIBS} ${MATH_LIB} ${BOOST_LIBS})

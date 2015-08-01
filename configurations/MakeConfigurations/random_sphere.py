@@ -107,7 +107,7 @@ parser.add_argument("-R", "--radius", type=float, default=10.0, help="sphere rad
 parser.add_argument("-f", "--phi",  type=float, default=0.5, help="packing fraction")
 parser.add_argument("-o", "--output", type=str, default='out.dat', help="output file")
 parser.add_argument("-v", "--vavr", type=float, default=1.0, help="average velocity")
-parser.add_argument("-l", "--length", type=float, default=2.0, help="rod length (straight part)")
+parser.add_argument("-l", "--length", type=float, default=2.0, help="rod length (straight part); set to zero to get sperical particles")
 parser.add_argument("-a", "--rod_rad", type=float, default=0.5, help="rod radius")
 args = parser.parse_args()
 

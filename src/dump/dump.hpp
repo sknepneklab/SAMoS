@@ -32,6 +32,14 @@
 #include <list>
 #include <boost/format.hpp>
 
+// Handles data compression (requires zlib)
+#include <boost/iostreams/filtering_stream.hpp>    
+#include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+
+namespace bo = boost::iostreams;
+
 #include "system.hpp"
 #include "parse_parameters.hpp"
 #include "neighbour_list.hpp"
@@ -57,7 +65,7 @@ public:
   //! Destructor
   ~Dump()
   {
-    if (m_multi_print) m_out.close();
+    if (!m_multi_print) m_file.close();
     m_type_ext.clear();
     m_to_print.clear();
   }
@@ -73,7 +81,8 @@ private:
   string m_file_name;           //!< Base file name for the output file
   pairs_type m_params;          //!< Control parameters
   string m_ext;                 //!< File name extension
-  ofstream m_out;               //!< Output file stream with the file
+  ofstream m_file;              //!< Output file stream with the file
+  bo::filtering_ostream m_out;  //!< Filters data through a compressor
   int m_start;                  //!< First time step of the dump
   int m_freq;                   //!< Frequency with which to dump data
   bool m_multi_print;           //!< Print to multiple files
@@ -81,6 +90,7 @@ private:
   string m_type;                //!< File format for the dump 
   bool m_no_header;             //!< Do not print header in some files
   double m_r_cut;               //!< Cutoff distance for the contact network
+  bool m_compress;              //!< Compress output data using gzip compression
   
   // Auxiliary data structures
   map<string, string> m_type_ext;  //!< Hold extension for a given data type
