@@ -40,6 +40,9 @@ params = Param(args.directory+args.conffile)
 
 files = sorted(glob(args.directory + args.input+'*.dat'))[args.skip:]
 
+if len(files) == 0:
+  files = sorted(glob(args.directory + args.input+'*.dat.gz'))[args.skip:]
+
 defects_n_out=[[] for u in range(len(files))]
 defects_v_out=[[] for u in range(len(files))]
 numdefects_n_out=np.zeros(len(files))
@@ -51,7 +54,7 @@ for f in files:
 	conf = Configuration(params,f)
 	writeme = Writer(args.nematic)
 	if args.writeP:
-		outparticles = args.output + '/frame' + str(u) + '_particles.vtp'
+		outparticles = args.output + '/frame%06d_particles.vtp' % u  # + str(u) + '_particles.vtp'
 		print outparticles
 		writeme.writeConfigurationVTK(conf,outparticles)
 	#plt.show()
@@ -64,7 +67,7 @@ for f in files:
 		#print LoopList
 		if args.writeD:
 			#print "Still to be done ..."
-			outdefects = args.output + '/frame' + str(u) + '_defects.vtp'	
+			outdefects = args.output + '/frame%06d_defects.vtp' % u # + str(u) + '_defects.vtp'	
 			print outdefects
 			defects = Defects(tess,conf)
 			if args.nematic:
@@ -79,7 +82,7 @@ for f in files:
 			#defects.PlotDefects()
 			writeme.writeDefects(defects_n, defects_v,numdefect_n,numdefect_v,outdefects)
 		if args.writeT:
-			outpatches = args.output + '/frame' + str(u) + '_patches.vtp'
+			outpatches = args.output + '/frame%06d_patches.vtp' % u #+ str(u) + '_patches.vtp'
 			print outpatches
 			if args.makeEdges:
 				tess.makeEdges(0.85)   

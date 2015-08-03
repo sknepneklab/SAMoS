@@ -31,6 +31,7 @@
 #include <map>
 #include <list>
 #include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
 
 // Handles data compression (requires zlib)
 #include <boost/iostreams/filtering_stream.hpp>    
@@ -50,6 +51,7 @@ using std::map;
 using std::endl;
 using std::list;
 using boost::format;
+using boost::replace_all;
 
 /*! Dump class handles output of system's state, such 
  *  as particle coordinates, velocities, forces, etc.

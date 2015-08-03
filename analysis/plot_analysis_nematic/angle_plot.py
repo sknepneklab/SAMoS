@@ -20,6 +20,7 @@
 
 import sys
 import argparse
+import pickle
 import numpy as np
 import numpy.linalg as lin
 import matplotlib.pyplot as plt
@@ -70,8 +71,23 @@ print "\tJ : ", J
 
 start = datetime.now()
 
-inp = open(args.input,'r')
-data = map(lambda x: map(float, x.strip().split()),inp.readlines()[1:])
+ext = args.input.split('.')[-1]
+
+if ext == 'p':
+  inp = open(args.input,'rb')
+  inp_data = pickle.load(inp)
+  data = []
+  for d in inp_data['defects_n']:
+    line = [len(d)]
+    count = 0
+    for df in d:
+      if count < 4:
+        line.extend(df[1:])
+      count += 1
+    data.append(line)
+else:
+  inp = open(args.input,'r')
+  data = map(lambda x: map(float, x.strip().split()),inp.readlines()[1:])
 
 steps = args.step*np.array(range(len(data)))
 

@@ -39,12 +39,12 @@ static void write_int(ofstream &file, unsigned int val)
  *  \param sys Pointer to a System object
  *  \param msg Handles system wide messages
  *  \param nlist Pointer to the global neighbour list
- *  \param fname Base file name for the output 
+ *  \param filename Base file name for the output 
  *  \param params list of parameters that control dump (e.g., frequency, output type, etc.)
 */
-Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string& fname, pairs_type& params) : m_system(sys), 
+Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string& filename, pairs_type& params) : m_system(sys), 
                                                                                                                m_msg(msg), 
-                                                                                                               m_file_name(fname), 
+                                                                                                               m_file_name(filename), 
                                                                                                                m_params(params),
                                                                                                                m_compress(false)
 {
@@ -59,6 +59,10 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
   m_type_ext["mol2"] = "mol2";
   m_type_ext["contact"] = "con";
   m_type_ext["face"] = "fc";
+  
+  string fname = filename;
+  
+  replace_all(fname,".","_");
   
   if (nlist)
     m_nlist = nlist;
@@ -114,12 +118,12 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
   if (params.find("compress") != params.end())
   {
     m_msg->msg(Messenger::INFO,"Output data will be compressed.");
-    m_msg->write_config("dump.compress","true");
+    m_msg->write_config("dump."+fname+".compress","true");
     m_out.push(bo::gzip_compressor(9)); 
     m_compress = true;
   }
   else
-    m_msg->write_config("dump.compress","false");  
+    m_msg->write_config("dump."+fname+".compress","false");  
   if (params.find("multi") == params.end())
   {
     m_msg->msg(Messenger::WARNING,"All time steps will be concatenated to a single file.");
@@ -127,7 +131,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     string file_name = m_file_name+"."+m_ext;
     if (m_compress)
     {
-      m_file.open(file_name.c_str(),std::ios_base::out | std::ios_base::binary);
+      m_file.open(file_name.c_str(), std::ios_base::out | std::ios_base::binary);
       m_ext += ".gz";
     }
     else
@@ -282,7 +286,7 @@ void Dump::dump(int step)
   
   if (m_multi_print)
   {
-    if (m_compress) m_out.pop();
+    m_out.pop();
     m_file.close();
   }
 }
