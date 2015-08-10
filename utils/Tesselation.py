@@ -58,7 +58,7 @@ class Tesselation:
 			neighbours=[]
 			dist=self.geom.GeodesicDistance12(self.rval[i,:],self.rval)
 			if closeHoles:
-				mult=0.25
+				mult=1.0
 				while len(neighbours)<4 and mult<MMAX:
 					if self.conf.monodisperse:
 						neighbours=[index for index,value in enumerate(dist) if value <mult*dmax]

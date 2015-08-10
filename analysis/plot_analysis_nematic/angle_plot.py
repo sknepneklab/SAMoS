@@ -18,6 +18,10 @@
 # Utility code for converting standard data output (dat) of the simulation
 # into the VTP format suitable for visualization with ParaView
 
+import matplotlib
+matplotlib.use('Agg')
+
+
 import sys
 import argparse
 import pickle
@@ -26,7 +30,6 @@ import numpy.linalg as lin
 import matplotlib.pyplot as plt
 import math as m
 from datetime import *
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", type=str, help="input file (defect data columns format)")
@@ -40,12 +43,14 @@ parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many ti
 parser.add_argument("-S", "--step", type=float, default=5000, help="Time step multiplier")
 parser.add_argument("-R", "--radius", type=float, default=16.0, help="System's radius")
 parser.add_argument("--v0", type=float, default=1.0, help="v0")
+parser.add_argument("--tau", type=float, default=1.0, help="tau flip")
 parser.add_argument("-J", "--J", type=float, default=1.0, help="J")
 args = parser.parse_args()
 
 v0 =  args.v0
 R = args.radius
 J = args.J
+tau_flip = args.tau
 
 
 print
@@ -68,6 +73,7 @@ print "\tNumber of bins : ", args.bins
 print "\tR : ", R
 print "\tv0 : ", v0
 print "\tJ : ", J
+print "\ttau flip : ", args.tau
 
 start = datetime.now()
 
@@ -78,13 +84,14 @@ if ext == 'p':
   inp_data = pickle.load(inp)
   data = []
   for d in inp_data['defects_n']:
-    line = [len(d)]
-    count = 0
-    for df in d:
-      if count < 4:
-        line.extend(df[1:])
-      count += 1
-    data.append(line)
+    if len(d) >= 4:
+      line = [len(d)]
+      count = 0
+      for df in d:
+        if count < 4:
+          line.extend(df[1:])
+        count += 1
+      data.append(line)
 else:
   inp = open(args.input,'r')
   data = map(lambda x: map(float, x.strip().split()),inp.readlines()[1:])
@@ -201,7 +208,7 @@ print
 plt.rc('text', usetex=True)
 plt.xlim((0,max(steps)))
 plt.ylim((0,180.0))
-plt.title(r'$\bar{\alpha} = $'+str(round(np.mean(angles),1))+'$\pm$'+str(round(np.std(angles),1)))
+plt.title(r'$\bar{\alpha} = $'+str(round(np.mean(angles),1))+'$\pm$'+str(round(np.std(angles),1))+' for R = '+str(R)+', $v_0$ = '+str(v0)+' J = '+str(J)+', $\\tau_{flip}$ = '+str(tau_flip))
 plt.plot(steps,A[:,0],'r-', label=r'$\alpha_{1}$')
 plt.plot(steps,A[:,1],'g-', label=r'$\alpha_{2}$')
 plt.plot(steps,A[:,2],'b-', label=r'$\alpha_{3}$')
@@ -219,7 +226,7 @@ plt.clf()
 plt.rc('text', usetex=True)
 plt.xlim((0,max(steps)))
 plt.ylim((0,20))
-plt.title('Number of defects vs. time')
+plt.title(r'Number of defects vs. time for R = '+str(R)+', $v_0$ = '+str(v0)+' J = '+str(J))
 plt.plot(steps,ndef,'r-', linewidth=2)
 plt.tick_params(axis='both', which='major', labelsize=20)
 plt.xlabel('time step',fontsize=20)

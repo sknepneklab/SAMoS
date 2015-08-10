@@ -52,6 +52,9 @@ start = datetime.now()
 
 files = sorted(glob(args.input+'*.dat'))[args.skip:]
 
+if len(files) == 0:
+  files = sorted(glob(args.input+'*.dat.gz'))[args.skip:]
+
 out = open(args.output+'.dat','w')
 pid = args.id
 
