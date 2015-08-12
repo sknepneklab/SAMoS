@@ -80,21 +80,29 @@ for f in files:
 print 'Computing MSD...'
 
 all_dist = np.zeros((x0.size,len(files)))
+all_dist_r = np.zeros((x0.size,len(files)))
 for tau in xrange(1,len(files)):
   print 'Computing for tau : ', tau
   vals = np.nan_to_num(args.radius*np.arccos(np.einsum('ijk,ijk->ik',r[:,:,:-tau],r[:,:,tau:])/args.radius**2))
+  dr = (r[:,:,:-tau]-r[:,:,tau:])**2
+  ddr = np.sum(dr,axis=1)
   dist = np.mean(vals,axis=1)
+  dist_r = np.mean(ddr,axis=1)
   all_dist[:,tau] = dist**2
+  all_dist_r[:,tau] = dist_r
   
 
 msd = np.mean(all_dist,axis=0)
+msd_std = np.std(all_dist,axis=0)
+msd_r = np.mean(all_dist_r,axis=0)
+msd_r_std = np.std(all_dist_r,axis=0)
 
 t = args.step*np.arange(len(files))
 
 out = open(args.output,'w')
 
-for tt,m in zip(t,msd):
-  out.write('%f  %f\n' % (tt,m))
+for tt,m,ms,m_r,m_rs in zip(t,msd,msd_std,msd_r,msd_r_std):
+  out.write('%f  %f  %f  %f  %f\n' % (tt,m,ms,m_r,m_rs))
 
 out.close()
 
