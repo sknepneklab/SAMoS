@@ -1,18 +1,33 @@
-# ################################################################
-#  
-#    Active Particles on Curved Spaces (APCS)
-#    
-#    Author: Silke Henkes
-#
-#    ICSMB, Department of Physics
-#    University of Aberdeen 
-#  
-#    (c) 2014, 2015
-#    
-#    This program cannot be used, copied, or modified without
-#    explicit permission of the authors.
-#  
-# ################################################################
+# * *************************************************************
+# *  
+# *   Soft Active Mater on Surfaces (SAMoS)
+# *   
+# *   Author: Rastko Sknepnek
+# *  
+# *   Division of Physics
+# *   School of Engineering, Physics and Mathematics
+# *   University of Dundee
+# *   
+# *   (c) 2013, 2014
+# * 
+# *   School of Science and Engineering
+# *   School of Life Sciences 
+# *   University of Dundee
+# * 
+# *   (c) 2015
+# * 
+# *   Author: Silke Henkes
+# * 
+# *   Department of Physics 
+# *   Institute for Complex Systems and Mathematical Biology
+# *   University of Aberdeen  
+# * 
+# *   (c) 2014, 2015
+# *  
+# *   This program cannot be used, copied, or modified without
+# *   explicit written permission of the authors.
+# * 
+# * ***************************************************************
 
 from Configuration import *
 from CellList import *

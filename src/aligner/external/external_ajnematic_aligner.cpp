@@ -1,17 +1,31 @@
 /* *************************************************************
  *  
- *   Active Particles on Curved Spaces (APCS)
+ *   Soft Active Mater on Surfaces (SAMoS)
  *   
- *  
  *   Author: Rastko Sknepnek
+ *  
+ *   Division of Physics
+ *   School of Engineering, Physics and Mathematics
+ *   University of Dundee
+ *   
+ *   (c) 2013, 2014
  * 
- *   Division of Physics and Division of Computational Biology
+ *   School of Science and Engineering
+ *   School of Life Sciences 
  *   University of Dundee
  * 
+ *   (c) 2015
+ * 
+ *   Author: Silke Henkes
+ * 
+ *   Department of Physics 
+ *   Institute for Complex Systems and Mathematical Biology
+ *   University of Aberdeen  
+ * 
  *   (c) 2014, 2015
- *   
+ *  
  *   This program cannot be used, copied, or modified without
- *   explicit permission of the authors.
+ *   explicit written permission of the authors.
  * 
  * ************************************************************* */
  
