@@ -28,4 +28,6 @@ void register_bond_potentials(BondPotentialMap& bond_potentials)
 {
   // Register harmonic bond potential with the class factory
   bond_potentials["harmonic"] = boost::factory<BondHarmonicPotentialPtr>();
+  // Register active bond force with the class factory
+  bond_potentials["active"] = boost::factory<BondActiveForcePtr>();
 }
