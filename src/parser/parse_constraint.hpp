@@ -79,6 +79,7 @@ public:
                   | qi::as_string[keyword["hourglass"]][phx::bind(&ConstraintlData::type, phx::ref(constraint_data)) = qi::_1 ]   /*! Handles constraint on a hourglass */
                   | qi::as_string[keyword["gaussian_bump"]][phx::bind(&ConstraintlData::type, phx::ref(constraint_data)) = qi::_1 ]   /*! Handles constraint on a Gaussian bump */
                   | qi::as_string[keyword["none"]][phx::bind(&ConstraintlData::type, phx::ref(constraint_data)) = qi::_1 ]        /*! Handles dummy constraint */
+                  | qi::as_string[keyword["tetrahedron"]][phx::bind(&ConstraintlData::type, phx::ref(constraint_data)) = qi::_1 ] /*! Handles constraint on a tetrahedral surface */
                   /* to add new constraint: | qi::as_string[keyword["newconstraint"]][phx::bind(&ConstraintlData::type, phx::ref(constraint_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&ConstraintlData::params, phx::ref(constraint_data)) = qi::_1 ]

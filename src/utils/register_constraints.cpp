@@ -64,4 +64,6 @@ void register_constraints(ConstraintMap& constraints)
   constraints["gaussian_bump"] = boost::factory<ConstraintGaussianBumpPtr>();
   // Register dummy constraint with the constraint class factory
   constraints["none"] = boost::factory<ConstraintNonePtr>();
+  // Register constraint on the surface with tetraherdal symmetry with the constraint class factory
+  constraints["tetrahedron"] = boost::factory<ConstraintTetrahedronPtr>();
 }
