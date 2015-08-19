@@ -71,6 +71,8 @@ Logger::Logger(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr ali
   m_logger["harmonic_bond_energy"] = boost::make_shared<LogBondEng>(LogBondEng(sys, msg, pot, align,"harmonic")); 
   m_logger["harmonic_angle_energy"] = boost::make_shared<LogAngleEng>(LogAngleEng(sys, msg, pot, align,"harmonic")); 
   m_logger["cosine_angle_energy"] = boost::make_shared<LogAngleEng>(LogAngleEng(sys, msg, pot, align,"cosine")); 
+  m_logger["external_gravity_energy"] = boost::make_shared<LogExternalEng>(LogExternalEng(sys, msg, pot, align,"gravity")); 
+  m_logger["external_harmonic_energy"] = boost::make_shared<LogExternalEng>(LogExternalEng(sys, msg, pot, align,"harmonic")); 
 
   // ------------------------------------------------------------------
     

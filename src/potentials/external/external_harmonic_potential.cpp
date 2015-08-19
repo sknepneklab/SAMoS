@@ -30,18 +30,32 @@
  * ************************************************************* */
 
 /*!
- * \file regster_external_potentials.cpp
+ * \file external_harmonic_potential.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 03-Mar-2015
- * \brief Register all external potentials with the class factory.
-*/
+ * \date 19-Aug-2015
+ * \brief Implementation of the external harmonic potential
+ */ 
 
-#include "register.hpp"
+#include "external_harmonic_potential.hpp"
 
-void register_external_potentials(ExternalPotentialMap& external_potentials)
+/*! Apply external harmonic potential to all particles */
+void ExternalHarmonicPotential::compute()
 {
-  // Register gravity to the external potential class factory
-  external_potentials["gravity"] = boost::factory<ExternalGravityPotentialPtr>();
-  // Register harmonic potential to the external potential class factory
-  external_potentials["harmonic"] = boost::factory<ExternalHarmonicPotentialPtr>();
+  int N = m_system->size();
+  double k = m_k;
+  double z0 = m_z0;
+  
+  m_potential_energy = 0.0;
+  for (int i = 0; i < N; i++)
+  {
+    Particle& p = m_system->get_particle(i);
+    if (m_has_params)
+    {
+      k = m_type_params[p.get_type()]["k"];
+      z0 = m_type_params[p.get_type()]["z0"];
+    }
+    double dz = p.z - z0;
+    m_potential_energy += 0.5*k*dz*dz;
+    p.fz -= k*dz;
+  }
 }

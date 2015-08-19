@@ -44,44 +44,47 @@
  */
 void ConstraintPlane::enforce(Particle& p)
 {
-  bool periodic = m_system->get_periodic();
-  double Lx = m_system->get_box()->Lx;
-  double Ly = m_system->get_box()->Ly;
-  double xlo = -0.5*Lx, xhi = 0.5*Lx;
-  double ylo = -0.5*Ly, yhi = 0.5*Ly;
-  p.z = 0.0;
-  p.vz = 0.0;
-  p.fz = 0.0;
-  // Check periodic boundary conditions 
-  if (periodic)
-    m_system->enforce_periodic(p);
-  else // reflective boundary conditions
+  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
   {
-    if (p.x < xlo) 
+    bool periodic = m_system->get_periodic();
+    double Lx = m_system->get_box()->Lx;
+    double Ly = m_system->get_box()->Ly;
+    double xlo = -0.5*Lx, xhi = 0.5*Lx;
+    double ylo = -0.5*Ly, yhi = 0.5*Ly;
+    p.z = 0.0;
+    p.vz = 0.0;
+    p.fz = 0.0;
+    // Check periodic boundary conditions 
+    if (periodic)
+      m_system->enforce_periodic(p);
+    else // reflective boundary conditions
     {
-      p.x = xlo;
-      p.vx = -p.vx;
+      if (p.x < xlo) 
+      {
+        p.x = xlo;
+        p.vx = -p.vx;
+      }
+      else if (p.x > xhi)
+      {
+        p.x = xhi;
+        p.vx = -p.vx;
+      }
+      if (p.y < ylo) 
+      {
+        p.y = ylo;
+        p.vy = -p.vy;
+      }
+      else if (p.y > yhi)
+      {
+        p.y = yhi;
+        p.vy = -p.vy;
+      }
     }
-    else if (p.x > xhi)
-    {
-      p.x = xhi;
-      p.vx = -p.vx;
-    }
-    if (p.y < ylo) 
-    {
-      p.y = ylo;
-      p.vy = -p.vy;
-    }
-    else if (p.y > yhi)
-    {
-      p.y = yhi;
-      p.vy = -p.vy;
-    }
+    // normalize director
+    p.nz = 0.0;
+    double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny);
+    p.nx *= inv_len;  p.ny *= inv_len;  
   }
-  // normalize director
-  p.nz = 0.0;
-  double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny);
-  p.nx *= inv_len;  p.ny *= inv_len;  
 }
 
 /*! Rotate director of a particle around the normal vector (z axis)

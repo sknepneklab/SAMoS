@@ -46,24 +46,27 @@
  */
 void ConstraintSphere::enforce(Particle& p)
 {
-  double x = p.x, y = p.y, z = p.z;
-  double R = sqrt(x*x + y*y + z*z);
-  double s = m_r/R;
-  // Scale back to the surface
-  p.x *= s; p.y *= s; p.z *= s;
-  // Compute unit normal
-  double Nx = p.x/m_r, Ny = p.y/m_r, Nz = p.z/m_r;
-  // compute v.N
-  double v_dot_N = p.vx*Nx + p.vy*Ny + p.vz*Nz;
-  // compute n.N
-  double n_dot_N = p.nx*Nx + p.ny*Ny + p.nz*Nz;
-  // Project velocity onto tangent plane
-  p.vx -= v_dot_N*Nx; p.vy -= v_dot_N*Ny; p.vz -= v_dot_N*Nz;
-  // Project director onto tangent plane
-  p.nx -= n_dot_N*Nx; p.ny -= n_dot_N*Ny; p.nz -= n_dot_N*Nz;
-  // normalize director
-  double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny + p.nz*p.nz);
-  p.nx *= inv_len;  p.ny *= inv_len;  p.nz *= inv_len;
+  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  {
+    double x = p.x, y = p.y, z = p.z;
+    double R = sqrt(x*x + y*y + z*z);
+    double s = m_r/R;
+    // Scale back to the surface
+    p.x *= s; p.y *= s; p.z *= s;
+    // Compute unit normal
+    double Nx = p.x/m_r, Ny = p.y/m_r, Nz = p.z/m_r;
+    // compute v.N
+    double v_dot_N = p.vx*Nx + p.vy*Ny + p.vz*Nz;
+    // compute n.N
+    double n_dot_N = p.nx*Nx + p.ny*Ny + p.nz*Nz;
+    // Project velocity onto tangent plane
+    p.vx -= v_dot_N*Nx; p.vy -= v_dot_N*Ny; p.vz -= v_dot_N*Nz;
+    // Project director onto tangent plane
+    p.nx -= n_dot_N*Nx; p.ny -= n_dot_N*Ny; p.nz -= n_dot_N*Nz;
+    // normalize director
+    double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny + p.nz*p.nz);
+    p.nx *= inv_len;  p.ny *= inv_len;  p.nz *= inv_len;
+  }
 }
 
 /*! Rescale sphere size and make sure that all particles are still on it.

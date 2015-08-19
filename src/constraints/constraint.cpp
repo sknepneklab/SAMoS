@@ -48,43 +48,46 @@
  */
 void Constraint::enforce(Particle& p)
 {
-  // Compute reference gradient (SHAKE method)
-  double ref_gx, ref_gy, ref_gz;
-  this->compute_gradient(p,ref_gx, ref_gy, ref_gz);
-  
-  bool satisfied;
-  int iter = 0;
-  while (iter++ < m_max_iter)
+  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
   {
-    satisfied = true;
-    // Compute unit gradient of the implicit function
-    double gx, gy, gz;
-    this->compute_gradient(p,gx,gy,gz);
-    double s = gx*ref_gx + gy*ref_gy + gz*ref_gz;
-    double g = this->constraint_value(p);
-    double lambda = g/s;
-    if (fabs(g) > m_tol)
-      satisfied = false;
-    if (satisfied) break;
-    p.x -= lambda*ref_gx;
-    p.y -= lambda*ref_gy;
-    p.z -= lambda*ref_gz;
-  }
+    // Compute reference gradient (SHAKE method)
+    double ref_gx, ref_gy, ref_gz;
+    this->compute_gradient(p,ref_gx, ref_gy, ref_gz);
     
-  double Nx, Ny, Nz;
-  this->compute_normal(p,Nx,Ny,Nz);
-  // compute v.N
-  double v_dot_N = p.vx*Nx + p.vy*Ny + p.vz*Nz;
-  // compute n.N
-  double n_dot_N = p.nx*Nx + p.ny*Ny + p.nz*Nz;
-  // Project velocity onto tangent plane
-  p.vx -= v_dot_N*Nx; p.vy -= v_dot_N*Ny; p.vz -= v_dot_N*Nz;
-  // Project director onto tangent plane
-  p.nx -= n_dot_N*Nx; p.ny -= n_dot_N*Ny; p.nz -= n_dot_N*Nz;
-  // normalize director
-  double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny + p.nz*p.nz);
-  p.nx *= inv_len;  p.ny *= inv_len;  p.nz *= inv_len;
-  m_system->enforce_periodic(p);
+    bool satisfied;
+    int iter = 0;
+    while (iter++ < m_max_iter)
+    {
+      satisfied = true;
+      // Compute unit gradient of the implicit function
+      double gx, gy, gz;
+      this->compute_gradient(p,gx,gy,gz);
+      double s = gx*ref_gx + gy*ref_gy + gz*ref_gz;
+      double g = this->constraint_value(p);
+      double lambda = g/s;
+      if (fabs(g) > m_tol)
+        satisfied = false;
+      if (satisfied) break;
+      p.x -= lambda*ref_gx;
+      p.y -= lambda*ref_gy;
+      p.z -= lambda*ref_gz;
+    }
+      
+    double Nx, Ny, Nz;
+    this->compute_normal(p,Nx,Ny,Nz);
+    // compute v.N
+    double v_dot_N = p.vx*Nx + p.vy*Ny + p.vz*Nz;
+    // compute n.N
+    double n_dot_N = p.nx*Nx + p.ny*Ny + p.nz*Nz;
+    // Project velocity onto tangent plane
+    p.vx -= v_dot_N*Nx; p.vy -= v_dot_N*Ny; p.vz -= v_dot_N*Nz;
+    // Project director onto tangent plane
+    p.nx -= n_dot_N*Nx; p.ny -= n_dot_N*Ny; p.nz -= n_dot_N*Nz;
+    // normalize director
+    double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny + p.nz*p.nz);
+    p.nx *= inv_len;  p.ny *= inv_len;  p.nz *= inv_len;
+    m_system->enforce_periodic(p);
+  }
 }
 
 /*! Rotate director of a particle around the normal vector
