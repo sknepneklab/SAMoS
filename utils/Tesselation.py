@@ -259,30 +259,33 @@ class Tesselation:
                 return self.LoopList,self.LoopCen,self.ParList,self.Ival,self.Jval
 
 
-        def ComputePatchArea(self):
-            if not self.ordered_patches: 
-                raise Exception('Patches have to be ordered in order to cumpute their area.')
-            self.area = []
-            for k in xrange(len(self.ParList)):
-                xc, yc, zc = 0.0, 0.0, 0.0
-                for l in self.ParList[k]:
-                    xc += self.LoopCen[l][0]
-                    yc += self.LoopCen[l][1]
-                    zc += self.LoopCen[l][2]
-                xc /= len(self.ParList[k])
-                yc /= len(self.ParList[k])
-                zc /= len(self.ParList[k])
-                N = len(self.ParList[k])
-                area = 0.0
-                for i in xrange(N):
-                    #print self.ParList[i]
-                    x1 = self.LoopCen[self.ParList[k][i]][0] - xc
-                    y1 = self.LoopCen[self.ParList[k][i]][1] - yc
-                    z1 = self.LoopCen[self.ParList[k][i]][2] - zc
-                    x2 = self.LoopCen[self.ParList[k][(i+1)%N]][0] - xc
-                    y2 = self.LoopCen[self.ParList[k][(i+1)%N]][1] - yc 
-                    z2 = self.LoopCen[self.ParList[k][(i+1)%N]][2] - zc
-                    n = np.cross([x1,y1,z1],[x2,y2,z2])
-                    area += 0.5*np.sqrt(np.dot(n,n))
-                self.area.append(area)
-               
+	def ComputePatchArea(self):
+		if not self.ordered_patches: 
+			raise Exception('Patches have to be ordered in order to cumpute their area.')
+		self.area = []
+		for k in xrange(len(self.ParList)):
+			if len(self.ParList[k])>0:
+				xc, yc, zc = 0.0, 0.0, 0.0
+				for l in self.ParList[k]:
+					xc += self.LoopCen[l][0]
+					yc += self.LoopCen[l][1]
+					zc += self.LoopCen[l][2]
+				xc /= len(self.ParList[k])
+				yc /= len(self.ParList[k])
+				zc /= len(self.ParList[k])
+				N = len(self.ParList[k])
+				area = 0.0
+				for i in xrange(N):
+					#print self.ParList[i]
+					x1 = self.LoopCen[self.ParList[k][i]][0] - xc
+					y1 = self.LoopCen[self.ParList[k][i]][1] - yc
+					z1 = self.LoopCen[self.ParList[k][i]][2] - zc
+					x2 = self.LoopCen[self.ParList[k][(i+1)%N]][0] - xc
+					y2 = self.LoopCen[self.ParList[k][(i+1)%N]][1] - yc 
+					z2 = self.LoopCen[self.ParList[k][(i+1)%N]][2] - zc
+					n = np.cross([x1,y1,z1],[x2,y2,z2])
+					area += 0.5*np.sqrt(np.dot(n,n))
+			else:
+				area=0.0
+			self.area.append(area)
+

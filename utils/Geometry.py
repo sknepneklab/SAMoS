@@ -205,15 +205,54 @@ class GeometryPeriodicPlane(Geometry):
 class GeometryTube(Geometry):
 	def __init__(self,param):
 		self.R=param.const_param['r']
-		#self.periodic=False
+		self.periodic=False
 		print "Created new geometry tube with radius = " + str(self.R)
-		super(GeometryTube,self).__init__('tube')
+		super(GeometryTube,self).__init__('tube',self.periodic)
 		print "ERROR: Tube geometry has not yet been implemented! Geometry will default to 3d space."
 		
 class GeometryPeanut(Geometry):
-	def __init__(self,param):
-		super(GeometryPeanut,self).__init__('peanut')
-		print "ERROR: Peanut geometry has not yet been implemented! Geometry will default to 3d space."
+	def __init__(self,param):	
+		self.periodic=False
+		super(GeometryPeanut,self).__init__('peanut',self.periodic)
+		self.a=param.const_params['a']
+		self.b=param.const_params['b']
+		# Determine the Euler angles, essentially. Find theta and phi for each particle,
+		
+	def TangentBundle(self,rval):
+		x = rval[:,0]
+		y = rval[:,1]
+		z = rval[:,2]
+		nx = (x**2 + y**2 + z**2 - self.a**2)*x
+		ny = (x**2 + y**2 + z**2 + self.a**2)*y
+		nz = (x**2 + y**2 + z**2 + self.a**2)*z
+		n=np.array([nx,ny,nz])
+		nhat=n/(np.sqrt(nx**2 + ny**2 + nz**2))
+		# Angle theta with the z axis. arccos is between 0 and pi, so that's ok already
+		phi=np.arctan2(z,y)
+		# The other two of our trio of local coordinate vectors
+		ephi = np.empty(np.shape(rval))
+		ephi[:,0]=0
+		ephi[:,1]=np.cos(phi)
+		ephi[:,2]=-np.sin(phi)
+		et = np.empty(np.shape(rval))
+		et[:,0]=-(x**2 + y**2 + z**2 + self.a**2)*z
+		et[:,1]=np.sin(phi)*(x**2 + y**2 + z**2 - self.a**2)*x
+		et[:,2]=np.cos(phi)*(x**2 + y**2 + z**2 - self.a**2)*x
+		return x,phi,et,ephi
+	
+	# Complementary: The unit normal
+	def UnitNormal(self,rval):
+		x = rval[:,0]
+		y = rval[:,1]
+		z = rval[:,2]
+		nx = (x**2 + y**2 + z**2 - self.a**2)*x
+		ny = (x**2 + y**2 + z**2 + self.a**2)*y
+		nz = (x**2 + y**2 + z**2 + self.a**2)*z
+		n = np.array([nx, ny, nz])
+		nmag = np.sqrt(nx**2 + ny**2 + nz**2)
+		nhat=n/nmag
+		return nhat.transpose()
+        
 		
 class GeometryHourglass(Geometry):
 	def __init__(self,param):
