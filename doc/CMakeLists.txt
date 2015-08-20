@@ -1,6 +1,6 @@
 #* *************************************************************#
 # *  
-# *   Active Particles on Curved Spaces (APCS)
+# *   Active Particles on Curved Spaces (SAMoS)
 # *   
 # *   Author: Rastko Sknepnek
 # *  
@@ -32,15 +32,15 @@ endif(DOXYGEN_DOT_PATH)
 
 
 # configure the doxygen file
-configure_file (${APCS_SOURCE_DIR}/doc/Doxyfile.in ${APCS_BINARY_DIR}/doc/Doxyfile)
+configure_file (${SAMoS_SOURCE_DIR}/doc/Doxyfile.in ${SAMoS_BINARY_DIR}/doc/Doxyfile)
 
-add_custom_command (OUTPUT ${APCS_BINARY_DIR}/doc/html/index.html
-					COMMAND ${DOXYGEN} ${APCS_BINARY_DIR}/doc/Doxyfile
-					DEPENDS ${APCS_SRCS}
-					${APCS_HDRS}
-					${APCS_SOURCE_DIR}/doc/Doxyfile.in)
+add_custom_command (OUTPUT ${SAMoS_BINARY_DIR}/doc/html/index.html
+					COMMAND ${DOXYGEN} ${SAMoS_BINARY_DIR}/doc/Doxyfile
+					DEPENDS ${SAMoS_SRCS}
+					${SAMoS_HDRS}
+					${SAMoS_SOURCE_DIR}/doc/Doxyfile.in)
 					
 
-add_custom_target (doc ALL DEPENDS ${APCS_BINARY_DIR}/doc/html/index.html)
+add_custom_target (doc ALL DEPENDS ${SAMoS_BINARY_DIR}/doc/html/index.html)
 
 endif (DOXYGEN)

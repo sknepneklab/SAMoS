@@ -1,6 +1,6 @@
 /* *************************************************************
  *  
- *   Active Particles on Curved Spaces (APCS)
+ *   Soft Active Mater on Surfaces (SAMoS)
  *   
  *   Author: Rastko Sknepnek
  *  
@@ -9,9 +9,23 @@
  *   University of Dundee
  *   
  *   (c) 2013, 2014
- *   
+ * 
+ *   School of Science and Engineering
+ *   School of Life Sciences 
+ *   University of Dundee
+ * 
+ *   (c) 2015
+ * 
+ *   Author: Silke Henkes
+ * 
+ *   Department of Physics 
+ *   Institute for Complex Systems and Mathematical Biology
+ *   University of Aberdeen  
+ * 
+ *   (c) 2014, 2015
+ *  
  *   This program cannot be used, copied, or modified without
- *   explicit permission of the author.
+ *   explicit written permission of the authors.
  * 
  * ************************************************************* */
 
@@ -57,6 +71,8 @@ Logger::Logger(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr ali
   m_logger["harmonic_bond_energy"] = boost::make_shared<LogBondEng>(LogBondEng(sys, msg, pot, align,"harmonic")); 
   m_logger["harmonic_angle_energy"] = boost::make_shared<LogAngleEng>(LogAngleEng(sys, msg, pot, align,"harmonic")); 
   m_logger["cosine_angle_energy"] = boost::make_shared<LogAngleEng>(LogAngleEng(sys, msg, pot, align,"cosine")); 
+  m_logger["external_gravity_energy"] = boost::make_shared<LogExternalEng>(LogExternalEng(sys, msg, pot, align,"gravity")); 
+  m_logger["external_harmonic_energy"] = boost::make_shared<LogExternalEng>(LogExternalEng(sys, msg, pot, align,"harmonic")); 
 
   // ------------------------------------------------------------------
     

@@ -1,6 +1,6 @@
 /* *************************************************************
  *  
- *   Active Particles on Curved Spaces (APCS)
+ *   Soft Active Mater on Surfaces (SAMoS)
  *   
  *   Author: Rastko Sknepnek
  *  
@@ -9,9 +9,23 @@
  *   University of Dundee
  *   
  *   (c) 2013, 2014
- *   
+ * 
+ *   School of Science and Engineering
+ *   School of Life Sciences 
+ *   University of Dundee
+ * 
+ *   (c) 2015
+ * 
+ *   Author: Silke Henkes
+ * 
+ *   Department of Physics 
+ *   Institute for Complex Systems and Mathematical Biology
+ *   University of Aberdeen  
+ * 
+ *   (c) 2014, 2015
+ *  
  *   This program cannot be used, copied, or modified without
- *   explicit permission of the author.
+ *   explicit written permission of the authors.
  * 
  * ************************************************************* */
 
@@ -32,30 +46,33 @@
  */
 void ConstraintCylinder::enforce(Particle& p)
 {
-  bool periodic = m_system->get_periodic();
-  BoxPtr box = m_system->get_box();
-  double x = p.x, y = p.y;
-  double R = sqrt(x*x + y*y);
-  double s = m_r/R;
-  // Scale back to the surface
-  p.x *= s; p.y *= s; 
-  // Compute unit normal
-  double Nx = p.x/m_r, Ny = p.y/m_r;
-  // compute v.N
-  double v_dot_N = p.vx*Nx + p.vy*Ny;
-  // compute n.N
-  double n_dot_N = p.nx*Nx + p.ny*Ny;
-  // Project velocity onto tangent plane
-  p.vx -= v_dot_N*Nx; p.vy -= v_dot_N*Ny;
-  // Project director onto tangent plane
-  p.nx -= n_dot_N*Nx; p.ny -= n_dot_N*Ny;
-  // normalize director
-  double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny + p.nz*p.nz);
-  p.nx *= inv_len;  p.ny *= inv_len;  p.nz *= inv_len;
-  if (periodic)
+  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
   {
-    if (p.z > box->zhi) p.z -= box->Lz;
-    else if (p.z < box->zlo) p.z += box->Lz;
+    bool periodic = m_system->get_periodic();
+    BoxPtr box = m_system->get_box();
+    double x = p.x, y = p.y;
+    double R = sqrt(x*x + y*y);
+    double s = m_r/R;
+    // Scale back to the surface
+    p.x *= s; p.y *= s; 
+    // Compute unit normal
+    double Nx = p.x/m_r, Ny = p.y/m_r;
+    // compute v.N
+    double v_dot_N = p.vx*Nx + p.vy*Ny;
+    // compute n.N
+    double n_dot_N = p.nx*Nx + p.ny*Ny;
+    // Project velocity onto tangent plane
+    p.vx -= v_dot_N*Nx; p.vy -= v_dot_N*Ny;
+    // Project director onto tangent plane
+    p.nx -= n_dot_N*Nx; p.ny -= n_dot_N*Ny;
+    // normalize director
+    double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny + p.nz*p.nz);
+    p.nx *= inv_len;  p.ny *= inv_len;  p.nz *= inv_len;
+    if (periodic)
+    {
+      if (p.z > box->zhi) p.z -= box->Lz;
+      else if (p.z < box->zlo) p.z += box->Lz;
+    }
   }
 }
 

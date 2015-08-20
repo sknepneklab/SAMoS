@@ -1,6 +1,6 @@
 /* *************************************************************
  *  
- *   Active Particles on Curved Spaces (APCS)
+ *   Soft Active Mater on Surfaces (SAMoS)
  *   
  *   Author: Rastko Sknepnek
  *  
@@ -9,9 +9,23 @@
  *   University of Dundee
  *   
  *   (c) 2013, 2014
- *   
+ * 
+ *   School of Science and Engineering
+ *   School of Life Sciences 
+ *   University of Dundee
+ * 
+ *   (c) 2015
+ * 
+ *   Author: Silke Henkes
+ * 
+ *   Department of Physics 
+ *   Institute for Complex Systems and Mathematical Biology
+ *   University of Aberdeen  
+ * 
+ *   (c) 2014, 2015
+ *  
  *   This program cannot be used, copied, or modified without
- *   explicit permission of the author.
+ *   explicit written permission of the authors.
  * 
  * ************************************************************* */
 
@@ -32,27 +46,30 @@
  */
 void ConstraintPlaneWalls::enforce(Particle& p)
 {
-  bool periodic = m_system->get_periodic();
-  double ylo = m_system->get_box()->ylo, yhi = m_system->get_box()->yhi;
-  double ly = yhi - ylo;
-  p.z = 0.0;
-  p.vz = 0.0;
-  p.fz = 0.0;
-  // Check periodic boundary conditions 
-  if (periodic)
+  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
   {
-    if (p.y <= ylo) p.y += ly;
-    else if (p.y >= yhi) p.y -= ly;
-  }
-  if (p.x >= m_l)
-  {
-    p.x = m_l;
-    p.vx = -p.vx;
-  }
-  else if (p.x <= -m_l)
-  {
-    p.x = -m_l;
-    p.vx = -p.vx;
+    bool periodic = m_system->get_periodic();
+    double ylo = m_system->get_box()->ylo, yhi = m_system->get_box()->yhi;
+    double ly = yhi - ylo;
+    p.z = 0.0;
+    p.vz = 0.0;
+    p.fz = 0.0;
+    // Check periodic boundary conditions 
+    if (periodic)
+    {
+      if (p.y <= ylo) p.y += ly;
+      else if (p.y >= yhi) p.y -= ly;
+    }
+    if (p.x >= m_l)
+    {
+      p.x = m_l;
+      p.vx = -p.vx;
+    }
+    else if (p.x <= -m_l)
+    {
+      p.x = -m_l;
+      p.vx = -p.vx;
+    }
   }
 }
 

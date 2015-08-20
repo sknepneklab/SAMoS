@@ -1,6 +1,6 @@
 /* *************************************************************
  *  
- *   Active Particles on Curved Spaces (APCS)
+ *   Soft Active Mater on Surfaces (SAMoS)
  *   
  *   Author: Rastko Sknepnek
  *  
@@ -8,10 +8,24 @@
  *   School of Engineering, Physics and Mathematics
  *   University of Dundee
  *   
- *   (c) 2013
- *   
+ *   (c) 2013, 2014
+ * 
+ *   School of Science and Engineering
+ *   School of Life Sciences 
+ *   University of Dundee
+ * 
+ *   (c) 2015
+ * 
+ *   Author: Silke Henkes
+ * 
+ *   Department of Physics 
+ *   Institute for Complex Systems and Mathematical Biology
+ *   University of Aberdeen  
+ * 
+ *   (c) 2014, 2015
+ *  
  *   This program cannot be used, copied, or modified without
- *   explicit permission of the author.
+ *   explicit written permission of the authors.
  * 
  * ************************************************************* */
 
@@ -56,7 +70,12 @@ static vector<string> split_line(const string& str)
  * \param msg Pointer to the Messenger object
  * \param box Pointer to the simulation box object
  */
-System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_msg(msg), m_box(box), m_periodic(false), m_force_nlist_rebuild(false), m_current_particle_flag(0), m_nlist_rescale(1.0)
+System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_msg(msg), 
+                                                                             m_box(box), 
+                                                                             m_periodic(false),
+                                                                             m_force_nlist_rebuild(false),
+                                                                             m_nlist_rescale(1.0),
+                                                                             m_current_particle_flag(0)
 {
   vector<int> types;
   vector<string> s_line;

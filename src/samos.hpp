@@ -1,6 +1,6 @@
 /* *************************************************************
  *  
- *   Active Particles on Curved Spaces (APCS)
+ *   Soft Active Mater on Surfaces (SAMoS)
  *   
  *   Author: Rastko Sknepnek
  *  
@@ -8,22 +8,36 @@
  *   School of Engineering, Physics and Mathematics
  *   University of Dundee
  *   
- *   (c) 2013, 2014, 2015
- *   
+ *   (c) 2013, 2014
+ * 
+ *   School of Science and Engineering
+ *   School of Life Sciences 
+ *   University of Dundee
+ * 
+ *   (c) 2015
+ * 
+ *   Author: Silke Henkes
+ * 
+ *   Department of Physics 
+ *   Institute for Complex Systems and Mathematical Biology
+ *   University of Aberdeen  
+ * 
+ *   (c) 2014, 2015
+ *  
  *   This program cannot be used, copied, or modified without
- *   explicit permission of the author.
+ *   explicit written permission of the authors.
  * 
  * ************************************************************* */
 
 /*!
- * \file apcs.hpp
+ * \file samos.hpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
  * \date 03-Mar-2015
  * \brief All include files for the main code.
 */
 
-#ifndef __APCS_HPP__
-#define __APCS_HPP__
+#ifndef __SAMOS_HPP__
+#define __SAMOS_HPP__
 
 #include "defaults.hpp"
 #include "messenger.hpp"
@@ -61,13 +75,16 @@
 #include "constraint_hourglass.hpp"
 #include "constraint_gaussian_bump.hpp"
 #include "constraint_none.hpp"
+#include "constraint_tetrahedron.hpp"
 #include "rng.hpp"
 #include "particle.hpp"
+#include "vector3d.hpp"
 #include "box.hpp"
 #include "system.hpp"
 #include "neighbour_list.hpp"
 #include "external_potential.hpp"
 #include "external_gravity_potential.hpp"
+#include "external_harmonic_potential.hpp"
 #include "pair_potential.hpp"
 #include "pair_coulomb_potential.hpp"
 #include "pair_soft_potential.hpp"
@@ -102,6 +119,7 @@
 #include "population_elongation.hpp"
 #include "bond_potential.hpp" 
 #include "bond_harmonic_potential.hpp"
+#include "bond_active_force.hpp"
 #include "angle_potential.hpp"
 #include "angle_harmonic_potential.hpp"
 #include "angle_cosine_potential.hpp"

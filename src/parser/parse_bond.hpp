@@ -1,6 +1,6 @@
 /* *************************************************************
  *  
- *   Active Particles on Curved Spaces (APCS)
+ *   Soft Active Mater on Surfaces (SAMoS)
  *   
  *   Author: Rastko Sknepnek
  *  
@@ -9,9 +9,23 @@
  *   University of Dundee
  *   
  *   (c) 2013, 2014
- *   
+ * 
+ *   School of Science and Engineering
+ *   School of Life Sciences 
+ *   University of Dundee
+ * 
+ *   (c) 2015
+ * 
+ *   Author: Silke Henkes
+ * 
+ *   Department of Physics 
+ *   Institute for Complex Systems and Mathematical Biology
+ *   University of Aberdeen  
+ * 
+ *   (c) 2014, 2015
+ *  
  *   This program cannot be used, copied, or modified without
- *   explicit permission of the author.
+ *   explicit written permission of the authors.
  * 
  * ************************************************************* */
 
@@ -56,7 +70,8 @@ public:
   bond_grammar(BondData& bond_data) : bond_grammar::base_type(bond)
   {
     bond = (
-              qi::as_string[keyword["harmonic"]][phx::bind(&BondData::type, phx::ref(bond_data)) = qi::_1 ]       /*! Handles harmonic bonds */
+               qi::as_string[keyword["harmonic"]][phx::bind(&BondData::type, phx::ref(bond_data)) = qi::_1 ]       /*! Handles harmonic bonds */
+             | qi::as_string[keyword["active"]][phx::bind(&BondData::type, phx::ref(bond_data)) = qi::_1 ]         /*! Handles active force bonds */
             /* to add new bond potential: | qi::as_string[keyword["newpotential"]][phx::bind(&BondData::type, phx::ref(bond_data)) = qi::_1 ] */
            )
            >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&BondData::params, phx::ref(bond_data)) = qi::_1 ]

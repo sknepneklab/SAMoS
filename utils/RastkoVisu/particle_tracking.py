@@ -1,19 +1,33 @@
-# ################################################################
-#  
-#    Active Particles on Curved Spaces (APCS)
-#    
-#    Author: Rastko Sknepnek
-#   
-#    Division of Physics
-#    School of Engineering, Physics and Mathematics
-#    University of Dundee
-#    
-#    (c) 2013, 2014
-#    
-#    This program cannot be used, copied, or modified without
-#    explicit permission of the author.
-#  
-# ################################################################
+# * *************************************************************
+# *  
+# *   Soft Active Mater on Surfaces (SAMoS)
+# *   
+# *   Author: Rastko Sknepnek
+# *  
+# *   Division of Physics
+# *   School of Engineering, Physics and Mathematics
+# *   University of Dundee
+# *   
+# *   (c) 2013, 2014
+# * 
+# *   School of Science and Engineering
+# *   School of Life Sciences 
+# *   University of Dundee
+# * 
+# *   (c) 2015
+# * 
+# *   Author: Silke Henkes
+# * 
+# *   Department of Physics 
+# *   Institute for Complex Systems and Mathematical Biology
+# *   University of Aberdeen  
+# * 
+# *   (c) 2014, 2015
+# *  
+# *   This program cannot be used, copied, or modified without
+# *   explicit written permission of the authors.
+# * 
+# * ***************************************************************
 
 # Utility code for computing trajectory of a given particle
 
@@ -51,6 +65,9 @@ print
 start = datetime.now()
 
 files = sorted(glob(args.input+'*.dat'))[args.skip:]
+
+if len(files) == 0:
+  files = sorted(glob(args.input+'*.dat.gz'))[args.skip:]
 
 out = open(args.output+'.dat','w')
 pid = args.id

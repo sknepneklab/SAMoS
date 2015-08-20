@@ -1,6 +1,6 @@
 /* *************************************************************
  *  
- *   Active Particles on Curved Spaces (APCS)
+ *   Soft Active Mater on Surfaces (SAMoS)
  *   
  *   Author: Rastko Sknepnek
  *  
@@ -8,15 +8,29 @@
  *   School of Engineering, Physics and Mathematics
  *   University of Dundee
  *   
- *   (c) 2013
- *   
+ *   (c) 2013, 2014
+ * 
+ *   School of Science and Engineering
+ *   School of Life Sciences 
+ *   University of Dundee
+ * 
+ *   (c) 2015
+ * 
+ *   Author: Silke Henkes
+ * 
+ *   Department of Physics 
+ *   Institute for Complex Systems and Mathematical Biology
+ *   University of Aberdeen  
+ * 
+ *   (c) 2014, 2015
+ *  
  *   This program cannot be used, copied, or modified without
- *   explicit permission of the author.
+ *   explicit written permission of the authors.
  * 
  * ************************************************************* */
 
 /*!
- * \file apcs.cpp
+ * \file samos.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
  * \date 01-Nov-2013
  * \brief Main program
@@ -33,7 +47,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/make_shared.hpp>
 
-#include "apcs.hpp"
+#include "samos.hpp"
 
 #include "factory_types.hpp"
 #include "register.hpp"
@@ -146,7 +160,7 @@ int main(int argc, char* argv[])
   if (argc < 2)
   {
     std::cerr << "Usage: " << std::endl;
-    std::cerr << "    apcs <config file name>" << std::endl;
+    std::cerr << "    samos <config file name>" << std::endl;
     return -1;
   }
   

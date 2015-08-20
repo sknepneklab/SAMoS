@@ -1,6 +1,6 @@
 /* *************************************************************
  *  
- *   Active Particles on Curved Spaces (APCS)
+ *   Soft Active Mater on Surfaces (SAMoS)
  *   
  *   Author: Rastko Sknepnek
  *  
@@ -8,10 +8,24 @@
  *   School of Engineering, Physics and Mathematics
  *   University of Dundee
  *   
- *   (c) 2013, 2014, 2015
- *   
+ *   (c) 2013, 2014
+ * 
+ *   School of Science and Engineering
+ *   School of Life Sciences 
+ *   University of Dundee
+ * 
+ *   (c) 2015
+ * 
+ *   Author: Silke Henkes
+ * 
+ *   Department of Physics 
+ *   Institute for Complex Systems and Mathematical Biology
+ *   University of Aberdeen  
+ * 
+ *   (c) 2014, 2015
+ *  
  *   This program cannot be used, copied, or modified without
- *   explicit permission of the author.
+ *   explicit written permission of the authors.
  * 
  * ************************************************************* */
 
@@ -28,4 +42,6 @@ void register_external_potentials(ExternalPotentialMap& external_potentials)
 {
   // Register gravity to the external potential class factory
   external_potentials["gravity"] = boost::factory<ExternalGravityPotentialPtr>();
+  // Register harmonic potential to the external potential class factory
+  external_potentials["harmonic"] = boost::factory<ExternalHarmonicPotentialPtr>();
 }

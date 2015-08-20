@@ -1,6 +1,6 @@
 /* *************************************************************
  *  
- *   Active Particles on Curved Spaces (APCS)
+ *   Soft Active Mater on Surfaces (SAMoS)
  *   
  *   Author: Rastko Sknepnek
  *  
@@ -8,10 +8,24 @@
  *   School of Engineering, Physics and Mathematics
  *   University of Dundee
  *   
- *   (c) 2013
- *   
+ *   (c) 2013, 2014
+ * 
+ *   School of Science and Engineering
+ *   School of Life Sciences 
+ *   University of Dundee
+ * 
+ *   (c) 2015
+ * 
+ *   Author: Silke Henkes
+ * 
+ *   Department of Physics 
+ *   Institute for Complex Systems and Mathematical Biology
+ *   University of Aberdeen  
+ * 
+ *   (c) 2014, 2015
+ *  
  *   This program cannot be used, copied, or modified without
- *   explicit permission of the author.
+ *   explicit written permission of the authors.
  * 
  * ************************************************************* */
 
@@ -37,55 +51,58 @@ void ConstraintActomyo::enforce(Particle& p)
   double xlo = -0.5*m_lx, xhi = 0.5*m_lx;
   double ylo = -0.5*m_ly, yhi = 0.5*m_ly;
   
-  // NOTE: Currently, types are hard-coded. This breaks generality of the code. Needs to be rethought.
-  if (p.get_type() == 1)  
-  {  
-    p.z = 0.0;
-    p.vz = 0.0;
-    p.fz = 0.0;
-  }  
-
-  if (p.get_type() == 2)
-  {  
-    p.z = 0.5*m_lz;
-    p.vz = 0.0;
-    p.fz = 0.0;
-  }  
-
-  if (p.get_type() == 3)
-  {  
-    p.z = 0.25*m_lz;
-  }  
-
-  // Check periodic boundary conditions 
-  if (periodic)
+  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
   {
-    if (p.x <= xlo) p.x += m_lx;
-    else if (p.x >= xhi) p.x -= m_lx;
-    if (p.y <= ylo) p.y += m_ly;
-    else if (p.y >= yhi) p.y -= m_ly;
-  }
-  else // reflective boundary conditions
-  {
-    if (p.x < xlo) 
+    // NOTE: Currently, types are hard-coded. This breaks generality of the code. Needs to be rethought.
+    if (p.get_type() == 1)  
+    {  
+      p.z = 0.0;
+      p.vz = 0.0;
+      p.fz = 0.0;
+    }  
+
+    if (p.get_type() == 2)
+    {  
+      p.z = 0.5*m_lz;
+      p.vz = 0.0;
+      p.fz = 0.0;
+    }  
+
+    if (p.get_type() == 3)
+    {  
+      p.z = 0.25*m_lz;
+    }  
+
+    // Check periodic boundary conditions 
+    if (periodic)
     {
-      p.x = xlo;
-      p.vx = -p.vx;
+      if (p.x <= xlo) p.x += m_lx;
+      else if (p.x >= xhi) p.x -= m_lx;
+      if (p.y <= ylo) p.y += m_ly;
+      else if (p.y >= yhi) p.y -= m_ly;
     }
-    else if (p.x > xhi)
+    else // reflective boundary conditions
     {
-      p.x = xhi;
-      p.vx = -p.vx;
-    }
-    if (p.y < ylo) 
-    {
-      p.y = ylo;
-      p.vy = -p.vy;
-    }
-    else if (p.y > yhi)
-    {
-      p.y = yhi;
-      p.vy = -p.vy;
+      if (p.x < xlo) 
+      {
+        p.x = xlo;
+        p.vx = -p.vx;
+      }
+      else if (p.x > xhi)
+      {
+        p.x = xhi;
+        p.vx = -p.vx;
+      }
+      if (p.y < ylo) 
+      {
+        p.y = ylo;
+        p.vy = -p.vy;
+      }
+      else if (p.y > yhi)
+      {
+        p.y = yhi;
+        p.vy = -p.vy;
+      }
     }
   }
 }

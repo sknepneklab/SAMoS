@@ -1,6 +1,6 @@
 /* *************************************************************
  *  
- *   Active Particles on Curved Spaces (APCS)
+ *   Soft Active Mater on Surfaces (SAMoS)
  *   
  *   Author: Rastko Sknepnek
  *  
@@ -8,10 +8,24 @@
  *   School of Engineering, Physics and Mathematics
  *   University of Dundee
  *   
- *   (c) 2013
- *   
+ *   (c) 2013, 2014
+ * 
+ *   School of Science and Engineering
+ *   School of Life Sciences 
+ *   University of Dundee
+ * 
+ *   (c) 2015
+ * 
+ *   Author: Silke Henkes
+ * 
+ *   Department of Physics 
+ *   Institute for Complex Systems and Mathematical Biology
+ *   University of Aberdeen  
+ * 
+ *   (c) 2014, 2015
+ *  
  *   This program cannot be used, copied, or modified without
- *   explicit permission of the author.
+ *   explicit written permission of the authors.
  * 
  * ************************************************************* */
 
@@ -30,44 +44,47 @@
  */
 void ConstraintPlane::enforce(Particle& p)
 {
-  bool periodic = m_system->get_periodic();
-  double Lx = m_system->get_box()->Lx;
-  double Ly = m_system->get_box()->Ly;
-  double xlo = -0.5*Lx, xhi = 0.5*Lx;
-  double ylo = -0.5*Ly, yhi = 0.5*Ly;
-  p.z = 0.0;
-  p.vz = 0.0;
-  p.fz = 0.0;
-  // Check periodic boundary conditions 
-  if (periodic)
-    m_system->enforce_periodic(p);
-  else // reflective boundary conditions
+  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
   {
-    if (p.x < xlo) 
+    bool periodic = m_system->get_periodic();
+    double Lx = m_system->get_box()->Lx;
+    double Ly = m_system->get_box()->Ly;
+    double xlo = -0.5*Lx, xhi = 0.5*Lx;
+    double ylo = -0.5*Ly, yhi = 0.5*Ly;
+    p.z = 0.0;
+    p.vz = 0.0;
+    p.fz = 0.0;
+    // Check periodic boundary conditions 
+    if (periodic)
+      m_system->enforce_periodic(p);
+    else // reflective boundary conditions
     {
-      p.x = xlo;
-      p.vx = -p.vx;
+      if (p.x < xlo) 
+      {
+        p.x = xlo;
+        p.vx = -p.vx;
+      }
+      else if (p.x > xhi)
+      {
+        p.x = xhi;
+        p.vx = -p.vx;
+      }
+      if (p.y < ylo) 
+      {
+        p.y = ylo;
+        p.vy = -p.vy;
+      }
+      else if (p.y > yhi)
+      {
+        p.y = yhi;
+        p.vy = -p.vy;
+      }
     }
-    else if (p.x > xhi)
-    {
-      p.x = xhi;
-      p.vx = -p.vx;
-    }
-    if (p.y < ylo) 
-    {
-      p.y = ylo;
-      p.vy = -p.vy;
-    }
-    else if (p.y > yhi)
-    {
-      p.y = yhi;
-      p.vy = -p.vy;
-    }
+    // normalize director
+    p.nz = 0.0;
+    double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny);
+    p.nx *= inv_len;  p.ny *= inv_len;  
   }
-  // normalize director
-  p.nz = 0.0;
-  double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny);
-  p.nx *= inv_len;  p.ny *= inv_len;  
 }
 
 /*! Rotate director of a particle around the normal vector (z axis)

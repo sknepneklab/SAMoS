@@ -1,6 +1,6 @@
 /* *************************************************************
  *  
- *   Active Particles on Curved Spaces (APCS)
+ *   Soft Active Mater on Surfaces (SAMoS)
  *   
  *   Author: Rastko Sknepnek
  *  
@@ -9,9 +9,23 @@
  *   University of Dundee
  *   
  *   (c) 2013, 2014
- *   
+ * 
+ *   School of Science and Engineering
+ *   School of Life Sciences 
+ *   University of Dundee
+ * 
+ *   (c) 2015
+ * 
+ *   Author: Silke Henkes
+ * 
+ *   Department of Physics 
+ *   Institute for Complex Systems and Mathematical Biology
+ *   University of Aberdeen  
+ * 
+ *   (c) 2014, 2015
+ *  
  *   This program cannot be used, copied, or modified without
- *   explicit permission of the author.
+ *   explicit written permission of the authors.
  * 
  * ************************************************************* */
 
@@ -42,7 +56,7 @@ void IntegratorActomyo::integrate()
 {
   int N = m_system->size();
   double T = m_temp->get_val(m_system->get_run_step()); // current temperature 
-  m_stoch_coeff = sqrt(6.0*T/m_zeta*m_dt);  // I think we need 6 here (2*d) because we only project into the 2d space.
+  m_stoch_coeff = sqrt(2.0*T*m_dt/m_zeta);  
   // reset forces and torques
   m_system->reset_forces();
   m_system->reset_torques();

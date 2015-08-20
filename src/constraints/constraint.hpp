@@ -1,6 +1,6 @@
 /* *************************************************************
  *  
- *   Active Particles on Curved Spaces (APCS)
+ *   Soft Active Mater on Surfaces (SAMoS)
  *   
  *   Author: Rastko Sknepnek
  *  
@@ -8,10 +8,24 @@
  *   School of Engineering, Physics and Mathematics
  *   University of Dundee
  *   
- *   (c) 2013
- *   
+ *   (c) 2013, 2014
+ * 
+ *   School of Science and Engineering
+ *   School of Life Sciences 
+ *   University of Dundee
+ * 
+ *   (c) 2015
+ * 
+ *   Author: Silke Henkes
+ * 
+ *   Department of Physics 
+ *   Institute for Complex Systems and Mathematical Biology
+ *   University of Aberdeen  
+ * 
+ *   (c) 2014, 2015
+ *  
  *   This program cannot be used, copied, or modified without
- *   explicit permission of the author.
+ *   explicit written permission of the authors.
  * 
  * ************************************************************* */
 
@@ -48,7 +62,12 @@ public:
   //! \param sys pointer to the system object
   //! \param msg Pointer to the internal state messenger
   //! \param param parameters that define the manifolds (e.g., sphere radius)
-  Constraint(SystemPtr sys, MessengerPtr msg, pairs_type& param) : m_system(sys), m_msg(msg), m_rescale(1.0), m_rescale_steps(1000), m_rescale_freq(10) 
+  Constraint(SystemPtr sys, MessengerPtr msg, pairs_type& param) : m_system(sys),
+                                                                   m_msg(msg), 
+                                                                   m_rescale(1.0),
+                                                                   m_rescale_steps(1000),
+                                                                   m_rescale_freq(10),
+                                                                   m_group("all") 
   { 
     if (param.find("maxiter") == param.end())
     {
@@ -60,6 +79,7 @@ public:
       m_msg->msg(Messenger::INFO,"Constraint. Maximum number of iterations set to "+param["maxiter"]+".");
       m_max_iter = lexical_cast<int>(param["maxiter"]);
     }
+    m_msg->write_config("constraint.max_iter",lexical_cast<string>(m_max_iter));
     if (param.find("tol") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Constraint. Tolerance has not been set. Assuming 1e-6.");
@@ -70,24 +90,42 @@ public:
       m_msg->msg(Messenger::INFO,"Constraint. Tolerance set to "+param["tol"]+".");
       m_tol = lexical_cast<int>(param["tol"]);
     }
+    m_msg->write_config("constraint.tol",lexical_cast<string>(m_tol));
     if (param.find("rescale") != param.end())
     {
       m_msg->msg(Messenger::INFO,"Constraint. Rescaling constraint by factor "+param["rescale"]+".");
       m_rescale = lexical_cast<double>(param["rescale"]);
+      m_msg->write_config("constraint.rescale","true");
     }
     if (param.find("rescale_steps") != param.end())
     {
       m_msg->msg(Messenger::INFO,"Constraint. Rescaling of the constraint done over "+param["rescale_steps"]+" time steps.");
       m_rescale_steps = lexical_cast<double>(param["rescale_steps"]);
+      m_msg->write_config("constraint.rescale_steps",lexical_cast<string>(m_rescale_steps));
     }
     if (param.find("rescale_freq") != param.end())
     {
       m_msg->msg(Messenger::INFO,"Constraint. Rescaling constraint every "+param["rescale_freq"]+" time steps.");
       m_rescale_freq = lexical_cast<double>(param["rescale_freq"]);
+      m_msg->write_config("constraint.rescale_frequency",lexical_cast<string>(m_rescale_freq));
     }
     m_scale = pow(m_rescale,static_cast<double>(m_rescale_freq)/static_cast<double>(m_rescale_steps));
     if (m_scale != 1.0)
+    {
       m_msg->msg(Messenger::INFO,"Constraint. Rescaling constraint with scale factor"+lexical_cast<string>(m_scale)+" per time steps.");
+      m_msg->write_config("constraint.scale",lexical_cast<string>(m_scale));
+    }
+    if (param.find("group") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Constraint. No particle groups set. Assuming \"all\".");
+      m_group = "all";
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Constraint. Applying constraint go group "+param["group"]+".");
+      m_group = param["group"];
+    }
+    m_msg->write_config("constraint.group",m_group);
   }
   
   //! Enforce constraint
@@ -124,6 +162,7 @@ protected:
   int m_rescale_steps;              //!< Rescale constrain over this many step
   int m_rescale_freq;               //!< Skip this many steps between rescaling constrain
   double m_scale;                   //!< Rescale the constraint (e.g., sphere radius) by this much in each step (=m_rescale**(m_rescale_freq/m_rescale_steps))
+  string m_group;                   //!< Apply constraint only to particles in this group
   
 };
 
