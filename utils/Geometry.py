@@ -237,16 +237,21 @@ class GeometryPeanut(Geometry):
 		n=np.array([nx,ny,nz])
 		nhat=n/(np.sqrt(nx**2 + ny**2 + nz**2))
 		# Angle theta with the z axis. arccos is between 0 and pi, so that's ok already
-		phi=np.arctan2(z,y)
+		phi=np.arctan2(y,z)
 		# The other two of our trio of local coordinate vectors
 		ephi = np.empty(np.shape(rval))
 		ephi[:,0]=0
 		ephi[:,1]=np.cos(phi)
 		ephi[:,2]=-np.sin(phi)
+		#((rval).transpose()/(rs).transpose()).transpose()
+		ephi=(ephi.transpose()/(np.sqrt(ephi[:,0]**2 + ephi[:,1]**2 + ephi[:,2]**2).transpose())).transpose()
+		splus=(x**2 + y**2 + z**2 + self.a**2)
+		sminus=(x**2 + y**2 + z**2 - self.a**2)
 		et = np.empty(np.shape(rval))
-		et[:,0]=-(x**2 + y**2 + z**2 + self.a**2)*z
-		et[:,1]=np.sin(phi)*(x**2 + y**2 + z**2 - self.a**2)*x
-		et[:,2]=np.cos(phi)*(x**2 + y**2 + z**2 - self.a**2)*x
+		et[:,0]=-np.sin(phi)*y*splus - np.cos(phi)*z*splus
+		et[:,1]=np.sin(phi)*sminus*x + np.cos(phi)*z*splus
+		et[:,2]=np.cos(phi)*sminus*x
+		et=(et.transpose()/(np.sqrt(et[:,0]**2 + et[:,1]**2 + et[:,2]**2).transpose())).transpose()
 		return x,phi,et,ephi
 	
 	# Complementary: The unit normal

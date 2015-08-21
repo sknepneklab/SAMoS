@@ -63,7 +63,7 @@ class Tesselation:
 		else:
 			dmax=2*self.conf.sigma
 			print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
-			
+		print dmax	
 		if self.conf.param.potential=='morse':
 			re=self.conf.param.pot_params['re']
 		#cl = CellList(2.0*np.sqrt(dmax),self.conf.param.box)
@@ -73,8 +73,8 @@ class Tesselation:
 			neighbours=[]
 			dist=self.geom.GeodesicDistance12(self.rval[i,:],self.rval)
 			if closeHoles:
-				mult=1.0
-				while len(neighbours)<4 and mult<MMAX:
+				mult=0.25
+				while len(neighbours)<3 and mult<MMAX:
 					if self.conf.monodisperse:
 						neighbours=[index for index,value in enumerate(dist) if value <mult*dmax]
 					else:
@@ -118,6 +118,7 @@ class Tesselation:
 					else:
 						neighbours=[index for index,value in enumerate(dist) if value <0.8*(self.conf.radius[i]+self.conf.radius[index])]	
 				neighbours.remove(i)
+				#print len(neighbours)
 				neighList.extend([u for u in range(count,count+len(neighbours))])
 				self.Ival.extend([i for k in range(len(neighbours))])
 				#self.Jval.extend(neighs[neighbours])

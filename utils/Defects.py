@@ -145,6 +145,10 @@ class Defects:
 			stheta=np.dot(self.normal[t,:],np.cross(self.conf.nval[t0,:],self.conf.nval[t,:]))
 			if abs(stheta)>1:
 				stheta=np.sign(stheta)
+			if np.isnan(stheta):
+				stheta=0
+			if np.isnan(ctheta):
+				ctheta=1
 			theta=np.arcsin(stheta*np.sign(ctheta))
 			thetadum.append(theta)
 			thetatot+=theta
@@ -158,6 +162,10 @@ class Defects:
 			stheta=np.dot(self.normal[t,:],np.cross(self.conf.vhat[t0,:],self.conf.vhat[t,:]))
 			if abs(stheta)>1:
 				stheta=np.sign(stheta)
+			if np.isnan(stheta):
+				stheta=0
+			if np.isnan(ctheta):
+				ctheta=1
 			theta=np.arcsin(stheta*np.sign(ctheta))
 			thetatot+=theta
 			t0=t
