@@ -202,7 +202,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
       
       // the next 4 bytes in the file must be "CORD"
       char cord_data[] = "CORD";
-      m_out.write(cord_data, 4);
+      m_file.write(cord_data, 4);
       write_int(m_file, 0);      // Number of frames in file, none written yet
       write_int(m_file, m_start); // Starting timestep
       write_int(m_file, m_freq);  // Timesteps between frames written to the file
@@ -322,10 +322,10 @@ void Dump::dump_dcd()
   unitcell[3] = 0.0f;
   unitcell[4] = 0.0f;
   write_int(m_file, 48);
-  m_out.write((char *)unitcell, 48);
+  m_file.write((char *)unitcell, 48);
   write_int(m_file, 48);
   // check for errors
-  if (!m_out.good())
+  if (!m_file.good())
   {
     m_msg->msg(Messenger::ERROR,"Error writing into DCD file.");
     throw runtime_error("Error writing DCD file");
