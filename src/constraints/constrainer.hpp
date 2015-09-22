@@ -114,11 +114,12 @@ public:
   {
     Nx = 0.0; Ny = 0.0; Nz = 0.0;
     for (vector<ConstraintPtr>::iterator it_c = m_constraints.begin(); it_c != m_constraints.end(); it_c++)
-    {
-      double nx = 0.0, ny = 0.0, nz = 0.0;
-      (*it_c)->compute_normal(p,nx,ny,nz);
-      Nx += nx; Ny += ny;  Nz += nz;
-    }
+      if (find(p.groups.begin(),p.groups.end(),(*it_c)->get_group()) != p.groups.end())
+      {
+        double nx = 0.0, ny = 0.0, nz = 0.0;
+        (*it_c)->compute_normal(p,nx,ny,nz);
+        Nx += nx; Ny += ny;  Nz += nz;
+      }
     double len_N = sqrt(Nx*Nx + Ny*Ny + Nz*Nz);
     Nx /= len_N;  Ny /= len_N;  Nz /= len_N;
   }

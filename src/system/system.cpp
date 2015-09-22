@@ -194,10 +194,19 @@ void System::make_group(const string name, pairs_type& param)
   if (param.find("type") != param.end())
   {
     for (unsigned int i = 0; i < m_particles.size(); i++) to_add["type"].push_back(false);
-    m_msg->msg(Messenger::INFO,"Adding particle by group "+name+".");
+    m_msg->msg(Messenger::INFO,"Adding particle to group "+name+".");
     for (unsigned int i = 0; i < m_particles.size(); i++)
       if (m_particles[i].get_type() == lexical_cast<int>(param["type"]))
         to_add["type"][i] = true;
+  }
+  // Make group of particles that are not of a given type
+  if (param.find("not_type") != param.end())
+  {
+    for (unsigned int i = 0; i < m_particles.size(); i++) to_add["not_type"].push_back(false);
+    m_msg->msg(Messenger::INFO,"Adding particle to group "+name+".");
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+      if (m_particles[i].get_type() != lexical_cast<int>(param["not_type"]))
+        to_add["not_type"][i] = true;
   }
   if (param.find("r_eq") != param.end())
   {

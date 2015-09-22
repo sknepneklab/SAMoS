@@ -152,6 +152,9 @@ public:
   // Rescale constraint
   virtual bool rescale() { return false;}
   
+  //! Return the constraint group
+  string get_group() { return m_group; }
+  
 protected:
   
   SystemPtr  m_system;              //!< Pointer to the system object
