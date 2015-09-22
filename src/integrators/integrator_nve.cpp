@@ -63,9 +63,9 @@ void IntegratorNVE::integrate()
     p.vy += dt_2*p.fy;
     p.vz += dt_2*p.fz;
     // Project everything back to the manifold
-    m_constraint->enforce(p);
+    m_constrainer->enforce(p);
     // Update angular velocity
-    p.omega += dt_2*m_constraint->project_torque(p);
+    p.omega += dt_2*m_constrainer->project_torque(p);
   }
   // update position
   for (int i = 0; i < N; i++)
@@ -90,7 +90,7 @@ void IntegratorNVE::integrate()
     p.y += dy; 
     p.z += dz;
     // Project everything back to the manifold
-    m_constraint->enforce(p);
+    m_constrainer->enforce(p);
   }
   // compute forces in the current configuration
   if (m_potential)
@@ -109,7 +109,7 @@ void IntegratorNVE::integrate()
     if (m_has_theta_limit)
       if (fabs(dtheta) > m_theta_limit)
         dtheta = SIGN(dtheta)*m_theta_limit;
-    m_constraint->rotate_director(p,dtheta);
+    m_constrainer->rotate_director(p,dtheta);
     //p.omega = dtheta*m_dt;
   }
   // Perform second half step for velocity only if there is no limit on particle move
@@ -133,9 +133,9 @@ void IntegratorNVE::integrate()
       }
     }
     // Project everything back to the manifold
-    m_constraint->enforce(p);
+    m_constrainer->enforce(p);
     // Update angular velocity
-    p.omega += dt_2*m_constraint->project_torque(p);
+    p.omega += dt_2*m_constrainer->project_torque(p);
     if (m_has_limit)
       if (fabs(p.omega)*m_dt > m_theta_limit)
         p.omega = SIGN(p.omega)*m_theta_limit/m_dt;

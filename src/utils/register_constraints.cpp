@@ -66,4 +66,6 @@ void register_constraints(ConstraintMap& constraints)
   constraints["none"] = boost::factory<ConstraintNonePtr>();
   // Register constraint on the surface with tetraherdal symmetry with the constraint class factory
   constraints["tetrahedron"] = boost::factory<ConstraintTetrahedronPtr>();
+  // Register constraint to move in a slab between to planes parallel to xy plane with the constraint class factory
+  constraints["slab"] = boost::factory<ConstraintSlabPtr>();
 }

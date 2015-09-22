@@ -61,7 +61,7 @@ public:
   //! \param cons Enforces constraints to the manifold surface
   //! \param temp Temperature control object
   //! \param param Contains information about all parameters 
-  IntegratorActomyo(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstraintPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
+  IntegratorActomyo(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstrainerPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
   { 
     m_msg->msg(Messenger::WARNING,"Using Actomyo dynamics integrator. All particle groups will be ignored. Working only with group \"all\".");
     if (param.find("zeta") == param.end())

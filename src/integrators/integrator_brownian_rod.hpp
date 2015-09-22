@@ -62,7 +62,7 @@ public:
   //! \param cons Enforces constraints to the manifold surface
   //! \param temp Temperature control object
   //! \param param Contains information about all parameters 
-  IntegratorBrownianRod(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstraintPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param), m_pos_noise(false)
+  IntegratorBrownianRod(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstrainerPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param), m_pos_noise(false)
   { 
     if (param.find("v0") == param.end())
     {

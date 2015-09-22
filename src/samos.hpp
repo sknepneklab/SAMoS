@@ -76,6 +76,7 @@
 #include "constraint_gaussian_bump.hpp"
 #include "constraint_none.hpp"
 #include "constraint_tetrahedron.hpp"
+#include "constraint_slab.hpp"
 #include "rng.hpp"
 #include "particle.hpp"
 #include "vector3d.hpp"

@@ -103,7 +103,7 @@ void IntegratorBrownianRod::integrate()
     // Normal to the manifold
     double w1_x, w1_y, w1_z;
         
-    m_constraint->compute_normal(p,w1_x,w1_y,w1_z);
+    m_constrainer->compute_normal(p,w1_x,w1_y,w1_z);
     
     // normal to both director and the manifold normal, i.e., the cotangent vector
     double w2_x = ny*w1_z - nz*w1_y;
@@ -136,9 +136,9 @@ void IntegratorBrownianRod::integrate()
    
     
     // Project everything back to the manifold
-    m_constraint->enforce(p);
+    m_constrainer->enforce(p);
     // Compute angular velocity
-    p.omega += m_dt*m_constraint->project_torque(p);
+    p.omega += m_dt*m_constrainer->project_torque(p);
     // Update rod age   
     p.age += m_dt;
   }

@@ -65,7 +65,7 @@ public:
   //! \param cons Enforces constraints to the manifold surface
   //! \param temp Temperature control object
   //! \param param Contains information about all parameters 
-  IntegratorNVE(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstraintPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
+  IntegratorNVE(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstrainerPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
   { 
     m_msg->write_config("integrator.nve","");
     if (param.find("limit") != param.end())

@@ -112,7 +112,7 @@ int main(int argc, char* argv[])
   BoxPtr box;                                      // Handles simulation box
   SystemPtr sys;                                   // System object
   PotentialPtr pot;                                // Handles all potentials
-  ConstraintPtr constraint;                        // Handles the constraint to the manifold
+  ConstrainerPtr constraint;                       // Handles constrints to the manifold
   NeighbourListPtr nlist;                          // Handles global neighbour list
   std::map<std::string,IntegratorPtr> integrator;  // Handles the integrator
   AlignerPtr    aligner;                           // Handles all aligners
@@ -121,11 +121,12 @@ int main(int argc, char* argv[])
   vector<LoggerPtr> log;                           // Handles all different logs
   vector<PopulationPtr>  population;               // Handles all population methods
   
-  bool periodic = false;       // If true, use periodic boundary conditions
-  bool has_potential = false;  // If false, potential handling object (Potential class) has not be initialized yet
-  bool has_aligner = false;    // If false, pairwise aligners are not defined
-  bool has_population = false; // If false, population is not defined
-  int time_step = 0;           // Counts current time step
+  bool periodic = false;        // If true, use periodic boundary conditions
+  bool has_potential = false;   // If false, potential handling object (Potential class) has not be initialized yet
+  bool has_constraints = false; // If false, constraint handling object (Constainer class) has not be initialized yet
+  bool has_aligner = false;     // If false, pairwise aligners are not defined
+  bool has_population = false;  // If false, population is not defined
+  int time_step = 0;            // Counts current time step
   
   // flags that ensure that system the simulation is not in a bad state
   std::map<std::string, bool>  defined;
@@ -494,9 +495,15 @@ int main(int argc, char* argv[])
             }
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), constraint_parser, qi::space))
             {
+              if (!has_constraints) 
+              {
+                constraint = boost::make_shared<Constrainer>(Constrainer(sys,msg));
+                has_constraints = true;
+              }
               if (qi::phrase_parse(constraint_data.params.begin(), constraint_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                constraint = boost::shared_ptr<Constraint>(constraints[constraint_data.type](sys,msg,parameter_data));  // dirty workaround shared_ptr and inherited classes
+                //constraint = boost::shared_ptr<Constraint>(constraints[constraint_data.type](sys,msg,parameter_data));  // dirty workaround shared_ptr and inherited classes
+                constraint->add_constraint(constraint_data.type,constraints[constraint_data.type](sys,msg,parameter_data));
                 msg->msg(Messenger::INFO,"Adding constraint of type "+constraint_data.type+".");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
                   msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for constraint "+constraint_data.type+" is set to "+(*it).second+".");

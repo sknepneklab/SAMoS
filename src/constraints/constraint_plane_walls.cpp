@@ -81,18 +81,21 @@ void ConstraintPlaneWalls::enforce(Particle& p)
 */
 void ConstraintPlaneWalls::rotate_director(Particle& p, double phi)
 {
-  // Sine and cosine of the rotation angle
-  double c = cos(phi), s = sin(phi);
-  // Rotation matrix around z axis
-  double Rxx = c, Rxy = -s;
-  double Ryx = s, Ryy = c;
-  // Apply rotation matrix
-  double nx = Rxx*p.nx + Rxy*p.ny;
-  double ny = Ryx*p.nx + Ryy*p.ny;
-  double len = sqrt(nx*nx + ny*ny);
-  // Update particle director
-  p.nx = nx/len;
-  p.ny = ny/len;
+  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  {
+    // Sine and cosine of the rotation angle
+    double c = cos(phi), s = sin(phi);
+    // Rotation matrix around z axis
+    double Rxx = c, Rxy = -s;
+    double Ryx = s, Ryy = c;
+    // Apply rotation matrix
+    double nx = Rxx*p.nx + Rxy*p.ny;
+    double ny = Ryx*p.nx + Ryy*p.ny;
+    double len = sqrt(nx*nx + ny*ny);
+    // Update particle director
+    p.nx = nx/len;
+    p.ny = ny/len;
+  }
 }
 
 /*! Rotate velocity of a particle around the normal vector (z axis)
@@ -103,17 +106,20 @@ void ConstraintPlaneWalls::rotate_director(Particle& p, double phi)
 */
 void ConstraintPlaneWalls::rotate_velocity(Particle& p, double phi)
 {
-  // Sine and cosine of the rotation angle
-  double c = cos(phi), s = sin(phi);
-  // Rotation matrix around z axis
-  double Rxx = c, Rxy = -s;
-  double Ryx = s, Ryy = c;
-  // Apply rotation matrix
-  double vx = Rxx*p.vx + Rxy*p.vy;
-  double vy = Ryx*p.vx + Ryy*p.vy;
-  // Update particle director
-  p.vx = vx;
-  p.vy = vy;
+  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  {
+    // Sine and cosine of the rotation angle
+    double c = cos(phi), s = sin(phi);
+    // Rotation matrix around z axis
+    double Rxx = c, Rxy = -s;
+    double Ryx = s, Ryy = c;
+    // Apply rotation matrix
+    double vx = Rxx*p.vx + Rxy*p.vy;
+    double vy = Ryx*p.vx + Ryy*p.vy;
+    // Update particle director
+    p.vx = vx;
+    p.vy = vy;
+  }
 }
 
 /*! Project particle torque onto the normal vector (z axis). The assumption here is that 
@@ -123,5 +129,8 @@ void ConstraintPlaneWalls::rotate_velocity(Particle& p, double phi)
 */ 
 double ConstraintPlaneWalls::project_torque(Particle& p)
 {
-  return p.tau_z;  
+  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+    return p.tau_z;  
+  else
+    return 0.0;
 }

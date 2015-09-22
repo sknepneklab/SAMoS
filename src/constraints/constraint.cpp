@@ -99,19 +99,22 @@ void Constraint::enforce(Particle& p)
 */
 void Constraint::rotate_director(Particle& p, double phi)
 {
-  double U, V, W;
-  this->compute_normal(p,U,V,W);
-  // Compute angle sins and cosines
-  double c = cos(phi), s = sin(phi);
-  // Compute new velocity coordinates
-  double nx = U*(U*p.nx+V*p.ny+W*p.nz)*(1.0-c) + p.nx*c + (-W*p.ny+V*p.nz)*s;
-  double ny = V*(U*p.nx+V*p.ny+W*p.nz)*(1.0-c) + p.ny*c + ( W*p.nx-U*p.nz)*s;
-  double nz = W*(U*p.nx+V*p.ny+W*p.nz)*(1.0-c) + p.nz*c + (-V*p.nx+U*p.ny)*s;
-  double len = sqrt(nx*nx + ny*ny + nz*nz);
-  // Update particle director (normalize it along the way to collect for any numerical drift that may have occurred)
-  p.nx = nx/len;
-  p.ny = ny/len;
-  p.nz = nz/len;  
+  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  {
+    double U, V, W;
+    this->compute_normal(p,U,V,W);
+    // Compute angle sins and cosines
+    double c = cos(phi), s = sin(phi);
+    // Compute new velocity coordinates
+    double nx = U*(U*p.nx+V*p.ny+W*p.nz)*(1.0-c) + p.nx*c + (-W*p.ny+V*p.nz)*s;
+    double ny = V*(U*p.nx+V*p.ny+W*p.nz)*(1.0-c) + p.ny*c + ( W*p.nx-U*p.nz)*s;
+    double nz = W*(U*p.nx+V*p.ny+W*p.nz)*(1.0-c) + p.nz*c + (-V*p.nx+U*p.ny)*s;
+    double len = sqrt(nx*nx + ny*ny + nz*nz);
+    // Update particle director (normalize it along the way to collect for any numerical drift that may have occurred)
+    p.nx = nx/len;
+    p.ny = ny/len;
+    p.nz = nz/len;  
+  }
 }
 
 /*! Rotate velocity of a particle around the normal vector
@@ -123,18 +126,21 @@ void Constraint::rotate_director(Particle& p, double phi)
 */
 void Constraint::rotate_velocity(Particle& p, double phi)
 {
-  double U, V, W;
-  this->compute_normal(p,U,V,W);
-  // Compute angle sins and cosines
-  double c = cos(phi), s = sin(phi);
-  // Compute new velocity coordinates
-  double vx = U*(U*p.vx+V*p.vy+W*p.vz)*(1.0-c) + p.vx*c + (-W*p.vy+V*p.vz)*s;
-  double vy = V*(U*p.vx+V*p.vy+W*p.vz)*(1.0-c) + p.vy*c + ( W*p.vx-U*p.vz)*s;
-  double vz = W*(U*p.vx+V*p.vy+W*p.vz)*(1.0-c) + p.vz*c + (-V*p.vx+U*p.vy)*s;
-  // Update particle velocity
-  p.vx = vx;
-  p.vy = vy;
-  p.vz = vz;  
+  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  {
+    double U, V, W;
+    this->compute_normal(p,U,V,W);
+    // Compute angle sins and cosines
+    double c = cos(phi), s = sin(phi);
+    // Compute new velocity coordinates
+    double vx = U*(U*p.vx+V*p.vy+W*p.vz)*(1.0-c) + p.vx*c + (-W*p.vy+V*p.vz)*s;
+    double vy = V*(U*p.vx+V*p.vy+W*p.vz)*(1.0-c) + p.vy*c + ( W*p.vx-U*p.vz)*s;
+    double vz = W*(U*p.vx+V*p.vy+W*p.vz)*(1.0-c) + p.vz*c + (-V*p.vx+U*p.vy)*s;
+    // Update particle velocity
+    p.vx = vx;
+    p.vy = vy;
+    p.vz = vz;  
+  }
 }
 
 
@@ -145,7 +151,12 @@ void Constraint::rotate_velocity(Particle& p, double phi)
 */ 
 double Constraint::project_torque(Particle& p)
 {
-  double Nx, Ny, Nz;
-  this->compute_normal(p,Nx,Ny,Nz);
-  return (p.tau_x*Nx + p.tau_y*Ny + p.tau_z*Nz);  
+  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  {
+    double Nx, Ny, Nz;
+    this->compute_normal(p,Nx,Ny,Nz);
+    return (p.tau_x*Nx + p.tau_y*Ny + p.tau_z*Nz);  
+  }
+  else 
+    return 0.0;
 }

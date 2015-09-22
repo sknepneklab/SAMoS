@@ -47,16 +47,16 @@
 #include "samos.hpp"
 
 
-typedef boost::function< ConstraintPtr(SystemPtr, MessengerPtr, pairs_type&) > constraint_factory;                                                                       //!< Type that handles all constraints
-typedef boost::function< PairPotentialPtr(SystemPtr, MessengerPtr, NeighbourListPtr, ValuePtr, pairs_type&) > pair_potential_factory;                                    //!< Type that handles all pair potentials
-typedef boost::function< ExternalPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > external_potential_factory;                                                        //!< Type that handles all external potentials
-typedef boost::function< IntegratorPtr(SystemPtr, MessengerPtr, PotentialPtr, AlignerPtr, NeighbourListPtr, ConstraintPtr, ValuePtr, pairs_type&) > integrator_factory;  //!< Type that handles all integrators
-typedef boost::function< PairAlignPtr(SystemPtr, MessengerPtr, NeighbourListPtr, pairs_type&) > pair_aligner_factory;                                                    //!< Type that handles all pairwise alignment
-typedef boost::function< ExternalAlignPtr(SystemPtr, MessengerPtr, pairs_type&) > external_aligner_factory;                                                              //!< Type that handles all external alignment
-typedef boost::function< PopulationPtr(SystemPtr, MessengerPtr, pairs_type&) > population_factory;                                                                       //!< Type that handles all populations
-typedef boost::function< BondPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > bond_potential_factory;                                                                //!< Type that handles all bond potentials
-typedef boost::function< AnglePotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > angle_potential_factory;                                                              //!< Type that handles all angle potentials
-typedef boost::function< ValuePtr(MessengerPtr, pairs_type&) > value_factory;                                                                                            //!< Type that handles all value control objects
+typedef boost::function< ConstraintPtr(SystemPtr, MessengerPtr, pairs_type&) > constraint_factory;                                                                        //!< Type that handles all constraints 
+typedef boost::function< PairPotentialPtr(SystemPtr, MessengerPtr, NeighbourListPtr, ValuePtr, pairs_type&) > pair_potential_factory;                                     //!< Type that handles all pair potentials
+typedef boost::function< ExternalPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > external_potential_factory;                                                         //!< Type that handles all external potentials
+typedef boost::function< IntegratorPtr(SystemPtr, MessengerPtr, PotentialPtr, AlignerPtr, NeighbourListPtr, ConstrainerPtr, ValuePtr, pairs_type&) > integrator_factory;  //!< Type that handles all integrators
+typedef boost::function< PairAlignPtr(SystemPtr, MessengerPtr, NeighbourListPtr, pairs_type&) > pair_aligner_factory;                                                     //!< Type that handles all pairwise alignment
+typedef boost::function< ExternalAlignPtr(SystemPtr, MessengerPtr, pairs_type&) > external_aligner_factory;                                                               //!< Type that handles all external alignment
+typedef boost::function< PopulationPtr(SystemPtr, MessengerPtr, pairs_type&) > population_factory;                                                                        //!< Type that handles all populations
+typedef boost::function< BondPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > bond_potential_factory;                                                                 //!< Type that handles all bond potentials
+typedef boost::function< AnglePotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > angle_potential_factory;                                                               //!< Type that handles all angle potentials
+typedef boost::function< ValuePtr(MessengerPtr, pairs_type&) > value_factory;                                                                                             //!< Type that handles all value control objects
 
 
 typedef std::map<std::string, constraint_factory> ConstraintMap;

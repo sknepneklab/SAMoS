@@ -76,16 +76,16 @@ void IntegratorVicsek::integrate()
     p.vy = m_v0*p.tau_y + m_mu*p.fy;
     p.vz = m_v0*p.tau_z + m_mu*p.fz;
     // Project everything back to the manifold
-    m_constraint->enforce(p);
+    m_constrainer->enforce(p);
     // Change orientation of the velocity (in the tangent plane) 
     double theta = 2.0*noise*M_PI*(m_rng->drnd() - 0.5);
-    m_constraint->rotate_velocity(p,theta);
+    m_constrainer->rotate_velocity(p,theta);
     // Update particle position 
     p.x += m_dt*p.vx;
     p.y += m_dt*p.vy;
     p.z += m_dt*p.vz;
     // Project everything back to the manifold
-    m_constraint->enforce(p);
+    m_constrainer->enforce(p);
     p.age += m_dt;
   }
 }
