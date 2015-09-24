@@ -53,6 +53,7 @@ parser.add_argument("-e", "--exclude", type=float, default=None, help="exclude a
 parser.add_argument("--connected", action='store_true', default=False, help="Include Delaunay triangulation data")
 parser.add_argument("--nematic", action='store_true', default=False, help="Shift n vectors such that particle is in the middle of director.")
 parser.add_argument("-l", "--length", type=float, default=1.0, help="rod length")
+parser.add_argument("-b", "--bonds", type=str, default=None, help="bond file")
 args = parser.parse_args()
 
 print
@@ -81,6 +82,19 @@ if args.contact != None:
   if len(files) != len(cont_files):
     print "There has to be same number of data and contact files."
     sys.exit(1)
+
+# read bonds
+bonds = []
+if args.bonds != None:
+  with open(args.bonds,'r') as bond_file:
+    lines = bond_file.readlines()
+    #print lines
+    #lines = lines.split('\n')
+    lines = map(lambda x: x.strip(), lines)
+    for line in lines:
+      b = line.split()
+      bonds.append((int(b[2]),int(b[3])))
+    
     
 u=0
 for f in files:
@@ -201,6 +215,20 @@ for f in files:
       Line.GetPointIds().SetId(1,j)
       Lines.InsertNextCell(Line)
 
+  if args.bonds != None:
+    Lines = vtk.vtkCellArray()
+    Line = vtk.vtkLine()
+    Lengths = vtk.vtkDoubleArray()
+    Lengths.SetNumberOfComponents(1)
+    Lengths.SetName('BondLength')
+    for (i,j) in bonds:
+      dr = np.sqrt((x[i]-x[j])**2 + (y[i]-y[j])**2 + (z[i]-z[j])**2)
+      if dr < 3:
+        Line.GetPointIds().SetId(0,i)
+        Line.GetPointIds().SetId(1,j)
+        Lines.InsertNextCell(Line)
+        Lengths.InsertNextValue(dr)
+
   if args.connected:
     Lines = vtk.vtkCellArray()
     Line = vtk.vtkLine()
@@ -256,13 +284,17 @@ for f in files:
   if args.contact != None:
     polydata.SetLines(Lines)
 
+  if args.bonds != None:
+    polydata.SetLines(Lines)
+    polydata.GetCellData().AddArray(Lengths)
+
   polydata.GetPointData().AddArray(Radii)
   polydata.GetPointData().AddArray(Types)
   polydata.GetPointData().AddArray(Flags)
 
   if has_v:
     polydata.GetPointData().AddArray(Velocities)
-
+    
   if has_n:
     polydata.GetPointData().AddArray(Directors)
     if args.nematic:
