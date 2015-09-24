@@ -46,7 +46,12 @@
  */
 void ConstraintPlaneWalls::enforce(Particle& p)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  if (apply)
   {
     bool periodic = m_system->get_periodic();
     double ylo = m_system->get_box()->ylo, yhi = m_system->get_box()->yhi;
@@ -81,7 +86,12 @@ void ConstraintPlaneWalls::enforce(Particle& p)
 */
 void ConstraintPlaneWalls::rotate_director(Particle& p, double phi)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  if (apply)
   {
     // Sine and cosine of the rotation angle
     double c = cos(phi), s = sin(phi);
@@ -106,7 +116,12 @@ void ConstraintPlaneWalls::rotate_director(Particle& p, double phi)
 */
 void ConstraintPlaneWalls::rotate_velocity(Particle& p, double phi)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  if (apply)
   {
     // Sine and cosine of the rotation angle
     double c = cos(phi), s = sin(phi);
@@ -129,7 +144,13 @@ void ConstraintPlaneWalls::rotate_velocity(Particle& p, double phi)
 */ 
 double ConstraintPlaneWalls::project_torque(Particle& p)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  
+  if (apply)
     return p.tau_z;  
   else
     return 0.0;

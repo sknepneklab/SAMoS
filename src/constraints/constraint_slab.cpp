@@ -43,7 +43,12 @@
  */
 void ConstraintSlab::enforce(Particle& p)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  if (apply)
   {
     if (p.z < m_z_lo)
     {
@@ -58,6 +63,8 @@ void ConstraintSlab::enforce(Particle& p)
       p.nz = -p.nz;
     }
   }
+  if (m_system->get_periodic())
+    m_system->enforce_periodic(p);
 }
 
 

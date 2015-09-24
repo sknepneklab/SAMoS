@@ -51,7 +51,13 @@ void ConstraintActomyo::enforce(Particle& p)
   double xlo = -0.5*m_lx, xhi = 0.5*m_lx;
   double ylo = -0.5*m_ly, yhi = 0.5*m_ly;
   
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  
+  if (apply)
   {
     // NOTE: Currently, types are hard-coded. This breaks generality of the code. Needs to be rethought.
     if (p.get_type() == 1)  
@@ -115,7 +121,12 @@ void ConstraintActomyo::enforce(Particle& p)
 */
 void ConstraintActomyo::rotate_director(Particle& p, double phi)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  if (apply)
   {
     // Sine and cosine of the rotation angle
     double c = cos(phi), s = sin(phi);
@@ -140,7 +151,12 @@ void ConstraintActomyo::rotate_director(Particle& p, double phi)
 */
 void ConstraintActomyo::rotate_velocity(Particle& p, double phi)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  if (apply)
   {
     // Sine and cosine of the rotation angle
     double c = cos(phi), s = sin(phi);
@@ -163,7 +179,12 @@ void ConstraintActomyo::rotate_velocity(Particle& p, double phi)
 */ 
 double ConstraintActomyo::project_torque(Particle& p)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  if (apply)
     return p.tau_z;  
   else
     return 0.0;

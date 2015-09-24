@@ -46,7 +46,12 @@
  */
 void ConstraintSphere::enforce(Particle& p)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  if (apply)
   {
     double x = p.x, y = p.y, z = p.z;
     double R = sqrt(x*x + y*y + z*z);

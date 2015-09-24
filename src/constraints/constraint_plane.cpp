@@ -143,7 +143,13 @@ void ConstraintPlane::rotate_velocity(Particle& p, double phi)
 */ 
 double ConstraintPlane::project_torque(Particle& p)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  
+  if (apply)
     return p.tau_z;  
   else 
     return 0.0;

@@ -48,7 +48,12 @@
  */
 void Constraint::enforce(Particle& p)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  if (apply)
   {
     // Compute reference gradient (SHAKE method)
     double ref_gx, ref_gy, ref_gz;
@@ -99,7 +104,12 @@ void Constraint::enforce(Particle& p)
 */
 void Constraint::rotate_director(Particle& p, double phi)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  if (apply)
   {
     double U, V, W;
     this->compute_normal(p,U,V,W);
@@ -126,7 +136,12 @@ void Constraint::rotate_director(Particle& p, double phi)
 */
 void Constraint::rotate_velocity(Particle& p, double phi)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  if (apply)
   {
     double U, V, W;
     this->compute_normal(p,U,V,W);
@@ -151,7 +166,12 @@ void Constraint::rotate_velocity(Particle& p, double phi)
 */ 
 double Constraint::project_torque(Particle& p)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  if (apply)
   {
     double Nx, Ny, Nz;
     this->compute_normal(p,Nx,Ny,Nz);
