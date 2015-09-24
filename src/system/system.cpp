@@ -453,6 +453,7 @@ void System::read_bonds(const string& bond_file)
     to_lower(line);
     if (line[0] != '#' && line.size() > 0)
     {
+      bool exclude = true;
       s_line = split_line(line);
       if (s_line.size() < NUM_BOND_ATTRIB)
       {
@@ -463,6 +464,9 @@ void System::read_bonds(const string& bond_file)
       unsigned int tp = lexical_cast<int>(s_line[1]);  // read particle type// Handle exclusions
       unsigned int i = lexical_cast<int>(s_line[2]);   // read id of first particle
       unsigned int j = lexical_cast<int>(s_line[3]);   // read id of second particle
+      if (s_line.size() > 4)
+        if (s_line[4] == "include_nb")
+          exclude = false;
       if (i >= m_particles.size())
       {
         m_msg->msg(Messenger::ERROR,"Index of first particle "+lexical_cast<string>(i)+" is larger than the total number of particles.");
@@ -476,10 +480,13 @@ void System::read_bonds(const string& bond_file)
       m_bonds.push_back(Bond(id, tp, i, j));
       m_particles[i].bonds.push_back(id);
       m_particles[j].bonds.push_back(id);
-      if (!this->in_exclusion(i,j))
-        m_exclusions[i].push_back(j);
-      if (!this->in_exclusion(j,i))
-        m_exclusions[j].push_back(i);
+      if (exclude)
+      {
+        if (!this->in_exclusion(i,j))
+          m_exclusions[i].push_back(j);
+        if (!this->in_exclusion(j,i))
+          m_exclusions[j].push_back(i);
+      }
       if (find(types.begin(), types.end(), tp) == types.end())
         types.push_back(tp);
     }
@@ -538,6 +545,7 @@ void System::read_angles(const string& angle_file)
     to_lower(line);
     if (line[0] != '#' && line.size() > 0)
     {
+      bool exclude = true;
       s_line = split_line(line);
       if (s_line.size() < NUM_ANGLE_ATTRIB)
       {
@@ -549,6 +557,9 @@ void System::read_angles(const string& angle_file)
       unsigned int i = lexical_cast<int>(s_line[2]);   // read id of first (left) particle
       unsigned int j = lexical_cast<int>(s_line[3]);   // read id of second (middle) particle
       unsigned int k = lexical_cast<int>(s_line[4]);   // read id of third (right) particle
+      if (s_line.size() > 5)
+        if (s_line[5] == "include_nb")
+          exclude = false;
       if (i >= m_particles.size())
       {
         m_msg->msg(Messenger::ERROR,"Index of first (m_systemleft) particle "+lexical_cast<string>(i)+" is larger than the total number of particles.");
@@ -568,18 +579,21 @@ void System::read_angles(const string& angle_file)
       m_particles[i].angles.push_back(id);
       m_particles[j].angles.push_back(id);
       m_particles[k].angles.push_back(id);
-      if (!this->in_exclusion(i,j))
-        m_exclusions[i].push_back(j);
-      if (!this->in_exclusion(i,k))
-        m_exclusions[i].push_back(k);
-      if (!this->in_exclusion(j,i))
-        m_exclusions[j].push_back(i);
-      if (!this->in_exclusion(j,k))
-        m_exclusions[j].push_back(k);
-      if (!this->in_exclusion(k,i))
-        m_exclusions[k].push_back(i);
-      if (!this->in_exclusion(k,j))
-        m_exclusions[k].push_back(j);
+      if (exclude)
+      {
+        if (!this->in_exclusion(i,j))
+          m_exclusions[i].push_back(j);
+        if (!this->in_exclusion(i,k))
+          m_exclusions[i].push_back(k);
+        if (!this->in_exclusion(j,i))
+          m_exclusions[j].push_back(i);
+        if (!this->in_exclusion(j,k))
+          m_exclusions[j].push_back(k);
+        if (!this->in_exclusion(k,i))
+          m_exclusions[k].push_back(i);
+        if (!this->in_exclusion(k,j))
+          m_exclusions[k].push_back(j);
+      }
       if (find(types.begin(), types.end(), tp) == types.end())
         types.push_back(tp);
     }
