@@ -120,6 +120,7 @@
 #include "population_elongation.hpp"
 #include "bond_potential.hpp" 
 #include "bond_harmonic_potential.hpp"
+#include "bond_fene_potential.hpp"
 #include "bond_active_force.hpp"
 #include "angle_potential.hpp"
 #include "angle_harmonic_potential.hpp"

@@ -47,7 +47,7 @@ using std::make_pair;
 using std::sqrt;
 
 //! Structure that handles parameters for the harmonic bond
-struct BondHarmoicParameters
+struct BondHarmonicParameters
 {
   double k;    // Spring constant
   double l0;   // Native length
@@ -90,7 +90,7 @@ public:
       m_l0 = lexical_cast<double>(param["l_eq"]);
     }
     m_msg->write_config("potential.bond.harmonic.l_eq",lexical_cast<string>(m_l0));
-    m_bond_params = new BondHarmoicParameters[ntypes];
+    m_bond_params = new BondHarmonicParameters[ntypes];
     for (int i = 0; i < ntypes; i++)
     {
       m_bond_params[i].k = m_k;
@@ -155,7 +155,7 @@ private:
         
   double m_k;       //!< spring constant
   double m_l0;      //!< rest length
-  BondHarmoicParameters* m_bond_params;   //!< type specific bond parameters 
+  BondHarmonicParameters* m_bond_params;   //!< type specific bond parameters 
     
 };
 

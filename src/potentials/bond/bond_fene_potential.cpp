@@ -30,20 +30,20 @@
  * ************************************************************* */
 
 /*!
- * \file bond_harmonic_potential.cpp
+ * \file bond_fene_potential.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 05-Nov-2014
- * \brief Implementation of BondHarmonicPotential class
+ * \date 25-Sept-2015
+ * \brief Implementation of BondFenePotential class
  */ 
 
-#include "bond_harmonic_potential.hpp"
+#include "bond_fene_potential.hpp"
 
-void BondHarmonicPotential::compute()
+void BondFenePotential::compute()
 {
   int Nbonds = m_system->num_bonds();
   BoxPtr box = m_system->get_box();
   double k = m_k;
-  double l0 = m_l0;
+  double r0 = m_r0;
   
   m_potential_energy = 0.0;
   for  (int i = 0; i < Nbonds; i++)
@@ -56,17 +56,17 @@ void BondHarmonicPotential::compute()
     if (m_has_bond_params)
     {
       k = m_bond_params[b.type-1].k;
-      l0 = m_bond_params[b.type-1].l0;
-     }
+      r0 = m_bond_params[b.type-1].r0;
+    }
       
     double r_sq = dx*dx + dy*dy + dz*dz;
-    double r = sqrt(r_sq);
-    double dl = r - l0;
     // Handle potential 
-    double potential_energy = 0.5*k*dl*dl;
+    double r0_sq = r0*r0;
+    double fact = 1.0-r_sq/r0_sq;
+    double potential_energy = -0.5*k*r0_sq*log(fact);
     m_potential_energy += potential_energy;
     // Handle force
-    double force_factor = k*dl/r;
+    double force_factor = -k/fact;
     pi.fx += force_factor*dx;
     pi.fy += force_factor*dy;
     pi.fz += force_factor*dz;

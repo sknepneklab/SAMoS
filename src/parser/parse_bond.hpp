@@ -72,6 +72,7 @@ public:
     bond = (
                qi::as_string[keyword["harmonic"]][phx::bind(&BondData::type, phx::ref(bond_data)) = qi::_1 ]       /*! Handles harmonic bonds */
              | qi::as_string[keyword["active"]][phx::bind(&BondData::type, phx::ref(bond_data)) = qi::_1 ]         /*! Handles active force bonds */
+             | qi::as_string[keyword["fene"]][phx::bind(&BondData::type, phx::ref(bond_data)) = qi::_1 ]           /*! Handles FENE bonds */
             /* to add new bond potential: | qi::as_string[keyword["newpotential"]][phx::bind(&BondData::type, phx::ref(bond_data)) = qi::_1 ] */
            )
            >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&BondData::params, phx::ref(bond_data)) = qi::_1 ]

@@ -114,7 +114,8 @@ for f in files:
   x = np.array(data.data[data.keys['x']])
   y = np.array(data.data[data.keys['y']])
   z = np.array(data.data[data.keys['z']])
-
+  
+  Lx, Ly, Lz = np.max(x) - np.min(x), np.max(y) - np.min(y), np.max(z) - np.min(z)
 
   if (data.keys.has_key('vx') or data.keys.has_key('vy') or data.keys.has_key('vz')):
     vx = np.array(data.data[data.keys['vx']])
@@ -223,7 +224,7 @@ for f in files:
     Lengths.SetName('BondLength')
     for (i,j) in bonds:
       dr = np.sqrt((x[i]-x[j])**2 + (y[i]-y[j])**2 + (z[i]-z[j])**2)
-      if dr < 3:
+      if dr < 0.5*max([Lx,Ly,Lz]):
         Line.GetPointIds().SetId(0,i)
         Line.GetPointIds().SetId(1,j)
         Lines.InsertNextCell(Line)
