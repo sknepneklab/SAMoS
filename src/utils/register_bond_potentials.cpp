@@ -44,5 +44,5 @@ void register_bond_potentials(BondPotentialMap& bond_potentials)
   // Register active bond force with the class factory
   bond_potentials["active"] = boost::factory<BondActiveForcePtr>();
   // Register FENE bond force with the class factory
-  bond_potentials["FENE"] = boost::factory<BondHarmonicPotentialPtr>();
+  bond_potentials["fene"] = boost::factory<BondHarmonicPotentialPtr>();
 }
