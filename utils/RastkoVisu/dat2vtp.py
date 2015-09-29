@@ -48,6 +48,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", type=str, help="input file (base name)")
 parser.add_argument("-o", "--output", type=str, help="output directory")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
+parser.add_argument("-E", "--end_sample", type=int, default=None, help="last sample")
+parser.add_argument("-S", "--step", type=int, default=1, help="step between samples")
 parser.add_argument("-C", "--contact", type=str, default=None, help="contact network data file")
 parser.add_argument("-e", "--exclude", type=float, default=None, help="exclude all contact line that are longer than this value")
 parser.add_argument("--connected", action='store_true', default=False, help="Include Delaunay triangulation data")
@@ -76,7 +78,15 @@ print
 
 start = datetime.now()
 
-files = sorted(glob(args.input+'*.dat'))[args.skip:]
+if args.end_sample == None:
+  files = sorted(glob(args.input+'*.dat'))[args.skip::args.step]
+  if len(files) == 0:
+    files = sorted(glob(args.input+'*.dat.gz'))[args.skip::args.step]
+else:
+  files = sorted(glob(args.input+'*.dat'))[args.skip:args.end_sample:args.step]
+  if len(files) == 0:
+    files = sorted(glob(args.input+'*.dat.gz'))[args.skip:args.end_sample:args.step]
+
 if args.contact != None:
   cont_files = sorted(glob(args.contact+'*.con'))[args.skip:]  
   if len(files) != len(cont_files):
@@ -305,7 +315,7 @@ for f in files:
   writer = vtk.vtkXMLPolyDataWriter()
   #outname = '.'.join(f.split('.')[:-1])
   #print outname
-  outname='frame' + str(u)
+  outname='frame_%09d' % u
   u+=1
   writer.SetFileName(args.output+'/'+outname+'.vtp')
   if vtk.VTK_MAJOR_VERSION <= 5:
