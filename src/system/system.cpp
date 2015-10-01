@@ -148,7 +148,18 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         p.set_length(lexical_cast<double>(s_line[13]));
       else
         p.set_length(1.0);
-      p.ix = 0; p.iy = 0; p.iz = 0;    // All particles are in the box, so all image flags are set to 0
+      if (s_line.size() > 16)
+      {
+        p.ix = lexical_cast<double>(s_line[14]);
+        p.iy = lexical_cast<double>(s_line[15]);
+        p.iz = lexical_cast<double>(s_line[16]);
+      }
+      else  // All particles are in the box, so all image flags are set to 0
+      {
+        p.ix = 0;
+        p.iy = 0;
+        p.iz = 0;  
+      }
       p.set_flag(m_current_particle_flag);
       m_current_particle_flag++;
       m_particles.push_back(p);
