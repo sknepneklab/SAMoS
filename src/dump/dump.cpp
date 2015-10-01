@@ -450,7 +450,7 @@ void Dump::dump_input()
   if (m_print_header)
   {
     m_out << "# " << format(" Lx = %10.6f, Ly = %10.6f, Lz = %10.6f") % m_system->get_box()->Lx % m_system->get_box()->Ly % m_system->get_box()->Lz << endl;
-    m_out << "# id type  radius x y z vx vy vz nx ny nz  omega length" << endl;
+    m_out << "# id type  radius x y z vx vy vz nx ny nz  omega length ix iy iz" << endl;
   }
   for (int i = 0; i < N; i++)
   {
