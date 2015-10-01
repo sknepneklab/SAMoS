@@ -81,6 +81,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   vector<string> s_line;
   map<string, int> column_key;
   bool has_keys = false;
+  int id = -1, tp;
+  double r;
   ifstream inp;
   inp.exceptions ( std::ifstream::failbit | std::ifstream::badbit );
   try
@@ -108,69 +110,163 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
       if (s_line[0] == "keys:")
       {
         for (unsigned int col_idx = 1; col_idx < s_line.size(); col_idx++)
-          column_key[s_line[col_idx]] = col_idx;
+          column_key[s_line[col_idx]] = col_idx-1;
         has_keys = true;
       }
-      else if (s_line.size() < NUM_PART_ATTRIB)
+      else if (s_line.size() < NUM_PART_ATTRIB && (!has_keys))
       {
         m_msg->msg(Messenger::ERROR,"Insufficient number of parameters to define a particle. " + lexical_cast<string>(s_line.size()) + " given, but " + lexical_cast<string>(NUM_PART_ATTRIB) + " expected.");
         throw runtime_error("Insufficient number of parameters in the input file.");
       }
-      const int id = lexical_cast<int>(s_line[0]);  // read particle id
-      const int tp = lexical_cast<int>(s_line[1]);  // read particle 
-      if (tp < 1)
-      {
-        m_msg->msg(Messenger::ERROR,"Particle type has to be positive integer.");
-        throw runtime_error("Wrong particle type.");
-      }
-      const double r = lexical_cast<double>(s_line[2]);  // read particle radius
-      Particle p(id, tp, r);
-      p.x = lexical_cast<double>(s_line[3]);
-      if (p.x < m_box->xlo || p.x > m_box->xhi)
-      {
-        m_msg->msg(Messenger::ERROR,"X coordinate of particle "+lexical_cast<string>(p.get_id())+" is outside simulation box. Please update box size.");
-        throw runtime_error("Particle outside the box.");
-      }
-      p.y = lexical_cast<double>(s_line[4]);
-      if (p.y < m_box->ylo || p.y > m_box->yhi)
-      {
-        m_msg->msg(Messenger::ERROR,"Y coordinate of particle "+lexical_cast<string>(p.get_id())+" is outside simulation box. Please update box size.");
-        throw runtime_error("Particle outside the box.");
-      }
-      p.z = lexical_cast<double>(s_line[5]);
-      if (p.z < m_box->zlo || p.z > m_box->zhi)
-      {
-        m_msg->msg(Messenger::ERROR,"Z coordinate of particle "+lexical_cast<string>(p.get_id())+" is outside simulation box. Please update box size.");
-        throw runtime_error("Particle outside the box.");
-      }
-      if (find(types.begin(), types.end(), tp) == types.end())
-        types.push_back(tp);
-      p.vx = lexical_cast<double>(s_line[6]);
-      p.vy = lexical_cast<double>(s_line[7]);
-      p.vz = lexical_cast<double>(s_line[8]);
-      p.nx = lexical_cast<double>(s_line[9]);
-      p.ny = lexical_cast<double>(s_line[10]);
-      p.nz = lexical_cast<double>(s_line[11]);
-      p.omega = lexical_cast<double>(s_line[12]);
-      if (s_line.size() > 13)
-        p.set_length(lexical_cast<double>(s_line[13]));
       else
+      {
+        // read particle id
+        if (has_keys)
+        {
+          if (column_key.find("id") != column_key.end()) 
+            id = lexical_cast<int>(s_line[column_key["id"]]);
+          else
+            id++;            
+        }
+        else
+          id = lexical_cast<int>(s_line[0]);
+        
+        // read particle type
+        if (has_keys)
+        {
+          if (column_key.find("type") != column_key.end()) 
+            tp = lexical_cast<int>(s_line[column_key["type"]]);
+          else
+            tp = 1;            
+        }
+        else
+          tp = lexical_cast<int>(s_line[1]);
+        if (tp < 1)
+        {
+          m_msg->msg(Messenger::ERROR,"Particle type has to be positive integer.");
+          throw runtime_error("Wrong particle type.");
+        }
+        // read radius
+        if (has_keys)
+        {
+          if (column_key.find("radius") != column_key.end()) 
+            r = lexical_cast<double>(s_line[column_key["radius"]]);
+          else
+            r = 1.0;            
+        }
+        else
+          r = lexical_cast<double>(s_line[2]);
+        Particle p(id, tp, r);
+        // read x coordinate
+        if (has_keys)
+        {
+          p.x = 0.0;
+          if (column_key.find("x") != column_key.end())     p.x = lexical_cast<double>(s_line[column_key["x"]]);            
+        }
+        else
+          p.x = lexical_cast<double>(s_line[3]);
+        if (p.x < m_box->xlo || p.x > m_box->xhi)
+        {
+          m_msg->msg(Messenger::ERROR,"X coordinate of particle "+lexical_cast<string>(p.get_id())+" is outside simulation box. Please update box size.");
+          throw runtime_error("Particle outside the box.");
+        }
+        // read y coordinate
+        if (has_keys)
+        {
+          p.y = 0.0;
+          if (column_key.find("y") != column_key.end())     p.y = lexical_cast<double>(s_line[column_key["y"]]);            
+        }
+        else
+          p.y = lexical_cast<double>(s_line[4]);
+        if (p.y < m_box->ylo || p.y > m_box->yhi)
+        {
+          m_msg->msg(Messenger::ERROR,"Y coordinate of particle "+lexical_cast<string>(p.get_id())+" is outside simulation box. Please update box size.");
+          throw runtime_error("Particle outside the box.");
+        }
+        // read z coordinate
+        if (has_keys)
+        {
+          p.z = 0.0;
+          if (column_key.find("z") != column_key.end())     p.z = lexical_cast<double>(s_line[column_key["z"]]);            
+        }
+        else
+          p.z = lexical_cast<double>(s_line[5]);
+        if (p.z < m_box->zlo || p.z > m_box->zhi)
+        {
+          m_msg->msg(Messenger::ERROR,"Z coordinate of particle "+lexical_cast<string>(p.get_id())+" is outside simulation box. Please update box size.");
+          throw runtime_error("Particle outside the box.");
+        }
+        if (find(types.begin(), types.end(), tp) == types.end())
+          types.push_back(tp);
+        // read v
+        if (has_keys)
+        {
+          p.vx = 0.0; p.vy = 0.0; p.vz = 0.0;
+          if (column_key.find("vx") != column_key.end())   p.vx = lexical_cast<double>(s_line[column_key["vx"]]);  
+          if (column_key.find("vy") != column_key.end())   p.vy = lexical_cast<double>(s_line[column_key["vy"]]);
+          if (column_key.find("vz") != column_key.end())   p.vz = lexical_cast<double>(s_line[column_key["vz"]]); 
+        }
+        else
+        {
+          p.vx = lexical_cast<double>(s_line[6]);
+          p.vy = lexical_cast<double>(s_line[7]);
+          p.vz = lexical_cast<double>(s_line[8]);
+        }
+        // read 
+        if (has_keys)
+        {
+          p.nx = 1.0;  p.ny = 0.0;  p.nz = 0.0;
+          if (column_key.find("nx") != column_key.end())    p.nx = lexical_cast<double>(s_line[column_key["nx"]]);
+          if (column_key.find("ny") != column_key.end())    p.ny = lexical_cast<double>(s_line[column_key["ny"]]);
+          if (column_key.find("nz") != column_key.end())    p.nz = lexical_cast<double>(s_line[column_key["nz"]]);
+        }
+        else
+        {
+          p.nx = lexical_cast<double>(s_line[9]);
+          p.ny = lexical_cast<double>(s_line[10]);
+          p.nz = lexical_cast<double>(s_line[11]);
+        }
+        // read omega
+        if (has_keys)
+        {
+          p.omega = 0.0;
+          if (column_key.find("omega") != column_key.end())   p.omega = lexical_cast<double>(s_line[column_key["omega"]]);            
+        }
+        else
+          p.omega = lexical_cast<double>(s_line[12]);
+        // read length
         p.set_length(1.0);
-      if (s_line.size() > 16)
-      {
-        p.ix = lexical_cast<int>(s_line[14]);
-        p.iy = lexical_cast<int>(s_line[15]);
-        p.iz = lexical_cast<int>(s_line[16]);
+        if (has_keys)
+        {
+          if (column_key.find("length") != column_key.end()) 
+            p.set_length(lexical_cast<double>(s_line[column_key["length"]]));            
+        }
+        else
+        {
+          if (s_line.size() > 13)
+            p.set_length(lexical_cast<double>(s_line[13]));
+        }
+        // read image flags
+        p.ix = 0;  p.iy = 0;  p.iz = 0;
+        if (has_keys)
+        {
+          if (column_key.find("ix") != column_key.end())      p.ix = lexical_cast<int>(s_line[column_key["ix"]]);
+          if (column_key.find("iy") != column_key.end())      p.iy = lexical_cast<int>(s_line[column_key["iy"]]);
+          if (column_key.find("iz") != column_key.end())      p.iz = lexical_cast<int>(s_line[column_key["iz"]]);
+        }
+        else
+        {
+          if (s_line.size() > 16)
+          {
+            p.ix = lexical_cast<int>(s_line[14]);
+            p.iy = lexical_cast<int>(s_line[15]);
+            p.iz = lexical_cast<int>(s_line[16]);
+          }
+        }
+        p.set_flag(m_current_particle_flag);
+        m_current_particle_flag++;
+        m_particles.push_back(p);
       }
-      else  // All particles are in the box, so all image flags are set to 0
-      {
-        p.ix = 0;
-        p.iy = 0;
-        p.iz = 0;  
-      }
-      p.set_flag(m_current_particle_flag);
-      m_current_particle_flag++;
-      m_particles.push_back(p);
     }
   }
   m_msg->msg(Messenger::INFO,"Read data for "+lexical_cast<string>(m_particles.size())+" particles.");

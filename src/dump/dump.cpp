@@ -60,7 +60,9 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
                                                                                                                m_msg(msg), 
                                                                                                                m_file_name(filename), 
                                                                                                                m_params(params),
-                                                                                                               m_compress(false)
+                                                                                                               m_compress(false),
+                                                                                                               m_print_header(false),
+                                                                                                               m_print_keys(false)
 {
   m_type_ext["velocity"] = "vel";
   m_type_ext["xyz"] = "xyz";
@@ -82,9 +84,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_nlist = nlist;
   else
     m_msg->msg(Messenger::WARNING,"Neighbour list has not been specified. Contact network won't be produced.");
-  
-  m_print_header = false;
-  
+    
   if (params.find("type") == params.end())
   {
     m_msg->msg(Messenger::ERROR,"No dump type specified.");
@@ -162,6 +162,12 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_print_header = true;
     m_msg->msg(Messenger::INFO,"Include info header into the dump file.");
     m_msg->write_config("dump."+fname+".header","true");
+  }
+  if (params.find("keys") != params.end())
+  {
+    m_print_keys = true;
+    m_msg->msg(Messenger::INFO,"Include keys line into the dump file.");
+    m_msg->write_config("dump."+fname+".keys","true");
   }
   if (params.find("id") != params.end())
     m_msg->add_config("dump."+fname+".quantity","id");
@@ -389,6 +395,31 @@ void Dump::dump_data()
   if (m_print_header)
   {
     m_out << "# ";
+    if (m_params.find("id") != m_params.end())
+      m_out << " id ";
+    if (m_params.find("tp") != m_params.end())
+      m_out << " type ";
+    if (m_params.find("flag") != m_params.end())
+      m_out << " flag ";
+    if (m_params.find("radius") != m_params.end())
+      m_out << " radius ";
+    if (m_params.find("coordinate") != m_params.end())
+      m_out << " x  y  z ";
+    if (m_params.find("velocity") != m_params.end())
+      m_out << " vx  vy  vz ";
+    if (m_params.find("force") != m_params.end())
+      m_out << " fx  fy  fz ";
+    if (m_params.find("director") != m_params.end())
+      m_out << " nx  ny  nz ";
+    if (m_params.find("omega") != m_params.end())
+      m_out << " omega ";
+    if (m_params.find("image_flags") != m_params.end())
+      m_out << " ix  iy  iz ";
+    m_out << endl;
+  }
+  if (m_print_keys)
+  {
+    m_out << "keys: ";
     if (m_params.find("id") != m_params.end())
       m_out << " id ";
     if (m_params.find("tp") != m_params.end())

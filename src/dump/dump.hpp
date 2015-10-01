@@ -103,6 +103,7 @@ private:
   int m_freq;                   //!< Frequency with which to dump data
   bool m_multi_print;           //!< Print to multiple files
   bool m_print_header;          //!< If true, print header line on some file types
+  bool m_print_keys;            //!< If true, print column keys
   string m_type;                //!< File format for the dump 
   bool m_no_header;             //!< Do not print header in some files
   double m_r_cut;               //!< Cutoff distance for the contact network
