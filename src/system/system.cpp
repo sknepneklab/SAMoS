@@ -150,9 +150,9 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         p.set_length(1.0);
       if (s_line.size() > 16)
       {
-        p.ix = lexical_cast<double>(s_line[14]);
-        p.iy = lexical_cast<double>(s_line[15]);
-        p.iz = lexical_cast<double>(s_line[16]);
+        p.ix = lexical_cast<int>(s_line[14]);
+        p.iy = lexical_cast<int>(s_line[15]);
+        p.iz = lexical_cast<int>(s_line[16]);
       }
       else  // All particles are in the box, so all image flags are set to 0
       {
