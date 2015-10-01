@@ -79,6 +79,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
 {
   vector<int> types;
   vector<string> s_line;
+  map<string, int> column_key;
+  bool has_keys = false;
   ifstream inp;
   inp.exceptions ( std::ifstream::failbit | std::ifstream::badbit );
   try
@@ -103,7 +105,13 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
     if (line[0] != '#' && line.size() > 0)
     {
       s_line = split_line(line);
-      if (s_line.size() < NUM_PART_ATTRIB)
+      if (s_line[0] == "keys:")
+      {
+        for (unsigned int col_idx = 1; col_idx < s_line.size(); col_idx++)
+          column_key[s_line[col_idx]] = col_idx;
+        has_keys = true;
+      }
+      else if (s_line.size() < NUM_PART_ATTRIB)
       {
         m_msg->msg(Messenger::ERROR,"Insufficient number of parameters to define a particle. " + lexical_cast<string>(s_line.size()) + " given, but " + lexical_cast<string>(NUM_PART_ATTRIB) + " expected.");
         throw runtime_error("Insufficient number of parameters in the input file.");
