@@ -203,6 +203,12 @@ class GeometryPeriodicPlane(Geometry):
 		dr[:,1]-=self.Ly*np.round(dr[:,1]/self.Ly)
 		return dr
 		
+	def ApplyPeriodic33(self,r1,r2):
+		dr=r2-r1
+		dr[:,:,0]-=self.Lx*np.round(dr[:,:,0]/self.Lx)
+		dr[:,:,1]-=self.Ly*np.round(dr[:,:,1]/self.Ly)
+		return dr
+		
 	def GeodesicDistance12(self,r1,r2):
 		dr=self.ApplyPeriodic12(r1,r2)
 		return np.sqrt(dr[:,0]**2+dr[:,1]**2)
