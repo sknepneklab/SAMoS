@@ -270,6 +270,7 @@ void NeighbourList::build_contacts()
   {
     Particle& pi = m_system->get_particle(i);
     double ri = pi.get_radius();
+    //cout << i << " --> ";
     vector<int>& neigh = this->get_neighbours(i);
     for (unsigned int j = 0; j < neigh.size(); j++)
     {
@@ -280,7 +281,11 @@ void NeighbourList::build_contacts()
       m_system->apply_periodic(dx,dy,dz);
       double r_sq = dx*dx + dy*dy + dz*dz;
       if (r_sq <= dist*dist)
+      {
         m_contact_list[i].push_back(pj.get_id());
+        //cout << pj.get_id() << " ";
+      }
     }
+    //cout << endl;
   }
 }

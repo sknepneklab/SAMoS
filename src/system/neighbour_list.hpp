@@ -144,12 +144,12 @@ public:
     }
     if (param.find("contact_distance") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Neighbour list. No contact distance set. Assuming default sum or particle radii.");
+      m_msg->msg(Messenger::WARNING,"Neighbour list. No contact distance set. Assuming default sum of particle radii.");
       m_msg->write_config("nlist.contact_distance","0.0"); 
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Neighbour list. No contact distance set. Setting contact distance to "+param["contact_distance"]+".");
+      m_msg->msg(Messenger::INFO,"Neighbour list.  Setting contact distance to "+param["contact_distance"]+".");
       m_msg->write_config("nlist.contact_distance",param["contact_distance"]); 
       m_contact_dist = lexical_cast<double>(param["contact_distance"]);
     }
