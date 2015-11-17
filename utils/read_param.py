@@ -217,6 +217,17 @@ class Param:
 		# Input file
 		self.inputfile = conf.key_words['input'][0].name
 		print "Input file: " + self.inputfile
+		# Dump parameters
+		self.dumpname=conf.key_words['dump'][0].name
+		self.dump={}
+		for l in range(len(conf.key_words['dump'][0].attributes)):
+			try:
+				self.dump[str.strip(conf.key_words['dump'][0].attributes[l].name)]=float(conf.key_words['dump'][0].attributes[l].val)
+			except:
+				try:
+					self.dump[str.strip(conf.key_words['dump'][0].attributes[l].name)]=str.strip(conf.key_words['dump'][0].attributes[l].val)
+				except: # no constraints
+					pass
 		
 		# Groups
 		try:

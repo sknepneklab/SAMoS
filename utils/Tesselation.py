@@ -32,7 +32,7 @@
 from Configuration import *
 from CellList import *
 
-MMAX=20.0
+MMAX=3.0
 class Tesselation:
     
 	def __init__(self,conf,debug=False):
@@ -73,8 +73,8 @@ class Tesselation:
 			neighbours=[]
 			dist=self.geom.GeodesicDistance12(self.rval[i,:],self.rval)
 			if closeHoles:
-				mult=0.25
-				while len(neighbours)<3 and mult<MMAX:
+				mult=1.0
+				while len(neighbours)<4 and mult<MMAX:
 					if self.conf.monodisperse:
 						neighbours=[index for index,value in enumerate(dist) if value <mult*dmax]
 					else:
@@ -108,17 +108,16 @@ class Tesselation:
 				count+=len(neighs_new)
 			else:
 				if self.conf.monodisperse:
-					neighbours=[index for index,value in enumerate(dist) if value <dmax]
+					neighbours=[index for index,value in enumerate(dist) if value <1.4*dmax]
 				else:
 					if self.conf.param.potential=='soft':
-						neighbours=[index for index,value in enumerate(dist) if value <(self.conf.radius[i]+self.conf.radius[index])]
-						
+						neighbours=[index for index,value in enumerate(dist) if value <(self.conf.radius[i]+self.conf.radius[index])]		
 					elif self.conf.param.potential=='morse':
 						neighbours=[index for index,value in enumerate(dist) if value <(re*self.conf.radius[i]+re*self.conf.radius[index])]
 					else:
 						neighbours=[index for index,value in enumerate(dist) if value <0.8*(self.conf.radius[i]+self.conf.radius[index])]	
 				neighbours.remove(i)
-				#print len(neighbours)
+				print len(neighbours)
 				neighList.extend([u for u in range(count,count+len(neighbours))])
 				self.Ival.extend([i for k in range(len(neighbours))])
 				#self.Jval.extend(neighs[neighbours])
@@ -304,4 +303,15 @@ class Tesselation:
 			else:
 				area=0.0
 			self.area.append(area)
+			
+	def computeContractile(self,alpha):
+		self.ComputePatchArea()
+		N = len(self.rval)
+		stress = np.zeros((N,3,3))
+		pressure = np.zeros((N,))
+		for i in range(N):
+			# simple contractile part n x n
+			#stress[i,:,:]=alpha*np.einsum('ij,kl->self.nval,self.nval)
+			pressure[i]=alpha*self.conf.param.pot_params['k']*np.sum(self.conf.nval[i,:]**2)*self.area[i]
+		return pressure
 

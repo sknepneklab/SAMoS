@@ -49,7 +49,10 @@ class Configuration:
 		data = ReadData(filename)
 		x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
 		vx, vy, vz = np.array(data.data[data.keys['vx']]), np.array(data.data[data.keys['vy']]), np.array(data.data[data.keys['vz']])
-		nx, ny, nz = np.array(data.data[data.keys['nx']]), np.array(data.data[data.keys['ny']]), np.array(data.data[data.keys['nz']])
+		try:
+			nx, ny, nz = np.array(data.data[data.keys['nx']]), np.array(data.data[data.keys['ny']]), np.array(data.data[data.keys['nz']])
+		except KeyError:
+			nx, ny, nz = np.zeros(np.shape(x)),np.zeros(np.shape(y)),np.zeros(np.shape(z))
 		self.monodisperse=False
 		self.N=len(x)
 		if not data.keys.has_key('radius'): 
@@ -58,7 +61,7 @@ class Configuration:
 			self.monodisperse=True
 			self.sigma=1.0
 		else: 
-			self.radius = data.data[data.keys['radius']]	
+			self.radius = np.array(data.data[data.keys['radius']])	
 			self.sigma = np.mean(self.radius)
 		if data.keys.has_key('type'):
 			self.ptype = data.data[data.keys['type']]
@@ -120,7 +123,7 @@ class Configuration:
 					neighbours.remove(i)
 					dr=np.sqrt(dist[neighbours])
 					diff=self.radius[i]+self.radius[neighbours]-dr
-					fact = 0.5*self.param.pot_params['k']*diff
+					fact = 0.5*k*diff
 					eng_val = fact*diff
 					press_val = fact*dr
 					# Stress (force moment) has to be element by element) r_a F_b = -k r_a dist_b 
@@ -131,6 +134,44 @@ class Configuration:
 							stress[neighbours,u,v]+=0.5*drvec[:,u]*Fvec[:,v]
 					eng[neighbours]+=eng_val
 					press[neighbours]+=press_val
+			elif self.param.potential=='soft_attractive':
+				k=self.param.pot_params['k']
+				fact=self.param.pot_params['re_fact']-1.0
+				rmax=1+2.0*fact
+				if self.monodisperse:
+					dmax=4*self.sigma**2
+				for i in range(self.N):
+					print i
+					#dist=np.sum((r-r[i,:])**2,axis=1)
+					dist=self.geom.GeodesicDistance(self.rval,self.rval[i,:])
+					if self.monodisperse: 
+						neighbours=[index for index,value in enumerate(dist) if value <rmax*dmax]
+					else:
+						neighbours=[index for index,value in enumerate(dist) if value < rmax*(self.radius[i]+self.radius[index])**2]
+					neighbours.remove(i)
+					dr=np.sqrt(dist[neighbours])
+					scale=self.radius[i]+self.radius[neighbours]
+					diff=scale-dr
+					for u in range(len(neighbours)):
+						drvec=self.rval[neighbours[u],:]-self.rval[i,:]
+						if diff[u]/scale[u]>-fact:
+							factor = 0.5*k*diff[u]
+							eng_val = factor*diff[u]
+							press_val = factor*dr[u]
+							# Stress (force moment) has to be element by element) r_a F_b = -k r_a dist_b 
+							Fvec=k*((diff[u]/dr[u]).transpose()*(drvec).transpose()).transpose()
+							
+						else:
+							factor=-0.5*k*(rmax-dr[u])
+							eng0=0.5*k*(fact*scale)**2
+							eng_val = eng0+(eng0+factor*(rmax-dr[u]))
+							Fvec=-k*(rmax-dr[u])/dr[u]*drvec
+						press_val=factor*dr[u]	
+						for v in range(3):
+							for w in range(3):
+								stress[u,v,w]+=0.5*drvec[v]*Fvec[w]	
+						eng[neighbours[u]]+=eng_val
+						press[neighbours[u]]+=press_val
 			elif self.param.potential=='morse':
 				# We are morse by hand right now ...
 				D=self.param.pot_params['D']
@@ -169,8 +210,18 @@ class Configuration:
 			print "Warning! Multiple types of particles interacting have not yet been implemented! Returning zero energy and stresses"
 		return [eng, press, stress]
 	
+	
 	# Flat case statistics (or other geometry statistics, if desired)
-	def getStats(self,debug=False):
+	def getStatsBasic(self,debug=False):
+		vel2 = self.vval[:,0]**2 + self.vval[:,1]**2 + self.vval[:,2]**2
+		vel2av=np.mean(vel2)
+		phival=np.pi*np.sum(self.radius**2)/self.geom.area
+		eng, press,stress = self.compute_energy_and_pressure()
+		pressav=np.mean(press)
+		energy=np.mean(eng)
+		return vel2av, phival,pressav,energy
+	  
+	def getStatsBand(self,debug=False):
 		ez = np.array([0,0,1])  # lab frame z-axis
 		# The order parameter with v_0 still in it. Normalize in final polish
 		orderparV=np.sum(vval,axis=0)/len(vval)

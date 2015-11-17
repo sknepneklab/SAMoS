@@ -36,9 +36,10 @@ from glob import glob
 from datetime import *
 
 class Writer:
-	def __init__(self,nematic=False,connected=False):
+	def __init__(self,nematic=False,alpha=0,connected=False):
 		self.nematic=nematic
 		self.connected=connected
+		self.alpha=alpha
 		
 	def writeConfigurationVTK(self,conf,outfile):
 		# Data which goes into file: positions, directors, velocities
@@ -194,7 +195,7 @@ class Writer:
 		writer.Write()
 		print "Wrote File"
 		
-	def writePatches(self,tess,outname):
+	def writePatches(self,tess,outname,contractile=False):
 		print outname
 		points = vtk.vtkPoints()
 		polygons = vtk.vtkCellArray()
@@ -233,6 +234,19 @@ class Writer:
 		polygonPolyData.SetPolys(polygons)
 		# Add stresses ...
 		eng, press,stress = tess.conf.compute_energy_and_pressure()
+		if contractile:
+			press_c=tess.computeContractile(self.alpha)
+			print press_c
+			print np.mean(press_c)
+			print np.std(press_c)
+			print np.min(press_c)
+			print np.max(press_c)
+			press+=press_c
+		print press
+		print np.mean(press)
+		print np.std(press)
+		print np.min(press)
+		print np.max(press)
 		pressure = vtk.vtkDoubleArray()
 		pressure.SetNumberOfComponents(1)
 		pressure.SetName('Pressure')
@@ -241,12 +255,20 @@ class Writer:
 		polygonPolyData.GetCellData().AddArray(pressure)
 		
 		# Add type
-		ptype = vtk.vtkDoubleArray()
-		ptype.SetNumberOfComponents(1)
-		ptype.SetName('Type')	
+		ncon = vtk.vtkDoubleArray()
+		ncon.SetNumberOfComponents(1)
+		ncon.SetName('Z')	
 		for k in havePoly:
-			ptype.InsertNextValue(tess.conf.ptype[k])
-		polygonPolyData.GetCellData().AddArray(ptype)
+			ncon.InsertNextValue(len(tess.ParList[k]))
+		polygonPolyData.GetCellData().AddArray(ncon)
+		
+		## Add type
+		#ptype = vtk.vtkDoubleArray()
+		#ptype.SetNumberOfComponents(1)
+		#ptype.SetName('Type')	
+		#for k in havePoly:
+			#ptype.InsertNextValue(tess.conf.ptype[k])
+		#polygonPolyData.GetCellData().AddArray(ptype)
 		
                 # Add denisity
                 tess.ComputePatchArea()
