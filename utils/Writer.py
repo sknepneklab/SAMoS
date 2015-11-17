@@ -241,12 +241,20 @@ class Writer:
 		polygonPolyData.GetCellData().AddArray(pressure)
 		
 		# Add type
-		ptype = vtk.vtkDoubleArray()
-		ptype.SetNumberOfComponents(1)
-		ptype.SetName('Type')	
+		ncon = vtk.vtkDoubleArray()
+		ncon.SetNumberOfComponents(1)
+		ncon.SetName('Z')	
 		for k in havePoly:
-			ptype.InsertNextValue(tess.conf.ptype[k])
-		polygonPolyData.GetCellData().AddArray(ptype)
+			ncon.InsertNextValue(len(tess.ParList[k]))
+		polygonPolyData.GetCellData().AddArray(ncon)
+		
+		## Add type
+		#ptype = vtk.vtkDoubleArray()
+		#ptype.SetNumberOfComponents(1)
+		#ptype.SetName('Type')	
+		#for k in havePoly:
+			#ptype.InsertNextValue(tess.conf.ptype[k])
+		#polygonPolyData.GetCellData().AddArray(ptype)
 		
                 # Add denisity
                 tess.ComputePatchArea()

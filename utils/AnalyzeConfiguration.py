@@ -51,6 +51,7 @@ parser.add_argument("--makeEdges",action='store_true', default=False, help="Make
 parser.add_argument("--writeP",action='store_true', default=False, help="Output particle positions velocities directors.")
 parser.add_argument("--writeT",action='store_true', default=False, help="Output tesselation")
 parser.add_argument("--writeD",action='store_true', default=False, help="Output defects")
+parser.add_argument("--getStatsBasic",action='store_true',default=False, help="Output basic stats (v2av, packing fraction, energy, pressure)")
 args = parser.parse_args()
 
 
@@ -61,10 +62,17 @@ files = sorted(glob(args.directory + args.input+'*.dat'))[args.skip:]
 if len(files) == 0:
   files = sorted(glob(args.directory + args.input+'*.dat.gz'))[args.skip:]
 
-defects_n_out=[[] for u in range(len(files))]
-defects_v_out=[[] for u in range(len(files))]
-numdefects_n_out=np.zeros(len(files))
-numdefects_v_out=np.zeros(len(files))
+if args.writeD:
+	defects_n_out=[[] for u in range(len(files))]
+	defects_v_out=[[] for u in range(len(files))]
+	numdefects_n_out=np.zeros(len(files))
+	numdefects_v_out=np.zeros(len(files))
+	
+if args.getStatsBasic:
+	vel2av=np.zeros(len(files))
+	phival=np.zeros(len(files))
+	pressav=np.zeros(len(files))
+	energy=np.zeros(len(files))
 
 u=0
 for f in files:
@@ -76,6 +84,12 @@ for f in files:
 		print outparticles
 		writeme.writeConfigurationVTK(conf,outparticles)
 	#plt.show()
+	if args.getStatsBasic:
+		vel2av[u], phival[u],pressav[u],energy[u]= conf.getStatsBasic()
+		print vel2av[u]
+		print phival[u]
+		print pressav[u]
+		print energy[u]
 	if args.writeD or args.writeT:
 		conf.getTangentBundle()
 		tess = Tesselation(conf)
@@ -109,8 +123,17 @@ for f in files:
 			writeme.writePatches(tess,outpatches)
 	
 	u+=1
-data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out,'numdefects_v':numdefects_v_out}
-outpickle=args.directory+'defect_data.p'
+data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params,'population':params.population,'pop_params':params.pop_params}
+if args.writeD:
+	dataD={'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out,'numdefects_v':numdefects_v_out}
+	data.update(data2)
+if args.getStatsBasic:
+	dataS={'vel2av':vel2av,'phival':phival,'pressav':pressav,'energy':energy}
+	data.update(dataS)
+if args.writeD:	
+	outpickle=args.directory+'defect_data.p'
+else:
+	outpickle=args.directory+'configuration_data.p'
 pickle.dump(data,open(outpickle,'wb'))
 	
 	

@@ -33,10 +33,11 @@ import numpy as np
 
 # Default geometry class: 3 dimensional unconstrained space
 class Geometry(object):
-	def __init__(self,manifold,periodic):
+	def __init__(self,manifold,periodic,area=1.0):
 		try:
 			self.manifold=manifold
 			self.periodic=periodic
+			self.area=area
 			print "Created new geometry " + manifold + "for which periodic = " + self.periodic
 		except:
 			pass
@@ -93,8 +94,9 @@ class GeometrySphere(Geometry):
 	def __init__(self,param):
 		self.R=param.r
 		self.periodic=False
+		self.area=4.0*np.pi*self.R**2
 		print "Created new geometry sphere with radius " + str(self.R)
-		super(GeometrySphere,self).__init__('sphere',self.periodic)
+		super(GeometrySphere,self).__init__('sphere',self.periodic,self.area)
 		
 	# Fully vectorial version of parallel transport
 	# 1.determine the cross product of the origins
@@ -164,8 +166,9 @@ class GeometryPeriodicPlane(Geometry):
 		self.Lx=param.lx
 		self.Ly=param.ly
 		self.periodic=True
+		self.area=self.Lx*self.Ly
 		print "Created new geometry periodic plane with Lx = " + str(self.Lx) + " and Ly = " +str(self.Ly)
-		super(GeometryPeriodicPlane,self).__init__('plane',self.periodic)
+		super(GeometryPeriodicPlane,self).__init__('plane',self.periodic,self.area)
 		
 		
 	def TangentBundle(self,rval):

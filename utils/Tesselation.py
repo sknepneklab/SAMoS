@@ -108,17 +108,17 @@ class Tesselation:
 				count+=len(neighs_new)
 			else:
 				if self.conf.monodisperse:
-					neighbours=[index for index,value in enumerate(dist) if value <dmax]
+					neighbours=[index for index,value in enumerate(dist) if value <1.4*dmax]
 				else:
 					if self.conf.param.potential=='soft':
-						neighbours=[index for index,value in enumerate(dist) if value <(self.conf.radius[i]+self.conf.radius[index])]
+						neighbours=[index for index,value in enumerate(dist) if value <1.4*(self.conf.radius[i]+self.conf.radius[index])]
 						
 					elif self.conf.param.potential=='morse':
 						neighbours=[index for index,value in enumerate(dist) if value <(re*self.conf.radius[i]+re*self.conf.radius[index])]
 					else:
 						neighbours=[index for index,value in enumerate(dist) if value <0.8*(self.conf.radius[i]+self.conf.radius[index])]	
 				neighbours.remove(i)
-				#print len(neighbours)
+				print len(neighbours)
 				neighList.extend([u for u in range(count,count+len(neighbours))])
 				self.Ival.extend([i for k in range(len(neighbours))])
 				#self.Jval.extend(neighs[neighbours])
