@@ -58,7 +58,7 @@ class Configuration:
 			self.monodisperse=True
 			self.sigma=1.0
 		else: 
-			self.radius = data.data[data.keys['radius']]	
+			self.radius = np.array(data.data[data.keys['radius']])	
 			self.sigma = np.mean(self.radius)
 		if data.keys.has_key('type'):
 			self.ptype = data.data[data.keys['type']]
@@ -168,6 +168,7 @@ class Configuration:
 			# Do the Morse right now only ... will serve as a template
 			print "Warning! Multiple types of particles interacting have not yet been implemented! Returning zero energy and stresses"
 		return [eng, press, stress]
+	
 	
 	# Flat case statistics (or other geometry statistics, if desired)
 	def getStats(self,debug=False):

@@ -219,11 +219,15 @@ class GeometryPeriodicPlane(Geometry):
 
 class GeometryTube(Geometry):
 	def __init__(self,param):
-		self.R=param.const_param['r']
-		self.periodic=False
-		print "Created new geometry tube with radius = " + str(self.R)
 		super(GeometryTube,self).__init__('tube',self.periodic)
-		print "ERROR: Tube geometry has not yet been implemented! Geometry will default to 3d space."
+		self.R=param.const_params['R']
+		try:
+			self.A=param.const_params['A']
+		except KeyError:
+			self.A = 0
+		print "Created new geometry tube with radius = " + str(self.R) + " and oscillation amplitude " + str(self.A)
+		
+		
 		
 class GeometryPeanut(Geometry):
 	def __init__(self,param):	
@@ -276,9 +280,69 @@ class GeometryPeanut(Geometry):
 		
 class GeometryHourglass(Geometry):
 	def __init__(self,param):
-		self.R=param.const_param['R']
-		self.A=param.const_param['A']
-		print "Created new geometry tube with radius = " + str(self.R) + " and amplitude " +str(self.A)
-		super(GeometryHourglass,self).__init__('hourglass')
-		print "ERROR: Hourglass geometry has not yet been implemented! Geometry will default to 3d space."
+		if param.boxtype == 'periodic':
+			self.periodic=True
+		else:
+			self.periodic=False
+		print self.periodic
+		self.R=param.const_params['R']
+		self.A=param.const_params['A']
+		self.H=param.box[2]
+		self.n=1 # number of nodes - 1 for now
+		print "Created new geometry Hourglass with radius = " + str(self.R) + " and amplitude " +str(self.A)
+		super(GeometryHourglass,self).__init__('hourglass',self.periodic)
+		
+	def TangentBundle(self,rval):
+		x = rval[:,0]
+		y = rval[:,1]
+		z = rval[:,2]
+		# Angle theta in the x y coordinates. 
+		theta=np.arctan2(y,x)
+		etheta = np.empty(np.shape(rval))
+		etheta[:,0]=-np.sin(theta)
+		etheta[:,1]=np.cos(theta)
+		etheta[:,2]=0
+		ez = np.empty(np.shape(rval))
+		ez[:,0]=0
+		ez[:,1]=0
+		ez[:,2]=1
+		return z,theta,ez,etheta
+	
+	# Complementary: The unit normal
+	def UnitNormal(self,rval):
+		axis = np.empty(np.shape(rval))
+		axis[:,0]=2.0*rval[:,0]
+		axis[:,1]=2.0*rval[:,1]
+		axis[:,2]=-4.0*self.A*self.n*np.pi*np.cos((2.0*self.n*np.pi*rval[:,2])/self.H)*(self.R + self.A*np.sin((2.0*self.n*np.pi*rval[:,2])/self.H))/self.H;
+		nlen = np.sqrt(np.sum(axis**2,axis=1))
+		nhat = (axis.transpose()/nlen.transpose()).transpose()
+		return nhat
+		
+	# Just the cartesian distance in the plane, modulo periodic boundary conditions
+	# Problem true to type right now ...
+	# assume the first is a vector, the second a scalar
+	# NEED TO GENERALIZE
+	# This is a misnomer for now, they are not geodesic distance ...
+	def ApplyPeriodic11(self,r1,r2):
+		dr=r2-r1
+		dr[2]-=self.H*np.round(dr[2]/self.H)
+		return dr
+	
+	def ApplyPeriodic12(self,r1,r2):
+		dr=r2-r1
+		dr[:,2]-=self.H*np.round(dr[:,2]/self.H)
+		return dr
+		
+	def ApplyPeriodic33(self,r1,r2):
+		dr=r2-r1
+		dr[:,:,2]-=self.H*np.round(dr[:,:,2]/self.H)
+		return dr
+		
+	def GeodesicDistance12(self,r1,r2):
+		dr=self.ApplyPeriodic12(r1,r2)
+		return np.sqrt(dr[:,0]**2+dr[:,1]**2+dr[:,2]**2)
+	
+	def GeodesicDistance11(self,r1,r2):
+		dr=self.ApplyPeriodic11(r1,r2)
+		return np.sqrt(dr[0]**2+dr[1]**2+dr[2]**2)
 		
