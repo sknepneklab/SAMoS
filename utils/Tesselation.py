@@ -61,7 +61,7 @@ class Tesselation:
 			#dmax=16*self.conf.sigma**2
 			dmax=2*self.conf.sigma
 		else:
-			dmax=2*self.conf.sigma
+			dmax=2.2*self.conf.sigma
 			print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
 		print dmax	
 		if self.conf.param.potential=='morse':
