@@ -46,6 +46,8 @@ parser.add_argument("-d", "--directory", type=str, help="input directory")
 parser.add_argument("-o", "--output", type=str, help="output directory")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
 parser.add_argument("--nematic", action='store_true', default=False, help="Shift n vectors such that particle is in the middle of director.")
+parser.add_argument("--contractile", action='store_true',default=False, help="Adds contractile stresses to calculation")
+parser.add_argument("-a", "--alpha", type=float, default=0.0, help="Prefactor of the contractile term")
 parser.add_argument("--closeHoles", action='store_true', default=False, help="Closes the holes in the tesselation to help tracking of defects (recommended for low density and/or nematic)")
 parser.add_argument("--makeEdges",action='store_true', default=False, help="Make edges to the tesselation along borders")
 parser.add_argument("--writeP",action='store_true', default=False, help="Output particle positions velocities directors.")
@@ -78,7 +80,10 @@ u=0
 for f in files:
 	print f
 	conf = Configuration(params,f)
-	writeme = Writer(args.nematic)
+	if args.contractile:
+		writeme = Writer(args.nematic,args.alpha)
+	else:
+		writeme = Writer(args.nematic)
 	if args.writeP:
 		outparticles = args.output + '/frame%06d_particles.vtp' % u  # + str(u) + '_particles.vtp'
 		print outparticles
@@ -120,7 +125,10 @@ for f in files:
 				tess.makeEdges(0.85)   
 			tess.OrderPatches()
 			print "ordered patches"
-			writeme.writePatches(tess,outpatches)
+			if args.contractile:
+				writeme.writePatches(tess,outpatches,True)
+			else:
+				writeme.writePatches(tess,outpatches,True)
 	
 	u+=1
 data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params,'population':params.population,'pop_params':params.pop_params}

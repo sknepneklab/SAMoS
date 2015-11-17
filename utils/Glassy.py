@@ -43,8 +43,6 @@ class SimRun:
 		# Create the right geometry environment (TBC):
 		self.geom=geometries[self.param.constraint](self.param)
 		print self.geom
-		
-		
 		print "Reading radii!"
 		data_ini=ReadData(directory+inputfile)
 		self.radius=data_ini.data[data_ini.keys['radius']]	
@@ -138,15 +136,6 @@ class SimRun:
 			fig=plt.figure()
 			plt.plot(bins,velcorr/velcorr[0],'.-')
 			plt.show()
-		
-	# Mostly for dividing systems: simple statistics, including density, pressure, velocity
-	def getStatistics(self):
-		 rhoval=np.zeros((self.Nsnap,))
-		 pval=np.zeros((self.Nsnap,))
-		 v2val=np.zeros((self.Nsnap,))
-		 for u in range(self.Nsnap):
-			rhoval[u]=np.sum(
 	
 	#def getSelfInt(self):
-				
-		
+

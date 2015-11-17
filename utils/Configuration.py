@@ -210,6 +210,7 @@ class Configuration:
 			print "Warning! Multiple types of particles interacting have not yet been implemented! Returning zero energy and stresses"
 		return [eng, press, stress]
 	
+	
 	# Flat case statistics (or other geometry statistics, if desired)
 	def getStatsBasic(self,debug=False):
 		vel2 = self.vval[:,0]**2 + self.vval[:,1]**2 + self.vval[:,2]**2
