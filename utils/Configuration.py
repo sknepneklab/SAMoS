@@ -32,6 +32,7 @@
 from Geometry import *
 from read_param import *
 from read_data import *
+from CellList import *
 try:
 	import matplotlib.pyplot as plt
 	from mpl_toolkits.mplot3d import Axes3D
@@ -81,6 +82,12 @@ class Configuration:
 		vel = np.sqrt(self.vval[:,0]**2 + self.vval[:,1]**2 + self.vval[:,2]**2)
 		self.vhat=((self.vval).transpose()/(vel).transpose()).transpose()
 		
+		# Create the cell list
+		self.clist=CellList(self.geom,param.nlist_rcut)
+		# Populate it with all the particles:
+		for k in range(self.N):
+			self.clist.add_particle(self.rval[k,:],k)
+		#self.clist.printMe()
 		
 		if debug:
 			fig = plt.figure()
@@ -100,7 +107,23 @@ class Configuration:
 		self.nval=((self.nval).transpose()/(np.sqrt(np.sum(self.nval**2,axis=1))).transpose()).transpose()
 		self.vel = np.sqrt(self.vval[:,0]**2 + self.vval[:,1]**2 + self.vval[:,2]**2)
         
-
+	def getNeighbours(self,i,mult,dmax):
+		# Find potential neighbours from neighbour list first
+		cneighbours=self.clist.get_neighbours(self.rval[i,:])
+		#print "Cell list neighbours: " + str(len(cneighbours))
+		dist=self.geom.GeodesicDistance(self.rval[cneighbours,:],self.rval[i,:])
+		#print "Mean cutoff: " + str(mult*dmax)
+		if self.monodisperse: 
+			neighbours=[cneighbours[index] for index,value in enumerate(dist) if value <mult*dmax]
+		else:
+			neighbours=[cneighbours[index] for index,value in enumerate(dist) if value < mult*(self.radius[i]+self.radius[index])]
+		neighbours.remove(i)
+		#print "Contact neighbours: " + str(len(neighbours))
+		#print neighbours
+		drvec=self.geom.ApplyPeriodic2d(self.rval[neighbours,:]-self.rval[i,:])
+		dr=np.sqrt(drvec[:,0]**2+drvec[:,1]**2+drvec[:,2]**2)
+		return neighbours, drvec, dr
+	      
 	def compute_energy_and_pressure(self):
 		eng = np.zeros(self.N)
 		press = np.zeros(self.N)
@@ -110,18 +133,10 @@ class Configuration:
 		if self.param.ntypes==1:
 			if self.param.potential=='soft':
 				k=self.param.pot_params['k']
-				if self.monodisperse:
-					dmax=4*self.sigma**2
+				dmax=2*self.sigma
 				for i in range(self.N):
-				#for i in range(10):
-					#dist=np.sum((r-r[i,:])**2,axis=1)
-					dist=self.geom.GeodesicDistance(self.rval,self.rval[i,:])
-					if self.monodisperse: 
-						neighbours=[index for index,value in enumerate(dist) if value <dmax]
-					else:
-						neighbours=[index for index,value in enumerate(dist) if value < (self.radius[i]+self.radius[index])**2]
-					neighbours.remove(i)
-					dr=np.sqrt(dist[neighbours])
+					#print "I am particle " + str(i)
+					neighbours, drvec, dr=self.getNeighbours(i,1,dmax)
 					diff=self.radius[i]+self.radius[neighbours]-dr
 					fact = 0.5*k*diff
 					eng_val = fact*diff
@@ -138,60 +153,44 @@ class Configuration:
 				k=self.param.pot_params['k']
 				fact=self.param.pot_params['re_fact']-1.0
 				rmax=1+2.0*fact
-				if self.monodisperse:
-					dmax=4*self.sigma**2
+				dmax=2*self.sigma
 				for i in range(self.N):
-					print i
-					#dist=np.sum((r-r[i,:])**2,axis=1)
-					dist=self.geom.GeodesicDistance(self.rval,self.rval[i,:])
-					if self.monodisperse: 
-						neighbours=[index for index,value in enumerate(dist) if value <rmax*dmax]
-					else:
-						neighbours=[index for index,value in enumerate(dist) if value < rmax*(self.radius[i]+self.radius[index])**2]
-					neighbours.remove(i)
-					dr=np.sqrt(dist[neighbours])
+					#print "I am particle " + str(i)
+					neighbours, drvec, dr=self.getNeighbours(i,rmax,dmax)
 					scale=self.radius[i]+self.radius[neighbours]
 					diff=scale-dr
-					for u in range(len(neighbours)):
-						drvec=self.rval[neighbours[u],:]-self.rval[i,:]
-						if diff[u]/scale[u]>-fact:
-							factor = 0.5*k*diff[u]
-							eng_val = factor*diff[u]
-							press_val = factor*dr[u]
-							# Stress (force moment) has to be element by element) r_a F_b = -k r_a dist_b 
-							Fvec=k*((diff[u]/dr[u]).transpose()*(drvec).transpose()).transpose()
-							
-						else:
-							factor=-0.5*k*(rmax-dr[u])
-							eng0=0.5*k*(fact*scale)**2
-							eng_val = eng0+(eng0+factor*(rmax-dr[u]))
-							Fvec=-k*(rmax-dr[u])/dr[u]*drvec
-						press_val=factor*dr[u]	
-						for v in range(3):
-							for w in range(3):
-								stress[u,v,w]+=0.5*drvec[v]*Fvec[w]	
-						eng[neighbours[u]]+=eng_val
-						press[neighbours[u]]+=press_val
+					dscaled=diff/scale
+					rep = [index for index, value in enumerate(dscaled) if value > -fact]
+					#print "Before upshot ones: " + str(len(rep))
+					att = [index for index, value in enumerate(dscaled) if value <= -fact]
+					#print "Attractive after upshot ones: " + str(len(att))
+					factor=np.empty((len(neighbours),))
+					eng_val=np.empty((len(neighbours),))
+					# repulsive ones
+					factor[rep] = k*diff[rep]
+					eng_val[rep] = factor[rep]*diff[rep]
+					# attractive ones
+					factor[att]=-k*(rmax*scale[att]-dr[att])
+					eng0=0.5*k*(fact*scale[att])**2
+					eng_val[att] = eng0+(eng0-(factor[att]**2)/k)
+					# Common pressure and stress formula
+					Fvec=((factor/dr).transpose()*(drvec).transpose()).transpose()
+					press_val=0.5*factor*dr
+					for v in range(3):
+						for w in range(3):
+							stress[neighbours,v,w]+=0.5*drvec[:,v]*Fvec[:,w]	
+					eng[neighbours]+=eng_val
+					press[neighbours]+=press_val
 			elif self.param.potential=='morse':
 				# We are morse by hand right now ...
 				D=self.param.pot_params['D']
 				re=self.param.pot_params['re']
 				a=self.param.pot.params['a']
-				if self.monodisperse:
-					dmax=16*self.sigma**2
+				dmax=4*self.sigma
 				for i in range(self.N):
-				#for i in range(10):
-					#dist=np.sum((r-r[i,:])**2,axis=1)
-					dist=self.geom.GeodesicDistance(self.rval,self.rval[i,:])
-					if self.monodisperse: 
-						neighbours=[index for index,value in enumerate(dist) if value <dmax]
-					else:
-						neighbours=[index for index,value in enumerate(dist) if value < (re*self.radius[i]+re*self.radius[j])**2]
-					neighbours.remove(i)
-					dr=np.sqrt(dist[neighbours])
+					neighbours, drvec, dr=self.getNeighbours(i,re,dmax)
 					eng_val=D*(1-np.exp(-a*(dr-re)))**2
 					fnorm=-2*a*D*np.exp(-a*(dr-re))*(1-np.exp(-a*(dr-re)))
-					drvec=self.rval[neighbours,:]-self.rval[i,:]
 					Fvec=((fnorm/dr).transpose()*(drvec).transpose()).transpose()
 					press_val=fnorm*dr
 					for u in range(3):

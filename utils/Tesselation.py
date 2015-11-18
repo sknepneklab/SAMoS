@@ -56,35 +56,24 @@ class Tesselation:
 		#if self.conf.monodisperse:
 		if self.conf.param.potential=='soft':
 			dmax=2*self.conf.sigma
+			mult0=1.0
 			print dmax
 		elif self.conf.param.potential=='morse':
-			#dmax=16*self.conf.sigma**2
+			re=self.conf.param.pot_params['re']
 			dmax=2*self.conf.sigma
+			mult0=re
 		else:
 			dmax=2*self.conf.sigma
+			mult0=1.0
 			print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
 		print dmax	
-		if self.conf.param.potential=='morse':
-			re=self.conf.param.pot_params['re']
-		#cl = CellList(2.0*np.sqrt(dmax),self.conf.param.box)
-		#for i in range(len(self.rval)):
-			#cl.add_vertex(self.rval[i,:],i)
+		print mult0
 		for i in range(len(self.rval)):
 			neighbours=[]
-			dist=self.geom.GeodesicDistance12(self.rval[i,:],self.rval)
 			if closeHoles:
-				mult=1.0
+				mult=mult0
 				while len(neighbours)<4 and mult<MMAX:
-					if self.conf.monodisperse:
-						neighbours=[index for index,value in enumerate(dist) if value <mult*dmax]
-					else:
-						if self.conf.param.potential=='soft':
-							neighbours=[index for index,value in enumerate(dist) if value < mult*(self.conf.radius[i]+self.conf.radius[index])]
-						elif self.conf.param.potential=='morse':
-							neighbours=[index for index,value in enumerate(dist) if value < mult*(re*self.conf.radius[i]+re*self.conf.radius[index])]
-						else:
-							neighbours=[index for index,value in enumerate(dist) if value <0.8*mult*(self.conf.radius[i]+self.conf.radius[index])]	
-					neighbours.remove(i)
+					neighbours=self.conf.getNeighbours(i,mult,dmax)[0]
 					mult=1.1*mult
                                 #print i, ' --> ', neighbours
 				# find the new neighbours (because of our asymmetric contact algorithm there are neighbours which haven't been found
@@ -107,16 +96,7 @@ class Tesselation:
 					Inei[neighs_new[a]].append(count+a)
 				count+=len(neighs_new)
 			else:
-				if self.conf.monodisperse:
-					neighbours=[index for index,value in enumerate(dist) if value <1.4*dmax]
-				else:
-					if self.conf.param.potential=='soft':
-						neighbours=[index for index,value in enumerate(dist) if value <(self.conf.radius[i]+self.conf.radius[index])]		
-					elif self.conf.param.potential=='morse':
-						neighbours=[index for index,value in enumerate(dist) if value <(re*self.conf.radius[i]+re*self.conf.radius[index])]
-					else:
-						neighbours=[index for index,value in enumerate(dist) if value <0.8*(self.conf.radius[i]+self.conf.radius[index])]	
-				neighbours.remove(i)
+				neighbours=self.conf.getNeighbours(i,mult0,dmax)[0]
 				print len(neighbours)
 				neighList.extend([u for u in range(count,count+len(neighbours))])
 				self.Ival.extend([i for k in range(len(neighbours))])

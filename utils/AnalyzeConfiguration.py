@@ -91,10 +91,10 @@ for f in files:
 	#plt.show()
 	if args.getStatsBasic:
 		vel2av[u], phival[u],pressav[u],energy[u]= conf.getStatsBasic()
-		print vel2av[u]
-		print phival[u]
-		print pressav[u]
-		print energy[u]
+		print "Mean square velocity: " + str(vel2av[u])
+		print "Packing fraction: " + str(phival[u])
+		print "Mean pressure: " + str(pressav[u])
+		print "Energy: " + str(energy[u])
 	if args.writeD or args.writeT:
 		conf.getTangentBundle()
 		tess = Tesselation(conf)
@@ -142,6 +142,7 @@ if args.writeD:
 	outpickle=args.directory+'defect_data.p'
 else:
 	outpickle=args.directory+'configuration_data.p'
+print outpickle
 pickle.dump(data,open(outpickle,'wb'))
 	
 	

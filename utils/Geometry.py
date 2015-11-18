@@ -33,14 +33,15 @@ import numpy as np
 
 # Default geometry class: 3 dimensional unconstrained space
 class Geometry(object):
-	def __init__(self,manifold,periodic,area=1.0):
-		try:
-			self.manifold=manifold
-			self.periodic=periodic
-			self.area=area
-			print "Created new geometry " + manifold + "for which periodic = " + self.periodic
-		except:
-			pass
+	def __init__(self,manifold,box,periodic,area=1.0):
+		self.manifold=manifold
+		self.periodic=periodic
+		self.area=area
+		self.Lx=box[0]
+		self.Ly=box[1]
+		self.Lz=box[2]
+		print "Geometry: Created new geometry " + manifold + " for which periodic = " + str(self.periodic) + " and with box size " + str(self.Lx) + " x " +str(self.Ly) + " x " + str(self.Lz)
+		
 	def RotateMatrixVectorial(self,axis,theta):
 		axlen=np.sqrt(axis[:,0]**2+axis[:,1]**2+axis[:,2]**2)
 		#print axlen
@@ -88,6 +89,52 @@ class Geometry(object):
 	# Default: just the cartesian distance
 	def GeodesicDistance(self,r1,r2):
 		return np.sqrt(np.sum((r2-r1)**2,axis=1))
+	      
+	# Just the cartesian distance in the plane, modulo periodic boundary conditions
+	# Problem true to type right now ...
+	# assume the first is a vector, the second a scalar
+	# NEED TO GENERALIZE
+	def ApplyPeriodic11(self,r1,r2):
+		dr=r2-r1
+		dr[0]-=self.Lx*np.round(dr[0]/self.Lx)
+		dr[1]-=self.Ly*np.round(dr[1]/self.Ly)
+		dr[2]-=self.Lz*np.round(dr[2]/self.Lz)
+		return dr
+	
+	def ApplyPeriodic12(self,r1,r2):
+		dr=r2-r1
+		dr[:,0]-=self.Lx*np.round(dr[:,0]/self.Lx)
+		dr[:,1]-=self.Ly*np.round(dr[:,1]/self.Ly)
+		dr[:,2]-=self.Lz*np.round(dr[:,2]/self.Lz)
+		return dr
+		
+	def ApplyPeriodic33(self,r1,r2):
+		dr=r2-r1
+		dr[:,:,0]-=self.Lx*np.round(dr[:,:,0]/self.Lx)
+		dr[:,:,1]-=self.Ly*np.round(dr[:,:,1]/self.Ly)
+		dr[:,:,2]-=self.Lz*np.round(dr[:,:,3]/self.Lz)
+		return dr
+	 
+	# rather use these ones, kill the other ones eventually
+	def ApplyPeriodic1d(self,dr):
+		dr[0]-=self.Lx*np.round(dr[0]/self.Lx)
+		dr[1]-=self.Ly*np.round(dr[1]/self.Ly)
+		dr[2]-=self.Lz*np.round(dr[2]/self.Lz)
+		return dr
+	
+	def ApplyPeriodic2d(self,dr):
+		dr[:,0]-=self.Lx*np.round(dr[:,0]/self.Lx)
+		dr[:,1]-=self.Ly*np.round(dr[:,1]/self.Ly)
+		dr[:,2]-=self.Lz*np.round(dr[:,2]/self.Lz)
+		return dr
+		
+	def ApplyPeriodic3d(self,dr):
+		dr[:,:,0]-=self.Lx*np.round(dr[:,:,0]/self.Lx)
+		dr[:,:,1]-=self.Ly*np.round(dr[:,:,1]/self.Ly)
+		dr[:,:,2]-=self.Lz*np.round(dr[:,:,3]/self.Lz)
+		return dr
+		
+
         
 # Spherical geometry   
 class GeometrySphere(Geometry):
@@ -95,8 +142,8 @@ class GeometrySphere(Geometry):
 		self.R=param.r
 		self.periodic=False
 		self.area=4.0*np.pi*self.R**2
-		print "Created new geometry sphere with radius " + str(self.R)
-		super(GeometrySphere,self).__init__('sphere',self.periodic,self.area)
+		print "GeometrySphere: Created new geometry sphere with radius " + str(self.R)
+		super(GeometrySphere,self).__init__('sphere',param.box,self.periodic,self.area)
 		
 	# Fully vectorial version of parallel transport
 	# 1.determine the cross product of the origins
@@ -167,8 +214,8 @@ class GeometryPeriodicPlane(Geometry):
 		self.Ly=param.ly
 		self.periodic=True
 		self.area=self.Lx*self.Ly
-		print "Created new geometry periodic plane with Lx = " + str(self.Lx) + " and Ly = " +str(self.Ly)
-		super(GeometryPeriodicPlane,self).__init__('plane',self.periodic,self.area)
+		print "GeometryPeriodicPlane: Created new geometry periodic plane with Lx = " + str(self.Lx) + " and Ly = " +str(self.Ly)
+		super(GeometryPeriodicPlane,self).__init__('plane',param.box,self.periodic,self.area)
 		
 		
 	def TangentBundle(self,rval):
@@ -190,27 +237,6 @@ class GeometryPeriodicPlane(Geometry):
 		nvec[:,2]=1.0
 		return nvec
 		
-	# Just the cartesian distance in the plane, modulo periodic boundary conditions
-	# Problem true to type right now ...
-	# assume the first is a vector, the second a scalar
-	# NEED TO GENERALIZE
-	def ApplyPeriodic11(self,r1,r2):
-		dr=r2-r1
-		dr[0]-=self.Lx*np.round(dr[0]/self.Lx)
-		dr[1]-=self.Ly*np.round(dr[1]/self.Ly)
-		return dr
-	
-	def ApplyPeriodic12(self,r1,r2):
-		dr=r2-r1
-		dr[:,0]-=self.Lx*np.round(dr[:,0]/self.Lx)
-		dr[:,1]-=self.Ly*np.round(dr[:,1]/self.Ly)
-		return dr
-		
-	def ApplyPeriodic33(self,r1,r2):
-		dr=r2-r1
-		dr[:,:,0]-=self.Lx*np.round(dr[:,:,0]/self.Lx)
-		dr[:,:,1]-=self.Ly*np.round(dr[:,:,1]/self.Ly)
-		return dr
 		
 	def GeodesicDistance12(self,r1,r2):
 		dr=self.ApplyPeriodic12(r1,r2)
@@ -222,22 +248,23 @@ class GeometryPeriodicPlane(Geometry):
 
 class GeometryTube(Geometry):
 	def __init__(self,param):
-		super(GeometryTube,self).__init__('tube',self.periodic)
+		super(GeometryTube,self).__init__('tube',param.box,self.periodic)
 		self.R=param.const_params['R']
 		try:
 			self.A=param.const_params['A']
 		except KeyError:
 			self.A = 0
-		print "Created new geometry tube with radius = " + str(self.R) + " and oscillation amplitude " + str(self.A)
+		print "GeometryTube: Created new geometry tube with radius = " + str(self.R) + " and oscillation amplitude " + str(self.A)
 		
 		
 		
 class GeometryPeanut(Geometry):
 	def __init__(self,param):	
 		self.periodic=False
-		super(GeometryPeanut,self).__init__('peanut',self.periodic)
+		super(GeometryPeanut,self).__init__('peanut',param.box,self.periodic)
 		self.a=param.const_params['a']
 		self.b=param.const_params['b']
+		print "GeometryPeanut: Created new geometry peanut with parameters a = " + str(self.a) + " and b = " + str(self.b)
 		# Determine the Euler angles, essentially. Find theta and phi for each particle,
 		
 	def TangentBundle(self,rval):
@@ -292,8 +319,8 @@ class GeometryHourglass(Geometry):
 		self.A=param.const_params['A']
 		self.H=param.box[2]
 		self.n=1 # number of nodes - 1 for now
-		print "Created new geometry Hourglass with radius = " + str(self.R) + " and amplitude " +str(self.A)
-		super(GeometryHourglass,self).__init__('hourglass',self.periodic)
+		print "GeometryHourglass: Created new geometry Hourglass with radius = " + str(self.R) + " and amplitude " +str(self.A)
+		super(GeometryHourglass,self).__init__('hourglass',param.box,self.periodic)
 		
 	def TangentBundle(self,rval):
 		x = rval[:,0]
@@ -321,25 +348,6 @@ class GeometryHourglass(Geometry):
 		nhat = (axis.transpose()/nlen.transpose()).transpose()
 		return nhat
 		
-	# Just the cartesian distance in the plane, modulo periodic boundary conditions
-	# Problem true to type right now ...
-	# assume the first is a vector, the second a scalar
-	# NEED TO GENERALIZE
-	# This is a misnomer for now, they are not geodesic distance ...
-	def ApplyPeriodic11(self,r1,r2):
-		dr=r2-r1
-		dr[2]-=self.H*np.round(dr[2]/self.H)
-		return dr
-	
-	def ApplyPeriodic12(self,r1,r2):
-		dr=r2-r1
-		dr[:,2]-=self.H*np.round(dr[:,2]/self.H)
-		return dr
-		
-	def ApplyPeriodic33(self,r1,r2):
-		dr=r2-r1
-		dr[:,:,2]-=self.H*np.round(dr[:,:,2]/self.H)
-		return dr
 		
 	def GeodesicDistance12(self,r1,r2):
 		dr=self.ApplyPeriodic12(r1,r2)
