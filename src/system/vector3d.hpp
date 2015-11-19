@@ -122,6 +122,15 @@ public:
       this->scale(double(1)/len);
   }
   
+  //! Return unit vector in the direction of this vector
+  Vector3d unit()
+  {
+    double len = this->len();
+    if (len != double(0))
+      return Vector3d(x/len,y/len,z/len);
+      return Vector3d(x,y,z);
+  }
+  
   //! Get the part of the vector parallel to a given vector
   Vector3d parallel_projection(const Vector3d& v)
   {

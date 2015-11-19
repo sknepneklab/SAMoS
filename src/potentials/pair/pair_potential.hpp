@@ -88,6 +88,9 @@ public:
   //! Set pair parameters data for pairwise interactions    
   virtual void set_pair_parameters(pairs_type&) = 0;
   
+  //! Set type parameters for each particle
+  virtual void set_type_parameters(pairs_type&) { }  
+  
   //! Returns true if the specific pair potential needs neighbour list
   virtual bool need_nlist() = 0;
   

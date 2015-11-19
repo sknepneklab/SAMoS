@@ -46,6 +46,7 @@
 #define DEFAULT_LY 10.0
 #define DEFAULT_LZ 10.0
 #define SMALL_NUMBER 1e-12
+#define MAX_FACE 10
 #ifndef NDEBUG
 #define PRINT_EVERY 1
 #else

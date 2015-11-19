@@ -122,4 +122,6 @@ void IntegratorBrownian::integrate()
     //p.omega = dtheta*m_dt;
     p.age += m_dt;
   }
+  // Update vertex mesh
+  m_system->update_mesh();
 }
