@@ -42,7 +42,7 @@ class Tesselation:
 		self.debug=debug
                 self.ordered_patches = False
 		
-	def findLoop(self,closeHoles=False):
+	def findLoop(self,closeHoles=False,mult0=1.0):
 		neighList=[]
 		self.Ival=[]
 		self.Jval=[]
@@ -56,18 +56,17 @@ class Tesselation:
 		#if self.conf.monodisperse:
 		if self.conf.param.potential=='soft':
 			dmax=2*self.conf.sigma
-			mult0=1.0
+			mult0=1.0*mult0
 			print dmax
 		elif self.conf.param.potential=='morse':
 			re=self.conf.param.pot_params['re']
 			dmax=2*self.conf.sigma
-			mult0=re
+			mult0=re*mult0
 		else:
 			dmax=2*self.conf.sigma
-			mult0=1.0
-			print "Warning: unimplemented potential, defaulting to maximum contact distance 2"
-		print dmax	
-		print mult0
+			print "Warning: unimplemented potential, defaulting to maximum contact distance 2 if not otherwise specified"
+		print "Max distance: "+ str(dmax)	
+		print "Initial multiplier " + str(mult0)
 		for i in range(len(self.rval)):
 			neighbours=[]
 			if closeHoles:
@@ -97,7 +96,7 @@ class Tesselation:
 				count+=len(neighs_new)
 			else:
 				neighbours=self.conf.getNeighbours(i,mult0,dmax)[0]
-				print len(neighbours)
+				#print len(neighbours)
 				neighList.extend([u for u in range(count,count+len(neighbours))])
 				self.Ival.extend([i for k in range(len(neighbours))])
 				#self.Jval.extend(neighs[neighbours])

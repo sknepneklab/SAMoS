@@ -50,6 +50,7 @@ parser.add_argument("--contractile", action='store_true',default=False, help="Ad
 parser.add_argument("-a", "--alpha", type=float, default=0.0, help="Prefactor of the contractile term")
 parser.add_argument("--closeHoles", action='store_true', default=False, help="Closes the holes in the tesselation to help tracking of defects (recommended for low density and/or nematic)")
 parser.add_argument("--makeEdges",action='store_true', default=False, help="Make edges to the tesselation along borders")
+parser.add_argument("-m", "--mult",type = float, default=1.0, help="Multiplier for tesselation neighbour radius")
 parser.add_argument("--writeP",action='store_true', default=False, help="Output particle positions velocities directors.")
 parser.add_argument("--writeT",action='store_true', default=False, help="Output tesselation")
 parser.add_argument("--writeD",action='store_true', default=False, help="Output defects")
@@ -99,7 +100,7 @@ for f in files:
 		conf.getTangentBundle()
 		tess = Tesselation(conf)
 		print "initialized tesselation"
-		LoopList,Ival,Jval = tess.findLoop(args.closeHoles)
+		LoopList,Ival,Jval = tess.findLoop(args.closeHoles,args.mult)
 		print "found loops"
 		#print LoopList
 		if args.writeD:
@@ -131,7 +132,10 @@ for f in files:
 				writeme.writePatches(tess,outpatches,True)
 	
 	u+=1
-data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params,'population':params.population,'pop_params':params.pop_params}
+try:
+	data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params,'population':params.population,'pop_params':params.pop_params}
+except:
+	data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params}
 if args.writeD:
 	dataD={'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out,'numdefects_v':numdefects_v_out}
 	data.update(data2)
