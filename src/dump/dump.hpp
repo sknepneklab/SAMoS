@@ -138,6 +138,8 @@ private:
   void dump_contact();
   //! Dump faces based on the contact network
   void dump_faces();
+  //! Dump mesh (for tissues)
+  void dump_mesh();
   
 };
 

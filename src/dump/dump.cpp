@@ -75,6 +75,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
   m_type_ext["mol2"] = "mol2";
   m_type_ext["contact"] = "con";
   m_type_ext["face"] = "fc";
+  m_type_ext["mesh"] = "mesh";
   
   string fname = filename;
   
@@ -303,6 +304,8 @@ void Dump::dump(int step)
     this->dump_contact();
   else if (m_type == "face")
     this->dump_faces();
+  else if (m_type == "off")
+    this->dump_mesh();
   
   if (m_multi_print)
   {
@@ -708,4 +711,28 @@ void Dump::dump_faces()
       }
     }
   }
+}
+
+//! Dump mesh, that is dual of the particle position network 
+//! This will be done in the OFF format
+void Dump::dump_mesh()
+{
+  Mesh& m = m_system->get_mesh();
+  vector<Face>& faces = m.get_faces();
+  vector<Vertex>& vertices = m.get_vertices();
+  int Nface = 0;
+  for (unsigned int i = 0; i < vertices.size(); i++)
+    if (!vertices[i].boundary) Nface++;
+  m_out << "OFF" << endl;
+  m_out << faces.size() << " " << Nface << " 0 " << endl;
+  for (unsigned int i = 0; i < faces.size(); i++)
+    m_out << format("%f\t%f\t%f") % faces[i].rc.x % faces[i].rc.y % faces[i].rc.z << endl;
+  for (unsigned int i = 0; i < vertices.size(); i++)
+    if (!vertices[i].boundary)
+    {
+      m_out << vertices[i].faces.size() << " ";
+      for (unsigned int k = 0; k < vertices[i].faces.size(); k++)
+        m_out << vertices[i].faces[k] << " ";
+      m_out << endl;
+    }
 }
