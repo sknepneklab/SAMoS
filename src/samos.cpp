@@ -711,6 +711,35 @@ int main(int argc, char* argv[])
             }
             
           }
+          else if (command_data.command == "pair_type_param")       // parse pair type parameters for potential
+          {
+            if (!defined["pair_potential"])  // We need to have pair potentials defined before we can change their parameters
+            {
+              msg->msg(Messenger::ERROR,"No pair potentials have been defined. Please define them using \"pair_potential\" command before modifying any pair type parameters.");
+              throw std::runtime_error("No pair potentials defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), potential_parser, qi::space))
+            {
+              if (qi::phrase_parse(potential_data.params.begin(), potential_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                pot->add_pair_type_parameters(potential_data.type, parameter_data);
+                msg->msg(Messenger::INFO,"Setting new parameters for "+potential_data.type+".");
+                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
+                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for pair potential "+potential_data.type+" is set to "+(*it).second+".");
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse pair type parameters for potential type "+potential_data.type+" in line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing pair type parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing pair_type_param command at line : "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing pair_type_param command.");
+            }
+            
+          }
           else if (command_data.command == "external_param")       // parse pair parameters for potential
           {
             if (!defined["external"])  // We need to have at least one external potential defined before we can change the parameters

@@ -63,6 +63,9 @@ void NeighbourList::build()
   
   if (m_build_contacts)
     this->build_contacts();
+  
+  if (m_build_faces)
+    this->build_faces();
 }
 
 /*! Build faces using contact network 
@@ -79,6 +82,7 @@ bool NeighbourList::build_faces()
         > 
         graph;
   
+  Mesh& mesh = m_system->get_mesh();
   int N = m_system->size(); 
   graph g(N);
   
@@ -107,7 +111,17 @@ bool NeighbourList::build_faces()
   if(boost::boyer_myrvold_planarity_test(boost::boyer_myrvold_params::graph = g, boost::boyer_myrvold_params::embedding = &embedding[0]))
     boost::planar_face_traversal(g, &embedding[0], m_faces);
   else
-    return false;
+  {
+    m_msg->msg(Messenger::ERROR,"It was not possible to build tesselation build. Most likely you contact dstance is too large creating unphysical contact network.");
+    throw runtime_error("Unable to build tesselation from the contact network.");
+  }
+  
+  for (int i = 0; i < m_faces.faces.size(); i++)
+    if (m_faces.faces[i].size() <= MAX_FACE)
+      mesh.add_face(m_faces.faces[i]);
+
+  mesh.postprocess();
+  m_system->update_mesh();
   
   return true;
    
@@ -264,11 +278,14 @@ bool NeighbourList::need_update(Particle& p)
 //! Builds contact list based on particle distance
 void NeighbourList::build_contacts()
 {
+  Mesh& mesh = m_system->get_mesh();
   int N = m_system->size();
+  mesh.reset();
   double dist = m_contact_dist;
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
+    mesh.add_vertex(pi);
     double ri = pi.get_radius();
     //cout << i << " --> ";
     vector<int>& neigh = this->get_neighbours(i);
@@ -283,6 +300,7 @@ void NeighbourList::build_contacts()
       if (r_sq <= dist*dist)
       {
         m_contact_list[i].push_back(pj.get_id());
+        mesh.add_edge(i,pj.get_id());
         //cout << pj.get_id() << " ";
       }
     }

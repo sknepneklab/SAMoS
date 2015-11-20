@@ -137,6 +137,11 @@ public:
     }
     if (param.find("build_faces") != param.end())
     {
+      if (m_system->get_periodic())
+      {
+        m_msg->msg(Messenger::ERROR,"Building faces is not supported for periodic boundary conditions.");
+        throw runtime_error("Faces not supported in periodic sytems.");
+      }
       m_build_contacts = true;
       m_build_faces = true;
       m_msg->msg(Messenger::INFO,"Neighbour list will also build faces.");
@@ -149,9 +154,19 @@ public:
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Neighbour list.  Setting contact distance to "+param["contact_distance"]+".");
-      m_msg->write_config("nlist.contact_distance",param["contact_distance"]); 
+      
       m_contact_dist = lexical_cast<double>(param["contact_distance"]);
+      if (m_contact_dist > m_cut)
+      {
+        m_msg->msg(Messenger::WARNING,"Neighbour list. Contact distance "+param["contact_distance"]+" is larger than the neighbour list cuttoff distance. Using neigbour list cuttoff instead.");
+        m_msg->write_config("nlist.contact_distance",lexical_cast<string>(m_cut)); 
+        m_contact_dist = m_cut;
+      }
+      else
+      {
+        m_msg->msg(Messenger::INFO,"Neighbour list.  Setting contact distance to "+param["contact_distance"]+".");
+        m_msg->write_config("nlist.contact_distance",param["contact_distance"]); 
+      }
     }
     
     this->build();

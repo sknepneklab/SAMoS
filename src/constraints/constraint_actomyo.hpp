@@ -86,7 +86,7 @@ public:
   double project_torque(Particle&);
   
   //! Computes normal to the surface
-  void compute_normal(Particle& p, double& Nx, double& Ny, double& Nz) { Nx = 0.0; Ny = 0.0; Nz = 1.0; }
+  void compute_normal(Particle& p, double& Nx, double& Ny, double& Nz) { Nx = 0.0; Ny = 0.0; Nz = 1.0; p.Nx = Nx; p.Ny = Ny; p.Nz = Nz; }
   
   // Computer gradient at a point
   void compute_gradient(Particle& p, double& gx, double& gy, double& gz) { }

@@ -72,6 +72,7 @@ static vector<string> split_line(const string& str)
  */
 System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_msg(msg), 
                                                                              m_box(box), 
+                                                                             m_mesh(Mesh()),
                                                                              m_periodic(false),
                                                                              m_force_nlist_rebuild(false),
                                                                              m_nlist_rescale(1.0),
@@ -831,3 +832,24 @@ void System::enforce_periodic(Particle& p)
   }
 }
 
+//! Update mesh for tissue simulations
+void System::update_mesh()
+{
+  if (m_mesh.size() > 0)
+  {
+    for (int i = 0; i < this->size(); i++)
+    {
+      Particle& p = m_particles[i];
+      m_mesh.update(p);
+    }
+    for (int i = 0; i < m_mesh.nfaces(); i++)
+      m_mesh.compute_centre(i);
+    for (int i = 0; i < m_mesh.size(); i++)
+    {
+      Particle& p = m_particles[i];
+      Vector3d n(p.Nx,p.Ny,p.Nz);
+      m_mesh.dual_perimeter(i);
+      m_mesh.dual_area(i,n); 
+    }
+  }
+}

@@ -57,5 +57,7 @@ void register_pair_potentials(PairPotentialMap& pair_potentials)
   // Register Lennard-Jones rod pair potential with the pair potentials class factory
   pair_potentials["ljrod"] = boost::factory<PairLJRodPotentialPtr>(); 
   // Register soft attractive pair potential with the pair potentials class factory
-  pair_potentials["soft_attractive"] = boost::factory<PairSoftAttractivePotentialPtr>(); 
+  pair_potentials["soft_attractive"] = boost::factory<PairSoftAttractivePotentialPtr>();
+  // Register vertex particle pair potential for tissues with the pair potentials class factory
+  pair_potentials["vp"] = boost::factory<PairVertexParticlePotentialPtr>();
 }

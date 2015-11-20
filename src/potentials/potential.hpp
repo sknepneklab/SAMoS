@@ -129,6 +129,14 @@ public:
     m_pair_interactions[name]->set_pair_parameters(params);
   }
   
+  //! Add pair type parameters
+  //! \param name Unique name of the potential 
+  //! \param params maps with new type parameters
+  void add_pair_type_parameters(const string& name, pairs_type& params)
+  {
+    m_pair_interactions[name]->set_type_parameters(params);
+  }
+  
   //! Add external potential parameters
   //! \param name Unique name of the potential 
   //! \param params maps with new potential parameters

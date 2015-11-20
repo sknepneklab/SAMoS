@@ -63,6 +63,7 @@
 #include "messenger.hpp"
 #include "group.hpp"
 #include "defaults.hpp"
+#include "mesh.hpp"
 
 #include "parse_parameters.hpp"
 
@@ -120,6 +121,9 @@ public:
   
   //! Get simulation box
   BoxPtr get_box() { return m_box; }
+  
+  //! Get mesh 
+  Mesh& get_mesh() { return m_mesh; }
   
   //! Get the value of periodic boundary conditions flag
   bool get_periodic() { return m_periodic; }
@@ -274,6 +278,9 @@ public:
   //! Get value of the n_list rescale parameter
   double get_nlist_rescale() { return m_nlist_rescale; }
   
+  //! Update mesh information for tissue simulations
+  void update_mesh();
+    
 private:
   
   vector<Particle> m_particles;         //!< Contains all particle in the system 
@@ -282,6 +289,7 @@ private:
   MessengerPtr m_msg;                   //!< Handles messages sent to output
   BoxPtr m_box;                         //!< Simulation box object
   map<string, GroupPtr> m_group;        //!< All groups in the system 
+  Mesh m_mesh;                          //!< Mesh is the data structure that holds tessallation infomration for tissue simulations
   bool m_periodic;                      //!< If true, we use periodic boundary conditions 
   int m_time_step;                      //!< Current time step
   int m_run_step;                       //!< Time step for the current run

@@ -47,6 +47,7 @@ void ConstraintPeanut::compute_normal(Particle& p, double& Nx, double& Ny, doubl
   // Normalize N
   double len_N = sqrt(Nx*Nx + Ny*Ny + Nz*Nz);
   Nx /= len_N; Ny /= len_N; Nz /= len_N;
+  p.Nx = Nx; p.Ny = Ny; p.Nz = Nz;
 }
 
 /*! Compute gradient at a point 

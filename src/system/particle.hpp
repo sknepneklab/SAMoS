@@ -76,6 +76,7 @@ public:
   { 
     fx = 0.0; fy = 0.0; fz = 0.0; 
     tau_x = 0.0; tau_y = 0.0; tau_z = 0.0;
+    Nx = 0.0; Ny = 0.0; Nz = 0.0;
     age = 0.0;
     m_flag = 0;
   }
@@ -192,6 +193,9 @@ public:
   //@}
   ///@{
   int ix, iy, iz;              //!< Periodic box image flags (to enable unwrapping of particle coordinates)
+  //@}
+  ///@{
+  int Nx, Ny, Nz;              //!< Normal to the contraint, used for mesh orientation in tissues.
   //@}
   double omega;                //!< Magnitude of the angular velocity (in the direction of the normal to the surface)
   double age;                  //!< Particle age (used when deciding to remove and split the particle)

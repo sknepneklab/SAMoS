@@ -96,6 +96,7 @@
 #include "pair_rod_potential.hpp"
 #include "pair_ljrod_potential.hpp"
 #include "pair_soft_attractive_potential.hpp"
+#include "pair_vertex_particle_potential.hpp"
 #include "potential.hpp"
 #include "integrator.hpp"
 #include "integrator_brownian.hpp"
@@ -126,5 +127,9 @@
 #include "angle_harmonic_potential.hpp"
 #include "angle_cosine_potential.hpp"
 #include "value.hpp"
+#include "vertex.hpp"
+#include "edge.hpp"
+#include "face.hpp"
+#include "mesh.hpp"
 
 #endif

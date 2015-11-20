@@ -82,7 +82,7 @@ public:
   void enforce(Particle&);
   
   //! Computes normal to the surface
-  void compute_normal(Particle& p, double& Nx, double& Ny, double& Nz) { Nx = p.x/m_r; Ny = p.y/m_r; Nz = p.z/m_r; }
+  void compute_normal(Particle& p, double& Nx, double& Ny, double& Nz) { Nx = p.x/m_r; Ny = p.y/m_r; Nz = p.z/m_r; p.Nx = Nx; p.Ny = Ny; p.Nz = Nz; }
   
   // Computer gradient at a point
   void compute_gradient(Particle& p, double& gx, double& gy, double& gz) { }

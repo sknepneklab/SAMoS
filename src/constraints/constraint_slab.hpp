@@ -100,7 +100,7 @@ public:
   double project_torque(Particle& p) { return 0.0; }// Does not do anything as this is not really a surface constraint.
   
   //! Computes normal to the surface
-  void compute_normal(Particle& p, double& Nx, double& Ny, double& Nz) { Nx = 0.0; Ny = 0.0; Nz = 0.0;  } // Does not do anything as this is not really a surface constraint.
+  void compute_normal(Particle& p, double& Nx, double& Ny, double& Nz) { Nx = 0.0; Ny = 0.0; Nz = 0.0; p.Nx = Nx; p.Ny = Ny; p.Nz = Nz;  } // Does not do anything as this is not really a surface constraint.
   
   // Computer gradient at a point
   void compute_gradient(Particle& p, double& gx, double& gy, double& gz) { } // Does not do anything as this is not really a surface constraint.
