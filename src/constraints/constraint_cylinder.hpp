@@ -85,6 +85,7 @@ public:
   void compute_normal(Particle& p, double& Nx, double& Ny, double& Nz)
   { 
     Nx = p.x/m_r; Ny = p.y/m_r; Nz = 0.0;
+    p.Nx = Nx; p.Ny = Ny; p.Nz = Nz;
   }
   
   // Computer gradient at a point

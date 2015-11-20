@@ -242,9 +242,9 @@ public:
     }
     m_msg->write_config("potential.pair.vertex_particle.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".push",lexical_cast<string>(param["lambda"]));
         
-    m_pair_params[type_1-1][type_2-1].k = param["lambda"];
+    m_pair_params[type_1-1][type_2-1].lambda = param["lambda"];
     if (type_1 != type_2)
-      m_pair_params[type_2-1][type_1-1].k = param["lambda"];
+      m_pair_params[type_2-1][type_1-1].lambda = param["lambda"];
     
     m_has_pair_params = true;
   }

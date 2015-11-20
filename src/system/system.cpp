@@ -847,9 +847,9 @@ void System::update_mesh()
     for (int i = 0; i < m_mesh.size(); i++)
     {
       Particle& p = m_particles[i];
-      Vector3d n(p.tau_x,p.tau_y,p.tau_z);
+      Vector3d n(p.Nx,p.Ny,p.Nz);
       m_mesh.dual_perimeter(i);
-      m_mesh.dual_area(i,n);  // We asume the the normal to the surface coincides with the direction of the torque
+      m_mesh.dual_area(i,n); 
     }
   }
 }

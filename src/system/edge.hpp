@@ -54,6 +54,30 @@ struct Edge
   //! \param j id of 2nd vertex
   Edge(int id, int i, int j) : id(id), i(i), j(j), f1(NO_FACE), f2(NO_FACE), boundary(false)  {   }
   
+  //! Check if vertex belongs to the edge
+  //! \param v vertex id
+  bool vert_in(int v) { return (i == v) || (j = v); }
+  
+  //! Check if a face belongs to the edge
+  bool face_of(int f) { return (f == f1) || (f == f2); }
+  
+  //! Get the other vertex on the face (-1 if not part of this edge)
+  //! \param v vertex index
+  int other_vert(int v)
+  {
+    if (!vert_in(v)) return -1;
+    if (v == i) return j;
+    return i;
+  }
+  
+  //! Get other edge belonging to the face
+  //! \param f face id
+  int other_face(int f)
+  {
+    if (!face_of(f)) return -1;
+    if (f == f1) return f2;
+    return f1;
+  }
   
   int id;                      //!< Edge id
   int i;                       //!< 1st vertex

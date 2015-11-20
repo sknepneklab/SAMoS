@@ -145,14 +145,11 @@ public:
   //! Compute face centre
   void compute_centre(int);
   
-  //! Order vertex neighbours
-  void order_neigbours(int);
-  
   //! Order vertices in a face
   void order_face(int);
   
-  //! Order vertex faces
-  void order_vertex_faces(int);
+  //! Order vertex star
+  void order_star(int);
   
   //! Compute dual area
   double dual_area(int,Vector3d&);
@@ -160,8 +157,6 @@ public:
   //! Dual perimeter
   double dual_perimeter(int);
   
-  //! Get shared face between two edges
-  int shared_face(int,int);
 
 private:  
   

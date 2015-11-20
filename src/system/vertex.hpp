@@ -73,8 +73,7 @@ struct Vertex
                                                  z(0),
                                                  n_edges(0), n_faces(0), 
                                                  boundary(false),
-                                                 ordered_neigh(false),
-                                                 ordered_faces(false) 
+                                                 ordered(false) 
                                                  {   }
   
   //! Constract from particle position 
@@ -114,17 +113,16 @@ struct Vertex
   int type;                    //!< Vertex type 
   Vector3d r;                  //!< Position in the embedding 3d flat space
   
+  int z;                       //!< Coordination number (number of neighbours)
   int n_edges;                 //!< Number of neighours this vertex has
   int n_faces;                 //!< Number of faces this vertex belongs to
-  int z;                       //!< Coordination number (number of neighbours)
   
   double area;                 //!< Area of dual associated with the vertex
   double perim;                //!< Perimeter of dual associated with the vertex
   
   bool boundary;               //!< If true, vertex is a boundary vertex
-  bool ordered_neigh;          //!< If true, list of neighbours is ordered
-  bool ordered_faces;          //!< If true, list of faces is ordered
-  
+  bool ordered;                //!< If true, vertex star is ordered
+    
   vector<int> neigh;           //!< Contains indices of all neighbours
   vector<int> edges;           //!< Contains indices of all edges connected to the vertex
   vector<int> faces;           //!< Contains indices of faces this vertex belongs to

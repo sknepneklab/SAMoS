@@ -144,9 +144,7 @@ void Mesh::postprocess()
        m_edge_face[make_pair(m_edges[i].f2,m_edges[i].f1)] = i;
      }
    for (int i = 0; i < m_size; i++)
-     this->order_neigbours(i);
-   for (int i = 0; i < m_size; i++)
-     this->order_vertex_faces(i);
+     this->order_star(i);
    for (int i = 0; i < m_nface; i++)
      this->order_face(i);
 }
@@ -166,47 +164,6 @@ void Mesh::compute_centre(int f)
     zc += m_vertices[face.vertices[i]].r.z;
   }
   face.rc = Vector3d(xc/face.n_sides,yc/face.n_sides,zc/face.n_sides);
-}
-
-/*! This member function orders all neighbours of a vertex.
- *  At this stage it is not possible to determine if the order is
- *  clock or counterclockwise. This will be corrected for later, 
- *  when normals are known. 
- *  \param v vertex whose neighbours to order
- */
-void Mesh::order_neigbours(int v)
-{
-  int N = m_vertices[v].neigh.size();
-  // If vertex has only 3 neighbours, they are ordered by defualt
-  if (N == 3 && !m_vertices[v].boundary)
-    m_vertices[v].ordered_neigh = true;
-  else if (N > 3 || m_vertices[v].boundary)
-  {
-    vector<int> new_neigh;
-    new_neigh.push_back(m_vertices[v].neigh[0]);
-    while (new_neigh.size() < N)
-    {
-      int cv = new_neigh[new_neigh.size()-1];
-      for (int i = 0; i < N; i++)
-      {
-        int n = m_vertices[v].neigh[i];
-        VertexPair vp = make_pair(cv,n);
-        if (m_edge_map.find(vp) != m_edge_map.end() && !in(new_neigh,n))
-        {
-          new_neigh.push_back(n);
-          break;
-        }
-      }
-    }
-    copy(new_neigh.begin(), new_neigh.end(), m_vertices[v].neigh.begin());
-    // now order edges
-    for (int i = 0; i < N; i++)
-    {
-      VertexPair vp = make_pair(v,m_vertices[v].neigh[i]);
-      m_vertices[v].edges[i] = m_edge_map[vp];
-    }
-    m_vertices[v].ordered_neigh = true;
-  }
 }
 
 
@@ -245,37 +202,48 @@ void Mesh::order_face(int f)
   }
 }
 
-/*! Order faces in the vertex star. At this point it is not possible
+/*! Order faces, edges and neighbours in the vertex star. At this point it is not possible
  *  to determine if the order is clockwise or counterclockwise. This 
  *  will be corrected for once the normal to the vertex is known.
- *  Here we assume that the edges are already ordered, that its that the 
- *  caller has already called order_neigbours(v).
- *  \note In order to avoid complications, at the moment we only oder
- *  faces for non-boundary vertices.
- *  \todo Implement ordering of boundary vertices. 
  *  \param v vertex index
 */
-void Mesh::order_vertex_faces(int v)
+void Mesh::order_star(int v)
 {
-  if (m_vertices[v].ordered_neigh)
+  Vertex& V = m_vertices[v];
+  int N = V.neigh.size();
+  int e = V.edges[0];
+  if (V.boundary)
+    for (int i = 0; i < N; i++)
+      if (m_edges[V.edges[i]].boundary)
+      {
+        e = V.edges[i];
+        break;
+      }
+  vector<int> new_e(N,e);
+  vector<int> new_n(N,m_edges[e].other_vert(v));
+  vector<int> new_f(N,m_edges[e].f1);
+  
+  int count = 1;
+  while (count < N)
   {
-    vector<int> new_faces;
-    int N = m_vertices[v].edges.size();
-    for (int i = 0; i < N-1; i++)
+    int face = new_f[count-1];
+    for (int i = 0; i < N; i++)
     {
-      int e1 = m_vertices[v].edges[i];
-      int e2 = m_vertices[v].edges[i+1];
-      new_faces.push_back(this->shared_face(e1,e2));
+      e = V.edges[i];
+      if (!in(new_e,e) && m_edges[e].face_of(face))
+      {
+        new_e[count] = V.edges[i];
+        new_f[count] = m_edges[e].other_face(face);
+        new_n[count] = m_edges[e].other_vert(v);
+        count++;
+        break;
+      }
     }
-    if (!m_vertices[v].boundary)
-    {
-      int e1 = m_vertices[v].edges[N-1];
-      int e2 = m_vertices[v].edges[0];
-      new_faces.push_back(shared_face(e1,e2));
-    }
-    copy(new_faces.begin(), new_faces.end(),m_vertices[v].faces.begin());
-    m_vertices[v].ordered_faces = true;
   }
+  copy(new_e.begin(), new_e.end(),V.edges.begin());
+  copy(new_n.begin(), new_n.end(),V.neigh.begin());
+  copy(new_f.begin(), new_f.end(),V.faces.begin());
+  V.ordered = true;
 }
 
 /*! Compute dual area by using expression 
@@ -289,7 +257,7 @@ void Mesh::order_vertex_faces(int v)
 */
 double Mesh::dual_area(int v, Vector3d& n)
 {
-  if (!m_vertices[v].ordered_faces)
+  if (!m_vertices[v].ordered)
     throw runtime_error("Faces need to be ordered before dual area can be computed.");
   Vertex& V = m_vertices[v];
   V.area = 0.0;
@@ -307,14 +275,14 @@ double Mesh::dual_area(int v, Vector3d& n)
   Vector3d& r2 = m_faces[V.faces[0]].rc;
   Vector3d  rr = cross(r1,r2); 
   V.area += dot(rr,nn);
-  if (area < 0.0)
+  if (V.area < 0.0)
   {
-    area = -area;
+    V.area = -V.area;
     reverse(V.neigh.begin(),V.neigh.end());
     reverse(V.edges.begin(),V.edges.end());
     reverse(V.faces.begin(),V.faces.end());
   }
-  V.area = 0.5*area;
+  V.area *= 0.5;
   return V.area;
 }
 
@@ -327,7 +295,7 @@ double Mesh::dual_area(int v, Vector3d& n)
 */
 double Mesh::dual_perimeter(int v)
 {
-  if (!m_vertices[v].ordered_faces)
+  if (!m_vertices[v].ordered)
     throw runtime_error("Faces need to be ordered before dual premeter can be computed.");
   Vertex& V = m_vertices[v];
   V.perim  = 0.0;
@@ -341,23 +309,7 @@ double Mesh::dual_perimeter(int v)
   // handle the last pair
   Vector3d& r1 = m_faces[V.faces[N-1]].rc;
   Vector3d& r2 = m_faces[V.faces[0]].rc;
-  Vector3d  rr = cross(r1,r2); 
   V.perim += (r1-r2).len();
   return V.perim;
 }
 
-/*! An auxiliary function to find shared face between two edges.
- *  If none is found, return -1.
- *  \param e1 index of 1st edge
- *  \param e2 index of 2nd edge
-*/
-int Mesh::shared_face(int e1, int e2)
-{
-   if (m_edges[e1].f1 == m_edges[e2].f1 || m_edges[e1].f1 == m_edges[e2].f2) 
-      return m_edges[e1].f1;
-  else if (m_edges[e1].f2 == m_edges[e2].f1 || m_edges[e1].f2 == m_edges[e2].f2)
-      return m_edges[e1].f2;
-  else
-      return -1;
-   
-}
