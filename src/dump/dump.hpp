@@ -53,6 +53,21 @@
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 
+// Handle VTP output
+#ifdef HAS_VTK
+#include <vtkVersion.h>
+#include <vtkCellArray.h>
+#include <vtkCellData.h>
+#include <vtkPoints.h>
+#include <vtkPointData.h>
+#include <vtkPolygon.h>
+#include <vtkLine.h>
+#include <vtkXMLPolyDataWriter.h>
+#include <vtkPolyData.h>
+#include <vtkSmartPointer.h>
+#include <vtkDoubleArray.h>
+#endif
+
 namespace bo = boost::iostreams;
 
 #include "system.hpp"
@@ -108,6 +123,7 @@ private:
   bool m_no_header;             //!< Do not print header in some files
   double m_r_cut;               //!< Cutoff distance for the contact network
   bool m_compress;              //!< Compress output data using gzip compression
+  bool m_output_dual;           //!< Outputs dual mesh for tissue simulations
   
   // Auxiliary data structures
   map<string, string> m_type_ext;  //!< Hold extension for a given data type
@@ -140,6 +156,10 @@ private:
   void dump_faces();
   //! Dump mesh (for tissues)
   void dump_mesh();
+#ifdef HAS_VTK
+  //! Dump VTK files
+  void dump_vtp(int);
+#endif
   
 };
 

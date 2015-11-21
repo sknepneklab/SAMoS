@@ -62,7 +62,8 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
                                                                                                                m_params(params),
                                                                                                                m_compress(false),
                                                                                                                m_print_header(false),
-                                                                                                               m_print_keys(false)
+                                                                                                               m_print_keys(false),
+                                                                                                               m_output_dual(false)
 {
   m_type_ext["velocity"] = "vel";
   m_type_ext["xyz"] = "xyz";
@@ -76,6 +77,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
   m_type_ext["contact"] = "con";
   m_type_ext["face"] = "fc";
   m_type_ext["mesh"] = "off";
+  m_type_ext["vtp"] = "vtp";
   
   string fname = filename;
   
@@ -169,6 +171,12 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_print_keys = true;
     m_msg->msg(Messenger::INFO,"Include keys line into the dump file.");
     m_msg->write_config("dump."+fname+".keys","true");
+  }
+  if (params.find("dual") != params.end())
+  {
+    m_output_dual = true;
+    m_msg->msg(Messenger::INFO,"VTP file will contain dual mesh.");
+    m_msg->write_config("dump."+fname+".dual","true");
   }
   if (params.find("id") != params.end())
     m_msg->add_config("dump."+fname+".quantity","id");
@@ -275,11 +283,16 @@ void Dump::dump(int step)
     if (m_compress)
     {
       file_name += ".gz";
-      m_file.open(file_name.c_str(),std::ios_base::out | std::ios_base::binary);
+      if (m_ext != "vtp")
+        m_file.open(file_name.c_str(),std::ios_base::out | std::ios_base::binary);
     }
     else
-      m_file.open(file_name.c_str()); 
-    m_out.push(m_file);
+    {  
+      if (m_ext != "vtp")
+        m_file.open(file_name.c_str()); 
+    }
+    if (m_ext != "vtp")
+      m_out.push(m_file);
   }
   
   if (m_type == "xyz")
@@ -306,12 +319,17 @@ void Dump::dump(int step)
     this->dump_faces();
   else if (m_type == "mesh")
     this->dump_mesh();
+#ifdef HAS_VTK  
+  else if (m_type == "vtp")
+    this->dump_vtp(step);
+#endif
   
   if (m_multi_print)
-  {
-    m_out.pop();
-    m_file.close();
-  }
+    if (m_ext != "vtp")
+    {
+      m_out.pop();
+      m_file.close();
+    }
 }
 
 // Private functions 
@@ -736,3 +754,157 @@ void Dump::dump_mesh()
       m_out << endl;
     }
 }
+
+#ifdef HAS_VTK
+//! Dump meshes into VTK output 
+void Dump::dump_vtp(int step)
+{
+  string file_name = m_file_name+"_"+lexical_cast<string>(format("%010d") % step)+"."+m_ext;
+  vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
+  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+  vtkSmartPointer<vtkCellArray> lines =  vtkSmartPointer<vtkCellArray>::New();
+  vtkSmartPointer<vtkCellArray> faces = vtkSmartPointer<vtkCellArray>::New();
+  Mesh& mesh = m_system->get_mesh();
+  
+  if (!m_output_dual)
+  {
+    int N = m_system->size();
+    
+    
+    vtkSmartPointer<vtkDoubleArray> types =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> radii =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> vel =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> dir =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> ndir =  vtkSmartPointer<vtkDoubleArray>::New();
+    
+    types->SetName("Type");
+    types->SetNumberOfComponents(1);
+    radii->SetName("Radius");
+    radii->SetNumberOfComponents(1);
+    vel->SetName("Velocity");
+    vel->SetNumberOfComponents(3);
+    dir->SetName("Director");
+    dir->SetNumberOfComponents(3);
+    ndir->SetName("NDirector");
+    ndir->SetNumberOfComponents(3);
+      
+    for (int i = 0; i < N; i++)
+    {
+      Particle& pi = m_system->get_particle(i);
+      double v[3] = {pi.vx, pi.vy, pi.vz};
+      double n[3] = {pi.nx, pi.ny, pi.nz};
+      double nn[3] = {-pi.nx, -pi.ny, -pi.nz};
+      points->InsertNextPoint ( pi.x, pi.y, pi.z );
+      types->InsertNextValue(pi.get_type());
+      radii->InsertNextValue(pi.get_radius());
+      vel->InsertNextTuple(v);
+      dir->InsertNextTuple(n);
+      ndir->InsertNextTuple(nn);
+    }
+    
+    polydata->SetPoints(points);
+    
+    polydata->GetPointData()->AddArray(types);
+    polydata->GetPointData()->AddArray(radii);
+    polydata->GetPointData()->AddArray(vel);
+    polydata->GetPointData()->AddArray(dir);
+    polydata->GetPointData()->AddArray(ndir);
+    
+    if (m_system->num_bonds() > 0)
+    {
+      vtkSmartPointer<vtkLine> line =  vtkSmartPointer<vtkLine>::New();
+      vtkSmartPointer<vtkDoubleArray> lens =  vtkSmartPointer<vtkDoubleArray>::New();
+      lens->SetName("Length");
+      lens->SetNumberOfComponents(1);
+      for (int b = 0; b < m_system->num_bonds(); b++)
+      {
+        Bond& bond = m_system->get_bond(b);
+        line->GetPointIds()->SetId(0, bond.i); 
+        line->GetPointIds()->SetId(1, bond.j);
+        lines->InsertNextCell(line);
+        Particle& pi = m_system->get_particle(bond.i);
+        Particle& pj = m_system->get_particle(bond.j);
+        double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
+        m_system->apply_periodic(dx,dy,dz);
+        lens->InsertNextValue(sqrt(dx*dx + dy*dy + dz*dz));
+      }
+      polydata->SetLines(lines);
+      polydata->GetCellData()->AddArray(lens);
+    }
+    
+    if (mesh.size() > 0)
+    {
+      vtkSmartPointer<vtkLine> edge =  vtkSmartPointer<vtkLine>::New();
+      vtkSmartPointer<vtkDoubleArray> lens =  vtkSmartPointer<vtkDoubleArray>::New();
+      lens->SetName("Length");
+      lens->SetNumberOfComponents(1);
+      for (int e = 0; e < mesh.nedges(); e++)
+      {
+        Edge& ee = mesh.get_edges()[e];
+        edge->GetPointIds()->SetId(0, ee.i); 
+        edge->GetPointIds()->SetId(1, ee.j);
+        lines->InsertNextCell(edge);
+        Particle& pi = m_system->get_particle(ee.i);
+        Particle& pj = m_system->get_particle(ee.j);
+        double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
+        m_system->apply_periodic(dx,dy,dz);
+        lens->InsertNextValue(sqrt(dx*dx + dy*dy + dz*dz));
+      }
+      polydata->SetLines(lines);
+      polydata->GetCellData()->AddArray(lens);
+      
+      vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
+      for (int f = 0; f < mesh.nfaces(); f++)
+      {
+        Face& ff = mesh.get_faces()[f];
+        face->GetPointIds()->SetNumberOfIds(ff.n_sides);
+        for (int fi = 0; fi < ff.n_sides; fi++)
+          face->GetPointIds()->SetId(fi, ff.vertices[fi]);
+        faces->InsertNextCell(face);
+      }
+      polydata->SetPolys(faces);
+    }
+  }
+  else
+  {
+    vector<Face>& mesh_faces = mesh.get_faces();
+    vector<Vertex>& vertices = mesh.get_vertices();
+    vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
+    vtkSmartPointer<vtkDoubleArray> areas =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> perims =  vtkSmartPointer<vtkDoubleArray>::New();
+    areas->SetName("Area");
+    areas->SetNumberOfComponents(1);
+    perims->SetName("Perimeter");
+    perims->SetNumberOfComponents(1);
+    
+    for (unsigned int i = 0; i < mesh_faces.size(); i++)
+      points->InsertNextPoint (mesh_faces[i].rc.x, mesh_faces[i].rc.y, mesh_faces[i].rc.z);      
+    polydata->SetPoints(points);
+    
+    for (unsigned int i = 0; i < vertices.size(); i++)
+      if (!vertices[i].boundary)
+      {
+        face->GetPointIds()->SetNumberOfIds(vertices.size());
+        for (unsigned int k = 0; k < vertices[i].faces.size(); k++)
+          face->GetPointIds()->SetId(k, vertices[i].faces[k]);
+        faces->InsertNextCell(face);
+        areas->InsertNextValue(vertices[i].area);
+        perims->InsertNextValue(vertices[i].perim);
+      }
+    polydata->SetPolys(faces);
+    polydata->GetCellData()->AddArray(areas);
+    polydata->GetCellData()->AddArray(perims);
+  }
+  
+  // Write the file
+  vtkSmartPointer<vtkXMLPolyDataWriter> writer =  vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+  writer->SetFileName(file_name.c_str());
+#if VTK_MAJOR_VERSION <= 5
+  writer->SetInput(polydata);
+#else
+  writer->SetInputData(polydata);
+#endif
+  writer->SetDataModeToAscii();
+  writer->Write();
+}
+#endif

@@ -1,0 +1,40 @@
+# * *************************************************************
+# *  
+# *   Soft Active Mater on Surfaces (SAMoS)
+# *   
+# *   Author: Rastko Sknepnek
+# *  
+# *   Division of Physics
+# *   School of Engineering, Physics and Mathematics
+# *   University of Dundee
+# *   
+# *   (c) 2013, 2014
+# * 
+# *   School of Science and Engineering
+# *   School of Life Sciences 
+# *   University of Dundee
+# * 
+# *   (c) 2015
+# * 
+# *   Author: Silke Henkes
+# * 
+# *   Department of Physics 
+# *   Institute for Complex Systems and Mathematical Biology
+# *   University of Aberdeen  
+# * 
+# *   (c) 2014, 2015
+# *  
+# *   This program cannot be used, copied, or modified without
+# *   explicit written permission of the authors.
+# * 
+# * ************************************************************** 
+
+find_package(VTK)
+if(VTK_FOUND)
+  include(${VTK_USE_FILE})
+  add_definitions(-DHAS_VTK)
+  set(VTK_LIBS ${VTK_LIBRARIES})
+else(VTK_FOUND)
+  MESSAGE("No VTK library found. VTP support is not mandatory, but some features will be disabled. VTP output capability will not be compiled into the code.")
+  set(VTK_LIBS "")
+endif(VTK_FOUND)
