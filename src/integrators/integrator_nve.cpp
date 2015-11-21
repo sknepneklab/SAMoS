@@ -141,4 +141,6 @@ void IntegratorNVE::integrate()
         p.omega = SIGN(p.omega)*m_theta_limit/m_dt;
     p.age += m_dt;
   }
+  // Update vertex mesh
+  m_system->update_mesh();
 }

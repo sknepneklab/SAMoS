@@ -38,6 +38,7 @@
 
 #include "mesh.hpp"
 
+
 /*! Checks if an element is in the vector
  *  \param v vector of numbers
  *  \param e element we are looking for

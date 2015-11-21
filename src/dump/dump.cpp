@@ -75,7 +75,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
   m_type_ext["mol2"] = "mol2";
   m_type_ext["contact"] = "con";
   m_type_ext["face"] = "fc";
-  m_type_ext["mesh"] = "mesh";
+  m_type_ext["mesh"] = "off";
   
   string fname = filename;
   
@@ -304,7 +304,7 @@ void Dump::dump(int step)
     this->dump_contact();
   else if (m_type == "face")
     this->dump_faces();
-  else if (m_type == "off")
+  else if (m_type == "mesh")
     this->dump_mesh();
   
   if (m_multi_print)

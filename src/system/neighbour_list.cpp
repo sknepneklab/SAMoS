@@ -42,10 +42,14 @@
 */
 void NeighbourList::build()
 {
- 
+ Mesh& mesh = m_system->get_mesh();
  m_list.clear();
+ 
  if (m_build_contacts)
+ {
+   mesh.reset();
    m_contact_list.clear();
+ }
   
  for (int i = 0; i < m_system->size(); i++)
  {
@@ -286,7 +290,6 @@ void NeighbourList::build_contacts()
 {
   Mesh& mesh = m_system->get_mesh();
   int N = m_system->size();
-  mesh.reset();
   double dist = m_contact_dist;
   for (int i = 0; i < N; i++)
   {
