@@ -112,8 +112,8 @@ bool NeighbourList::build_faces()
     boost::planar_face_traversal(g, &embedding[0], m_faces);
   else
   {
-    m_msg->msg(Messenger::ERROR,"It was not possible to build tesselation build. Most likely you contact dstance is too large creating unphysical contact network.");
-    throw runtime_error("Unable to build tesselation from the contact network.");
+    m_msg->msg(Messenger::ERROR,"It was not possible to build tessellation build. Most likely you contact distance is too large creating unphysical contact network.");
+    throw runtime_error("Unable to build tessellation from the contact network.");
   }
   
   for (int i = 0; i < m_faces.faces.size(); i++)
@@ -138,12 +138,15 @@ void NeighbourList::build_nsq()
   double cut = m_cut+m_pad;
   double cut2 = cut*cut;
   double d2;
+  Mesh& mesh = m_system->get_mesh();
   
   m_old_state.clear();
   
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
+    if (m_build_contacts)
+      mesh.add_vertex(pi);
     for (int j = i + 1; j < N; j++)
     {
       Particle& pj = m_system->get_particle(j);
@@ -191,6 +194,7 @@ void NeighbourList::build_cell()
   double cut = m_cut+m_pad;
   double cut2 = cut*cut;
   double d2;
+  Mesh& mesh = m_system->get_mesh();
   
   m_old_state.clear();
   
@@ -199,6 +203,8 @@ void NeighbourList::build_cell()
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
+    if (m_build_contacts)
+      mesh.add_vertex(pi);
     int cell_idx = m_cell_list->get_cell_idx(pi);
     vector<int>& neigh_cells = m_cell_list->get_cell(cell_idx).get_neighbours();  // per design includes this cell as well
     for (vector<int>::iterator it = neigh_cells.begin(); it != neigh_cells.end(); it++)
@@ -285,7 +291,6 @@ void NeighbourList::build_contacts()
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
-    mesh.add_vertex(pi);
     double ri = pi.get_radius();
     //cout << i << " --> ";
     vector<int>& neigh = this->get_neighbours(i);
