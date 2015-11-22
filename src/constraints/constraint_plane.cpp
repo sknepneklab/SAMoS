@@ -84,6 +84,8 @@ void ConstraintPlane::enforce(Particle& p)
     p.nz = 0.0;
     double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny);
     p.nx *= inv_len;  p.ny *= inv_len;  
+    // Set the particle normal
+    p.Nx = 0.0; p.Ny = 0.0; p.Nz = 1.0;
   }
 }
 

@@ -71,6 +71,8 @@ void ConstraintSphere::enforce(Particle& p)
     // normalize director
     double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny + p.nz*p.nz);
     p.nx *= inv_len;  p.ny *= inv_len;  p.nz *= inv_len;
+    // Set particle normal
+    p.Nx = Nx; p.Ny = Ny; p.Nz = Nz;
   }
 }
 

@@ -78,11 +78,16 @@ struct Vertex
   
   //! Constract from particle position 
   //! \param p particle
-  Vertex(Particle& p) : n_edges(0), n_faces(0)
+  Vertex(Particle& p) 
   {
    id = p.get_id();
    type = p.get_type();
    r = Vector3d(p.x,p.y,p.z);
+   z = 0;
+   n_edges = 0;
+   n_faces = 0;
+   boundary = false;
+   ordered = false;
   }
   
   //! Add neighbour

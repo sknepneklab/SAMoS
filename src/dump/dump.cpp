@@ -770,13 +770,15 @@ void Dump::dump_vtp(int step)
   {
     int N = m_system->size();
     
-    
+    vtkSmartPointer<vtkDoubleArray> ids =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> types =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> radii =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> vel =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> dir =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> ndir =  vtkSmartPointer<vtkDoubleArray>::New();
     
+    ids->SetName("Id");
+    ids->SetNumberOfComponents(1);
     types->SetName("Type");
     types->SetNumberOfComponents(1);
     radii->SetName("Radius");
@@ -795,6 +797,7 @@ void Dump::dump_vtp(int step)
       double n[3] = {pi.nx, pi.ny, pi.nz};
       double nn[3] = {-pi.nx, -pi.ny, -pi.nz};
       points->InsertNextPoint ( pi.x, pi.y, pi.z );
+      ids->InsertNextValue(pi.get_id());
       types->InsertNextValue(pi.get_type());
       radii->InsertNextValue(pi.get_radius());
       vel->InsertNextTuple(v);
@@ -804,6 +807,7 @@ void Dump::dump_vtp(int step)
     
     polydata->SetPoints(points);
     
+    polydata->GetPointData()->AddArray(ids);
     polydata->GetPointData()->AddArray(types);
     polydata->GetPointData()->AddArray(radii);
     polydata->GetPointData()->AddArray(vel);
@@ -836,8 +840,23 @@ void Dump::dump_vtp(int step)
     {
       vtkSmartPointer<vtkLine> edge =  vtkSmartPointer<vtkLine>::New();
       vtkSmartPointer<vtkDoubleArray> lens =  vtkSmartPointer<vtkDoubleArray>::New();
+      vtkSmartPointer<vtkDoubleArray> boundary =  vtkSmartPointer<vtkDoubleArray>::New();
+      vtkSmartPointer<vtkDoubleArray> bedge =  vtkSmartPointer<vtkDoubleArray>::New();
       lens->SetName("Length");
       lens->SetNumberOfComponents(1);
+      boundary->SetName("Boundary");
+      boundary->SetNumberOfComponents(1);
+      bedge->SetName("BoundaryEdge");
+      bedge->SetNumberOfComponents(1);
+      for (int i = 0; i < mesh.size(); i++)
+      {
+        Vertex& vert = mesh.get_vertices()[i];
+        if (vert.boundary)
+          boundary->InsertNextValue(1);
+        else
+          boundary->InsertNextValue(0);
+      }
+      polydata->GetPointData()->AddArray(boundary);
       for (int e = 0; e < mesh.nedges(); e++)
       {
         Edge& ee = mesh.get_edges()[e];
@@ -849,9 +868,14 @@ void Dump::dump_vtp(int step)
         double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
         m_system->apply_periodic(dx,dy,dz);
         lens->InsertNextValue(sqrt(dx*dx + dy*dy + dz*dz));
+        if (ee.boundary)
+          bedge->InsertNextValue(1);
+        else
+          bedge->InsertNextValue(0);
       }
       polydata->SetLines(lines);
       polydata->GetCellData()->AddArray(lens);
+      polydata->GetCellData()->AddArray(bedge);
       
       vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
       for (int f = 0; f < mesh.nfaces(); f++)
@@ -862,7 +886,7 @@ void Dump::dump_vtp(int step)
           face->GetPointIds()->SetId(fi, ff.vertices[fi]);
         faces->InsertNextCell(face);
       }
-      polydata->SetPolys(faces);
+      //polydata->SetPolys(faces);
     }
   }
   else
@@ -882,9 +906,9 @@ void Dump::dump_vtp(int step)
     polydata->SetPoints(points);
     
     for (unsigned int i = 0; i < vertices.size(); i++)
-      if (!vertices[i].boundary)
+      if (!vertices[i].boundary || vertices[i].boundary)
       {
-        face->GetPointIds()->SetNumberOfIds(vertices.size());
+        face->GetPointIds()->SetNumberOfIds(vertices[i].faces.size());
         for (unsigned int k = 0; k < vertices[i].faces.size(); k++)
           face->GetPointIds()->SetId(k, vertices[i].faces[k]);
         faces->InsertNextCell(face);
