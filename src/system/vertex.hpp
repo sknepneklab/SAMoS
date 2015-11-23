@@ -134,5 +134,6 @@ struct Vertex
     
 };
 
+ostream& operator<<(ostream&, const Vertex&);
 
 #endif

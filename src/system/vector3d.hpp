@@ -108,7 +108,7 @@ public:
     return Vector3d(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
   }
   
-  //! Vector lenght 
+  //! Vector length 
   double len() { return std::sqrt(x*x + y*y + z*z); }
   
   //! Rescale vactor

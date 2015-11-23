@@ -83,7 +83,7 @@ struct Face
   bool ordered;                //!< if true, vertices in the face are ordered
   int type;                    //!< Face type. This is help determine parameters for interactions that depend in the dual vertex
   
-  Vector3d rc;           //!< Coordiantes of the face centre
+  Vector3d rc;                 //!< Coordiantes of geometric centre of the face
   
   vector<int> vertices;        //!< Contains all vertices
   vector<int> edges;           //!< contains all edges

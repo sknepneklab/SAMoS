@@ -40,6 +40,7 @@
 
 ostream& operator<<(ostream& out, const Particle& p)
 {
+  out << "-------- PARTICLE ------------" << endl;
   out << format("id : %d\n") % p.get_id()     
   << format("flag : %d\n") % p.get_flag()
   << format("type : %d\n") % p.get_type()
@@ -54,6 +55,7 @@ ostream& operator<<(ostream& out, const Particle& p)
   << format("groups : ");
   for (list<string>::const_iterator it = p.groups.begin(); it != p.groups.end(); it++)
     out << format(" %s ") % (*it);
+  out << "----------------------------";
   out << endl;
   return out;
 }
