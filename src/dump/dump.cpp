@@ -906,7 +906,7 @@ void Dump::dump_vtp(int step)
     polydata->SetPoints(points);
     
     for (unsigned int i = 0; i < vertices.size(); i++)
-      if (!vertices[i].boundary || vertices[i].boundary)
+      if (!vertices[i].boundary)
       {
         face->GetPointIds()->SetNumberOfIds(vertices[i].faces.size());
         for (unsigned int k = 0; k < vertices[i].faces.size(); k++)
