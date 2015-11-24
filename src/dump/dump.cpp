@@ -436,6 +436,8 @@ void Dump::dump_data()
       m_out << " omega ";
     if (m_params.find("image_flags") != m_params.end())
       m_out << " ix  iy  iz ";
+    if (m_params.find("parent") != m_params.end())
+      m_out << " parent ";
     m_out << endl;
   }
   if (m_print_keys)
@@ -461,6 +463,8 @@ void Dump::dump_data()
       m_out << " omega ";
     if (m_params.find("image_flags") != m_params.end())
       m_out << " ix  iy  iz ";
+    if (m_params.find("parent") != m_params.end())
+      m_out << " parent ";
     m_out << endl;
   }
   for (int i = 0; i < N; i++)
@@ -491,6 +495,8 @@ void Dump::dump_data()
       m_out << format("%8.5f ") % p.omega;
     if (m_params.find("image_flags") != m_params.end())
       m_out << format(" %3d  %3d  %3d ") % p.ix % p.iy % p.iz;
+    if (m_params.find("parent") != m_params.end())
+      m_out << format(" %3d ") % p.get_parent();
     m_out << endl;
   }
 }

@@ -76,6 +76,7 @@ void PopulationDensity::divide(int t)
         p_new.x = p.x + m_alpha*m_split_distance*p.get_radius()*p.nx;
         p_new.y = p.y + m_alpha*m_split_distance*p.get_radius()*p.ny;
         p_new.z = p.z + m_alpha*m_split_distance*p.get_radius()*p.nz;
+        p_new.set_parent(p.get_flag());
         m_system->apply_periodic(p_new.x,p_new.y,p_new.z);
         
         p.x -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.nx;
@@ -85,7 +86,7 @@ void PopulationDensity::divide(int t)
         
         p_new.nx = p.nx; p_new.ny = p.ny; p_new.nz = p.nz;
         p_new.vx = p.vx; p_new.vy = p.vy; p_new.vz = p.vz;
-        p.age = 0.0;
+        //p.age = 0.0;
         p_new.age = 0.0;
         for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)
           p_new.groups.push_back(*it_g);

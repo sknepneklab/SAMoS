@@ -264,6 +264,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
             p.iz = lexical_cast<int>(s_line[16]);
           }
         }
+        if (has_keys)
+          if (column_key.find("parent") != column_key.end())   p.set_parent(lexical_cast<int>(s_line[column_key["parent"]]));
         p.set_flag(m_current_particle_flag);
         m_current_particle_flag++;
         m_particles.push_back(p);

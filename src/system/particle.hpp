@@ -79,6 +79,7 @@ public:
     Nx = 0.0; Ny = 0.0; Nz = 0.0;
     age = 0.0;
     m_flag = 0;
+    m_parent = -1;
   }
   
   //! Get particle id
@@ -176,6 +177,13 @@ public:
   //! Get flag parameter
   int get_flag() const { return m_flag; }
   
+  //! Set parent parameter
+  //! \param parent value of the flag 
+  void set_parent(int parent) { m_parent = parent; }
+  
+  //! Get parent parameter
+  int get_parent() const { return m_parent; }
+  
   ///@{
   double x, y, z;              //!< Position in the embedding 3d flat space
   //@}
@@ -208,6 +216,7 @@ private:  // Make these attributes immutable
   
   int m_id;                //!< Unique id
   int m_flag;              //!< This is a unique id which does not change regardless of removal of old and addition of new particles (note: clumsy, needs redesign)
+  int m_parent;            //!< Flag of the parent who gave birth to this particle; -1 if particle was 1st generation 
   int m_type;              //!< Particle type
   double m_r;              //!< Particle radius 
   double m_l;              //!< Length (if particle is actually a rod)
