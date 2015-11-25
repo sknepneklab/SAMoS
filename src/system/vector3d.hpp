@@ -114,6 +114,9 @@ public:
   //! Rescale vactor
   void scale(double s) { x *= s; y *= s;  z *= s;  }
   
+  //! Return rescale vactor
+  Vector3d scaled(double s) { return Vector3d(s*x,s*y,s*z);  }
+  
   //! Make the vector has unit lenght
   void normalize()
   {

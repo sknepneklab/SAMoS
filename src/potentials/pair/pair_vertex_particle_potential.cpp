@@ -59,6 +59,7 @@ void PairVertexParticlePotential::compute(double dt)
   double gamma = m_gamma;
   double lambda = m_lambda;
   double alpha = 1.0;  // phase in factor
+  double pot_eng = 0.0;
   Mesh& mesh = m_system->get_mesh();
   
   if (m_system->compute_per_particle_energy())
@@ -78,74 +79,128 @@ void PairVertexParticlePotential::compute(double dt)
     Vector3d Nvec = Vector3d(pi.Nx, pi.Ny, pi.Nz);
     if (m_phase_in)
       alpha = m_val->get_val(static_cast<int>(pi.age/dt));
-    double pot_eng = 0.0;
-    // We first deal with interion vertices
-    int offset = 0;
-    if (vi.boundary) offset = 1;    // For boundary vertices make sure to get only faces that have two neighbours
-    int Nface = vi.faces.size();
-    for (int f = offset; f < Nface-offset; f++)
+    // First handle the vertex itself
+    if (!vi.boundary)  // For direct intecations treat only non-boundary vertices
     {
-      Face& f_nu_m = mesh.get_faces()[vi.faces[prev(f,Nface)]];
-      Face& f_nu   = mesh.get_faces()[vi.faces[f]];
-      Face& f_nu_p = mesh.get_faces()[vi.faces[next(f,Nface)]];
-      Vector3d& r_nu_m = f_nu_m.rc; 
-      Vector3d& r_nu   = f_nu.rc; 
-      Vector3d& r_nu_p = f_nu_p.rc; 
-      double area_sum = 0.0;
-      double perim_sum = 0.0;
-      for (int k = 0; k < f_nu.vertices.size(); k++)
+      if (m_has_part_params) 
       {
-        Vertex& vk = mesh.get_vertices()[f_nu.vertices[k]];
-        if (!vk.boundary)
+        K  = m_particle_params[vi.type-1].K;
+        A0 = m_particle_params[vi.type-1].A0;
+        gamma = m_particle_params[vi.type-1].gamma;
+      }
+      double dA = (vi.area - A0);
+      double area_term = K*dA;
+      double perim_term = gamma*vi.perim;
+      pot_eng = 0.5*(K*dA*dA+gamma*vi.perim*vi.perim);
+      Vector3d area_vec(0.0,0.0,0.0);
+      Vector3d perim_vec(0.0,0.0,0.0);
+      Vector3d con_vec(0.0,0.0,0.0);
+      int Nface = vi.faces.size();
+      for (int f = 0; f < Nface; f++)
+      {
+        Face& f_nu_m = mesh.get_faces()[vi.faces[prev(f,Nface)]];
+        Face& f_nu   = mesh.get_faces()[vi.faces[f]];
+        Face& f_nu_p = mesh.get_faces()[vi.faces[next(f,Nface)]];
+        Vector3d& r_nu_m = f_nu_m.rc; 
+        Vector3d& r_nu   = f_nu.rc; 
+        Vector3d& r_nu_p = f_nu_p.rc; 
+        area_vec = area_vec + cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
+        perim_vec = perim_vec + ((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit()).scaled(1.0/f_nu.n_sides);
+        if (m_has_pair_params)
         {
-          if (m_has_part_params) 
-          {
-            K  = m_particle_params[vk.type-1].K;
-            A0 = m_particle_params[vk.type-1].A0;
-            gamma = m_particle_params[vk.type-1].gamma;
-          }
-          area_sum += K*(vk.area - A0);
-          perim_sum += gamma*vk.perim;
-          pot_eng += 0.5*(K*(vk.area - A0)*(vk.area - A0)+gamma*vk.perim*vk.perim);
+          int edge_id = mesh.get_edge_face()[make_pair(f_nu.id,f_nu_m.id)];
+          int type_2 = mesh.get_vertices()[mesh.get_edges()[edge_id].other_vert(i)].type;
+          lambda = m_pair_params[vi.type - 1][type_2 - 1].lambda;
         }
+        con_vec = con_vec + lambda*(r_nu - r_nu_m).unit().scaled(1.0/f_nu.n_sides);
+        if (m_has_pair_params)
+        {
+          int edge_id = mesh.get_edge_face()[make_pair(f_nu_p.id,f_nu.id)];
+          int type_2 = mesh.get_vertices()[mesh.get_edges()[edge_id].other_vert(i)].type;
+          lambda = m_pair_params[vi.type - 1][type_2 - 1].lambda;
+        }
+        con_vec = con_vec - lambda*(r_nu_p - r_nu).unit().scaled(1.0/f_nu.n_sides);
+        pot_eng += lambda*(r_nu - r_nu_m).len();
       }
-      // Area term
-      Vector3d area_vec = cross(r_nu_p - r_nu_m, Nvec);
-      double area_fact = 0.5*alpha*area_sum/f_nu.n_sides;
-      pi.fx -= area_fact*area_vec.x;
-      pi.fy -= area_fact*area_vec.y;
-      pi.fz -= area_fact*area_vec.z;
-      // Perimeter term
-      Vector3d r1 = (r_nu - r_nu_m).unit(), r2 = (r_nu_p - r_nu).unit();
-      Vector3d perim_vec = r1-r2;
-      double perim_fact = alpha*perim_sum/f_nu.n_sides;
-      pi.fx -= perim_fact*perim_vec.x;
-      pi.fy -= perim_fact*perim_vec.y;
-      pi.fz -= perim_fact*perim_vec.z;
-      // contact interaction
-      if (m_has_pair_params)
+      // area term
+      double area_fact = -alpha*area_term;
+      pi.fx += area_fact*area_vec.x;
+      pi.fy += area_fact*area_vec.y;
+      pi.fz += area_fact*area_vec.z;
+      // perimeter term
+      double perim_fact = -alpha*perim_term;
+      pi.fx += perim_fact*perim_vec.x;
+      pi.fy += perim_fact*perim_vec.y;
+      pi.fz += perim_fact*perim_vec.z;
+      // Add contractile term
+      pi.fx -= alpha*con_vec.x;
+      pi.fy -= alpha*con_vec.y;
+      pi.fz -= alpha*con_vec.z;
+    }
+    // Now check neighbours
+    for (int j = 0; j < vi.n_edges; j++)
+    {
+      Particle& pj = m_system->get_particle(vi.neigh[j]);
+      Vertex& vj = mesh.get_vertices()[vi.neigh[j]];
+      if (!vj.boundary)  // For direct intecations treat only non-boundary vertices
       {
-        int e = mesh.get_edge_face()[make_pair(f_nu.id,f_nu_m.id)];
-        int type_1 = vi.type;
-        int type_2 = mesh.get_vertices()[mesh.get_edges()[e].other_vert(i)].type;
-        lambda = m_pair_params[type_1-1][type_2-1].lambda;
+        if (m_has_part_params) 
+        {
+          K  = m_particle_params[vi.type-1].K;
+          A0 = m_particle_params[vi.type-1].A0;
+          gamma = m_particle_params[vi.type-1].gamma;
+        }
+        double dA = (vj.area - A0);
+        double area_term = K*dA;
+        double perim_term = gamma*vj.perim;
+        Vector3d area_vec(0.0,0.0,0.0);
+        Vector3d perim_vec(0.0,0.0,0.0);
+        Vector3d con_vec(0.0,0.0,0.0);
+        int Nface = vj.faces.size();
+        Vector3d Nvec = Vector3d(pj.Nx, pj.Ny, pj.Nz);
+        for (int f = 0; f < Nface; f++)
+        {
+          Face& f_nu   = mesh.get_faces()[vj.faces[f]];
+          if (f_nu.has_vertex(i))
+          {
+            Face& f_nu_m = mesh.get_faces()[vj.faces[prev(f,Nface)]];
+            Face& f_nu_p = mesh.get_faces()[vj.faces[next(f,Nface)]];
+            Vector3d& r_nu_m = f_nu_m.rc; 
+            Vector3d& r_nu   = f_nu.rc; 
+            Vector3d& r_nu_p = f_nu_p.rc; 
+            area_vec = area_vec + cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
+            perim_vec = perim_vec + ((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit()).scaled(1.0/f_nu.n_sides);
+            if (m_has_pair_params)
+            {
+              int edge_id = mesh.get_edge_face()[make_pair(f_nu.id,f_nu_m.id)];
+              int type_2 = mesh.get_vertices()[mesh.get_edges()[edge_id].other_vert(vj.id)].type;
+              lambda = m_pair_params[vj.type - 1][type_2 - 1].lambda;
+            }
+            con_vec = con_vec + lambda*(r_nu - r_nu_m).unit().scaled(1.0/f_nu.n_sides);
+            if (m_has_pair_params)
+            {
+              int edge_id = mesh.get_edge_face()[make_pair(f_nu_p.id,f_nu.id)];
+              int type_2 = mesh.get_vertices()[mesh.get_edges()[edge_id].other_vert(vj.id)].type;
+              lambda = m_pair_params[vj.type - 1][type_2 - 1].lambda;
+            }
+            con_vec = con_vec - lambda*(r_nu_p - r_nu).unit().scaled(1.0/f_nu.n_sides);
+          }
+        }
+        // area term
+        double area_fact = -alpha*area_term;
+        pi.fx += area_fact*area_vec.x;
+        pi.fy += area_fact*area_vec.y;
+        pi.fz += area_fact*area_vec.z;
+        // perimeter term
+        double perim_fact = -alpha*perim_term;
+        pi.fx += perim_fact*perim_vec.x;
+        pi.fy += perim_fact*perim_vec.y;
+        pi.fz += perim_fact*perim_vec.z;
+        // Add contractile term
+        pi.fx -= alpha*con_vec.x;
+        pi.fy -= alpha*con_vec.y;
+        pi.fz -= alpha*con_vec.z;
       }
-      double con_fact = alpha*lambda/f_nu.n_sides;
-      pot_eng += lambda*(r_nu - r_nu_m).len();
-      pi.fx -= con_fact*r1.x;  
-      pi.fy -= con_fact*r1.y;  
-      pi.fz -= con_fact*r1.z;
-      if (m_has_pair_params)
-      {
-        int e = mesh.get_edge_face()[make_pair(f_nu_p.id,f_nu.id)];
-        int type_1 = vi.type;
-        int type_2 = mesh.get_vertices()[mesh.get_edges()[e].other_vert(i)].type;
-        lambda = m_pair_params[type_1-1][type_2-1].lambda;
-      }
-      con_fact = alpha*lambda/f_nu.n_sides;
-      pi.fx += con_fact*r2.x;  
-      pi.fy += con_fact*r2.y;  
-      pi.fz += con_fact*r2.z;
     }
     // potential energy
     if (!vi.boundary)
@@ -156,7 +211,6 @@ void PairVertexParticlePotential::compute(double dt)
         A0 = m_particle_params[vi.type-1].A0;
         gamma = m_particle_params[vi.type-1].gamma;
       }
-      pot_eng += 0.5*(K*(vi.area - A0)*(vi.area - A0)+gamma*vi.perim*vi.perim);
     }
     if (m_system->compute_per_particle_energy())
       pi.add_pot_energy("vp",pot_eng);

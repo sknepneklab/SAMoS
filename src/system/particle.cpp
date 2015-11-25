@@ -55,6 +55,7 @@ ostream& operator<<(ostream& out, const Particle& p)
   << format("groups : ");
   for (list<string>::const_iterator it = p.groups.begin(); it != p.groups.end(); it++)
     out << format(" %s ") % (*it);
+  out << endl;
   out << "----------------------------";
   out << endl;
   return out;

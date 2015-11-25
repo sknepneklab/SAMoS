@@ -101,7 +101,7 @@ public:
     else
     {
       m_msg->msg(Messenger::INFO,"Global perimeter stiffness (gamma) for vertex-particle pair potential is set to "+param["gamma"]+".");
-      m_gamma = lexical_cast<double>(param["K"]);
+      m_gamma = lexical_cast<double>(param["gamma"]);
     }
     m_msg->write_config("potential.pair.vertex_particle.gamma",lexical_cast<string>(m_gamma));
     if (param.find("lambda") == param.end())

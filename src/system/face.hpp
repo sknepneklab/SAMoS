@@ -42,6 +42,7 @@
 
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #include <boost/format.hpp>
 
@@ -51,6 +52,7 @@ using boost::format;
 using std::string;
 using std::vector;
 using std::endl;
+using std::find;
 
 /*! Face class keeps track of the face information in the mesh
  *
@@ -74,6 +76,13 @@ struct Face
   void add_edge(int e)
   {
     edges.push_back(e);
+  }
+  
+  //! Check if vertex belongs to the face
+  //! \param v vertex id
+  bool has_vertex(int v)
+  {
+    return (find(vertices.begin(), vertices.end(), v) != vertices.end());
   }
   
   

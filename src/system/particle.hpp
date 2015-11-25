@@ -76,7 +76,7 @@ public:
   { 
     fx = 0.0; fy = 0.0; fz = 0.0; 
     tau_x = 0.0; tau_y = 0.0; tau_z = 0.0;
-    Nx = 0.0; Ny = 0.0; Nz = 0.0;
+    Nx = 0.0; Ny = 0.0; Nz = 1.0;
     age = 0.0;
     m_flag = 0;
     m_parent = -1;
