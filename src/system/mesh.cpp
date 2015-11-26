@@ -92,10 +92,14 @@ void Mesh::add_edge(int ei, int ej)
 */
 void Mesh::add_face(vector<int>& lv)
 {
-  m_faces.push_back(Face(m_nface));
+  Face face = Face(m_nface);
+  bool can_add = true;
   int N = lv.size();
   for (int i = 0; i < N; i++)
-    m_faces[m_nface].add_vertex(lv[i]);
+  {
+    face.add_vertex(lv[i]);
+    if (lv[i] == -1) can_add = false;
+  }
   for (int i = 0; i < N; i++)
   {
     m_vertices[lv[i]].faces.push_back(m_nface);
@@ -105,11 +109,13 @@ void Mesh::add_face(vector<int>& lv)
       if (m_edge_map.find(vp) != m_edge_map.end())
       {
         int e = m_edge_map[vp];
-        m_faces[m_nface].add_edge(e);
+        face.add_edge(e);
         if (m_edges[e].f1 == NO_FACE) 
           m_edges[e].f1 = m_nface;
         else if (m_edges[e].f2 != NO_FACE && m_edges[e].f2 != m_nface)
         {
+          can_add = false;
+          /*
           cerr << m_vertices[lv[i]] << endl;
           for (int k = 0; k < m_vertices[lv[i]].n_edges; k++)
           {
@@ -118,14 +124,19 @@ void Mesh::add_face(vector<int>& lv)
             cerr << m_faces[m_edges[m_vertices[lv[i]].edges[k]].f2];
           }
           throw runtime_error("Edge already has two faces. Mesh is most likely not consistent.");
+          */
         }
         else 
           m_edges[e].f2 = m_nface;
       }
     }
   }
-  this->compute_centre(m_nface);
-  m_nface++;
+  if (can_add)
+  {
+    m_faces.push_back(face);
+    this->compute_centre(m_nface);
+    m_nface++;
+  }
 }
 
 /*! Once the mesh is read in, we need to set things like
