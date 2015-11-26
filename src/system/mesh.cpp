@@ -38,6 +38,10 @@
 
 #include "mesh.hpp"
 
+#include <iostream>
+
+using std::cerr;
+using std::endl;
 
 /*! Checks if an element is in the vector
  *  \param v vector of numbers
@@ -102,8 +106,21 @@ void Mesh::add_face(vector<int>& lv)
       {
         int e = m_edge_map[vp];
         m_faces[m_nface].add_edge(e);
-        if (m_edges[e].f1 == NO_FACE) m_edges[e].f1 = m_nface;
-        else m_edges[e].f2 = m_nface;
+        if (m_edges[e].f1 == NO_FACE) 
+          m_edges[e].f1 = m_nface;
+        else if (m_edges[e].f2 != NO_FACE && m_edges[e].f2 != m_nface)
+        {
+          cerr << m_vertices[lv[i]] << endl;
+          for (int k = 0; k < m_vertices[lv[i]].n_edges; k++)
+          {
+            cerr << m_edges[m_vertices[lv[i]].edges[k]];
+            cerr << m_faces[m_edges[m_vertices[lv[i]].edges[k]].f1];
+            cerr << m_faces[m_edges[m_vertices[lv[i]].edges[k]].f2];
+          }
+          throw runtime_error("Edge already has two faces. Mesh is most likely not consistent.");
+        }
+        else 
+          m_edges[e].f2 = m_nface;
       }
     }
   }
@@ -126,7 +143,7 @@ void Mesh::postprocess()
   for (int i = 0; i < m_nedge; i++)
     if (m_edges[i].f1 == NO_FACE || m_edges[i].f2 == NO_FACE) m_edges[i].boundary = true;
   for (int i = 0; i < m_size; i++)
-    for (int j = 0; j < m_vertices[i].edges.size(); j++)
+    for (int j = 0; j < m_vertices[i].n_edges; j++)
       if (m_edges[m_vertices[i].edges[j]].boundary)  
       { 
         m_vertices[i].boundary = true;   // vertex is a boundary vertex if at least one of its edges is boundary edge
@@ -135,7 +152,7 @@ void Mesh::postprocess()
    for (int i = 0; i < m_nface; i++)
    {
       m_faces[i].edge_face = true;
-      for (int j = 0; j < m_faces[i].edges.size(); j++)
+      for (int j = 0; j < m_faces[i].n_sides; j++)
         m_faces[i].edge_face = (m_faces[i].edge_face && m_edges[m_faces[i].edges[j]].boundary);
    }
    for (int i = 0; i < m_nedge; i++)
@@ -176,6 +193,7 @@ void Mesh::compute_centre(int f)
  */
 void Mesh::order_face(int f)
 {
+  //cout << "Ordering face : " << f << endl;
   int N = m_faces[f].vertices.size();
   // If the face is a triangle, vertices are ordered by default
   if (N == 3) 
@@ -210,6 +228,7 @@ void Mesh::order_face(int f)
 */
 void Mesh::order_star(int v)
 {
+  //cout << "Ordering star for vertex : " << v << endl;
   Vertex& V = m_vertices[v];
   int N = V.neigh.size();
   int e = V.edges[0];

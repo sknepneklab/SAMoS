@@ -39,7 +39,7 @@
 #ifndef __FACE_HPP__
 #define __FACE_HPP__
 
-
+#include <iostream>
 #include <vector>
 #include <string>
 #include <algorithm>
@@ -49,6 +49,7 @@
 #include "vector3d.hpp"
 
 using boost::format;
+using std::ostream;
 using std::string;
 using std::vector;
 using std::endl;
@@ -98,5 +99,7 @@ struct Face
   vector<int> edges;           //!< contains all edges
     
 };
+
+ostream& operator<<(ostream&, const Face&);
 
 #endif

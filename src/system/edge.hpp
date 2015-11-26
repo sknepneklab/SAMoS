@@ -41,7 +41,12 @@
 
 const int NO_FACE = -1;   // value indicting that one of the faces is not set
 
+#include <iostream>
+#include <boost/format.hpp>
+
+using std::ostream;
 using std::endl;
+using boost::format;
 
 /*! Edge class keeps track of the edge information in the mesh
  *
@@ -89,5 +94,7 @@ struct Edge
   bool boundary;               //!< If true, this is a boundary edge
     
 };
+
+ostream& operator<<(ostream&, const Edge&);
 
 #endif

@@ -30,35 +30,24 @@
  * ************************************************************* */
 
 /*!
- * \file vertex.cpp
+ * \file edge.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 23-Nov-2015
- * \brief Auxiliary functions for Vertex class
+ * \date 26-Nov-2015
+ * \brief Auxiliary functions for Edge class
  */ 
 
-#include "vertex.hpp"
+#include "edge.hpp"
 
-ostream& operator<<(ostream& out, const Vertex& v)
+ostream& operator<<(ostream& out, const Edge& e)
 {
-  out << " ---------- VERTEX ------------------ " << endl;
-  out << format("id : %d\n") % v.id
-  << format("type : %d\n") % v.type
-  << format("(x,y,z) : (%15.9e,%15.9e,%15.9e)\n") % v.r.x % v.r.y % v.r.z
-  << format("area : %15.9e\n") % v.area
-  << format("perimeter : %15.9e\n") % v.perim
-  << format("coordination : %d\n") % v.n_edges;
-  out << "neighbours : ";
-  for (int i = 0; i < v.n_edges; i++)
-    out << v.neigh[i] << " ";
-  out << endl << "edges : ";
-  for (int i = 0; i < v.n_edges; i++)
-    out << v.edges[i] << " ";
-  out << endl << "faces : ";
-  for (int i = 0; i < v.n_faces; i++)
-    out << v.faces[i] << " ";
-  out << endl;
-  if (v.boundary)
-    out << "boundary vertex" << endl;
+  out << " ---------- EDGE ------------------ " << endl;
+  out << format("id : %d\n") % e.id
+  << format("i : %d\n") % e.i
+  << format("j : %d\n") % e.j
+  << format("f1 : %d\n") % e.f1
+  << format("f2 : %d\n") % e.f2;
+  if (e.boundary)
+    out << "boundary edge" << endl;
   out << " ------------------------------------";
   out << endl;
   return out;

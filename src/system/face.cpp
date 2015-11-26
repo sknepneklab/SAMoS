@@ -30,35 +30,27 @@
  * ************************************************************* */
 
 /*!
- * \file vertex.cpp
+ * \file face.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 23-Nov-2015
- * \brief Auxiliary functions for Vertex class
+ * \date 26-Nov-2015
+ * \brief Auxiliary functions for Face class
  */ 
 
-#include "vertex.hpp"
+#include "face.hpp"
 
-ostream& operator<<(ostream& out, const Vertex& v)
+ostream& operator<<(ostream& out, const Face& f)
 {
-  out << " ---------- VERTEX ------------------ " << endl;
-  out << format("id : %d\n") % v.id
-  << format("type : %d\n") % v.type
-  << format("(x,y,z) : (%15.9e,%15.9e,%15.9e)\n") % v.r.x % v.r.y % v.r.z
-  << format("area : %15.9e\n") % v.area
-  << format("perimeter : %15.9e\n") % v.perim
-  << format("coordination : %d\n") % v.n_edges;
-  out << "neighbours : ";
-  for (int i = 0; i < v.n_edges; i++)
-    out << v.neigh[i] << " ";
+  out << " ---------- FACE ------------------ " << endl;
+  out << format("id : %d\n") % f.id
+  << format("type : %d\n") % f.type
+  << format("number of edges : %d\n") % f.n_sides;
+  out << "vertices : ";
+  for (int i = 0; i < f.n_sides; i++)
+    out << f.vertices[i] << " ";
   out << endl << "edges : ";
-  for (int i = 0; i < v.n_edges; i++)
-    out << v.edges[i] << " ";
-  out << endl << "faces : ";
-  for (int i = 0; i < v.n_faces; i++)
-    out << v.faces[i] << " ";
+  for (int i = 0; i < f.n_sides; i++)
+    out << f.edges[i] << " ";
   out << endl;
-  if (v.boundary)
-    out << "boundary vertex" << endl;
   out << " ------------------------------------";
   out << endl;
   return out;
