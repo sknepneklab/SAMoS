@@ -120,12 +120,15 @@ bool NeighbourList::build_faces()
     throw runtime_error("Unable to build tessellation from the contact network.");
   }
   
-  for (int i = 0; i < m_faces.faces.size(); i++)
+  for (unsigned int i = 0; i < m_faces.faces.size(); i++)
     if (m_faces.faces[i].size() <= MAX_FACE)
       mesh.add_face(m_faces.faces[i]);
 
   mesh.postprocess();
+  //cout << "Done postprocess." << endl;
   m_system->update_mesh();
+  
+  //cout << "Done building faces." << endl;
   
   return true;
    
@@ -307,11 +310,88 @@ void NeighbourList::build_contacts()
       double r_sq = dx*dx + dy*dy + dz*dz;
       if (r_sq <= dist*dist)
       {
-        m_contact_list[i].push_back(pj.get_id());
-        mesh.add_edge(i,pj.get_id());
-        //cout << pj.get_id() << " ";
+        if (!(this->contact_intersects(i,pj.get_id())))
+        {
+          m_contact_list[i].push_back(pj.get_id());
+          mesh.add_edge(i,pj.get_id());
+          //cout << "Added contact : " << i << " " << pj.get_id() << endl;
+        }
+        else
+        {
+          cout << "Rejecting edge due to intersections. " << endl;
+        }
       }
     }
     //cout << endl;
   }
+}
+
+//! Check if two edges intersect
+//! \param i index of fist particle
+//! \param j index of second particle
+bool NeighbourList::contact_intersects(int i, int j)
+{
+  Particle& v1_i = m_system->get_particle(i);
+  Vector3d p(v1_i.x, v1_i.y, v1_i.z);
+  Particle& v1_j = m_system->get_particle(j);
+  Vector3d s(v1_j.x-v1_i.x, v1_j.y-v1_i.y, v1_j.z-v1_i.z);
+  
+  
+  //! Check all contacts of neighbours of particle i
+  vector<int>& neigh_i = this->get_neighbours(i);
+  for (unsigned int n = 0; n < neigh_i.size(); n++)
+  {
+    if (!(i == neigh_i[n] || j == neigh_i[n]))
+    {
+      Particle& v2_i = m_system->get_particle(neigh_i[n]);
+      Vector3d q(v2_i.x, v2_i.y, v2_i.z);
+      Vector3d q_m_p = q - p;
+      for (unsigned int k = 0; k < m_contact_list[neigh_i[n]].size(); k++)
+      {
+        if (!(i == m_contact_list[neigh_i[n]][k] || j == m_contact_list[neigh_i[n]][k]))
+        {
+          Particle& v2_j = m_system->get_particle(m_contact_list[neigh_i[n]][k]);
+          Vector3d r(v2_j.x-v2_i.x, v2_j.y-v2_i.y, v2_j.z-v2_i.z);
+          double r_cross_s = cross(r,s).len();
+          if (r_cross_s != 0)
+          {
+            double t = cross(q_m_p,s).len()/r_cross_s;
+            double u = cross(q_m_p,r).len()/r_cross_s;
+            if ((t >= 0.0 && t <= 1.0) && (u >= 0.0 && u <= 1.0))
+              return true;
+          }
+        }
+      }
+    }
+  }
+  
+  //! Check all contacts of neighbours of particle i
+  vector<int>& neigh_j = this->get_neighbours(j);
+  for (unsigned int n = 0; n < neigh_j.size(); n++)
+  {
+    if (!(i == neigh_j[n] || j == neigh_j[n]))
+    {
+      Particle& v2_i = m_system->get_particle(neigh_j[n]);
+      Vector3d q(v2_i.x, v2_i.y, v2_i.z);
+      Vector3d q_m_p = q - p;
+      for (unsigned int k = 0; k < m_contact_list[neigh_j[n]].size(); k++)
+      {
+        if (!(i == m_contact_list[neigh_j[n]][k] || j == m_contact_list[neigh_j[n]][k]))
+        {
+          Particle& v2_j = m_system->get_particle(m_contact_list[neigh_j[n]][k]);
+          Vector3d r(v2_j.x-v2_i.x, v2_j.y-v2_i.y, v2_j.z-v2_i.z);
+          double r_cross_s = cross(r,s).len();
+          if (r_cross_s != 0)
+          {
+            double t = cross(q_m_p,s).len()/r_cross_s;
+            double u = cross(q_m_p,r).len()/r_cross_s;
+            if ((t >= 0.0 && t <= 1.0) && (u >= 0.0 && u <= 1.0))
+              return true;
+          }
+        }
+      }
+    }
+  }
+
+  return false;
 }

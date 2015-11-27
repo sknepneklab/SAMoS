@@ -156,8 +156,7 @@ public:
   
   //! Dual perimeter
   double dual_perimeter(int);
-  
-
+    
 private:  
   
   int m_size;    //!< Mesh size

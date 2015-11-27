@@ -52,3 +52,4 @@ ostream& operator<<(ostream& out, const Edge& e)
   out << endl;
   return out;
 }
+

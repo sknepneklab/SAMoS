@@ -41,7 +41,10 @@
 #include <iostream>
 
 using std::cerr;
+using std::cout;
 using std::endl;
+using std::unique;
+using std::sort;
 
 /*! Checks if an element is in the vector
  *  \param v vector of numbers
@@ -95,48 +98,57 @@ void Mesh::add_face(vector<int>& lv)
   Face face = Face(m_nface);
   bool can_add = true;
   int N = lv.size();
+  sort(lv.begin(),lv.end());
+  if (unique(lv.begin(),lv.end()) != lv.end()) can_add = false;
   for (int i = 0; i < N; i++)
   {
-    face.add_vertex(lv[i]);
-    if (lv[i] == -1) can_add = false;
-  }
-  for (int i = 0; i < N; i++)
-  {
-    m_vertices[lv[i]].faces.push_back(m_nface);
     for (int j = i + 1; j < N; j++)
     {
       VertexPair vp = make_pair(lv[i],lv[j]);
       if (m_edge_map.find(vp) != m_edge_map.end())
       {
         int e = m_edge_map[vp];
-        face.add_edge(e);
-        if (m_edges[e].f1 == NO_FACE) 
-          m_edges[e].f1 = m_nface;
-        else if (m_edges[e].f2 != NO_FACE && m_edges[e].f2 != m_nface)
+        if ((m_edges[e].f1 != NO_FACE) && (m_edges[e].f2 != NO_FACE))
         {
           can_add = false;
-          /*
-          cerr << m_vertices[lv[i]] << endl;
-          for (int k = 0; k < m_vertices[lv[i]].n_edges; k++)
-          {
-            cerr << m_edges[m_vertices[lv[i]].edges[k]];
-            cerr << m_faces[m_edges[m_vertices[lv[i]].edges[k]].f1];
-            cerr << m_faces[m_edges[m_vertices[lv[i]].edges[k]].f2];
-          }
-          throw runtime_error("Edge already has two faces. Mesh is most likely not consistent.");
-          */
+          break;
         }
-        else 
-          m_edges[e].f2 = m_nface;
       }
     }
+    if (!can_add) break;
   }
   if (can_add)
   {
+    for (int i = 0; i < N; i++)
+       face.add_vertex(lv[i]);
+    for (int i = 0; i < N; i++)
+    {
+      m_vertices[lv[i]].add_face(m_nface);
+      for (int j = i + 1; j < N; j++)
+      {
+        VertexPair vp = make_pair(lv[i],lv[j]);
+        if (m_edge_map.find(vp) != m_edge_map.end())
+        {
+          int e = m_edge_map[vp];
+          face.add_edge(e);
+          if (m_edges[e].f1 == NO_FACE)      m_edges[e].f1 = m_nface;
+          else if (m_edges[e].f2 == NO_FACE) m_edges[e].f2 = m_nface;
+          else
+          {
+            cout << "Oops! " << e << " " << m_edges[e].f1 << " " << m_edges[e].f2 << endl;
+            for (unsigned int k = 0; k < lv.size(); k++)
+              cout << lv[k] << " ";
+            cout << endl;
+          }
+        }
+      }
+    }
     m_faces.push_back(face);
     this->compute_centre(m_nface);
     m_nface++;
   }
+  else
+    cout << "Rejecting face : " << m_nface << endl;
 }
 
 /*! Once the mesh is read in, we need to set things like
@@ -154,28 +166,31 @@ void Mesh::postprocess()
   for (int i = 0; i < m_nedge; i++)
     if (m_edges[i].f1 == NO_FACE || m_edges[i].f2 == NO_FACE) m_edges[i].boundary = true;
   for (int i = 0; i < m_size; i++)
+  {
+    if (m_vertices[i].n_edges < 3) m_vertices[i].boundary = true;
     for (int j = 0; j < m_vertices[i].n_edges; j++)
       if (m_edges[m_vertices[i].edges[j]].boundary)  
       { 
         m_vertices[i].boundary = true;   // vertex is a boundary vertex if at least one of its edges is boundary edge
         break;
       }
-   for (int i = 0; i < m_nface; i++)
-   {
-      m_faces[i].edge_face = true;
-      for (int j = 0; j < m_faces[i].n_sides; j++)
-        m_faces[i].edge_face = (m_faces[i].edge_face && m_edges[m_faces[i].edges[j]].boundary);
-   }
-   for (int i = 0; i < m_nedge; i++)
-     if (!m_edges[i].boundary)
-     {
-       m_edge_face[make_pair(m_edges[i].f1,m_edges[i].f2)] = i;
-       m_edge_face[make_pair(m_edges[i].f2,m_edges[i].f1)] = i;
-     }
-   for (int i = 0; i < m_size; i++)
-     this->order_star(i);
-   for (int i = 0; i < m_nface; i++)
-     this->order_face(i);
+  }
+  for (int i = 0; i < m_nface; i++)
+  {
+    m_faces[i].edge_face = true;
+    for (int j = 0; j < m_faces[i].n_sides; j++)
+      m_faces[i].edge_face = (m_faces[i].edge_face && m_edges[m_faces[i].edges[j]].boundary);
+  }
+  for (int i = 0; i < m_nedge; i++)
+    if (!m_edges[i].boundary)
+    {
+      m_edge_face[make_pair(m_edges[i].f1,m_edges[i].f2)] = i;
+      m_edge_face[make_pair(m_edges[i].f2,m_edges[i].f1)] = i;
+    }
+  for (int i = 0; i < m_size; i++)
+    this->order_star(i);
+  for (int i = 0; i < m_nface; i++)
+    this->order_face(i);
 }
 
 /*! Computes geometric centre of a face. Coordinates are stored in 
@@ -204,8 +219,7 @@ void Mesh::compute_centre(int f)
  */
 void Mesh::order_face(int f)
 {
-  //cout << "Ordering face : " << f << endl;
-  int N = m_faces[f].vertices.size();
+  unsigned int N = m_faces[f].vertices.size();
   // If the face is a triangle, vertices are ordered by default
   if (N == 3) 
     m_faces[f].ordered = true;
@@ -216,7 +230,7 @@ void Mesh::order_face(int f)
     while (new_vert.size() < N)
     {
       int cv = new_vert[new_vert.size()-1];
-      for (int i = 0; i < N; i++)
+      for (unsigned int i = 0; i < N; i++)
       {
         int n = m_faces[f].vertices[i];
         VertexPair vp = make_pair(cv,n);
@@ -239,7 +253,6 @@ void Mesh::order_face(int f)
 */
 void Mesh::order_star(int v)
 {
-  //cout << "Ordering star for vertex : " << v << endl;
   Vertex& V = m_vertices[v];
   int N = V.neigh.size();
   int e = V.edges[0];
@@ -271,9 +284,9 @@ void Mesh::order_star(int v)
       }
     }
   }
-  copy(new_e.begin(), new_e.end(),V.edges.begin());
-  copy(new_n.begin(), new_n.end(),V.neigh.begin());
-  copy(new_f.begin(), new_f.end(),V.faces.begin());
+  if (V.edges.size() > 0) copy(new_e.begin(), new_e.end(),V.edges.begin());
+  if (V.neigh.size() > 0) copy(new_n.begin(), new_n.end(),V.neigh.begin());
+  if (V.faces.size() > 0) copy(new_f.begin(), new_f.end(),V.faces.begin());
   V.ordered = true;
 }
 
@@ -291,6 +304,7 @@ double Mesh::dual_area(int v, Vector3d& n)
   if (!m_vertices[v].ordered)
     throw runtime_error("Faces need to be ordered before dual area can be computed.");
   Vertex& V = m_vertices[v];
+  if (V.boundary) return 0.0;
   V.area = 0.0;
   int N = V.faces.size();
   Vector3d nn = n.unit();
@@ -329,6 +343,7 @@ double Mesh::dual_perimeter(int v)
   if (!m_vertices[v].ordered)
     throw runtime_error("Faces need to be ordered before dual premeter can be computed.");
   Vertex& V = m_vertices[v];
+  if (V.boundary) return 0.0;
   V.perim  = 0.0;
   int N = V.faces.size();
   for (int i = 0; i < N-1; i++)
@@ -343,4 +358,5 @@ double Mesh::dual_perimeter(int v)
   V.perim += (r1-r2).len();
   return V.perim;
 }
+
 

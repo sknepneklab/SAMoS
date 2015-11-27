@@ -247,6 +247,9 @@ private:
   
   // Does contact list build
   void build_contacts();
+  
+  // Checks if the contact is intersecting with other contacts
+  bool contact_intersects(int, int);
     
 };
 
