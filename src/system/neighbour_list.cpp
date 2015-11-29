@@ -420,6 +420,8 @@ bool NeighbourList::build_triangulation()
   Mesh& mesh = m_system->get_mesh();
   int N = m_system->size();
   
+  mesh.reset();
+  
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
@@ -429,6 +431,7 @@ bool NeighbourList::build_triangulation()
       throw runtime_error("Unable to build Delaunay triangulation for non-planar systems.");
     }
     points.push_back( std::make_pair( Point(pi.x,pi.y), pi.get_id() ) );
+    mesh.add_vertex(pi);
   }
 
   Delaunay triangulation;
@@ -456,7 +459,9 @@ bool NeighbourList::build_triangulation()
     mesh.add_face(v);
   }
   
+  //cout << "Postprocessing..." << endl;
   mesh.postprocess();
+  //cout << "Updating..." << endl;
   m_system->update_mesh();
 
   return true;

@@ -78,6 +78,8 @@ void Mesh::reset()
 */
 void Mesh::add_edge(int ei, int ej)
 {
+  if (m_edge_map.find(make_pair(ei,ej)) != m_edge_map.end() || m_edge_map.find(make_pair(ej,ei)) != m_edge_map.end()) 
+    return;
   m_edges.push_back(Edge(m_nedge,ei,ej));
   m_vertices[ei].add_edge(m_nedge);
   m_vertices[ej].add_edge(m_nedge);
@@ -268,7 +270,9 @@ void Mesh::order_face(int f)
 */
 void Mesh::order_star(int v)
 {
+  //cout << "Ordering star of vertex " << v << endl;
   Vertex& V = m_vertices[v];
+  //cout << V << endl;
   int N = V.neigh.size();
   int e = V.edges[0];
   if (V.boundary)
