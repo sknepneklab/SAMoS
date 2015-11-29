@@ -72,7 +72,7 @@ class Mesh
 {
 public:
   //! Construct a Mesh object
-  Mesh() : m_size(0), m_nedge(0), m_nface(0) {   }
+  Mesh() : m_size(0), m_nedge(0), m_nface(0), m_is_triangulation(true) {   }
   
   //! Get mesh size
   int size() { return m_size; }
@@ -162,6 +162,7 @@ private:
   int m_size;    //!< Mesh size
   int m_nedge;   //!< Number of edges
   int m_nface;   //!< Number of faces
+  bool m_is_triangulation;  //!< If true, all faces are triangles (allows more assumptions)
     
   vector<Vertex> m_vertices;           //!< Contains all vertices
   vector<Edge> m_edges;                //!< Contains all edge

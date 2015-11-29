@@ -111,6 +111,9 @@ public:
   //! Vector length 
   double len() { return std::sqrt(x*x + y*y + z*z); }
   
+  //! Vector length squared
+  double len2() { return x*x + y*y + z*z; }
+  
   //! Rescale vactor
   void scale(double s) { x *= s; y *= s;  z *= s;  }
   

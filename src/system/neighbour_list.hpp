@@ -51,7 +51,11 @@
 #include <boost/graph/planar_face_traversal.hpp>
 #include <boost/graph/boyer_myrvold_planar_test.hpp>
 
-
+#ifdef HAS_CGAL
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Delaunay_triangulation_2.h>
+#include <CGAL/Triangulation_vertex_base_with_info_2.h>
+#endif
 
 #include "messenger.hpp"
 #include "system.hpp"
@@ -60,6 +64,16 @@
 
 using std::vector;
 
+#ifdef HAS_CGAL
+/*! Typdefs for CGAL library */
+typedef CGAL::Exact_predicates_inexact_constructions_kernel               Kernel;
+typedef CGAL::Triangulation_vertex_base_with_info_2<unsigned int, Kernel> Vb;
+typedef CGAL::Triangulation_data_structure_2<Vb>                          Tds;
+typedef CGAL::Delaunay_triangulation_2<Kernel, Tds>                       Delaunay;
+typedef Kernel::Point_2                                                   Point;
+using std::make_pair;
+using std::pair;
+#endif
 
 /*! Auxiliary structure to keep coordinates of the first state 
  *  after the build so we can check if it is necessary to rebuild.
@@ -111,6 +125,7 @@ public:
                                                                                                  m_pad(pad), 
                                                                                                  m_build_contacts(false),
                                                                                                  m_build_faces(false),
+                                                                                                 m_triangulation(false),
                                                                                                  m_contact_dist(0.0)
   {
     m_msg->write_config("nlist.cut",lexical_cast<string>(m_cut));
@@ -135,6 +150,12 @@ public:
       m_msg->msg(Messenger::INFO,"Neighbour list will also build contact network.");
       m_msg->write_config("nlist.contact_network","true"); 
     }
+    if (param.find("triangulation") != param.end())
+    {
+      m_triangulation = true;
+      m_msg->msg(Messenger::INFO,"Faces will be build using Delaunay triangulation.");
+      m_msg->write_config("nlist.triangulation","true"); 
+    }
     if (param.find("build_faces") != param.end())
     {
       if (m_system->get_periodic())
@@ -142,7 +163,7 @@ public:
         m_msg->msg(Messenger::ERROR,"Building faces is not supported for periodic boundary conditions.");
         throw runtime_error("Faces not supported in periodic sytems.");
       }
-      m_build_contacts = true;
+      if (!m_triangulation) m_build_contacts = true;
       m_build_faces = true;
       m_msg->msg(Messenger::INFO,"Neighbour list will also build faces.");
       m_msg->write_config("nlist.faces","true"); 
@@ -236,7 +257,8 @@ private:
   double m_pad;                    //!< Padding distance (m_cut should be set to potential cutoff + m_pad)
   bool m_use_cell_list;            //!< If true, use cell list to speed up neighbour list builds
   bool m_build_contacts;           //!< If true, build list of contacts
-  bool m_build_faces;              //!< It true, build list of faces based on contact network
+  bool m_build_faces;              //!< If true, build list of faces based on contact network
+  bool m_triangulation;            //!< If true, build Delaunay triangulation for faces
   double m_contact_dist;           //!< Distance over which to assume particles to be in contact 
   vector<vector<int> >  m_contact_list;    //!< Holds the contact list for each particle
   vertex_visitor  m_faces;         //!< List of all faces computed from the contact network
@@ -250,6 +272,14 @@ private:
   
   // Checks if the contact is intersecting with other contacts
   bool contact_intersects(int, int);
+  
+  // Do actual faces building for arbitrary face geometry
+  bool build_mesh();
+  
+#ifdef HAS_CGAL
+  // Build Delaunay triangulation
+  bool build_triangulation();
+#endif
     
 };
 

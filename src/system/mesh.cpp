@@ -143,6 +143,7 @@ void Mesh::add_face(vector<int>& lv)
         }
       }
     }
+    if (face.n_sides > 3) m_is_triangulation = false;
     m_faces.push_back(face);
     this->compute_centre(m_nface);
     m_nface++;
@@ -201,13 +202,27 @@ void Mesh::compute_centre(int f)
 {
   Face& face = m_faces[f];
   double xc = 0.0, yc = 0.0, zc = 0.0;
-  for (int i = 0; i < face.n_sides; i++)
+  //! If mesh is not a triangulation compute geometric centre of the face
+  if (!m_is_triangulation)
   {
-    xc += m_vertices[face.vertices[i]].r.x;
-    yc += m_vertices[face.vertices[i]].r.y;
-    zc += m_vertices[face.vertices[i]].r.z;
+    for (int i = 0; i < face.n_sides; i++)
+    {
+      xc += m_vertices[face.vertices[i]].r.x;
+      yc += m_vertices[face.vertices[i]].r.y;
+      zc += m_vertices[face.vertices[i]].r.z;
+    }
+    face.rc = Vector3d(xc/face.n_sides,yc/face.n_sides,zc/face.n_sides);
   }
-  face.rc = Vector3d(xc/face.n_sides,yc/face.n_sides,zc/face.n_sides);
+  else // compute circumcenter 
+  {
+    Vector3d& vA = m_vertices[face.vertices[0]].r;
+    Vector3d& vB = m_vertices[face.vertices[1]].r;
+    Vector3d& vC = m_vertices[face.vertices[2]].r;
+    Vector3d a = vA - vC;
+    Vector3d b = vB - vC;
+    Vector3d a_x_b = cross(a,b);
+    face.rc = vC + cross(b.scaled(a.len2())-a.scaled(b.len2()),a_x_b).scaled(0.5/a_x_b.len2());
+  }
 }
 
 

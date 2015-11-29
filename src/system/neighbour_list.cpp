@@ -72,67 +72,18 @@ void NeighbourList::build()
     this->build_faces();
 }
 
-/*! Build faces using contact network 
- *  Assumes that contacts have been built. 
-**/
+/*! Build faces of the mesh from the particle locations */
 bool NeighbourList::build_faces()
 {
-  typedef boost::adjacency_list
-       <  boost::vecS, 
-          boost::vecS, 
-          boost::undirectedS, 
-          boost::property<boost::vertex_index_t, int>,
-          boost::property<boost::edge_index_t, int>
-        > 
-        graph;
-  
-  Mesh& mesh = m_system->get_mesh();
-  int N = m_system->size(); 
-  graph g(N);
-  
-  // wipe old face list
-  if (m_faces.faces.size() > 0)
-  {
-    for (unsigned int i = 0; i < m_faces.faces.size(); i++)
-      m_faces.faces[i].clear();
-    m_faces.faces.clear();
-  }
-  
-  for (int i = 0; i < N; i++)
-    for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
-      boost::add_edge(i,m_contact_list[i][j],g);
-  
-  // Initialize the interior edge index
-  boost::property_map<graph, boost::edge_index_t>::type e_index = boost::get(boost::edge_index, g);
-  boost::graph_traits<graph>::edges_size_type edge_count = 0;
-  boost::graph_traits<graph>::edge_iterator ei, ei_end;
-  for(boost::tie(ei, ei_end) = boost::edges(g); ei != ei_end; ++ei)
-    boost::put(e_index, *ei, edge_count++);
-  
-  // compute the planar embedding as a side-effect
-  typedef vector< boost::graph_traits<graph>::edge_descriptor > vec_t;
-  vector<vec_t> embedding(boost::num_vertices(g));
-  if(boost::boyer_myrvold_planarity_test(boost::boyer_myrvold_params::graph = g, boost::boyer_myrvold_params::embedding = &embedding[0]))
-    boost::planar_face_traversal(g, &embedding[0], m_faces);
-  else
-  {
-    m_msg->msg(Messenger::ERROR,"It was not possible to build tessellation build. Most likely you contact distance is too large creating unphysical contact network.");
-    throw runtime_error("Unable to build tessellation from the contact network.");
-  }
-  
-  for (unsigned int i = 0; i < m_faces.faces.size(); i++)
-    if (m_faces.faces[i].size() <= MAX_FACE)
-      mesh.add_face(m_faces.faces[i]);
-
-  mesh.postprocess();
-  //cout << "Done postprocess." << endl;
-  m_system->update_mesh();
-  
-  //cout << "Done building faces." << endl;
-  
-  return true;
-   
+#ifdef HAS_CGAL
+    if (m_triangulation)
+       return this->build_triangulation();
+    else
+#endif
+       return this->build_mesh();
 }
+
+// Private methods below
 
 /* Do actual building. */
 
@@ -395,3 +346,120 @@ bool NeighbourList::contact_intersects(int i, int j)
 
   return false;
 }
+
+/*! Build faces using contact network 
+ *  Assumes that contacts have been built. 
+**/
+bool NeighbourList::build_mesh()
+{
+  typedef boost::adjacency_list
+       <  boost::vecS, 
+          boost::vecS, 
+          boost::undirectedS, 
+          boost::property<boost::vertex_index_t, int>,
+          boost::property<boost::edge_index_t, int>
+        > 
+        graph;
+  
+  Mesh& mesh = m_system->get_mesh();
+  int N = m_system->size(); 
+  graph g(N);
+  
+  // wipe old face list
+  if (m_faces.faces.size() > 0)
+  {
+    for (unsigned int i = 0; i < m_faces.faces.size(); i++)
+      m_faces.faces[i].clear();
+    m_faces.faces.clear();
+  }
+  
+  for (int i = 0; i < N; i++)
+    for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
+      boost::add_edge(i,m_contact_list[i][j],g);
+  
+  // Initialize the interior edge index
+  boost::property_map<graph, boost::edge_index_t>::type e_index = boost::get(boost::edge_index, g);
+  boost::graph_traits<graph>::edges_size_type edge_count = 0;
+  boost::graph_traits<graph>::edge_iterator ei, ei_end;
+  for(boost::tie(ei, ei_end) = boost::edges(g); ei != ei_end; ++ei)
+    boost::put(e_index, *ei, edge_count++);
+  
+  // compute the planar embedding as a side-effect
+  typedef vector< boost::graph_traits<graph>::edge_descriptor > vec_t;
+  vector<vec_t> embedding(boost::num_vertices(g));
+  if(boost::boyer_myrvold_planarity_test(boost::boyer_myrvold_params::graph = g, boost::boyer_myrvold_params::embedding = &embedding[0]))
+    boost::planar_face_traversal(g, &embedding[0], m_faces);
+  else
+  {
+    m_msg->msg(Messenger::ERROR,"It was not possible to build tessellation build. Most likely you contact distance is too large creating unphysical contact network.");
+    throw runtime_error("Unable to build tessellation from the contact network.");
+  }
+  
+  for (unsigned int i = 0; i < m_faces.faces.size(); i++)
+    if (m_faces.faces[i].size() <= MAX_FACE)
+      mesh.add_face(m_faces.faces[i]);
+
+  mesh.postprocess();
+  //cout << "Done postprocess." << endl;
+  m_system->update_mesh();
+  
+  //cout << "Done building faces." << endl;
+  
+  return true;
+   
+}
+
+#ifdef HAS_CGAL
+/*! Use CGAL to build 2D triangulation. This can be done only in 
+ *  the plane, so this function will check if all z-coordinates are zero
+ *  before proceeding. Otherwise, it will raise an exception.
+*/
+bool NeighbourList::build_triangulation()
+{
+  vector< pair<Point,unsigned> > points;
+  Mesh& mesh = m_system->get_mesh();
+  int N = m_system->size();
+  
+  for (int i = 0; i < N; i++)
+  {
+    Particle& pi = m_system->get_particle(i);
+    if (pi.z != 0.0) 
+    {
+      m_msg->msg(Messenger::ERROR,"Delaunay triangulation is only supported in plane. All z components must be set to zero.");
+      throw runtime_error("Unable to build Delaunay triangulation for non-planar systems.");
+    }
+    points.push_back( std::make_pair( Point(pi.x,pi.y), pi.get_id() ) );
+  }
+
+  Delaunay triangulation;
+  triangulation.insert(points.begin(),points.end());
+
+  for(Delaunay::Finite_faces_iterator fit = triangulation.finite_faces_begin(); fit != triangulation.finite_faces_end(); fit++)
+  {
+    Delaunay::Face_handle face = fit;
+    unsigned int i = face->vertex(0)->info();
+    unsigned int j = face->vertex(1)->info();
+    unsigned int k = face->vertex(2)->info();
+    mesh.add_edge(i,j);
+    mesh.add_edge(j,k);
+    mesh.add_edge(k,i);
+  }
+  // And we have to do it again, because of the way out Mesh is set up
+  // \todo Fix this mess!
+  for(Delaunay::Finite_faces_iterator fit = triangulation.finite_faces_begin(); fit != triangulation.finite_faces_end(); fit++)
+  {
+    Delaunay::Face_handle face = fit;
+    vector<int> v(3);
+    v[0] = face->vertex(0)->info();
+    v[1] = face->vertex(1)->info();
+    v[2] = face->vertex(2)->info();
+    mesh.add_face(v);
+  }
+  
+  mesh.postprocess();
+  m_system->update_mesh();
+
+  return true;
+  
+}
+#endif

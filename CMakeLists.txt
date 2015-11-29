@@ -57,6 +57,8 @@ include (CMakeCFlagsSetup.txt)
 include (CMakeSRCSetup.txt)
 # Configure VTK libraries
 include (CMakeVTKSetup.txt)
+# Configure CGAL libraries
+include (CMakeCGALSetup.txt)
 
 ################################
 ## Define common libraries used by every target in MEMBRANE

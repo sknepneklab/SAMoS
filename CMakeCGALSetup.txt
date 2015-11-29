@@ -1,0 +1,48 @@
+# * *************************************************************
+# *  
+# *   Soft Active Mater on Surfaces (SAMoS)
+# *   
+# *   Author: Rastko Sknepnek
+# *  
+# *   Division of Physics
+# *   School of Engineering, Physics and Mathematics
+# *   University of Dundee
+# *   
+# *   (c) 2013, 2014
+# * 
+# *   School of Science and Engineering
+# *   School of Life Sciences 
+# *   University of Dundee
+# * 
+# *   (c) 2015
+# * 
+# *   Author: Silke Henkes
+# * 
+# *   Department of Physics 
+# *   Institute for Complex Systems and Mathematical Biology
+# *   University of Aberdeen  
+# * 
+# *   (c) 2014, 2015
+# *  
+# *   This program cannot be used, copied, or modified without
+# *   explicit written permission of the authors.
+# * 
+# * ************************************************************** 
+
+# setup the CGAL static linkage
+if(ENABLE_STATIC)
+  set(CGAL_BUILD_SHARED_LIBS "OFF")
+else(ENABLE_STATIC)
+  set(CGAL_BUILD_SHARED_LIBS "ON")
+endif(ENABLE_STATIC)
+
+find_package(CGAL COMPONENTS Core )
+
+if ( CGAL_FOUND )
+  include( ${CGAL_USE_FILE} )
+  include( CGAL_CreateSingleSourceCGALProgram )
+  set(FOUND_CGAL_LIBRARY true)
+  add_definitions(-DHAS_CGAL)
+else()
+  set(FOUND_CGAL_LIBRARY false)
+endif()
