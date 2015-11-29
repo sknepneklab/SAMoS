@@ -50,6 +50,9 @@ void NeighbourList::build()
    mesh.reset();
    m_contact_list.clear();
  }
+ 
+ if (m_build_faces)
+   mesh.reset();
   
  for (int i = 0; i < m_system->size(); i++)
  {
@@ -420,7 +423,6 @@ bool NeighbourList::build_triangulation()
   Mesh& mesh = m_system->get_mesh();
   int N = m_system->size();
   
-  mesh.reset();
   
   for (int i = 0; i < N; i++)
   {
