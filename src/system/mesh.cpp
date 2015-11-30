@@ -78,16 +78,17 @@ void Mesh::reset()
 */
 void Mesh::add_edge(int ei, int ej)
 {
-  if (m_edge_map.find(make_pair(ei,ej)) != m_edge_map.end() || m_edge_map.find(make_pair(ej,ei)) != m_edge_map.end()) 
-    return;
-  m_edges.push_back(Edge(m_nedge,ei,ej));
-  m_vertices[ei].add_edge(m_nedge);
-  m_vertices[ej].add_edge(m_nedge);
-  m_vertices[ei].add_neighbour(ej);
-  m_vertices[ej].add_neighbour(ei);
-  m_edge_map[make_pair(ei,ej)] = m_nedge;
-  m_edge_map[make_pair(ej,ei)] = m_nedge;
-  m_nedge++;
+  if (m_edge_map.find(make_pair(ei,ej)) == m_edge_map.end() && m_edge_map.find(make_pair(ej,ei)) == m_edge_map.end()) 
+  {
+    m_edges.push_back(Edge(m_nedge,ei,ej));
+    m_vertices[ei].add_edge(m_nedge);
+    m_vertices[ej].add_edge(m_nedge);
+    m_vertices[ei].add_neighbour(ej);
+    m_vertices[ej].add_neighbour(ei);
+    m_edge_map[make_pair(ei,ej)] = m_nedge;
+    m_edge_map[make_pair(ej,ei)] = m_nedge;
+    m_nedge++;
+  }
 }
 
 /*! Add a face to the list of all faces. Face is 
@@ -154,6 +155,47 @@ void Mesh::add_face(vector<int>& lv)
     cout << "Rejecting face : " << m_nface << endl;
 }
 
+/*! Add a face with excatly three vertices (i.e., a triangle) 
+ *  to the list of all faces. Face is defined by specifying 
+ *  indices of the three vertices that define it.
+ *  \param i indec of the 1st vertex
+ *  \param j index of the 2nd vertex
+ *  \param k index of the 3rd vertex
+*/
+void Mesh::add_triangle(int i, int j, int k)
+{
+  Face face = Face(m_nface);
+  face.add_vertex(i);
+  face.add_vertex(j);
+  face.add_vertex(k);
+  m_vertices[i].add_face(m_nface);
+  m_vertices[j].add_face(m_nface);
+  m_vertices[k].add_face(m_nface);
+  
+  VertexPair vp = make_pair(i,j);
+  int e = m_edge_map[vp];
+  face.add_edge(e);
+  if (m_edges[e].f1 == NO_FACE)      m_edges[e].f1 = m_nface;
+  else if (m_edges[e].f2 == NO_FACE) m_edges[e].f2 = m_nface;
+  
+  vp = make_pair(j,k);
+  e = m_edge_map[vp];
+  face.add_edge(e);
+  if (m_edges[e].f1 == NO_FACE)      m_edges[e].f1 = m_nface;
+  else if (m_edges[e].f2 == NO_FACE) m_edges[e].f2 = m_nface;
+  
+  vp = make_pair(k,i);
+  e = m_edge_map[vp];
+  face.add_edge(e);
+  if (m_edges[e].f1 == NO_FACE)      m_edges[e].f1 = m_nface;
+  else if (m_edges[e].f2 == NO_FACE) m_edges[e].f2 = m_nface;
+  
+  m_faces.push_back(face);
+  this->compute_centre(m_nface);
+  m_nface++;
+  
+}
+
 /*! Once the mesh is read in, we need to set things like
  *  boundary flags and make use that the edge_face data strucutre
  *  has been populated. 
@@ -168,10 +210,10 @@ void Mesh::postprocess()
 {
   //cout << m_size << " " << m_nedge << " " << m_nface << endl;
   for (int i = 0; i < m_nedge; i++)
-    if (m_edges[i].f1 == NO_FACE || m_edges[i].f2 == NO_FACE) m_edges[i].boundary = true;
+    if (m_edges[i].f1 == NO_FACE || m_edges[i].f2 == NO_FACE)  m_edges[i].boundary = true;
   for (int i = 0; i < m_size; i++)
   {
-    if (m_vertices[i].n_edges < 3) m_vertices[i].boundary = true;
+    //if (m_vertices[i].n_edges < 3) m_vertices[i].boundary = true;
     for (int j = 0; j < m_vertices[i].n_edges; j++)
       if (m_edges[m_vertices[i].edges[j]].boundary)  
       { 
@@ -193,8 +235,11 @@ void Mesh::postprocess()
     }
   for (int i = 0; i < m_size; i++)
     this->order_star(i);
-  for (int i = 0; i < m_nface; i++)
-    this->order_face(i);
+  if (!m_is_triangulation)
+  {
+    for (int i = 0; i < m_nface; i++)
+      this->order_face(i);
+  }
 }
 
 /*! Computes geometric centre of a face. Coordinates are stored in 
@@ -283,9 +328,12 @@ void Mesh::order_star(int v)
         e = V.edges[i];
         break;
       }
+
   vector<int> new_e(N,e);
   vector<int> new_n(N,m_edges[e].other_vert(v));
-  vector<int> new_f(N,m_edges[e].f1);
+  vector<int> new_f;
+  
+  new_f.push_back(m_edges[e].f1);
   
   int count = 1;
   while (count < N)
@@ -297,7 +345,8 @@ void Mesh::order_star(int v)
       if (!in(new_e,e) && m_edges[e].face_of(face))
       {
         new_e[count] = V.edges[i];
-        new_f[count] = m_edges[e].other_face(face);
+        if (m_edges[e].other_face(face) != NO_FACE)
+          new_f.push_back(m_edges[e].other_face(face));
         new_n[count] = m_edges[e].other_vert(v);
         count++;
         break;

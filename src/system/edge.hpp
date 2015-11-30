@@ -61,7 +61,7 @@ struct Edge
   
   //! Check if vertex belongs to the edge
   //! \param v vertex id
-  bool vert_in(int v) { return (i == v) || (j = v); }
+  bool vert_in(int v) { return (i == v) || (j == v); }
   
   //! Check if a face belongs to the edge
   bool face_of(int f) { return (f == f1) || (f == f2); }

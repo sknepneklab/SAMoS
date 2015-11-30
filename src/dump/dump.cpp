@@ -57,13 +57,13 @@ static void write_int(ofstream &file, unsigned int val)
  *  \param params list of parameters that control dump (e.g., frequency, output type, etc.)
 */
 Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string& filename, pairs_type& params) : m_system(sys), 
-                                                                                                               m_msg(msg), 
-                                                                                                               m_file_name(filename), 
-                                                                                                               m_params(params),
-                                                                                                               m_compress(false),
-                                                                                                               m_print_header(false),
-                                                                                                               m_print_keys(false),
-                                                                                                               m_output_dual(false)
+                                                                                                                  m_msg(msg), 
+                                                                                                                  m_file_name(filename), 
+                                                                                                                  m_params(params),
+                                                                                                                  m_print_header(false),
+                                                                                                                  m_print_keys(false),
+                                                                                                                  m_compress(false),
+                                                                                                                  m_output_dual(false)
 {
   m_type_ext["velocity"] = "vel";
   m_type_ext["xyz"] = "xyz";

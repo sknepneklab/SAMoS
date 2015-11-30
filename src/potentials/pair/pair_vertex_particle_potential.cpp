@@ -146,9 +146,9 @@ void PairVertexParticlePotential::compute(double dt)
       {
         if (m_has_part_params) 
         {
-          K  = m_particle_params[vi.type-1].K;
-          A0 = m_particle_params[vi.type-1].A0;
-          gamma = m_particle_params[vi.type-1].gamma;
+          K  = m_particle_params[vj.type-1].K;
+          A0 = m_particle_params[vj.type-1].A0;
+          gamma = m_particle_params[vj.type-1].gamma;
         }
         double dA = (vj.area - A0);
         double area_term = K*dA;

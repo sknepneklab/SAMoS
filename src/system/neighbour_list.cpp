@@ -422,8 +422,7 @@ bool NeighbourList::build_triangulation()
   vector< pair<Point,unsigned> > points;
   Mesh& mesh = m_system->get_mesh();
   int N = m_system->size();
-  
-  
+   
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
@@ -432,7 +431,7 @@ bool NeighbourList::build_triangulation()
       m_msg->msg(Messenger::ERROR,"Delaunay triangulation is only supported in plane. All z components must be set to zero.");
       throw runtime_error("Unable to build Delaunay triangulation for non-planar systems.");
     }
-    points.push_back( std::make_pair( Point(pi.x,pi.y), pi.get_id() ) );
+    points.push_back( make_pair( Point(pi.x,pi.y), pi.get_id() ) );
     mesh.add_vertex(pi);
   }
 
@@ -445,6 +444,7 @@ bool NeighbourList::build_triangulation()
     unsigned int i = face->vertex(0)->info();
     unsigned int j = face->vertex(1)->info();
     unsigned int k = face->vertex(2)->info();
+    //cout << i << " " << j << " " << k << endl;
     mesh.add_edge(i,j);
     mesh.add_edge(j,k);
     mesh.add_edge(k,i);
@@ -454,18 +454,31 @@ bool NeighbourList::build_triangulation()
   for(Delaunay::Finite_faces_iterator fit = triangulation.finite_faces_begin(); fit != triangulation.finite_faces_end(); fit++)
   {
     Delaunay::Face_handle face = fit;
-    vector<int> v(3);
-    v[0] = face->vertex(0)->info();
-    v[1] = face->vertex(1)->info();
-    v[2] = face->vertex(2)->info();
-    mesh.add_face(v);
+    mesh.add_triangle(face->vertex(0)->info(),face->vertex(1)->info(),face->vertex(2)->info());
   }
   
+  //cout << mesh.get_vertices()[0] << endl;
   //cout << "Postprocessing..." << endl;
   mesh.postprocess();
+  //cout << mesh.get_vertices()[0] << endl;
   //cout << "Updating..." << endl;
   m_system->update_mesh();
-
+  
+  
+  /*
+  for (int i = 0; i < mesh.size(); i++)
+    cout << mesh.get_vertices()[i] << endl;
+  
+  cout << endl;
+  
+  for (int i = 0; i < mesh.nedges(); i++)
+    cout << mesh.get_edges()[i] << endl;
+  
+  cout << endl;
+  
+  for (int i = 0; i < mesh.nfaces(); i++)
+    cout << mesh.get_faces()[i] << endl;
+  */
   return true;
   
 }

@@ -131,6 +131,9 @@ public:
   //! Add face
   void add_face(vector<int>&);
   
+  //! Add triangle
+  void add_triangle(int, int, int);
+  
   //! Updates vertex positions 
   //! \param p particle
   void update(Particle& p)
