@@ -166,6 +166,7 @@ void Mesh::add_face(vector<int>& lv)
 */ 
 void Mesh::postprocess()
 {
+  //cout << m_size << " " << m_nedge << " " << m_nface << endl;
   for (int i = 0; i < m_nedge; i++)
     if (m_edges[i].f1 == NO_FACE || m_edges[i].f2 == NO_FACE) m_edges[i].boundary = true;
   for (int i = 0; i < m_size; i++)
