@@ -223,9 +223,13 @@ void Mesh::postprocess()
   }
   for (int i = 0; i < m_nface; i++)
   {
-    m_faces[i].edge_face = true;
+    m_faces[i].edge_face = false;
     for (int j = 0; j < m_faces[i].n_sides; j++)
-      m_faces[i].edge_face = (m_faces[i].edge_face && m_edges[m_faces[i].edges[j]].boundary);
+      if (m_vertices[m_faces[i].vertices[j]].boundary)  // Face is an "edge face" if at least one of its vertices are boundary.
+      {
+        m_faces[i].edge_face = true;
+        break;
+      }
   }
   for (int i = 0; i < m_nedge; i++)
     if (!m_edges[i].boundary)
@@ -251,7 +255,7 @@ void Mesh::compute_centre(int f)
   Face& face = m_faces[f];
   double xc = 0.0, yc = 0.0, zc = 0.0;
   //! If mesh is not a triangulation compute geometric centre of the face
-  if (!m_is_triangulation)
+  //if (!m_is_triangulation || face.edge_face)
   {
     for (int i = 0; i < face.n_sides; i++)
     {
@@ -261,6 +265,7 @@ void Mesh::compute_centre(int f)
     }
     face.rc = Vector3d(xc/face.n_sides,yc/face.n_sides,zc/face.n_sides);
   }
+  /*
   else // compute circumcenter 
   {
     Vector3d& vA = m_vertices[face.vertices[0]].r;
@@ -271,6 +276,7 @@ void Mesh::compute_centre(int f)
     Vector3d a_x_b = cross(a,b);
     face.rc = vC + cross(b.scaled(a.len2())-a.scaled(b.len2()),a_x_b).scaled(0.5/a_x_b.len2());
   }
+  */
 }
 
 
