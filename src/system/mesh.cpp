@@ -46,16 +46,14 @@ using std::endl;
 using std::unique;
 using std::sort;
 
-/*! Checks if an element is in the vector
- *  \param v vector of numbers
- *  \param e element we are looking for
- */
-static bool in(vector<int>& v, int e)
+typedef pair<int,double> vert_angle;  //!< Used to sort angles
+
+/*! Comprison used to sort edges in the star */
+static bool comp(vert_angle v1, vert_angle v2)
 {
-  if (find(v.begin(),v.end(),e) == v.end())
-    return false;
-  return true;
+  return v1.second < v2.second;
 }
+
 
 // Class members defined below
 
@@ -78,171 +76,87 @@ void Mesh::reset()
 */
 void Mesh::add_edge(int ei, int ej)
 {
-  if (m_edge_map.find(make_pair(ei,ej)) == m_edge_map.end() && m_edge_map.find(make_pair(ej,ei)) == m_edge_map.end()) 
-  {
-    m_edges.push_back(Edge(m_nedge,ei,ej));
-    m_vertices[ei].add_edge(m_nedge);
-    m_vertices[ej].add_edge(m_nedge);
-    m_vertices[ei].add_neighbour(ej);
-    m_vertices[ej].add_neighbour(ei);
-    m_edge_map[make_pair(ei,ej)] = m_nedge;
-    m_edge_map[make_pair(ej,ei)] = m_nedge;
-    m_nedge++;
-  }
+  m_edges.push_back(Edge(m_nedge,ei,ej));
+  m_vertices[ei].add_edge(m_nedge);
+  m_vertices[ei].add_neighbour(ej);
+  m_edge_map[make_pair(ei,ej)] = m_nedge;
+  if (m_edge_map.find(make_pair(ej,ei)) != m_edge_map.end())
+    m_edges[m_edge_map[make_pair(ej,ei)]].pair = m_nedge;
+  m_nedge++;
 }
 
-/*! Add a face to the list of all faces. Face is 
- *  defined by specifying list (vector) of vertices
- *  that define it.
- *  \param lv list of vertices
+/*! Generates faces from the edge information
 */
-void Mesh::add_face(vector<int>& lv)
+void Mesh::generate_faces()
 {
-  Face face = Face(m_nface);
-  bool can_add = true;
-  int N = lv.size();
-  sort(lv.begin(),lv.end());
-  if (unique(lv.begin(),lv.end()) != lv.end()) can_add = false;
-  for (int i = 0; i < N; i++)
+  for (int v = 0; v < m_size; v++)
+    this->order_star(v);
+  for (int i = 0; i < m_nedge; i++)
   {
-    for (int j = i + 1; j < N; j++)
+    Face face = Face(m_nface);
+    Edge& E = m_edges[i];
+    if (!E.visited)
     {
-      VertexPair vp = make_pair(lv[i],lv[j]);
-      if (m_edge_map.find(vp) != m_edge_map.end())
+      E.visited = true;
+      int seed = E.from;
+      face.add_vertex(seed);
+      face.add_vertex(E.to);
+      face.add_edge(E.id);
+      int v = E.to;
+      cout << "Face : " << m_nface << " --> " << seed << " " << v << " ";
+      while (v != seed)
       {
-        int e = m_edge_map[vp];
-        if ((m_edges[e].f1 != NO_FACE) && (m_edges[e].f2 != NO_FACE))
+        Vertex& V = m_vertices[v];
+        for (unsigned int e = 0; e < V.edges.size(); e++)
         {
-          can_add = false;
-          break;
-        }
-      }
-    }
-    if (!can_add) break;
-  }
-  if (can_add)
-  {
-    for (int i = 0; i < N; i++)
-       face.add_vertex(lv[i]);
-    for (int i = 0; i < N; i++)
-    {
-      m_vertices[lv[i]].add_face(m_nface);
-      for (int j = i + 1; j < N; j++)
-      {
-        VertexPair vp = make_pair(lv[i],lv[j]);
-        if (m_edge_map.find(vp) != m_edge_map.end())
-        {
-          int e = m_edge_map[vp];
-          face.add_edge(e);
-          if (m_edges[e].f1 == NO_FACE)      m_edges[e].f1 = m_nface;
-          else if (m_edges[e].f2 == NO_FACE) m_edges[e].f2 = m_nface;
-          else
+          Edge& Ej = m_edges[V.edges[e]];
+          if (!Ej.visited)
           {
-            cout << "Oops! " << e << " " << m_edges[e].f1 << " " << m_edges[e].f2 << endl;
-            for (unsigned int k = 0; k < lv.size(); k++)
-              cout << lv[k] << " ";
-            cout << endl;
+            Ej.visited = true;
+            if (Ej.to != seed) face.add_vertex(Ej.to);
+            face.add_edge(Ej.id);
+            v = Ej.to;
+            cout << v << " ";
+            break;
           }
         }
       }
+      cout << endl;
     }
-    if (face.n_sides > 3) m_is_triangulation = false;
-    m_faces.push_back(face);
-    this->compute_centre(m_nface);
-    m_nface++;
+    double perim = 0.0;
+    for (unsigned int f = 0; f < face.vertices.size(); f++)
+    {
+      int f_n = ( f == face.vertices.size() - 1) ? 0 : f + 1;
+      Vector3d r1 = m_vertices[face.vertices[f]].r;
+      Vector3d r2 = m_vertices[face.vertices[f_n]].r;
+      perim += (r1-r2).len();
+    }
+    if (perim < m_max_face_perim)
+    {
+      m_faces.push_back(face);
+      for (unsigned int f = 0; f < face.vertices.size(); f++)
+        m_vertices[face.vertices[f]].add_face(m_nface);
+      for (unsigned int f = 0; f < face.edges.size(); f++)
+        m_edges[face.edges[f]].face = m_nface;
+      m_nface++;
+    }
   }
-  else
-    cout << "Rejecting face : " << m_nface << endl;
 }
 
-/*! Add a face with excatly three vertices (i.e., a triangle) 
- *  to the list of all faces. Face is defined by specifying 
- *  indices of the three vertices that define it.
- *  \param i indec of the 1st vertex
- *  \param j index of the 2nd vertex
- *  \param k index of the 3rd vertex
-*/
-void Mesh::add_triangle(int i, int j, int k)
-{
-  Face face = Face(m_nface);
-  face.add_vertex(i);
-  face.add_vertex(j);
-  face.add_vertex(k);
-  m_vertices[i].add_face(m_nface);
-  m_vertices[j].add_face(m_nface);
-  m_vertices[k].add_face(m_nface);
-  
-  VertexPair vp = make_pair(i,j);
-  int e = m_edge_map[vp];
-  face.add_edge(e);
-  if (m_edges[e].f1 == NO_FACE)      m_edges[e].f1 = m_nface;
-  else if (m_edges[e].f2 == NO_FACE) m_edges[e].f2 = m_nface;
-  
-  vp = make_pair(j,k);
-  e = m_edge_map[vp];
-  face.add_edge(e);
-  if (m_edges[e].f1 == NO_FACE)      m_edges[e].f1 = m_nface;
-  else if (m_edges[e].f2 == NO_FACE) m_edges[e].f2 = m_nface;
-  
-  vp = make_pair(k,i);
-  e = m_edge_map[vp];
-  face.add_edge(e);
-  if (m_edges[e].f1 == NO_FACE)      m_edges[e].f1 = m_nface;
-  else if (m_edges[e].f2 == NO_FACE) m_edges[e].f2 = m_nface;
-  
-  m_faces.push_back(face);
-  this->compute_centre(m_nface);
-  m_nface++;
-  
-}
 
 /*! Once the mesh is read in, we need to set things like
- *  boundary flags and make use that the edge_face data strucutre
- *  has been populated. 
- *
- *  For boundaries we loop over all vertices, edges and faces and set 
- *  boundary flags to true is any of those are at the boundary.
- *  Edge is on boundary if it has only one face.
- *  Vertex is on boundary if at least one of the edges is boundary.
- *  Face is a boundary face if all its edges are boundary edges.
+ *  boundary flags.
 */ 
 void Mesh::postprocess()
 {
-  //cout << m_size << " " << m_nedge << " " << m_nface << endl;
-  for (int i = 0; i < m_nedge; i++)
-    if (m_edges[i].f1 == NO_FACE || m_edges[i].f2 == NO_FACE)  m_edges[i].boundary = true;
-  for (int i = 0; i < m_size; i++)
+  for (int e = 0; e < m_nedge; e++)
   {
-    //if (m_vertices[i].n_edges < 3) m_vertices[i].boundary = true;
-    for (int j = 0; j < m_vertices[i].n_edges; j++)
-      if (m_edges[m_vertices[i].edges[j]].boundary)  
-      { 
-        m_vertices[i].boundary = true;   // vertex is a boundary vertex if at least one of its edges is boundary edge
-        break;
-      }
-  }
-  for (int i = 0; i < m_nface; i++)
-  {
-    m_faces[i].edge_face = false;
-    for (int j = 0; j < m_faces[i].n_sides; j++)
-      if (m_vertices[m_faces[i].vertices[j]].boundary)  // Face is an "edge face" if at least one of its vertices are boundary.
-      {
-        m_faces[i].edge_face = true;
-        break;
-      }
-  }
-  for (int i = 0; i < m_nedge; i++)
-    if (!m_edges[i].boundary)
+    Edge& E = m_edges[e];
+    if (E.face == NO_FACE)
     {
-      m_edge_face[make_pair(m_edges[i].f1,m_edges[i].f2)] = i;
-      m_edge_face[make_pair(m_edges[i].f2,m_edges[i].f1)] = i;
+      m_vertices[E.from].boundary = true;
+      m_vertices[E.to].boundary = true;
     }
-  for (int i = 0; i < m_size; i++)
-    this->order_star(i);
-  if (!m_is_triangulation)
-  {
-    for (int i = 0; i < m_nface; i++)
-      this->order_face(i);
   }
 }
 
@@ -254,65 +168,13 @@ void Mesh::compute_centre(int f)
 {
   Face& face = m_faces[f];
   double xc = 0.0, yc = 0.0, zc = 0.0;
-  //! If mesh is not a triangulation compute geometric centre of the face
-  //if (!m_is_triangulation || face.edge_face)
+  for (int i = 0; i < face.n_sides; i++)
   {
-    for (int i = 0; i < face.n_sides; i++)
-    {
-      xc += m_vertices[face.vertices[i]].r.x;
-      yc += m_vertices[face.vertices[i]].r.y;
-      zc += m_vertices[face.vertices[i]].r.z;
-    }
-    face.rc = Vector3d(xc/face.n_sides,yc/face.n_sides,zc/face.n_sides);
+    xc += m_vertices[face.vertices[i]].r.x;
+    yc += m_vertices[face.vertices[i]].r.y;
+    zc += m_vertices[face.vertices[i]].r.z;
   }
-  /*
-  else // compute circumcenter 
-  {
-    Vector3d& vA = m_vertices[face.vertices[0]].r;
-    Vector3d& vB = m_vertices[face.vertices[1]].r;
-    Vector3d& vC = m_vertices[face.vertices[2]].r;
-    Vector3d a = vA - vC;
-    Vector3d b = vB - vC;
-    Vector3d a_x_b = cross(a,b);
-    face.rc = vC + cross(b.scaled(a.len2())-a.scaled(b.len2()),a_x_b).scaled(0.5/a_x_b.len2());
-  }
-  */
-}
-
-
-/*! This member function orders all vertice in a face.
- *  At this stage it is not possible to determine if the order is
- *  clock or counterclockwise. This will be corrected for later, 
- *  when normals are known. 
- *  \param f face which we want to order
- */
-void Mesh::order_face(int f)
-{
-  unsigned int N = m_faces[f].vertices.size();
-  // If the face is a triangle, vertices are ordered by default
-  if (N == 3) 
-    m_faces[f].ordered = true;
-  else if (N > 3 && !m_faces[f].ordered)
-  {
-    vector<int> new_vert;
-    new_vert.push_back(m_faces[f].vertices[0]);
-    while (new_vert.size() < N)
-    {
-      int cv = new_vert[new_vert.size()-1];
-      for (unsigned int i = 0; i < N; i++)
-      {
-        int n = m_faces[f].vertices[i];
-        VertexPair vp = make_pair(cv,n);
-        if (m_edge_map.find(vp) != m_edge_map.end() && !in(new_vert,n))
-        {
-          new_vert.push_back(n);
-          break;
-        }
-      }
-    }
-    copy(new_vert.begin(), new_vert.end(), m_faces[f].vertices.begin());
-    m_faces[f].ordered = true;
-  }
+  face.rc = Vector3d(xc/face.n_sides,yc/face.n_sides,zc/face.n_sides);
 }
 
 /*! Order faces, edges and neighbours in the vertex star. At this point it is not possible
@@ -322,46 +184,26 @@ void Mesh::order_face(int f)
 */
 void Mesh::order_star(int v)
 {
-  //cout << "Ordering star of vertex " << v << endl;
   Vertex& V = m_vertices[v];
-  //cout << V << endl;
-  int N = V.neigh.size();
-  int e = V.edges[0];
-  if (V.boundary)
-    for (int i = 0; i < N; i++)
-      if (m_edges[V.edges[i]].boundary)
-      {
-        e = V.edges[i];
-        break;
-      }
-
-  vector<int> new_e(N,e);
-  vector<int> new_n(N,m_edges[e].other_vert(v));
-  vector<int> new_f;
-  
-  new_f.push_back(m_edges[e].f1);
-  
-  int count = 1;
-  while (count < N)
+  int size = V.edges.size();
+  if (size > 1)
   {
-    int face = new_f[count-1];
-    for (int i = 0; i < N; i++)
+    int e = V.edges[0];
+    Edge& Ei = m_edges[e];
+    Vector3d ri = m_vertices[Ei.to].r - V.r;
+    vector<vert_angle> angles;
+    angles.push_back(make_pair(e,0.0));
+    for (int i = 1; i < size; i++)
     {
       e = V.edges[i];
-      if (!in(new_e,e) && m_edges[e].face_of(face))
-      {
-        new_e[count] = V.edges[i];
-        if (m_edges[e].other_face(face) != NO_FACE)
-          new_f.push_back(m_edges[e].other_face(face));
-        new_n[count] = m_edges[e].other_vert(v);
-        count++;
-        break;
-      }
+      Edge& Ej = m_edges[e];
+      Vector3d rj = m_vertices[Ej.to].r - V.r;
+      angles.push_back(make_pair(e,angle(ri,rj,V.N)));
     }
+    sort(angles.begin(),angles.end(),comp);
+    for (int i = 0; i < size; i++)
+      V.edges[i] = angles[i].first;
   }
-  if (V.edges.size() > 0) copy(new_e.begin(), new_e.end(),V.edges.begin());
-  if (V.neigh.size() > 0) copy(new_n.begin(), new_n.end(),V.neigh.begin());
-  if (V.faces.size() > 0) copy(new_f.begin(), new_f.end(),V.faces.begin());
   V.ordered = true;
 }
 
@@ -372,37 +214,27 @@ void Mesh::order_star(int v)
  *  \note We assume that faces are ordered, otherwise the result will be 
  *  wrong.
  *  \param v verex index
- *  \param n normal vector
 */
-double Mesh::dual_area(int v, Vector3d& n)
+double Mesh::dual_area(int v)
 {
   if (!m_vertices[v].ordered)
-    throw runtime_error("Faces need to be ordered before dual area can be computed.");
+    throw runtime_error("Vertex star has to be ordered before dual area can be computed.");
   Vertex& V = m_vertices[v];
   if (V.boundary) return 0.0;
+  
   V.area = 0.0;
-  int N = V.faces.size();
-  Vector3d nn = n.unit();
-  for (int i = 0; i < N-1; i++)
+  for (int i = 0; i < V.n_edges; i++)
   {
-    Vector3d& r1 = m_faces[V.faces[i]].rc;
-    Vector3d& r2 = m_faces[V.faces[i+1]].rc;
+    int j = ( i == V.n_edges-1) ? 0 : i + 1;
+    Vector3d& r1 = m_faces[m_edges[V.edges[i]].face].rc;
+    Vector3d& r2 = m_faces[m_edges[V.edges[j]].face].rc;
     Vector3d  rr = cross(r1,r2); 
-    V.area += dot(rr,nn);
+    V.area += dot(rr,V.N.unit());
   }
-  // handle the last pair
-  Vector3d& r1 = m_faces[V.faces[N-1]].rc;
-  Vector3d& r2 = m_faces[V.faces[0]].rc;
-  Vector3d  rr = cross(r1,r2); 
-  V.area += dot(rr,nn);
-  if (V.area < 0.0)
-  {
-    V.area = -V.area;
-    reverse(V.neigh.begin(),V.neigh.end());
-    reverse(V.edges.begin(),V.edges.end());
-    reverse(V.faces.begin(),V.faces.end());
-  }
+   
   V.area *= 0.5;
+  if (V.area < 0.0) V.area = -V.area;
+  
   return V.area;
 }
 
@@ -416,21 +248,18 @@ double Mesh::dual_area(int v, Vector3d& n)
 double Mesh::dual_perimeter(int v)
 {
   if (!m_vertices[v].ordered)
-    throw runtime_error("Faces need to be ordered before dual premeter can be computed.");
+    throw runtime_error("Vertecx star has to be ordered before dual premeter can be computed.");
   Vertex& V = m_vertices[v];
   if (V.boundary) return 0.0;
+  
   V.perim  = 0.0;
-  int N = V.faces.size();
-  for (int i = 0; i < N-1; i++)
+  for (int i = 0; i < V.n_edges; i++)
   {
-    Vector3d& r1 = m_faces[V.faces[i]].rc;
-    Vector3d& r2 = m_faces[V.faces[i+1]].rc;
+    int j = ( i == V.n_edges-1) ? 0 : i + 1;
+    Vector3d& r1 = m_faces[m_edges[V.edges[i]].face].rc;
+    Vector3d& r2 = m_faces[m_edges[V.edges[j]].face].rc;
     V.perim += (r1-r2).len();
   }
-  // handle the last pair
-  Vector3d& r1 = m_faces[V.faces[N-1]].rc;
-  Vector3d& r2 = m_faces[V.faces[0]].rc;
-  V.perim += (r1-r2).len();
   return V.perim;
 }
 

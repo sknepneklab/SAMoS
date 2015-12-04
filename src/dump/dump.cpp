@@ -765,6 +765,7 @@ void Dump::dump_mesh()
 //! Dump meshes into VTK output 
 void Dump::dump_vtp(int step)
 {
+  vector<pair<int,int> > visited_edges;
   string file_name = m_file_name+"_"+lexical_cast<string>(format("%010d") % step)+"."+m_ext;
   vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -847,13 +848,10 @@ void Dump::dump_vtp(int step)
       vtkSmartPointer<vtkLine> edge =  vtkSmartPointer<vtkLine>::New();
       vtkSmartPointer<vtkDoubleArray> lens =  vtkSmartPointer<vtkDoubleArray>::New();
       vtkSmartPointer<vtkDoubleArray> boundary =  vtkSmartPointer<vtkDoubleArray>::New();
-      vtkSmartPointer<vtkDoubleArray> bedge =  vtkSmartPointer<vtkDoubleArray>::New();
       lens->SetName("Length");
       lens->SetNumberOfComponents(1);
       boundary->SetName("Boundary");
       boundary->SetNumberOfComponents(1);
-      bedge->SetName("BoundaryEdge");
-      bedge->SetNumberOfComponents(1);
       for (int i = 0; i < mesh.size(); i++)
       {
         Vertex& vert = mesh.get_vertices()[i];
@@ -866,22 +864,22 @@ void Dump::dump_vtp(int step)
       for (int e = 0; e < mesh.nedges(); e++)
       {
         Edge& ee = mesh.get_edges()[e];
-        edge->GetPointIds()->SetId(0, ee.i); 
-        edge->GetPointIds()->SetId(1, ee.j);
-        lines->InsertNextCell(edge);
-        Particle& pi = m_system->get_particle(ee.i);
-        Particle& pj = m_system->get_particle(ee.j);
-        double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
-        m_system->apply_periodic(dx,dy,dz);
-        lens->InsertNextValue(sqrt(dx*dx + dy*dy + dz*dz));
-        if (ee.boundary)
-          bedge->InsertNextValue(1);
-        else
-          bedge->InsertNextValue(0);
+        if ( find(visited_edges.begin(),visited_edges.end(),make_pair(ee.from,ee.to)) == visited_edges.end() )
+        {
+          edge->GetPointIds()->SetId(0, ee.from); 
+          edge->GetPointIds()->SetId(1, ee.to);
+          lines->InsertNextCell(edge);
+          Particle& pi = m_system->get_particle(ee.from);
+          Particle& pj = m_system->get_particle(ee.to);
+          double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
+          m_system->apply_periodic(dx,dy,dz);
+          lens->InsertNextValue(sqrt(dx*dx + dy*dy + dz*dz));
+          visited_edges.push_back(make_pair(ee.from,ee.to));
+          visited_edges.push_back(make_pair(ee.to,ee.from));
+        }
       }
       polydata->SetLines(lines);
       polydata->GetCellData()->AddArray(lens);
-      polydata->GetCellData()->AddArray(bedge);
       
       vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
       for (int f = 0; f < mesh.nfaces(); f++)

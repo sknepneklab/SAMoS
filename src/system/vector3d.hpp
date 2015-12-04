@@ -179,5 +179,7 @@ ostream& operator<<(ostream&, const Vector3d&);
 double dot(const Vector3d&, const Vector3d&);
 Vector3d cross(const Vector3d&, const Vector3d&);
 Vector3d operator*(const double, const Vector3d&);
+double angle(Vector3d&, Vector3d&, const Vector3d&);
+Vector3d mirror(Vector3d&, Vector3d&, Vector3d&);
 
 #endif

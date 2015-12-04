@@ -62,3 +62,38 @@ Vector3d operator*(const double c, const Vector3d& v)
 {
   return Vector3d(c*v.x, c*v.y, c*v.z);
 }
+
+//! Compute angle between two vectors. 3rd vector is used to get the right sign. 
+//! It is normal to the surface at a given point of orgigin of two points. 
+//! \param a first vector
+//! \param b second vector
+//! \param N normal vector
+double angle(Vector3d& a, Vector3d& b, const Vector3d& N)
+{
+  double phi = std::acos(dot(a.unit(),b.unit()));
+  double sign = dot(cross(a,b),N);
+  if (sign >= 0) 
+    return phi;
+  else 
+    return -phi + 2.0*M_PI;
+}
+
+/*! Mirror vector with respect to other vector
+ * \param P position of the reference point
+ * \param n mirror with respect to this vector
+ * \param Q mirror this vector
+*/
+Vector3d mirror(Vector3d& P, Vector3d& n, Vector3d& Q)
+{
+  Vector3d N = n.unit();
+  double n_xx = N.x*N.x, n_xy = N.x*N.y, n_xz = N.x*N.z;
+  double n_yx = N.y*N.x, n_yy = N.y*N.y, n_yz = N.y*N.z;
+  double n_zx = N.z*N.x, n_zy = N.z*N.y, n_zz = N.z*N.z;
+  
+  Vector3d P_m_Q = P - Q;
+  double qx = Q.x + 2.0*((1.0 - n_xx)*P_m_Q.x         - n_xy*P_m_Q.y -         n_xz*P_m_Q.z);
+  double qy = Q.y + 2.0*(      - n_yx*P_m_Q.x + (1.0 - n_yy)*P_m_Q.y -         n_yz*P_m_Q.z); 
+  double qz = Q.z + 2.0*(      - n_zx*P_m_Q.x         - n_zy*P_m_Q.y + (1.0 - n_zz)*P_m_Q.z); 
+  
+  return Vector3d(qx,qy,qz);
+}

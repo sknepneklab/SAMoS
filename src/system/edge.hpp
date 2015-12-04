@@ -48,8 +48,8 @@ using std::ostream;
 using std::endl;
 using boost::format;
 
-/*! Edge class keeps track of the edge information in the mesh
- *
+/*! Edge class keeps track of the edge information in the mesh.
+ *  Edges are directed, so this data structure implement a half-edge.
  */
 struct Edge
 {
@@ -57,41 +57,28 @@ struct Edge
   //! \param id edge id
   //! \param i id of 1st vertex
   //! \param j id of 2nd vertex
-  Edge(int id, int i, int j) : id(id), i(i), j(j), f1(NO_FACE), f2(NO_FACE), boundary(false)  {   }
+  Edge(int id, int i, int j) : id(id), from(i), to(j), face(NO_FACE), visited(false), pair(-1)  {   }
   
   //! Check if vertex belongs to the edge
   //! \param v vertex id
-  bool vert_in(int v) { return (i == v) || (j == v); }
-  
-  //! Check if a face belongs to the edge
-  bool face_of(int f) { return (f == f1) || (f == f2); }
+  bool vert_in(int v) { return (from == v) || (to == v); }
   
   //! Get the other vertex on the face (-1 if not part of this edge)
   //! \param v vertex index
   int other_vert(int v)
   {
     if (!vert_in(v)) return -1;
-    if (v == i) return j;
-    return i;
+    return to;
   }
   
-  //! Get other edge belonging to the face
-  //! \param f face id
-  int other_face(int f)
-  {
-    if (!face_of(f)) return -1;
-    if (f == f1) return f2;
-    return f1;
-  }
-  
-  int id;                      //!< Edge id
-  int i;                       //!< 1st vertex
-  int j;                       //!< 2nd vertex
+    
+  int id;                       //!< Edge id
+  int from;                     //!< Id of vertex half-edge starts at
+  int to;                       //!< Id of vertex half-edge points to
 
-  int f1;                      //!< 1st face (NO_FACE if none)
-  int f2;                      //!< 2nd face (NO_FACE if none)
-  
-  bool boundary;               //!< If true, this is a boundary edge
+  int face;                     //!< Id of the face (to the left) this half-edge belongs to. NO_FACE if none, i.e. boundary edge.
+  bool visited;                 //!< If true, edge visited while building faces.
+  int pair;                     //!< Id of the other half of the half-edge pair
     
 };
 

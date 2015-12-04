@@ -848,10 +848,8 @@ void System::update_mesh()
       m_mesh.compute_centre(i);
     for (int i = 0; i < m_mesh.size(); i++)
     {
-      Particle& p = m_particles[i];
-      Vector3d n(p.Nx,p.Ny,p.Nz);
       m_mesh.dual_perimeter(i);
-      m_mesh.dual_area(i,n); 
+      m_mesh.dual_area(i); 
     }
   }
 }

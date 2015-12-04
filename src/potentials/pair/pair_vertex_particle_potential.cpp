@@ -95,30 +95,26 @@ void PairVertexParticlePotential::compute(double dt)
       Vector3d area_vec(0.0,0.0,0.0);
       Vector3d perim_vec(0.0,0.0,0.0);
       Vector3d con_vec(0.0,0.0,0.0);
-      int Nface = vi.faces.size();
-      for (int f = 0; f < Nface; f++)
+      for (int e = 0; e < vi.n_edges; e++)
       {
-        Face& f_nu_m = mesh.get_faces()[vi.faces[prev(f,Nface)]];
-        Face& f_nu   = mesh.get_faces()[vi.faces[f]];
-        Face& f_nu_p = mesh.get_faces()[vi.faces[next(f,Nface)]];
+        Edge& Ep = mesh.get_edges()[vi.edges[prev(e,vi.n_edges)]];
+        Edge& E = mesh.get_edges()[vi.edges[e]];
+        Edge& En = mesh.get_edges()[vi.edges[next(e,vi.n_edges)]];
+        
+        Face& f_nu_m = mesh.get_faces()[Ep.face];
+        Face& f_nu   = mesh.get_faces()[E.face];
+        Face& f_nu_p = mesh.get_faces()[En.face];
+       
         Vector3d& r_nu_m = f_nu_m.rc; 
         Vector3d& r_nu   = f_nu.rc; 
         Vector3d& r_nu_p = f_nu_p.rc; 
         area_vec = area_vec + cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
         perim_vec = perim_vec + ((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit()).scaled(1.0/f_nu.n_sides);
         if (m_has_pair_params)
-        {
-          int edge_id = mesh.get_edge_face()[make_pair(f_nu.id,f_nu_m.id)];
-          int type_2 = mesh.get_vertices()[mesh.get_edges()[edge_id].other_vert(i)].type;
-          lambda = m_pair_params[vi.type - 1][type_2 - 1].lambda;
-        }
+          lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[E.to].type - 1].lambda;
         con_vec = con_vec + lambda*(r_nu - r_nu_m).unit().scaled(1.0/f_nu.n_sides);
         if (m_has_pair_params)
-        {
-          int edge_id = mesh.get_edge_face()[make_pair(f_nu_p.id,f_nu.id)];
-          int type_2 = mesh.get_vertices()[mesh.get_edges()[edge_id].other_vert(i)].type;
-          lambda = m_pair_params[vi.type - 1][type_2 - 1].lambda;
-        }
+          lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[En.to].type - 1].lambda;
         con_vec = con_vec - lambda*(r_nu_p - r_nu).unit().scaled(1.0/f_nu.n_sides);
         pot_eng += lambda*(r_nu - r_nu_m).len();
       }
@@ -156,33 +152,28 @@ void PairVertexParticlePotential::compute(double dt)
         Vector3d area_vec(0.0,0.0,0.0);
         Vector3d perim_vec(0.0,0.0,0.0);
         Vector3d con_vec(0.0,0.0,0.0);
-        int Nface = vj.faces.size();
         Vector3d Nvec = Vector3d(pj.Nx, pj.Ny, pj.Nz);
-        for (int f = 0; f < Nface; f++)
+        for (int e = 0; e < vj.n_edges; e++)
         {
-          Face& f_nu   = mesh.get_faces()[vj.faces[f]];
+          Edge& E = mesh.get_edges()[vj.edges[e]];
+          Face& f_nu   = mesh.get_faces()[E.face];
           if (f_nu.has_vertex(i))
           {
-            Face& f_nu_m = mesh.get_faces()[vj.faces[prev(f,Nface)]];
-            Face& f_nu_p = mesh.get_faces()[vj.faces[next(f,Nface)]];
+            Edge& Ep = mesh.get_edges()[vj.edges[prev(e,vj.n_edges)]];
+            Edge& En = mesh.get_edges()[vj.edges[next(e,vj.n_edges)]];
+        
+            Face& f_nu_m = mesh.get_faces()[Ep.face];
+            Face& f_nu_p = mesh.get_faces()[En.face];
             Vector3d& r_nu_m = f_nu_m.rc; 
             Vector3d& r_nu   = f_nu.rc; 
             Vector3d& r_nu_p = f_nu_p.rc; 
             area_vec = area_vec + cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
             perim_vec = perim_vec + ((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit()).scaled(1.0/f_nu.n_sides);
             if (m_has_pair_params)
-            {
-              int edge_id = mesh.get_edge_face()[make_pair(f_nu.id,f_nu_m.id)];
-              int type_2 = mesh.get_vertices()[mesh.get_edges()[edge_id].other_vert(vj.id)].type;
-              lambda = m_pair_params[vj.type - 1][type_2 - 1].lambda;
-            }
+              lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[E.to].type - 1].lambda;
             con_vec = con_vec + lambda*(r_nu - r_nu_m).unit().scaled(1.0/f_nu.n_sides);
             if (m_has_pair_params)
-            {
-              int edge_id = mesh.get_edge_face()[make_pair(f_nu_p.id,f_nu.id)];
-              int type_2 = mesh.get_vertices()[mesh.get_edges()[edge_id].other_vert(vj.id)].type;
-              lambda = m_pair_params[vj.type - 1][type_2 - 1].lambda;
-            }
+              lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[Ep.to].type - 1].lambda;
             con_vec = con_vec - lambda*(r_nu_p - r_nu).unit().scaled(1.0/f_nu.n_sides);
           }
         }

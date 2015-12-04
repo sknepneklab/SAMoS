@@ -42,11 +42,10 @@ ostream& operator<<(ostream& out, const Edge& e)
 {
   out << " ---------- EDGE ------------------ " << endl;
   out << format("id : %d\n") % e.id
-  << format("i : %d\n") % e.i
-  << format("j : %d\n") % e.j
-  << format("f1 : %d\n") % e.f1
-  << format("f2 : %d\n") % e.f2;
-  if (e.boundary)
+  << format("from : %d\n") % e.from
+  << format("to : %d\n") % e.to
+  << format("face : %d\n") % e.face;
+  if (e.face == NO_FACE)
     out << "boundary edge" << endl;
   out << " ------------------------------------";
   out << endl;

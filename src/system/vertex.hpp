@@ -70,6 +70,7 @@ struct Vertex
   Vertex(int id, double x, double y, double z) : id(id), 
                                                  type(1),
                                                  r(x,y,z),
+                                                 N(0,0,1),
                                                  z(0),
                                                  n_edges(0), n_faces(0), 
                                                  boundary(false),
@@ -83,6 +84,7 @@ struct Vertex
    id = p.get_id();
    type = p.get_type();
    r = Vector3d(p.x,p.y,p.z);
+   N = Vector3d(p.Nx,p.Ny,p.Nz);
    z = 0;
    n_edges = 0;
    n_faces = 0;
@@ -117,6 +119,7 @@ struct Vertex
   int id;                      //!< Vertex id
   int type;                    //!< Vertex type 
   Vector3d r;                  //!< Position in the embedding 3d flat space
+  Vector3d N;                  //!< Normal to the surface 
   
   int z;                       //!< Coordination number (number of neighbours)
   int n_edges;                 //!< Number of neighours this vertex has
@@ -129,7 +132,7 @@ struct Vertex
   bool ordered;                //!< If true, vertex star is ordered
     
   vector<int> neigh;           //!< Contains indices of all neighbours
-  vector<int> edges;           //!< Contains indices of all edges connected to the vertex
+  vector<int> edges;           //!< Contains indices of all edges that originate at this vertex
   vector<int> faces;           //!< Contains indices of faces this vertex belongs to
     
 };

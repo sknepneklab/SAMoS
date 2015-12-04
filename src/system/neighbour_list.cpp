@@ -42,6 +42,7 @@
 */
 void NeighbourList::build()
 {
+ //cout << "Building NL. " << endl;
  Mesh& mesh = m_system->get_mesh();
  m_list.clear();
  
@@ -245,7 +246,7 @@ bool NeighbourList::need_update(Particle& p)
 //! Builds contact list based on particle distance
 void NeighbourList::build_contacts()
 {
-  Mesh& mesh = m_system->get_mesh();
+  //Mesh& mesh = m_system->get_mesh();
   int N = m_system->size();
   double dist = m_contact_dist;
   for (int i = 0; i < N; i++)
@@ -264,20 +265,27 @@ void NeighbourList::build_contacts()
       double r_sq = dx*dx + dy*dy + dz*dz;
       if (r_sq <= dist*dist)
       {
-        if (!(this->contact_intersects(i,pj.get_id())))
-        {
           m_contact_list[i].push_back(pj.get_id());
-          mesh.add_edge(i,pj.get_id());
-          //cout << "Added contact : " << i << " " << pj.get_id() << endl;
-        }
-        else
-        {
-          cout << "Rejecting edge due to intersections. " << endl;
-        }
+          m_contact_list[pj.get_id()].push_back(i);
       }
     }
-    //cout << endl;
   }
+  bool done = false;
+  while(!done)
+  {
+    done = true;
+    for (int i = 0; i < N; i++)
+    {
+      if (m_contact_list[i].size() == 1)
+      {
+        vector<int>& v = m_contact_list[m_contact_list[i][0]];
+        vector<int>::iterator it = find(v.begin(),v.end(),i);
+        if (it != v.end()) v.erase(it);
+        done = false;
+      }
+    }
+  }
+  
 }
 
 //! Check if two edges intersect
@@ -297,6 +305,7 @@ bool NeighbourList::contact_intersects(int i, int j)
   {
     if (!(i == neigh_i[n] || j == neigh_i[n]))
     {
+      cout << i << " , " << j << " --> " << neigh_i[n] << endl;
       Particle& v2_i = m_system->get_particle(neigh_i[n]);
       Vector3d q(v2_i.x, v2_i.y, v2_i.z);
       Vector3d q_m_p = q - p;
@@ -307,10 +316,12 @@ bool NeighbourList::contact_intersects(int i, int j)
           Particle& v2_j = m_system->get_particle(m_contact_list[neigh_i[n]][k]);
           Vector3d r(v2_j.x-v2_i.x, v2_j.y-v2_i.y, v2_j.z-v2_i.z);
           double r_cross_s = cross(r,s).len();
+          cout << r_cross_s << endl;
           if (r_cross_s != 0)
           {
             double t = cross(q_m_p,s).len()/r_cross_s;
             double u = cross(q_m_p,r).len()/r_cross_s;
+            cout << t << " " << u << endl;
             if ((t >= 0.0 && t <= 1.0) && (u >= 0.0 && u <= 1.0))
               return true;
           }
@@ -325,6 +336,7 @@ bool NeighbourList::contact_intersects(int i, int j)
   {
     if (!(i == neigh_j[n] || j == neigh_j[n]))
     {
+      cout << i << " , " << j << " --> " << neigh_j[n] << endl;
       Particle& v2_i = m_system->get_particle(neigh_j[n]);
       Vector3d q(v2_i.x, v2_i.y, v2_i.z);
       Vector3d q_m_p = q - p;
@@ -335,10 +347,12 @@ bool NeighbourList::contact_intersects(int i, int j)
           Particle& v2_j = m_system->get_particle(m_contact_list[neigh_j[n]][k]);
           Vector3d r(v2_j.x-v2_i.x, v2_j.y-v2_i.y, v2_j.z-v2_i.z);
           double r_cross_s = cross(r,s).len();
+          cout << r_cross_s << endl;
           if (r_cross_s != 0)
           {
             double t = cross(q_m_p,s).len()/r_cross_s;
             double u = cross(q_m_p,r).len()/r_cross_s;
+            cout << t << " " << u << endl;
             if ((t >= 0.0 && t <= 1.0) && (u >= 0.0 && u <= 1.0))
               return true;
           }
@@ -355,6 +369,7 @@ bool NeighbourList::contact_intersects(int i, int j)
 **/
 bool NeighbourList::build_mesh()
 {
+  /*
   typedef boost::adjacency_list
        <  boost::vecS, 
           boost::vecS, 
@@ -394,6 +409,8 @@ bool NeighbourList::build_mesh()
     boost::planar_face_traversal(g, &embedding[0], m_faces);
   else
   {
+    for (int i = 0; i < N; i++)
+      cout << mesh.get_vertices()[i] << endl;
     m_msg->msg(Messenger::ERROR,"It was not possible to build tessellation build. Most likely you contact distance is too large creating unphysical contact network.");
     throw runtime_error("Unable to build tessellation from the contact network.");
   }
@@ -407,6 +424,26 @@ bool NeighbourList::build_mesh()
   m_system->update_mesh();
   
   //cout << "Done building faces." << endl;
+  */
+  
+  Mesh& mesh = m_system->get_mesh();
+  int N = m_system->size();
+  
+  for (int i = 0; i < N; i++)
+  {
+    cout << " Contacts for i = " << i << " --> ";
+    for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
+    {
+      mesh.add_edge(i,m_contact_list[i][j]);
+      //mesh.add_edge(m_contact_list[i][j],i);
+      cout << m_contact_list[i][j] << " ";
+    }
+    cout << endl;
+  }
+  
+  mesh.generate_faces();
+  mesh.postprocess();
+  m_system->update_mesh();
   
   return true;
    
@@ -448,14 +485,12 @@ bool NeighbourList::build_triangulation()
     mesh.add_edge(i,j);
     mesh.add_edge(j,k);
     mesh.add_edge(k,i);
+    mesh.add_edge(j,i);
+    mesh.add_edge(k,j);
+    mesh.add_edge(i,k);
   }
-  // And we have to do it again, because of the way out Mesh is set up
-  // \todo Fix this mess!
-  for(Delaunay::Finite_faces_iterator fit = triangulation.finite_faces_begin(); fit != triangulation.finite_faces_end(); fit++)
-  {
-    Delaunay::Face_handle face = fit;
-    mesh.add_triangle(face->vertex(0)->info(),face->vertex(1)->info(),face->vertex(2)->info());
-  }
+  
+  mesh.generate_faces();
   
   //cout << mesh.get_vertices()[0] << endl;
   //cout << "Postprocessing..." << endl;

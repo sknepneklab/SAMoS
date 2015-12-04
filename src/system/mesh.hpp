@@ -60,6 +60,7 @@ using std::pair;
 using std::make_pair;
 using std::endl;
 using std::copy;
+using std::sort;
 using std::reverse;
 using std::runtime_error;
 
@@ -72,7 +73,7 @@ class Mesh
 {
 public:
   //! Construct a Mesh object
-  Mesh() : m_size(0), m_nedge(0), m_nface(0), m_is_triangulation(true) {   }
+  Mesh() : m_size(0), m_nedge(0), m_nface(0), m_is_triangulation(true), m_max_face_perim(20.0) {   }
   
   //! Get mesh size
   int size() { return m_size; }
@@ -94,6 +95,13 @@ public:
   
   //! Get edge-face data structure
   map<pair<int,int>, int>& get_edge_face() { return m_edge_face; }
+  
+  //! Get maximum face perimeter
+  double get_max_face_perim() {  return m_max_face_perim; }
+  
+  //! Set value of the maximum face perimeter
+  //! \param val new value
+  void set_max_face_perim(double val) { m_max_face_perim = val; }
   
   //! Resets the mesh
   void reset();
@@ -128,11 +136,8 @@ public:
   //! Add an edge
   void add_edge(int,int);
     
-  //! Add face
-  void add_face(vector<int>&);
-  
-  //! Add triangle
-  void add_triangle(int, int, int);
+  //! Generate faces of the mesh
+  void generate_faces();
   
   //! Updates vertex positions 
   //! \param p particle
@@ -148,14 +153,11 @@ public:
   //! Compute face centre
   void compute_centre(int);
   
-  //! Order vertices in a face
-  void order_face(int);
-  
   //! Order vertex star
   void order_star(int);
   
   //! Compute dual area
-  double dual_area(int,Vector3d&);
+  double dual_area(int);
   
   //! Dual perimeter
   double dual_perimeter(int);
@@ -166,6 +168,7 @@ private:
   int m_nedge;   //!< Number of edges
   int m_nface;   //!< Number of faces
   bool m_is_triangulation;  //!< If true, all faces are triangles (allows more assumptions)
+  bool m_max_face_perim;    //!< If face perimeter is greater than this value, reject face and treat it as a hole.
     
   vector<Vertex> m_vertices;           //!< Contains all vertices
   vector<Edge> m_edges;                //!< Contains all edge
