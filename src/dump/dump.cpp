@@ -856,6 +856,8 @@ void Dump::dump_vtp(int step)
       {
         Vertex& vert = mesh.get_vertices()[i];
         if (vert.boundary)
+          boundary->InsertNextValue(2);
+        else if (!vert.attached)
           boundary->InsertNextValue(1);
         else
           boundary->InsertNextValue(0);
@@ -898,6 +900,7 @@ void Dump::dump_vtp(int step)
     vector<Face>& mesh_faces = mesh.get_faces();
     vector<Edge>& mesh_edges = mesh.get_edges();
     vector<Vertex>& vertices = mesh.get_vertices();
+    vector<Vector3d>& dual = mesh.get_dual();
     vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
     vtkSmartPointer<vtkDoubleArray> areas =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> perims =  vtkSmartPointer<vtkDoubleArray>::New();
@@ -906,17 +909,17 @@ void Dump::dump_vtp(int step)
     perims->SetName("Perimeter");
     perims->SetNumberOfComponents(1);
     
-    for (unsigned int i = 0; i < mesh_faces.size(); i++)
-      points->InsertNextPoint (mesh_faces[i].rc.x, mesh_faces[i].rc.y, mesh_faces[i].rc.z);      
+    for (unsigned int i = 0; i < dual.size(); i++)
+      points->InsertNextPoint (dual[i].x, dual[i].y, dual[i].z);      
     polydata->SetPoints(points);
     
     for (unsigned int i = 0; i < vertices.size(); i++)
-      if (!vertices[i].boundary)
+      if (vertices[i].attached)
       {
         Vertex& V = vertices[i];
-        face->GetPointIds()->SetNumberOfIds(V.n_edges);
-        for (unsigned int e = 0; e < V.n_edges; e++)
-          face->GetPointIds()->SetId(e, mesh_edges[V.edges[e]].face);
+        face->GetPointIds()->SetNumberOfIds(V.dual.size());
+        for (unsigned int d = 0; d < V.dual.size(); d++)
+          face->GetPointIds()->SetId(d, V.dual[d]);
         faces->InsertNextCell(face);
         areas->InsertNextValue(vertices[i].area);
         perims->InsertNextValue(vertices[i].perim);

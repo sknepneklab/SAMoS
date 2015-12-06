@@ -44,6 +44,7 @@
 
 #include <vector>
 #include <string>
+#include <cmath>
 
 #include <boost/format.hpp>
 
@@ -51,6 +52,8 @@ using boost::format;
 using std::string;
 using std::vector;
 using std::endl;
+using std::sin;
+using std::cos;
 
 /*! Vertex class is a light-weight class that handles vertices in a mesh.
  *  A vertex can simply be a particle position or the position of the dual lattice
@@ -74,7 +77,8 @@ struct Vertex
                                                  z(0),
                                                  n_edges(0), n_faces(0), 
                                                  boundary(false),
-                                                 ordered(false) 
+                                                 ordered(false),
+                                                 attached(true) 
                                                  {   }
   
   //! Constract from particle position 
@@ -90,6 +94,7 @@ struct Vertex
    n_faces = 0;
    boundary = false;
    ordered = false;
+   attached = true;
   }
   
   //! Add neighbour
@@ -115,6 +120,7 @@ struct Vertex
     faces.push_back(f);
     n_faces++;
   } 
+  
    
   int id;                      //!< Vertex id
   int type;                    //!< Vertex type 
@@ -130,10 +136,12 @@ struct Vertex
   
   bool boundary;               //!< If true, vertex is a boundary vertex
   bool ordered;                //!< If true, vertex star is ordered
+  bool attached;               //!< If true, vertex is attached to a mesh
     
   vector<int> neigh;           //!< Contains indices of all neighbours
   vector<int> edges;           //!< Contains indices of all edges that originate at this vertex
   vector<int> faces;           //!< Contains indices of faces this vertex belongs to
+  vector<int> dual;            //!< Centres of all faces surrounding it. Boundary vertices are special.
     
 };
 

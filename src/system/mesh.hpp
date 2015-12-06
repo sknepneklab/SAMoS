@@ -73,7 +73,7 @@ class Mesh
 {
 public:
   //! Construct a Mesh object
-  Mesh() : m_size(0), m_nedge(0), m_nface(0), m_is_triangulation(true), m_max_face_perim(20.0) {   }
+  Mesh() : m_size(0), m_nedge(0), m_nface(0), m_ndual(0), m_is_triangulation(true), m_max_face_perim(20.0) {   }
   
   //! Get mesh size
   int size() { return m_size; }
@@ -92,6 +92,9 @@ public:
   
   //! Get list of faces
   vector<Face>& get_faces() { return m_faces; }
+  
+  //! Get list of all duals
+  vector<Vector3d>& get_dual() { return m_dual; }
   
   //! Get edge-face data structure
   map<pair<int,int>, int>& get_edge_face() { return m_edge_face; }
@@ -139,6 +142,12 @@ public:
   //! Generate faces of the mesh
   void generate_faces();
   
+  //! Generate dual mesh
+  void generate_dual_mesh();
+  
+  //! Update dual mesh
+  void update_dual_mesh();
+  
   //! Updates vertex positions 
   //! \param p particle
   void update(Particle& p)
@@ -167,6 +176,7 @@ private:
   int m_size;    //!< Mesh size
   int m_nedge;   //!< Number of edges
   int m_nface;   //!< Number of faces
+  int m_ndual;   //!< Number of vertices in dual
   bool m_is_triangulation;  //!< If true, all faces are triangles (allows more assumptions)
   double m_max_face_perim;    //!< If face perimeter is greater than this value, reject face and treat it as a hole.
     
@@ -175,6 +185,7 @@ private:
   vector<Face> m_faces;                //!< Contains all faces
   map<pair<int,int>, int> m_edge_map;  //!< Relates vertex indices to edge ids
   map<pair<int,int>, int> m_edge_face; //!< Relates pairs of faces to edges
+  vector<Vector3d> m_dual;             //!< Coordinates of the dual mesh
   
 };
 

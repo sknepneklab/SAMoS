@@ -154,7 +154,7 @@ public:
   }
   
   //! Rotate vector by \f$ \phi \f$ around another vector
-  void rotate(const double phi, const Vector3d& v)
+  Vector3d rotate(const double phi, const Vector3d& v)
   {
     double s = std::sin(phi);
     double c = std::cos(phi);
@@ -164,9 +164,7 @@ public:
     double ny = x * (k * v.x * v.y + s * v.z) + y * (c + k * v.y * v.y) + z * (k * v.y * v.z - s * v.x);
     double nz = x * (k * v.x * v.z - s * v.y) + y * (k * v.y * v.z + s * v.x) + z * (c + k * v.z * v.z);
     
-    x = nx;
-    y = ny;
-    z = nz;
+    return Vector3d(nx,ny,nz);
   }
 
   ///@{

@@ -434,7 +434,9 @@ bool NeighbourList::build_mesh()
     for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
       mesh.add_edge(i,m_contact_list[i][j]);
   
+  mesh.set_max_face_perim(m_max_perim);
   mesh.generate_faces();
+  mesh.generate_dual_mesh();
   mesh.postprocess();
   m_system->update_mesh();
   

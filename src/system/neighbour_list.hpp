@@ -126,7 +126,8 @@ public:
                                                                                                  m_build_contacts(false),
                                                                                                  m_build_faces(false),
                                                                                                  m_triangulation(false),
-                                                                                                 m_contact_dist(0.0)
+                                                                                                 m_contact_dist(0.0),
+                                                                                                 m_max_perim(20.0)
   {
     m_msg->write_config("nlist.cut",lexical_cast<string>(m_cut));
     m_msg->write_config("nlist.pad",lexical_cast<string>(m_pad));
@@ -189,7 +190,18 @@ public:
         m_msg->write_config("nlist.contact_distance",param["contact_distance"]); 
       }
     }
-    
+    if (param.find("max_perimeter") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Neighbour list. No maximum face perimeter set. Assuming default value of 20.");
+      m_msg->write_config("nlist.max_perimeter","20.0");
+      m_max_perim = 20.0;
+    }
+    else    
+    {
+      m_msg->msg(Messenger::INFO,"Neighbour list.  Setting maximum face perimeter to "+param["max_perimeter"]+".");
+      m_msg->write_config("nlist.contact_distance",param["max_perimeter"]);
+      m_max_perim =  lexical_cast<double>(param["max_perimeter"]);
+    }
     this->build();
   }
   
@@ -260,6 +272,7 @@ private:
   bool m_build_faces;              //!< If true, build list of faces based on contact network
   bool m_triangulation;            //!< If true, build Delaunay triangulation for faces
   double m_contact_dist;           //!< Distance over which to assume particles to be in contact 
+  double m_max_perim;              //!< Maximum value of the perimeter beyond which face becomes a hole.
   vector<vector<int> >  m_contact_list;    //!< Holds the contact list for each particle
   vertex_visitor  m_faces;         //!< List of all faces computed from the contact network
   

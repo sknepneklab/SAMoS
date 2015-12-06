@@ -56,6 +56,9 @@ ostream& operator<<(ostream& out, const Vertex& v)
   out << endl << "faces : ";
   for (int i = 0; i < v.n_faces; i++)
     out << v.faces[i] << " ";
+  out << endl << "dual : ";
+  for (unsigned int i = 0; i < v.dual.size(); i++)
+    out << v.dual[i] << " ";
   out << endl;
   if (v.boundary)
     out << "boundary vertex" << endl;

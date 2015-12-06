@@ -90,7 +90,6 @@ void Mesh::add_edge(int ei, int ej)
 */
 void Mesh::generate_faces()
 {
-  cout << "Generating faces..." << endl;
   vector<vert_angle> angles;
   for (int i = 0; i < m_nedge; i++)
   {
@@ -148,7 +147,72 @@ void Mesh::generate_faces()
       m_nface++;
     }
   }
-  cout << "Done finding faces." << endl;
+}
+
+/*! Genererate position of the dual vertices */
+void Mesh::generate_dual_mesh()
+{
+  m_dual.clear();
+  m_ndual = 0;
+  for (int v = 0; v < m_size; v++)
+    m_vertices[v].dual.clear();
+  for (int f = 0; f < m_nface; f++)
+  {
+    Face& face = m_faces[f];
+    if (!face.is_hole)
+    {
+      this->compute_centre(f);
+      m_dual.push_back(face.rc);
+      for (int e = 0; e < face.n_sides; e++)
+      {
+        Edge& E = m_edges[face.edges[e]];
+        E.dual = m_ndual;
+      }
+      m_ndual++;
+    }
+    else
+    {
+      for (int e = 0; e < face.n_sides; e++)
+      {
+        Edge& E = m_edges[face.edges[e]];
+        Vector3d rc = m_faces[m_edges[E.pair].face].rc;
+        Vector3d r = m_vertices[E.to].r - m_vertices[E.from].r;
+        Vector3d rn = mirror(m_vertices[E.from].r,r,rc);
+        m_dual.push_back(rn);
+        m_vertices[E.from].dual.push_back(m_ndual);
+        m_vertices[E.to].dual.push_back(m_ndual);
+        E.dual = m_ndual;
+        m_ndual++;
+      }
+    }
+  }
+  m_ndual = m_dual.size();    
+}
+
+/*! Update position of the dual vertices */
+void Mesh::update_dual_mesh()
+{
+  int i = 0;
+  for (int f = 0; f < m_nface; f++)
+  {
+    Face& face = m_faces[f];
+    if (!face.is_hole)
+    {
+      this->compute_centre(f);
+      m_dual[i++] = face.rc;
+    }
+    else
+    {
+      for (int e = 0; e < face.n_sides; e++)
+      {
+        Edge& E = m_edges[face.edges[e]];
+        Vector3d rc = m_faces[m_edges[E.pair].face].rc;
+        Vector3d r = m_vertices[E.to].r - m_vertices[E.from].r;
+        Vector3d rn = mirror(m_vertices[E.from].r,r,rc);
+        m_dual[i++] = rn;
+      }
+    }
+  }   
 }
 
 
@@ -157,10 +221,11 @@ void Mesh::generate_faces()
 */ 
 void Mesh::postprocess()
 {
-  cout << "Postprocessing..." << endl;
   m_size = m_vertices.size();
   m_nedge = m_edges.size();
   m_nface = m_faces.size();
+  //for (int i = 0; i < m_size; i++)
+  //  if (m_vertices[i].edges.size() == 0) m_vertices[i].boundary = true;
   for (int f = 0; f < m_nface; f++)
   {
     Face& face = m_faces[f];
@@ -181,7 +246,6 @@ void Mesh::postprocess()
   }
   for (int v = 0; v < m_size; v++)
     this->order_star(v);
-  cout << "Done postprocessing." << endl;
 }
 
 /*! Computes geometric centre of a face. Coordinates are stored in 
@@ -209,25 +273,57 @@ void Mesh::compute_centre(int f)
 void Mesh::order_star(int v)
 {
   Vertex& V = m_vertices[v];
+  V.dual.clear();
   vector<int> edges;
   
-  edges.push_back(V.edges[0]);
-  while (edges.size() < V.edges.size())
+  if (V.edges.size() > 0)
   {
-    int idx = edges.size() - 1;
-    int face = m_edges[edges[idx]].face;
-    for (unsigned int e = 0; e < V.edges.size(); e++)
+    edges.push_back(V.edges[0]);
+    while (edges.size() < V.edges.size())
     {
-      Edge& Ej = m_edges[V.edges[e]];
-      if (m_edges[Ej.pair].face == face)
+      int idx = edges.size() - 1;
+      int face = m_edges[edges[idx]].face;
+      for (unsigned int e = 0; e < V.edges.size(); e++)
       {
-        edges.push_back(V.edges[e]);
-        break;
+        Edge& Ej = m_edges[V.edges[e]];
+        if (m_edges[Ej.pair].face == face)
+        {
+          edges.push_back(V.edges[e]);
+          break;
+        }
       }
     }
+    copy(edges.begin(),edges.end(),V.edges.begin());
+    for (int e = 0; e < V.n_edges; e++)
+    {
+      Edge& E = m_edges[V.edges[e]];
+      if (!m_faces[E.face].is_hole)
+      {
+        V.dual.push_back(E.dual);
+      }
+      else
+      {
+        int prev = (e == 0) ? V.n_edges - 1 : e-1;
+        int next = (e == V.n_edges - 1) ? 0 : e+1;
+        Edge& Ep = m_edges[m_edges[V.edges[prev]].pair];
+        Edge& En = m_edges[m_edges[V.edges[next]].pair];
+        if (m_faces[Ep.face].is_hole)
+        { 
+          V.dual.push_back(Ep.dual);
+          V.dual.push_back(E.dual);
+        }
+        else 
+        {
+          V.dual.push_back(E.dual);
+          V.dual.push_back(En.dual);
+        }
+      }
+    }
+    //cout << V << endl;
   }
-  
-  copy(edges.begin(),edges.end(),V.edges.begin());
+  else 
+    V.attached = false;
+    
   V.ordered = true;
 }
 
@@ -244,20 +340,30 @@ double Mesh::dual_area(int v)
   if (!m_vertices[v].ordered)
     throw runtime_error("Vertex star has to be ordered before dual area can be computed.");
   Vertex& V = m_vertices[v];
-  if (V.boundary) return 0.0;
+  if (!V.attached) return 0.0;
+  //if (V.boundary) return 0.0;
   
   V.area = 0.0;
-  for (int i = 0; i < V.n_edges; i++)
+  for (unsigned int i = 0; i < V.dual.size(); i++)
   {
-    int j = ( i == V.n_edges-1) ? 0 : i + 1;
-    Vector3d& r1 = m_faces[m_edges[V.edges[i]].face].rc;
-    Vector3d& r2 = m_faces[m_edges[V.edges[j]].face].rc;
+    int j = ( i == V.dual.size()-1) ? 0 : i + 1;
+    Vector3d& r1 = m_dual[V.dual[i]];
+    Vector3d& r2 = m_dual[V.dual[j]];
+    //Vector3d& r1 = m_faces[m_edges[V.edges[i]].face].rc;
+    //Vector3d& r2 = m_faces[m_edges[V.edges[j]].face].rc;
+    
     Vector3d  rr = cross(r1,r2); 
     V.area += dot(rr,V.N.unit());
   }
    
   V.area *= 0.5;
-  if (V.area < 0.0) V.area = -V.area;
+  if (V.area < 0.0) 
+  {
+    V.area = -V.area;
+    reverse(V.dual.begin(),V.dual.end());
+    reverse(V.edges.begin(),V.edges.end());
+    reverse(V.neigh.begin(),V.neigh.end());
+  }
   
   return V.area;
 }
@@ -271,17 +377,20 @@ double Mesh::dual_area(int v)
 */
 double Mesh::dual_perimeter(int v)
 {
-  if (!m_vertices[v].ordered)
-    throw runtime_error("Vertecx star has to be ordered before dual premeter can be computed.");
   Vertex& V = m_vertices[v];
-  if (V.boundary) return 0.0;
+  if (!V.attached) return 0.0;
+  if (!V.ordered)
+    throw runtime_error("Vertex star has to be ordered before dual premeter can be computed.");
+  //if (V.boundary) return 0.0;
   
   V.perim  = 0.0;
-  for (int i = 0; i < V.n_edges; i++)
+  for (int i = 0; i < V.dual.size(); i++)
   {
-    int j = ( i == V.n_edges-1) ? 0 : i + 1;
-    Vector3d& r1 = m_faces[m_edges[V.edges[i]].face].rc;
-    Vector3d& r2 = m_faces[m_edges[V.edges[j]].face].rc;
+    int j = ( i == V.dual.size()-1) ? 0 : i + 1;
+    //Vector3d& r1 = m_faces[m_edges[V.edges[i]].face].rc;
+    //Vector3d& r2 = m_faces[m_edges[V.edges[j]].face].rc;
+    Vector3d& r1 = m_dual[V.dual[i]];
+    Vector3d& r2 = m_dual[V.dual[j]];
     V.perim += (r1-r2).len();
   }
   return V.perim;

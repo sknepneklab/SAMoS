@@ -844,8 +844,7 @@ void System::update_mesh()
       Particle& p = m_particles[i];
       m_mesh.update(p);
     }
-    for (int i = 0; i < m_mesh.nfaces(); i++)
-      m_mesh.compute_centre(i);
+    m_mesh.update_dual_mesh();
     for (int i = 0; i < m_mesh.size(); i++)
     {
       m_mesh.dual_perimeter(i);
