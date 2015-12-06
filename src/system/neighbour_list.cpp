@@ -281,6 +281,7 @@ void NeighbourList::build_contacts()
         vector<int>& v = m_contact_list[m_contact_list[i][0]];
         vector<int>::iterator it = find(v.begin(),v.end(),i);
         if (it != v.end()) v.erase(it);
+        m_contact_list[i].clear();
         done = false;
       }
     }
