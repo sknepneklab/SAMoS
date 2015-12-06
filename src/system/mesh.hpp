@@ -168,7 +168,7 @@ private:
   int m_nedge;   //!< Number of edges
   int m_nface;   //!< Number of faces
   bool m_is_triangulation;  //!< If true, all faces are triangles (allows more assumptions)
-  bool m_max_face_perim;    //!< If face perimeter is greater than this value, reject face and treat it as a hole.
+  double m_max_face_perim;    //!< If face perimeter is greater than this value, reject face and treat it as a hole.
     
   vector<Vertex> m_vertices;           //!< Contains all vertices
   vector<Edge> m_edges;                //!< Contains all edge

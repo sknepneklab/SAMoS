@@ -430,16 +430,8 @@ bool NeighbourList::build_mesh()
   int N = m_system->size();
   
   for (int i = 0; i < N; i++)
-  {
-    cout << " Contacts for i = " << i << " --> ";
     for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
-    {
       mesh.add_edge(i,m_contact_list[i][j]);
-      //mesh.add_edge(m_contact_list[i][j],i);
-      cout << m_contact_list[i][j] << " ";
-    }
-    cout << endl;
-  }
   
   mesh.generate_faces();
   mesh.postprocess();

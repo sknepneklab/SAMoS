@@ -70,12 +70,15 @@ Vector3d operator*(const double c, const Vector3d& v)
 //! \param N normal vector
 double angle(Vector3d& a, Vector3d& b, const Vector3d& N)
 {
-  double phi = std::acos(dot(a.unit(),b.unit()));
+  double a_dot_b = dot(a.unit(),b.unit());
+  if (a_dot_b > 1.0) a_dot_b = 1.0;
+  else if (a_dot_b < -1.0) a_dot_b = -1.0;
+  double phi = std::acos(a_dot_b);
   double sign = dot(cross(a,b),N);
   if (sign >= 0) 
     return phi;
-  else 
-    return -phi + 2.0*M_PI;
+  else
+    return -phi;
 }
 
 /*! Mirror vector with respect to other vector

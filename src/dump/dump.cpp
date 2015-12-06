@@ -896,6 +896,7 @@ void Dump::dump_vtp(int step)
   else
   {
     vector<Face>& mesh_faces = mesh.get_faces();
+    vector<Edge>& mesh_edges = mesh.get_edges();
     vector<Vertex>& vertices = mesh.get_vertices();
     vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
     vtkSmartPointer<vtkDoubleArray> areas =  vtkSmartPointer<vtkDoubleArray>::New();
@@ -912,9 +913,10 @@ void Dump::dump_vtp(int step)
     for (unsigned int i = 0; i < vertices.size(); i++)
       if (!vertices[i].boundary)
       {
-        face->GetPointIds()->SetNumberOfIds(vertices[i].faces.size());
-        for (unsigned int k = 0; k < vertices[i].faces.size(); k++)
-          face->GetPointIds()->SetId(k, vertices[i].faces[k]);
+        Vertex& V = vertices[i];
+        face->GetPointIds()->SetNumberOfIds(V.n_edges);
+        for (unsigned int e = 0; e < V.n_edges; e++)
+          face->GetPointIds()->SetId(e, mesh_edges[V.edges[e]].face);
         faces->InsertNextCell(face);
         areas->InsertNextValue(vertices[i].area);
         perims->InsertNextValue(vertices[i].perim);

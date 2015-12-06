@@ -57,7 +57,7 @@ struct Edge
   //! \param id edge id
   //! \param i id of 1st vertex
   //! \param j id of 2nd vertex
-  Edge(int id, int i, int j) : id(id), from(i), to(j), face(NO_FACE), visited(false), pair(-1)  {   }
+  Edge(int id, int i, int j) : id(id), from(i), to(j), face(NO_FACE), visited(false), pair(-1), boundary(false)  {   }
   
   //! Check if vertex belongs to the edge
   //! \param v vertex id
@@ -79,6 +79,7 @@ struct Edge
   int face;                     //!< Id of the face (to the left) this half-edge belongs to. NO_FACE if none, i.e. boundary edge.
   bool visited;                 //!< If true, edge visited while building faces.
   int pair;                     //!< Id of the other half of the half-edge pair
+  bool boundary;                //!< Edge is boundary if its face is a hole
     
 };
 

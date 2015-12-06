@@ -44,7 +44,8 @@ ostream& operator<<(ostream& out, const Edge& e)
   out << format("id : %d\n") % e.id
   << format("from : %d\n") % e.from
   << format("to : %d\n") % e.to
-  << format("face : %d\n") % e.face;
+  << format("face : %d\n") % e.face
+  << format("pair : %d\n") % e.pair;
   if (e.face == NO_FACE)
     out << "boundary edge" << endl;
   out << " ------------------------------------";

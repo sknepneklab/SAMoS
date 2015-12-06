@@ -76,21 +76,22 @@ void Mesh::reset()
 */
 void Mesh::add_edge(int ei, int ej)
 {
-  m_edges.push_back(Edge(m_nedge,ei,ej));
-  m_vertices[ei].add_edge(m_nedge);
-  m_vertices[ei].add_neighbour(ej);
-  m_edge_map[make_pair(ei,ej)] = m_nedge;
-  if (m_edge_map.find(make_pair(ej,ei)) != m_edge_map.end())
-    m_edges[m_edge_map[make_pair(ej,ei)]].pair = m_nedge;
-  m_nedge++;
+  if (m_edge_map.find(make_pair(ei,ej)) == m_edge_map.end())
+  {
+    m_edges.push_back(Edge(m_nedge,ei,ej));
+    m_vertices[ei].add_edge(m_nedge);
+    m_vertices[ei].add_neighbour(ej);
+    m_edge_map[make_pair(ei,ej)] = m_nedge;
+    m_nedge++;
+  }
 }
 
 /*! Generates faces from the edge information
 */
 void Mesh::generate_faces()
 {
-  for (int v = 0; v < m_size; v++)
-    this->order_star(v);
+  cout << "Generating faces..." << endl;
+  vector<vert_angle> angles;
   for (int i = 0; i < m_nedge; i++)
   {
     Face face = Face(m_nface);
@@ -99,29 +100,34 @@ void Mesh::generate_faces()
     {
       E.visited = true;
       int seed = E.from;
+      int vn = E.to;
       face.add_vertex(seed);
-      face.add_vertex(E.to);
+      face.add_vertex(vn);
       face.add_edge(E.id);
-      int v = E.to;
-      cout << "Face : " << m_nface << " --> " << seed << " " << v << " ";
-      while (v != seed)
+      int vp = seed;
+      while (vn != seed)
       {
-        Vertex& V = m_vertices[v];
-        for (unsigned int e = 0; e < V.edges.size(); e++)
+        Vertex& Vp = m_vertices[vp];
+        Vertex& Vn = m_vertices[vn];
+        Vector3d ri = Vn.r - Vp.r;
+        angles.clear();
+        for (unsigned int e = 0; e < Vn.edges.size(); e++)
         {
-          Edge& Ej = m_edges[V.edges[e]];
-          if (!Ej.visited)
+          Edge& Ej = m_edges[Vn.edges[e]];
+          if (!Ej.visited && Ej.to != vp)
           {
-            Ej.visited = true;
-            if (Ej.to != seed) face.add_vertex(Ej.to);
-            face.add_edge(Ej.id);
-            v = Ej.to;
-            cout << v << " ";
-            break;
+            Vector3d rj = m_vertices[Ej.to].r - Vn.r;
+            angles.push_back(make_pair(e,M_PI - angle(ri,rj,Vn.N)));
           }
         }
-      }
-      cout << endl;
+        sort(angles.begin(),angles.end(),comp);
+        Edge& Ej = m_edges[Vn.edges[angles[0].first]];
+        Ej.visited = true;
+        if (Ej.to != seed) face.add_vertex(Ej.to);
+        face.add_edge(Ej.id);
+        vp = vn;
+        vn = Ej.to;
+      }      
     }
     double perim = 0.0;
     for (unsigned int f = 0; f < face.vertices.size(); f++)
@@ -131,8 +137,9 @@ void Mesh::generate_faces()
       Vector3d r2 = m_vertices[face.vertices[f_n]].r;
       perim += (r1-r2).len();
     }
-    if (perim < m_max_face_perim)
+    if (face.vertices.size() > 0)
     {
+      if (perim >= m_max_face_perim) face.is_hole = true;
       m_faces.push_back(face);
       for (unsigned int f = 0; f < face.vertices.size(); f++)
         m_vertices[face.vertices[f]].add_face(m_nface);
@@ -141,6 +148,7 @@ void Mesh::generate_faces()
       m_nface++;
     }
   }
+  cout << "Done finding faces." << endl;
 }
 
 
@@ -149,15 +157,31 @@ void Mesh::generate_faces()
 */ 
 void Mesh::postprocess()
 {
+  cout << "Postprocessing..." << endl;
+  m_size = m_vertices.size();
+  m_nedge = m_edges.size();
+  m_nface = m_faces.size();
+  for (int f = 0; f < m_nface; f++)
+  {
+    Face& face = m_faces[f];
+    if (face.is_hole)
+    {
+      for (unsigned int v = 0; v < face.vertices.size(); v++)
+        m_vertices[face.vertices[v]].boundary = true;
+      for (unsigned int e = 0; e < face.edges.size(); e++)
+        m_edges[face.edges[e]].boundary = true;
+    }
+  }
   for (int e = 0; e < m_nedge; e++)
   {
     Edge& E = m_edges[e];
-    if (E.face == NO_FACE)
-    {
-      m_vertices[E.from].boundary = true;
-      m_vertices[E.to].boundary = true;
-    }
+    Edge& Epair = m_edges[m_edge_map[make_pair(E.to,E.from)]];
+    E.pair = Epair.id;
+    Epair.pair = E.id;
   }
+  for (int v = 0; v < m_size; v++)
+    this->order_star(v);
+  cout << "Done postprocessing." << endl;
 }
 
 /*! Computes geometric centre of a face. Coordinates are stored in 
@@ -185,25 +209,25 @@ void Mesh::compute_centre(int f)
 void Mesh::order_star(int v)
 {
   Vertex& V = m_vertices[v];
-  int size = V.edges.size();
-  if (size > 1)
+  vector<int> edges;
+  
+  edges.push_back(V.edges[0]);
+  while (edges.size() < V.edges.size())
   {
-    int e = V.edges[0];
-    Edge& Ei = m_edges[e];
-    Vector3d ri = m_vertices[Ei.to].r - V.r;
-    vector<vert_angle> angles;
-    angles.push_back(make_pair(e,0.0));
-    for (int i = 1; i < size; i++)
+    int idx = edges.size() - 1;
+    int face = m_edges[edges[idx]].face;
+    for (unsigned int e = 0; e < V.edges.size(); e++)
     {
-      e = V.edges[i];
-      Edge& Ej = m_edges[e];
-      Vector3d rj = m_vertices[Ej.to].r - V.r;
-      angles.push_back(make_pair(e,angle(ri,rj,V.N)));
+      Edge& Ej = m_edges[V.edges[e]];
+      if (m_edges[Ej.pair].face == face)
+      {
+        edges.push_back(V.edges[e]);
+        break;
+      }
     }
-    sort(angles.begin(),angles.end(),comp);
-    for (int i = 0; i < size; i++)
-      V.edges[i] = angles[i].first;
   }
+  
+  copy(edges.begin(),edges.end(),V.edges.begin());
   V.ordered = true;
 }
 
