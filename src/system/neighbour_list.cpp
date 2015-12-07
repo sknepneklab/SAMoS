@@ -485,7 +485,9 @@ bool NeighbourList::build_triangulation()
     mesh.add_edge(i,k);
   }
   
+  mesh.set_max_face_perim(m_max_perim);
   mesh.generate_faces();
+  mesh.generate_dual_mesh();
   
   //cout << mesh.get_vertices()[0] << endl;
   //cout << "Postprocessing..." << endl;
