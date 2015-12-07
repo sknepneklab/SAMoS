@@ -721,18 +721,16 @@ void Dump::dump_faces()
   }
   else if (m_nlist->has_faces())
   {
+    Mesh& mesh = m_system->get_mesh();
     if (m_print_header)
        m_out << "#  face_id   partice_ids" << endl;
-    if (m_nlist->build_faces())
+    vector<Face>& faces = mesh.get_faces();
+    for (unsigned int i = 0; i < faces.size(); i++)
     {
-      vector<vector<int> > faces = m_nlist->get_faces();
-      for (unsigned int i = 0; i < faces.size(); i++)
-      {
-        m_out << format("%d  ") % i;
-        for (unsigned int j = 0; j < faces[i].size(); j++)
-          m_out << format("%d ") % faces[i][j];
-        m_out << endl;
-      }
+      m_out << format("%d  ") % faces[i].id;
+      for (unsigned int j = 0; j < faces[i].vertices.size(); j++)
+        m_out << format("%d ") % faces[i].vertices[j];
+      m_out << endl;
     }
   }
 }
@@ -897,8 +895,6 @@ void Dump::dump_vtp(int step)
   }
   else
   {
-    vector<Face>& mesh_faces = mesh.get_faces();
-    vector<Edge>& mesh_edges = mesh.get_edges();
     vector<Vertex>& vertices = mesh.get_vertices();
     vector<Vector3d>& dual = mesh.get_dual();
     vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();

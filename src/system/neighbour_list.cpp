@@ -70,8 +70,14 @@ void NeighbourList::build()
     this->build_nsq();
   
   if (m_build_contacts)
-    this->build_contacts();
-  
+  {
+#ifdef HAS_CGAL
+    if (m_triangulation)
+      this->build_triangulation();
+    else
+#endif
+      this->build_contacts();
+  }
   if (m_build_faces)
     this->build_faces();
 }
@@ -79,12 +85,7 @@ void NeighbourList::build()
 /*! Build faces of the mesh from the particle locations */
 bool NeighbourList::build_faces()
 {
-#ifdef HAS_CGAL
-    if (m_triangulation)
-       return this->build_triangulation();
-    else
-#endif
-       return this->build_mesh();
+  return this->build_mesh();
 }
 
 // Private methods below
@@ -270,23 +271,8 @@ void NeighbourList::build_contacts()
       }
     }
   }
-  bool done = false;
-  while(!done)
-  {
-    done = true;
-    for (int i = 0; i < N; i++)
-    {
-      if (m_contact_list[i].size() == 1)
-      {
-        vector<int>& v = m_contact_list[m_contact_list[i][0]];
-        vector<int>::iterator it = find(v.begin(),v.end(),i);
-        if (it != v.end()) v.erase(it);
-        m_contact_list[i].clear();
-        done = false;
-      }
-    }
-  }
   
+  this->remove_dangling();
 }
 
 //! Check if two edges intersect
@@ -370,63 +356,7 @@ bool NeighbourList::contact_intersects(int i, int j)
 **/
 bool NeighbourList::build_mesh()
 {
-  /*
-  typedef boost::adjacency_list
-       <  boost::vecS, 
-          boost::vecS, 
-          boost::undirectedS, 
-          boost::property<boost::vertex_index_t, int>,
-          boost::property<boost::edge_index_t, int>
-        > 
-        graph;
-  
-  Mesh& mesh = m_system->get_mesh();
-  int N = m_system->size(); 
-  graph g(N);
-  
-  // wipe old face list
-  if (m_faces.faces.size() > 0)
-  {
-    for (unsigned int i = 0; i < m_faces.faces.size(); i++)
-      m_faces.faces[i].clear();
-    m_faces.faces.clear();
-  }
-  
-  for (int i = 0; i < N; i++)
-    for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
-      boost::add_edge(i,m_contact_list[i][j],g);
-  
-  // Initialize the interior edge index
-  boost::property_map<graph, boost::edge_index_t>::type e_index = boost::get(boost::edge_index, g);
-  boost::graph_traits<graph>::edges_size_type edge_count = 0;
-  boost::graph_traits<graph>::edge_iterator ei, ei_end;
-  for(boost::tie(ei, ei_end) = boost::edges(g); ei != ei_end; ++ei)
-    boost::put(e_index, *ei, edge_count++);
-  
-  // compute the planar embedding as a side-effect
-  typedef vector< boost::graph_traits<graph>::edge_descriptor > vec_t;
-  vector<vec_t> embedding(boost::num_vertices(g));
-  if(boost::boyer_myrvold_planarity_test(boost::boyer_myrvold_params::graph = g, boost::boyer_myrvold_params::embedding = &embedding[0]))
-    boost::planar_face_traversal(g, &embedding[0], m_faces);
-  else
-  {
-    for (int i = 0; i < N; i++)
-      cout << mesh.get_vertices()[i] << endl;
-    m_msg->msg(Messenger::ERROR,"It was not possible to build tessellation build. Most likely you contact distance is too large creating unphysical contact network.");
-    throw runtime_error("Unable to build tessellation from the contact network.");
-  }
-  
-  for (unsigned int i = 0; i < m_faces.faces.size(); i++)
-    if (m_faces.faces[i].size() <= MAX_FACE)
-      mesh.add_face(m_faces.faces[i]);
-
-  mesh.postprocess();
-  //cout << "Done postprocess." << endl;
-  m_system->update_mesh();
-  
-  //cout << "Done building faces." << endl;
-  */
-  
+    
   Mesh& mesh = m_system->get_mesh();
   int N = m_system->size();
   
@@ -452,7 +382,6 @@ bool NeighbourList::build_mesh()
 bool NeighbourList::build_triangulation()
 {
   vector< pair<Point,unsigned> > points;
-  Mesh& mesh = m_system->get_mesh();
   int N = m_system->size();
    
   for (int i = 0; i < N; i++)
@@ -464,7 +393,6 @@ bool NeighbourList::build_triangulation()
       throw runtime_error("Unable to build Delaunay triangulation for non-planar systems.");
     }
     points.push_back( make_pair( Point(pi.x,pi.y), pi.get_id() ) );
-    mesh.add_vertex(pi);
   }
 
   Delaunay triangulation;
@@ -477,41 +405,58 @@ bool NeighbourList::build_triangulation()
     unsigned int j = face->vertex(1)->info();
     unsigned int k = face->vertex(2)->info();
     //cout << i << " " << j << " " << k << endl;
-    mesh.add_edge(i,j);
-    mesh.add_edge(j,k);
-    mesh.add_edge(k,i);
-    mesh.add_edge(j,i);
-    mesh.add_edge(k,j);
-    mesh.add_edge(i,k);
+    Particle& pi = m_system->get_particle(i);
+    Particle& pj = m_system->get_particle(j);
+    Particle& pk = m_system->get_particle(k);
+    double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
+    m_system->apply_periodic(dx,dy,dz);
+    if (std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
+    {
+      if (find(m_contact_list[i].begin(),m_contact_list[i].end(),j) == m_contact_list[i].end()) m_contact_list[i].push_back(j);
+      if (find(m_contact_list[j].begin(),m_contact_list[j].end(),i) == m_contact_list[j].end()) m_contact_list[j].push_back(i);
+    }
+    dx = pj.x - pk.x, dy = pj.y - pk.y, dz = pj.z - pk.z;
+    m_system->apply_periodic(dx,dy,dz);
+    if (std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
+    {
+      if (find(m_contact_list[j].begin(),m_contact_list[j].end(),k) == m_contact_list[j].end()) m_contact_list[j].push_back(k);
+      if (find(m_contact_list[k].begin(),m_contact_list[k].end(),j) == m_contact_list[k].end()) m_contact_list[k].push_back(j);
+    }
+    dx = pk.x - pi.x, dy = pk.y - pi.y, dz = pk.z - pi.z;
+    m_system->apply_periodic(dx,dy,dz);
+    if (std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
+    {
+      if (find(m_contact_list[k].begin(),m_contact_list[k].end(),i) == m_contact_list[k].end()) m_contact_list[k].push_back(i);
+      if (find(m_contact_list[i].begin(),m_contact_list[i].end(),k) == m_contact_list[i].end()) m_contact_list[i].push_back(k);
+    }
   }
+ 
+  this->remove_dangling();
   
-  mesh.set_max_face_perim(m_max_perim);
-  mesh.generate_faces();
-  mesh.generate_dual_mesh();
-  
-  //cout << mesh.get_vertices()[0] << endl;
-  //cout << "Postprocessing..." << endl;
-  mesh.postprocess();
-  //cout << mesh.get_vertices()[0] << endl;
-  //cout << "Updating..." << endl;
-  m_system->update_mesh();
-  
-  
-  /*
-  for (int i = 0; i < mesh.size(); i++)
-    cout << mesh.get_vertices()[i] << endl;
-  
-  cout << endl;
-  
-  for (int i = 0; i < mesh.nedges(); i++)
-    cout << mesh.get_edges()[i] << endl;
-  
-  cout << endl;
-  
-  for (int i = 0; i < mesh.nfaces(); i++)
-    cout << mesh.get_faces()[i] << endl;
-  */
   return true;
   
 }
+
+//! Remove all edges that have one contanct
+void NeighbourList::remove_dangling()
+{
+  bool done = false;
+  int N = m_system->size();
+  while(!done)
+  {
+    done = true;
+    for (int i = 0; i < N; i++)
+    {
+      if (m_contact_list[i].size() == 1)
+      {
+        vector<int>& v = m_contact_list[m_contact_list[i][0]];
+        vector<int>::iterator it = find(v.begin(),v.end(),i);
+        if (it != v.end()) v.erase(it);
+        m_contact_list[i].clear();
+        done = false;
+      }
+    }
+  }
+}
+
 #endif

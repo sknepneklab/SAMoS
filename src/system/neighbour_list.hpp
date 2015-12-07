@@ -42,14 +42,8 @@
 #include <vector>
 #include <stdexcept>
 
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/properties.hpp>
-#include <boost/graph/graph_traits.hpp>
-#include <boost/property_map/property_map.hpp>
-#include <boost/ref.hpp>
-
-#include <boost/graph/planar_face_traversal.hpp>
-#include <boost/graph/boyer_myrvold_planar_test.hpp>
+//#include <boost/property_map/property_map.hpp>
+//#include <boost/ref.hpp>
 
 #ifdef HAS_CGAL
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
@@ -90,19 +84,6 @@ struct PartPos
   //@}
 };
 
-/*! Auxiliary data structure used by the Boost Graph Library
- *  to find all faces
- */ 
-struct vertex_visitor : public boost::planar_face_traversal_visitor
-{
-  void begin_face()  { face.clear();  }
-  void next_vertex(int v) {  face.push_back(v);  }
-  void end_face() { faces.push_back(face); }
-  vector<int>  face;
-  vector<vector<int> > faces;
-};
-
-
 
 /*! This class handles neighbour lists for fast potential and force 
  *  calculations. It is implemented as a vector of vectors (for performance). 
@@ -127,7 +108,8 @@ public:
                                                                                                  m_build_faces(false),
                                                                                                  m_triangulation(false),
                                                                                                  m_contact_dist(0.0),
-                                                                                                 m_max_perim(20.0)
+                                                                                                 m_max_perim(20.0),
+                                                                                                 m_max_edge_len(7.0)
   {
     m_msg->write_config("nlist.cut",lexical_cast<string>(m_cut));
     m_msg->write_config("nlist.pad",lexical_cast<string>(m_pad));
@@ -156,6 +138,18 @@ public:
       m_triangulation = true;
       m_msg->msg(Messenger::INFO,"Faces will be build using Delaunay triangulation.");
       m_msg->write_config("nlist.triangulation","true"); 
+      if (param.find("max_edge_len") == param.end())
+      {
+        m_msg->msg(Messenger::WARNING,"Neighbour list. No maximum edge lenght set. Assuming default value of 7.");
+        m_msg->write_config("nlist.max_edge_len","7.0");
+        m_max_edge_len = 7.0;
+      }
+      else    
+      {
+        m_msg->msg(Messenger::INFO,"Neighbour list. Setting maximum edge length "+param["max_edge_len"]+".");
+        m_msg->write_config("nlist.max_edge_len",param["max_edge_len"]);
+        m_max_edge_len =  lexical_cast<double>(param["max_edge_len"]);
+      }
     }
     if (param.find("build_faces") != param.end())
     {
@@ -164,7 +158,7 @@ public:
         m_msg->msg(Messenger::ERROR,"Building faces is not supported for periodic boundary conditions.");
         throw runtime_error("Faces not supported in periodic sytems.");
       }
-      if (!m_triangulation) m_build_contacts = true;
+      m_build_contacts = true;
       m_build_faces = true;
       m_msg->msg(Messenger::INFO,"Neighbour list will also build faces.");
       m_msg->write_config("nlist.faces","true"); 
@@ -225,9 +219,6 @@ public:
   //! \return Reference to the particle's neighbour list
   vector<int>& get_neighbours(int id) { return m_list[id]; }
   
-  //! Get faces
-  vector<vector<int> >& get_faces() { return m_faces.faces; }
-  
   //! Get neighbour list cutoff distance
   double get_cutoff() { return m_cut;  }  //!< \return neighbour list cutoff distance
   
@@ -273,9 +264,9 @@ private:
   bool m_triangulation;            //!< If true, build Delaunay triangulation for faces
   double m_contact_dist;           //!< Distance over which to assume particles to be in contact 
   double m_max_perim;              //!< Maximum value of the perimeter beyond which face becomes a hole.
+  double m_max_edge_len;           //!< Maximum value of the edge beyond which we drop it (for triangulations)
   vector<vector<int> >  m_contact_list;    //!< Holds the contact list for each particle
-  vertex_visitor  m_faces;         //!< List of all faces computed from the contact network
-  
+    
   // Actual neighbour list builds
   void build_nsq();    //!< Build with N^2 algorithm
   void build_cell();   //!< Build using cells list
@@ -288,6 +279,9 @@ private:
   
   // Do actual faces building for arbitrary face geometry
   bool build_mesh();
+  
+  // Remove dangling edges
+  void remove_dangling();
   
 #ifdef HAS_CGAL
   // Build Delaunay triangulation
