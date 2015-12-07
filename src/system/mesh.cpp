@@ -175,9 +175,9 @@ void Mesh::generate_dual_mesh()
       for (int e = 0; e < face.n_sides; e++)
       {
         Edge& E = m_edges[face.edges[e]];
-        Vector3d rc = m_faces[m_edges[E.pair].face].rc;
+        //Vector3d rc = m_faces[m_edges[E.pair].face].rc;
         Vector3d r = m_vertices[E.to].r - m_vertices[E.from].r;
-        Vector3d rn = mirror(m_vertices[E.from].r,r,rc);
+        Vector3d rn = m_vertices[E.from].r + r.scaled(0.5);//mirror(m_vertices[E.from].r,r,rc);
         m_dual.push_back(rn);
         m_vertices[E.from].dual.push_back(m_ndual);
         m_vertices[E.to].dual.push_back(m_ndual);
@@ -206,9 +206,9 @@ void Mesh::update_dual_mesh()
       for (int e = 0; e < face.n_sides; e++)
       {
         Edge& E = m_edges[face.edges[e]];
-        Vector3d rc = m_faces[m_edges[E.pair].face].rc;
+        //Vector3d rc = m_faces[m_edges[E.pair].face].rc;
         Vector3d r = m_vertices[E.to].r - m_vertices[E.from].r;
-        Vector3d rn = mirror(m_vertices[E.from].r,r,rc);
+        Vector3d rn = m_vertices[E.from].r + r.scaled(0.5); //mirror(m_vertices[E.from].r,r,rc);
         m_dual[i++] = rn;
       }
     }
