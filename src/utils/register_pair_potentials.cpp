@@ -60,4 +60,6 @@ void register_pair_potentials(PairPotentialMap& pair_potentials)
   pair_potentials["soft_attractive"] = boost::factory<PairSoftAttractivePotentialPtr>();
   // Register vertex particle pair potential for tissues with the pair potentials class factory
   pair_potentials["vp"] = boost::factory<PairVertexParticlePotentialPtr>();
+  // Register line tension pair potential for tissues with the pair potentials class factory
+  pair_potentials["line_tension"] = boost::factory<PairLineTensionPotentialPtr>();
 }

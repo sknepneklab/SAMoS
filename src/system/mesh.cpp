@@ -294,6 +294,7 @@ void Mesh::order_star(int v)
       }
     }
     copy(edges.begin(),edges.end(),V.edges.begin());
+    // Here we handle edges along the hole.
     for (int e = 0; e < V.n_edges; e++)
     {
       Edge& E = m_edges[V.edges[e]];
@@ -319,7 +320,6 @@ void Mesh::order_star(int v)
         }
       }
     }
-    //cout << V << endl;
   }
   else 
     V.attached = false;
@@ -384,7 +384,7 @@ double Mesh::dual_perimeter(int v)
   //if (V.boundary) return 0.0;
   
   V.perim  = 0.0;
-  for (int i = 0; i < V.dual.size(); i++)
+  for (unsigned int i = 0; i < V.dual.size(); i++)
   {
     int j = ( i == V.dual.size()-1) ? 0 : i + 1;
     //Vector3d& r1 = m_faces[m_edges[V.edges[i]].face].rc;
