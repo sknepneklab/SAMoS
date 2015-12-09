@@ -116,6 +116,7 @@ private:
   bo::filtering_ostream m_out;  //!< Filters data through a compressor
   int m_start;                  //!< First time step of the dump
   int m_freq;                   //!< Frequency with which to dump data
+  int m_time_step_offset;       //!< Offset time step when printing data
   bool m_multi_print;           //!< Print to multiple files
   bool m_print_header;          //!< If true, print header line on some file types
   bool m_print_keys;            //!< If true, print column keys

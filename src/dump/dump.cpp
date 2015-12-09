@@ -60,6 +60,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
                                                                                                                   m_msg(msg), 
                                                                                                                   m_file_name(filename), 
                                                                                                                   m_params(params),
+                                                                                                                  m_time_step_offset(0),
                                                                                                                   m_print_header(false),
                                                                                                                   m_print_keys(false),
                                                                                                                   m_compress(false),
@@ -178,6 +179,12 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_msg->msg(Messenger::INFO,"VTP file will contain dual mesh.");
     m_msg->write_config("dump."+fname+".dual","true");
   }
+  if (params.find("step_offset") != params.end())
+  {
+    m_time_step_offset = lexical_cast<int>(params["step_offset"]);;
+    m_msg->msg(Messenger::INFO,"Dump steps will be offset by "+params["step_offset"]+".");
+    m_msg->write_config("dump."+fname+".time_step_offset",params["step_offset"]);
+  }
   if (params.find("id") != params.end())
     m_msg->add_config("dump."+fname+".quantity","id");
   if (params.find("tp") != params.end())
@@ -279,7 +286,7 @@ void Dump::dump(int step)
     return;
   if (m_multi_print)
   {
-    string file_name = m_file_name+"_"+lexical_cast<string>(format("%010d") % step)+"."+m_ext;
+    string file_name = m_file_name+"_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
     if (m_compress)
     {
       file_name += ".gz";
