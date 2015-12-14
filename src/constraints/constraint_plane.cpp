@@ -44,7 +44,12 @@
  */
 void ConstraintPlane::enforce(Particle& p)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  if (apply)
   {
     bool periodic = m_system->get_periodic();
     double Lx = m_system->get_box()->Lx;

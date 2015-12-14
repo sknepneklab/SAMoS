@@ -56,6 +56,8 @@ void PairPolarAlign::compute()
   }
   
   m_potential_energy = 0.0;
+  double tot_pot = m_potential_energy;
+#pragma omp parallel for reduction (+:tot_pot)
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
@@ -92,7 +94,8 @@ void PairPolarAlign::compute()
         pj.tau_y += -J*tau_y;
         pj.tau_z += -J*tau_z;
         double potential_energy = -2.0*J*(pi.nx*pj.nx + pi.ny*pj.ny + pi.nz*pj.nz);  // 2.0 needed since we only use half of the neighbour list
-        m_potential_energy += potential_energy;
+        //m_potential_energy += potential_energy;
+        tot_pot += potential_energy;
         if (m_system->compute_per_particle_energy())
         {
           pi.add_align_energy("polar",potential_energy);
@@ -101,4 +104,5 @@ void PairPolarAlign::compute()
       }
     }
   }
+  m_potential_energy = tot_pot;
 }

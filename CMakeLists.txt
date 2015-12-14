@@ -44,7 +44,6 @@ if(ENABLE_STATIC)
   SET (THREAD_LIB -lpthread)
 endif(ENABLE_STATIC)
 
-
 # Setup a number of misc options and libraries
 include (CMakeMiscSetup.txt)
 # Find the boost libraries and set them up
@@ -66,6 +65,7 @@ set(BOOST_LIBS 	${Boost_REGEX_LIBRARY} ${Boost_IOSTREAMS_LIBRARY} )
 set(GSL_LIBS ${GSL_LIBRARIES})
 set(MATH_LIB -lm)
 set(SAMoS_LIBS ${GSL_LIBS} ${MATH_LIB} ${BOOST_LIBS} ${VTK_LIBS})
+
 
 # ##############################################
 # place all executables in the build directory 

@@ -117,15 +117,7 @@ void NeighbourList::build_nsq()
       double dx = pi.x - pj.x;
       double dy = pi.y - pj.y;
       double dz = pi.z - pj.z;
-      if (periodic)
-      {
-        if (dx > box->xhi) dx -= box->Lx;
-        else if (dx < box->xlo) dx += box->Lx;
-        if (dy > box->yhi) dy -= box->Ly;
-        else if (dy < box->ylo) dy += box->Ly;
-        if (dz > box->zhi) dz -= box->Lz;
-        else if (dz < box->zlo) dz += box->Lz;
-      }
+      m_system->apply_periodic(dx,dy,dz);
       d2 = dx*dx + dy*dy + dz*dz;
       if (m_system->has_exclusions())
         if (m_system->in_exclusion(pi.get_id(), pj.get_id()))
@@ -183,15 +175,7 @@ void NeighbourList::build_cell()
           double dx = pi.x - pj.x;
           double dy = pi.y - pj.y;
           double dz = pi.z - pj.z;
-          if (periodic)
-          {
-            if (dx > box->xhi) dx -= box->Lx;
-            else if (dx < box->xlo) dx += box->Lx;
-            if (dy > box->yhi) dy -= box->Ly;
-            else if (dy < box->ylo) dy += box->Ly;
-            if (dz > box->zhi) dz -= box->Lz;
-            else if (dz < box->zlo) dz += box->Lz;
-          }
+          m_system->apply_periodic(dx,dy,dz);
           d2 = dx*dx + dy*dy + dz*dz;
           if (m_system->has_exclusions())
             if (m_system->in_exclusion(pi.get_id(), pj.get_id()))
