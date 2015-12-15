@@ -95,6 +95,7 @@ void PopulationRandom::divide(int t)
         }
         p_new.nx = p.nx; p_new.ny = p.ny; p_new.nz = p.nz;
         p_new.vx = p.vx; p_new.vy = p.vy; p_new.vz = p.vz;
+        p_new.Nx = p.Nx; p_new.Ny = p.Ny; p_new.Nz = p.Nz;
         p.age = 0.0;
         p_new.age = 0.0;
         for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)

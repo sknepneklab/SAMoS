@@ -266,6 +266,12 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         }
         if (has_keys)
           if (column_key.find("parent") != column_key.end())   p.set_parent(lexical_cast<int>(s_line[column_key["parent"]]));
+        if (has_keys)
+        {
+          if (column_key.find("nvx") != column_key.end())      p.Nx = lexical_cast<double>(s_line[column_key["nvx"]]);
+          if (column_key.find("nvy") != column_key.end())      p.Ny = lexical_cast<double>(s_line[column_key["nvy"]]);
+          if (column_key.find("nvz") != column_key.end())      p.Nz = lexical_cast<double>(s_line[column_key["nvz"]]);
+        }
         p.set_flag(m_current_particle_flag);
         m_current_particle_flag++;
         m_particles.push_back(p);

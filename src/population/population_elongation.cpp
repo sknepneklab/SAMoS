@@ -39,7 +39,7 @@
 #include "population_elongation.hpp"
 
 
-/*! Grow (rescale) rod lenght by a given amount.
+/*! Grow (rescale) rod length by a given amount.
  * 
  *  \param t current time step
  *  
