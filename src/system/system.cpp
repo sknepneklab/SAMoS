@@ -272,6 +272,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
           if (column_key.find("nvy") != column_key.end())      p.Ny = lexical_cast<double>(s_line[column_key["nvy"]]);
           if (column_key.find("nvz") != column_key.end())      p.Nz = lexical_cast<double>(s_line[column_key["nvz"]]);
         }
+        if (has_keys)
+          if (column_key.find("a0") != column_key.end())   p.A0 = lexical_cast<double>(s_line[column_key["a0"]]);
         p.set_flag(m_current_particle_flag);
         m_current_particle_flag++;
         m_particles.push_back(p);

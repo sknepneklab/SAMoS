@@ -48,4 +48,6 @@ void register_populations(PopulationMap& populations)
   populations["grow"] = boost::factory<PopulationGrowthPtr>();
   // Register elongation population control with the class factory
   populations["elongate"] = boost::factory<PopulationElongationPtr>();
+  // Register cell population control with the class factory
+  populations["cell"] = boost::factory<PopulationCellPtr>();
 }

@@ -55,7 +55,7 @@ void PairVertexParticlePotential::compute(double dt)
 {
   int N = m_system->size();
   double K = m_K;
-  double A0 = m_A0;
+  //double A0 = m_A0;
   double gamma = m_gamma;
   double lambda = m_lambda;
   double alpha = 1.0;  // phase in factor
@@ -85,10 +85,10 @@ void PairVertexParticlePotential::compute(double dt)
       if (m_has_part_params) 
       {
         K  = m_particle_params[vi.type-1].K;
-        A0 = m_particle_params[vi.type-1].A0;
+        //A0 = m_particle_params[vi.type-1].A0;
         gamma = m_particle_params[vi.type-1].gamma;
       }
-      double dA = (vi.area - A0);
+      double dA = (vi.area - pi.A0);
       double area_term = K*dA;
       double perim_term = gamma*vi.perim;
       pot_eng = 0.5*(K*dA*dA+gamma*vi.perim*vi.perim);
@@ -143,10 +143,10 @@ void PairVertexParticlePotential::compute(double dt)
         if (m_has_part_params) 
         {
           K  = m_particle_params[vj.type-1].K;
-          A0 = m_particle_params[vj.type-1].A0;
+          //A0 = m_particle_params[vj.type-1].A0;
           gamma = m_particle_params[vj.type-1].gamma;
         }
-        double dA = (vj.area - A0);
+        double dA = (vj.area - pj.A0);
         double area_term = K*dA;
         double perim_term = gamma*vj.perim;
         Vector3d area_vec(0.0,0.0,0.0);
@@ -199,7 +199,7 @@ void PairVertexParticlePotential::compute(double dt)
       if (m_has_part_params) 
       {
         K  = m_particle_params[vi.type-1].K;
-        A0 = m_particle_params[vi.type-1].A0;
+        //A0 = m_particle_params[vi.type-1].A0;
         gamma = m_particle_params[vi.type-1].gamma;
       }
     }

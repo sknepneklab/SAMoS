@@ -78,6 +78,7 @@ public:
     tau_x = 0.0; tau_y = 0.0; tau_z = 0.0;
     Nx = 0.0; Ny = 0.0; Nz = 0.0;
     age = 0.0;
+    A0 = 3.14159265359*m_r*m_r; // Set native area to \pi r^2
     m_flag = 0;
     m_parent = -1;
   }
@@ -207,6 +208,7 @@ public:
   //@}
   double omega;                //!< Magnitude of the angular velocity (in the direction of the normal to the surface)
   double age;                  //!< Particle age (used when deciding to remove and split the particle)
+  double A0;                   //!< Native area for cell simulations
   list<string> groups;         //!< List of all groups particle belongs to.
   vector<int> bonds;           //!< List of all bonds this particle belongs to
   vector<int> angles;          //!< List of all angles this particle belongs to
