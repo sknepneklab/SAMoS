@@ -66,6 +66,16 @@ public:
     m_msg->msg(Messenger::INFO,"Planar constraint. Setting plane dimensions to lx = "+lexical_cast<string>(m_system->get_box()->Lx)+" and ly = "+lexical_cast<string>(m_system->get_box()->Ly)+".");
     m_msg->write_config("constraint.plane.lx",lexical_cast<string>(m_system->get_box()->Lx));
     m_msg->write_config("constraint.plane.ly",lexical_cast<string>(m_system->get_box()->Ly));
+    if (param.find("unlimited") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Plane constraint. For non-periodic systems particle motion will be confined by the box size.");
+      m_unlimited = false;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Plane constraint. Particle motion will not be affected by the box boundaries.");
+      m_unlimited = true;
+    }
   }
   
   //! Enforce constraint
@@ -92,7 +102,11 @@ public:
   // Rescale constraint
   bool rescale();
    
-
+private:
+  
+  bool m_unlimited;       //!< If true, ignore box boundary and low system to exapand freely
+  
+  
 };
 
 typedef shared_ptr<ConstraintPlane> ConstraintPlanePtr;  //!< Shared pointer to the Constraint object

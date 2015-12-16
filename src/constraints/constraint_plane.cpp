@@ -64,7 +64,7 @@ void ConstraintPlane::enforce(Particle& p)
     // Check periodic boundary conditions 
     if (periodic)
       m_system->enforce_periodic(p);
-    else // reflective boundary conditions
+    else if (!m_unlimited) // reflective boundary conditions
     {
       if (p.x < xlo) 
       {
