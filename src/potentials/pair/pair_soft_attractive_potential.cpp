@@ -44,7 +44,7 @@ void PairSoftAttractivePotential::compute(double dt)
   int N = m_system->size();
   double k = m_k;
   double ai, aj;
-  double force_factor;
+  double force_factor = 0.0;
   double alpha = 1.0;  // phase in factor
   
   if (m_system->compute_per_particle_energy())
@@ -82,7 +82,7 @@ void PairSoftAttractivePotential::compute(double dt)
       double r_turn = fact*ai_p_aj;
       double r_f = 2.0*r_turn - ai_p_aj;
       double diff;
-      double pot_eng;
+      double pot_eng = 0.0;
       if (r < r_f)
       {
         if (r <= r_turn)

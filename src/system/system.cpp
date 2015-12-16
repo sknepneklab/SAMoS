@@ -112,6 +112,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
       {
         for (unsigned int col_idx = 1; col_idx < s_line.size(); col_idx++)
           column_key[s_line[col_idx]] = col_idx-1;
+        for (unsigned int col_idx = 1; col_idx < s_line.size(); col_idx++)
+          m_msg->msg(Messenger::INFO,"Column " + lexical_cast<string>(col_idx) + " of input file is : " + s_line[col_idx] + ".");
         has_keys = true;
       }
       else if (s_line.size() < NUM_PART_ATTRIB && (!has_keys))
@@ -272,8 +274,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
           if (column_key.find("nvy") != column_key.end())      p.Ny = lexical_cast<double>(s_line[column_key["nvy"]]);
           if (column_key.find("nvz") != column_key.end())      p.Nz = lexical_cast<double>(s_line[column_key["nvz"]]);
         }
-        if (has_keys)
-          if (column_key.find("a0") != column_key.end())   p.A0 = lexical_cast<double>(s_line[column_key["a0"]]);
+        if (has_keys && (column_key.find("area") != column_key.end()))  
+          p.A0 = lexical_cast<double>(s_line[column_key["area"]]);
         p.set_flag(m_current_particle_flag);
         m_current_particle_flag++;
         m_particles.push_back(p);

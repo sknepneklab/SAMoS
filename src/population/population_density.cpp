@@ -72,7 +72,6 @@ void PopulationDensity::divide(int t)
       Particle& p = m_system->get_particle(pi); 
       if (m_rng->drnd() < m_div_rate*(1.0-p.coordination/m_rho_max) )
       {
-        cout << p << endl;
         Particle p_new(m_system->size(), p.get_type(), p.get_radius());
         p_new.x = p.x + m_alpha*m_split_distance*p.get_radius()*p.nx;
         p_new.y = p.y + m_alpha*m_split_distance*p.get_radius()*p.ny;

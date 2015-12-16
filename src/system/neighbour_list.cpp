@@ -96,7 +96,6 @@ bool NeighbourList::build_faces()
 void NeighbourList::build_nsq()
 {
   int N = m_system->size();
-  bool periodic = m_system->get_periodic();
   BoxPtr box = m_system->get_box();
   double cut = m_cut+m_pad;
   double cut2 = cut*cut;
@@ -144,7 +143,6 @@ void NeighbourList::build_nsq()
 void NeighbourList::build_cell()
 {
   int N = m_system->size();
-  bool periodic = m_system->get_periodic();
   BoxPtr box = m_system->get_box();
   double cut = m_cut+m_pad;
   double cut2 = cut*cut;

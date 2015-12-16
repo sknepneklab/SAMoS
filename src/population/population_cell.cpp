@@ -58,12 +58,10 @@ void PopulationCell::divide(int t)
   { 
     if (!m_system->group_ok(m_group_name))
     {
-      cout << "Before divide P: Group info mismatch for group : " << m_group_name << endl;
+      cout << "Before cell division: Group info mismatch for group : " << m_group_name << endl;
       throw runtime_error("Group mismatch.");
     }
     Mesh& mesh = m_system->get_mesh();
-    int new_type;   // type of new particle
-    double new_A0;  // native area of the new cell
     int N = m_system->get_group(m_group_name)->get_size();
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();
     BoxPtr box = m_system->get_box();
@@ -72,7 +70,8 @@ void PopulationCell::divide(int t)
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi); 
       Vertex& V = mesh.get_vertices()[p.get_id()];
-      if ( m_rng->drnd() < exp(m_div_rate*(V.area-p.A0)) )
+      //cout << V.area << " " << p.A0 << " " << exp(m_div_rate*(V.area-p.A0)) << endl;
+      if ( m_rng->drnd() < exp((V.area-p.A0)/m_div_rate) )
       {
         Particle p_new(m_system->size(), p.get_type(), p.get_radius());
         p_new.x = p.x + m_alpha*m_split_distance*p.get_radius()*p.nx;
@@ -85,7 +84,6 @@ void PopulationCell::divide(int t)
         p.y -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.ny;
         p.z -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.nz;
         p.age = 0.0;
-        p.A0 *= 0.5;
         m_system->apply_periodic(p.x,p.y,p.z);
         
         p_new.nx = p.nx; p_new.ny = p.ny; p_new.nz = p.nz;
@@ -102,7 +100,7 @@ void PopulationCell::divide(int t)
     }
     if (!m_system->group_ok(m_group_name))
     {
-      cout << "After Divide P: Group info mismatch for group : " << m_group_name << endl;
+      cout << "After cell division: Group info mismatch for group : " << m_group_name << endl;
       throw runtime_error("Group mismatch.");
     }
     m_system->set_force_nlist_rebuild(true);
@@ -133,7 +131,7 @@ void PopulationCell::remove(int t)
     {
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi);
-      if (m_rng->drnd() < exp(m_death_rate*(p.age-m_max_age)))
+      if (m_rng->drnd() < exp((p.age-m_max_age)/m_death_rate))
           to_remove.push_back(p.get_id());
     }
     int offset = 0;

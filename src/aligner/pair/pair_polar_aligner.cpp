@@ -57,7 +57,6 @@ void PairPolarAlign::compute()
   
   m_potential_energy = 0.0;
   double tot_pot = m_potential_energy;
-#pragma omp parallel for reduction (+:tot_pot)
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);

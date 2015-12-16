@@ -52,6 +52,7 @@ ostream& operator<<(ostream& out, const Particle& p)
   << format("(fx,fy,fz) : (%15.9e,%15.9e,%15.9e)\n") % p.fx % p.fy % p.fz
   << format("omega : %15.9e\n") % p.omega
   << format("coordination : %d\n") % p.coordination
+  << format("native cell area : %d\n") % p.A0
   << format("groups : ");
   for (list<string>::const_iterator it = p.groups.begin(); it != p.groups.end(); it++)
     out << format(" %s ") % (*it);
