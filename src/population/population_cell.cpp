@@ -172,6 +172,6 @@ void PopulationCell::grow(int t)
       p.A0 *= (1.0+m_growth_rate);
     }
     m_system->set_force_nlist_rebuild(true);
-    //m_system->set_nlist_rescale(m_scale);
+    m_system->set_nlist_rescale(sqrt(1.0+m_growth_rate));
   }
 }

@@ -94,10 +94,11 @@ while i < args.num:
       i += 1
 
 out = open(args.output,'w')
-out.write('keys:  id  x y  nvx nvy nvz area\n')
+out.write('keys:  id  x y nx ny nvx nvy nvz area\n')
 for i in range(len(particles)):
   x,y = particles[i]
-  out.write('%4d  %f  %f  %f  %f  %f  %f\n' % (i,x,y, 0, 0, 1.0, args.A0))
+  phi = uniform(0,2*m.pi)
+  out.write('%4d  %f  %f  %f  %f  %f  %f  %f  %f\n' % (i,x,y, m.cos(phi),m.sin(phi), 0, 0, 1.0, args.A0))
 out.close()
 
 
