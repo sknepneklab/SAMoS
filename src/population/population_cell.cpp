@@ -70,9 +70,9 @@ void PopulationCell::divide(int t)
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi); 
       Vertex& V = mesh.get_vertices()[p.get_id()];
-      //cout << V.area << " " << p.A0 << " " << exp(m_div_rate*(V.area-p.A0)) << endl;
-      if ( m_rng->drnd() < exp((V.area-p.A0)/m_div_rate) )
+      if ( m_rng->drnd() < exp((V.area-m_max_A0)/m_div_rate) )
       {
+        //cout << t << " " << V.area << " " << p.A0 << " " << exp((V.area-p.A0)/m_div_rate) << endl;
         Particle p_new(m_system->size(), p.get_type(), p.get_radius());
         p_new.x = p.x + m_alpha*m_split_distance*p.get_radius()*p.nx;
         p_new.y = p.y + m_alpha*m_split_distance*p.get_radius()*p.ny;
@@ -84,13 +84,14 @@ void PopulationCell::divide(int t)
         p.y -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.ny;
         p.z -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.nz;
         p.age = 0.0;
+        p.A0 = p.get_A0();
         m_system->apply_periodic(p.x,p.y,p.z);
         
         p_new.nx = p.nx; p_new.ny = p.ny; p_new.nz = p.nz;
         p_new.vx = p.vx; p_new.vy = p.vy; p_new.vz = p.vz;
         p_new.Nx = p.Nx; p_new.Ny = p.Ny; p_new.Nz = p.Nz;
         p_new.age = 0.0;
-        p_new.A0 = p.A0;
+        p_new.A0 = p.get_A0();
         p_new.set_radius(p.get_radius());
         p_new.set_type(p.get_type());
         for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)

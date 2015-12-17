@@ -81,6 +81,7 @@ public:
     A0 = 3.14159265359*m_r*m_r; // Set native area to \pi r^2
     m_flag = 0;
     m_parent = -1;
+    m_A0 = A0;
   }
   
   //! Get particle id
@@ -95,6 +96,9 @@ public:
   //! Get particle length (for rods)
   double get_length() const { return m_l; } //!< \return rod length (m_l)
   
+  //! Get the default native area
+  double get_A0() { return m_A0; } 
+  
   //! Set id (for particle relabelling purposes)
   //! \param id new id
   void set_id(int id) { m_id = id; }
@@ -106,6 +110,10 @@ public:
   //! Set radius (for group changes and birth/death)
   //! \param r new type
   void set_radius(double r) { m_r = r; }
+  
+  //! Set default native area
+  //! \param A0 defualt native area. 
+  void set_default_area(double A0) { m_A0 = A0; }
   
   //! Scale particle radius
   //! \param scale scale factor
@@ -222,6 +230,7 @@ private:  // Make these attributes immutable
   int m_type;              //!< Particle type
   double m_r;              //!< Particle radius 
   double m_l;              //!< Length (if particle is actually a rod)
+  double m_A0;             //!< Default native area. This one is set for the cell type and does not grow. 
   map<string,double> m_pot_eng;   //!< Holds current value of the potential energy of a given type 
   map<string,double> m_align_eng; //!< Holds alignment potential energy of a given type
     

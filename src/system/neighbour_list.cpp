@@ -418,6 +418,8 @@ bool NeighbourList::build_triangulation()
   return true;
   
 }
+#endif
+
 
 //! Remove all edges that have one contanct
 void NeighbourList::remove_dangling()
@@ -441,4 +443,4 @@ void NeighbourList::remove_dangling()
   }
 }
 
-#endif
+
