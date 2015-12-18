@@ -61,6 +61,9 @@
 #include "log_bond_eng.hpp"
 #include "log_angle_eng.hpp"
 #include "log_external_eng.hpp"
+#include "log_area.hpp"
+#include "log_perim.hpp"
+#include "log_size.hpp"
 
 using std::string;
 using std::ofstream;

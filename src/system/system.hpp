@@ -262,6 +262,12 @@ public:
   //! Compute tangent in the direction of the neighbour with the smallest index
   void compute_tangent(int, double&, double&, double&);
   
+  //! Computes total system area for cell systems
+  double compute_area();
+  
+  //! Computes average perimeter of all cells
+  double compute_average_perimeter();
+  
   //! Apply period boundary conditions on a quantity 
   void apply_periodic(double&, double&, double&);
   

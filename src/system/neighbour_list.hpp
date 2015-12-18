@@ -219,6 +219,14 @@ public:
   //! \return Reference to the particle's neighbour list
   vector<int>& get_neighbours(int id) { return m_list[id]; }
   
+  //! Get contacts for a given particle
+  //! \param id Particle id
+  //! \return Reference to the particle's contact list
+  vector<int>& get_contacts(int id) { return m_contact_list[id]; }
+  
+  //! Check if contact list exists
+  bool has_contacts() { return (m_contact_list.size() > 0); }
+  
   //! Get neighbour list cutoff distance
   double get_cutoff() { return m_cut;  }  //!< \return neighbour list cutoff distance
   

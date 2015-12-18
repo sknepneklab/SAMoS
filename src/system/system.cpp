@@ -770,6 +770,49 @@ void System::compute_tangent(int i, double& tx, double& ty, double& tz)
     }
   }
 }
+
+//! Compute system area by adding up areas of all cells (makse sense only for cell systems)
+double System::compute_area()
+{
+  Mesh& mesh = this->get_mesh();
+  double area = 0.0;
+  int num = 0;
+  for (int i = 0; i < mesh.size(); i++)
+  {
+    Vertex& V = mesh.get_vertices()[i];
+    if (!V.boundary)
+    {
+      area += V.area;
+      num++;
+    }
+  }
+  if (num > 0)
+    return area/num;
+  else
+    return 0.0;
+}
+
+//! Compute average perimeter of cells in a cell system
+double System::compute_average_perimeter()
+{
+  Mesh& mesh = this->get_mesh();
+  double  perim = 0.0;
+  int N = mesh.size();
+  int num = 0;
+  for (int i = 0; i < N; i++)
+  {
+    Vertex& V = mesh.get_vertices()[i];
+    if (!V.boundary)
+    {
+      perim += V.perim;
+      num++;
+    }
+  }
+  if (N > 0)
+    return perim/num;
+  else
+    return 0.0;
+}
  
 //! Apply period boundary conditions on three coordinate
 //! \param dx x value too apply periodic boundary to (will be overwritten)

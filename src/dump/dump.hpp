@@ -125,6 +125,7 @@ private:
   double m_r_cut;               //!< Cutoff distance for the contact network
   bool m_compress;              //!< Compress output data using gzip compression
   bool m_output_dual;           //!< Outputs dual mesh for tissue simulations
+  bool m_dual_boundary;         //!< If true, output dual faces that belog to the boundary vertices
   
   // Auxiliary data structures
   map<string, string> m_type_ext;  //!< Hold extension for a given data type

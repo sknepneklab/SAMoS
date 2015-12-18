@@ -50,7 +50,6 @@ using std::sqrt;
 struct VertexParticleParameters
 {
   double K;
-  double A0;
   double gamma;
   double lambda;
 };
@@ -82,17 +81,6 @@ public:
       m_K = lexical_cast<double>(param["K"]);
     }
     m_msg->write_config("potential.pair.vertex_particle.K",lexical_cast<string>(m_K));
-    if (param.find("A0") == param.end())
-    {
-      m_msg->msg(Messenger::WARNING,"No native cell area (A0) specified for vertex-particle pair potential. Setting it to 1.");
-      m_A0 = 1.0;
-    }
-    else
-    {
-      m_msg->msg(Messenger::INFO,"Global native area (A0) for vertex-particle pair potential is set to "+param["A0"]+".");
-      m_A0 = lexical_cast<double>(param["A0"]);
-    }
-    m_msg->write_config("potential.pair.vertex_particle.A0",lexical_cast<string>(m_A0));
     if (param.find("gamma") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No perimiter stiffness (gamma) specified for vertex-particle pair potential. Setting it to 1.");
@@ -127,7 +115,6 @@ public:
     for (int i = 0; i < ntypes; i++)
     {
       m_particle_params[i].K = m_K;
-      m_particle_params[i].A0 = m_A0;
       m_particle_params[i].gamma = m_gamma;
       m_particle_params[i].lambda = m_lambda;
     }
@@ -139,7 +126,6 @@ public:
       for (int j = 0; j < ntypes; j++)
       {
         m_pair_params[i][j].K = m_K;
-        m_pair_params[i][j].A0 = m_A0;
         m_pair_params[i][j].gamma = m_gamma;
         m_pair_params[i][j].lambda = m_lambda;
       }
@@ -180,17 +166,6 @@ public:
       param["K"] = m_K;
     }
     m_msg->write_config("potential.pair.vertex_particle.type_"+pair_param["type"]+".push",lexical_cast<string>(param["K"]));
-    if (pair_param.find("A0") != pair_param.end())
-    {
-      m_msg->msg(Messenger::INFO,"VertexParticle pair potential. Setting native area to "+pair_param["A0"]+" for particles of type "+lexical_cast<string>(type)+".");
-      param["A0"] = lexical_cast<double>(pair_param["A0"]);
-    }
-    else
-    {
-      m_msg->msg(Messenger::INFO,"VertexParticle pair potential. Using default native area  ("+lexical_cast<string>(m_A0)+") for particles of type "+lexical_cast<string>(type)+".");
-      param["A0"] = m_A0;
-    }
-    m_msg->write_config("potential.pair.vertex_particle.type_"+pair_param["type"]+".push",lexical_cast<string>(param["A0"]));
     if (pair_param.find("gamma") != pair_param.end())
     {
       m_msg->msg(Messenger::INFO,"VertexParticle pair potential. Setting perimeter stiffness to "+pair_param["gamma"]+" for particles of type "+lexical_cast<string>(type)+".");
@@ -205,7 +180,6 @@ public:
     
         
     m_particle_params[type-1].K = param["K"];
-    m_particle_params[type-1].A0 = param["A0"];
     m_particle_params[type-1].gamma = param["gamma"];
         
     m_has_part_params = true;
@@ -259,7 +233,6 @@ public:
 private:
        
   double m_K;                       //!< cell area stiffness
-  double m_A0;                      //!< cell native area
   double m_gamma;                   //!< cell perimeter stiffness
   double m_lambda;                  //!< cell contact stiffness
   bool m_has_part_params;           //!< true if type specific particle parameters are given

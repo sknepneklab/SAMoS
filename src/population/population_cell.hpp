@@ -161,7 +161,30 @@ public:
       m_msg->msg(Messenger::INFO,"Cell population control. Growth rate set to "+param["growth_rate"]+".");
       m_growth_rate = lexical_cast<double>(param["growth_rate"]);
     }
-    m_msg->write_config("population.cell.growth_rate",lexical_cast<string>(m_growth_rate));
+    if (param.find("growth_prob") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Cell population control. No growth proability set. Assuming 0.5.");
+      m_growth_prob = 0.5;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Cell population control. Growth proability set to "+param["growth_prob"]+".");
+      m_growth_prob = lexical_cast<double>(param["growth_prob"]);
+    }
+    m_msg->write_config("population.cell.growth_prob",lexical_cast<string>(m_growth_prob));
+    if (param.find("rescale_contacts") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Cell population control. Contact distance and neigbour list distance will not be rescaled.");
+      m_rescale_contacts = false;
+      m_msg->write_config("population.cell.rescale_contacts","false");
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Cell population control. Contact distance and neigbour list distance will be rescaled in each growth step.");
+      m_rescale_contacts = true;
+      m_msg->write_config("population.cell.rescale_contacts","true");
+    }
+    
   }
   
   //! Particle division (emulates cell division)
@@ -189,7 +212,9 @@ private:
   double m_max_A0;               //!< Maximum value of the cell area 
   double m_max_age;              //!< Maximum cell age
   double m_alpha;                //!< When dividing particles, move new one to alpha*m_split_distance and the old one to (1-alpha)*split_distance
-  double m_growth_rate;          //!< growth (scaling) factor for the cell native area in each time step 
+  double m_growth_rate;          //!< growth (scaling) factor for the cell native area in each time step
+  double m_growth_prob;          //!< probability that a cell grows in a given time step
+  bool m_rescale_contacts;       //!< If true, resacle neigbour list contacnt distance as well as contact distance
   
 };
 

@@ -168,11 +168,15 @@ void PopulationCell::grow(int t)
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();
     for (int i = 0; i < N; i++)
     {
-      int pi = particles[i];
-      Particle& p = m_system->get_particle(pi); 
-      p.A0 *= (1.0+m_growth_rate);
+      if (m_rng->drnd() < m_growth_prob)
+      {
+        int pi = particles[i];
+        Particle& p = m_system->get_particle(pi); 
+        p.A0 *= (1.0+m_growth_rate);
+      }
     }
     m_system->set_force_nlist_rebuild(true);
-    m_system->set_nlist_rescale(sqrt(1.0+m_growth_rate));
+    if (m_rescale_contacts)
+      m_system->set_nlist_rescale(sqrt(1.0+m_growth_rate));
   }
 }

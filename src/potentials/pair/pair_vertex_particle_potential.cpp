@@ -55,7 +55,6 @@ void PairVertexParticlePotential::compute(double dt)
 {
   int N = m_system->size();
   double K = m_K;
-  //double A0 = m_A0;
   double gamma = m_gamma;
   double lambda = m_lambda;
   double alpha = 1.0;  // phase in factor
@@ -85,7 +84,6 @@ void PairVertexParticlePotential::compute(double dt)
       if (m_has_part_params) 
       {
         K  = m_particle_params[vi.type-1].K;
-        //A0 = m_particle_params[vi.type-1].A0;
         gamma = m_particle_params[vi.type-1].gamma;
       }
       double dA = (vi.area - pi.A0);
@@ -143,7 +141,6 @@ void PairVertexParticlePotential::compute(double dt)
         if (m_has_part_params) 
         {
           K  = m_particle_params[vj.type-1].K;
-          //A0 = m_particle_params[vj.type-1].A0;
           gamma = m_particle_params[vj.type-1].gamma;
         }
         double dA = (vj.area - pj.A0);
@@ -194,15 +191,6 @@ void PairVertexParticlePotential::compute(double dt)
       }
     }
     // potential energy
-    if (!vi.boundary)
-    {
-      if (m_has_part_params) 
-      {
-        K  = m_particle_params[vi.type-1].K;
-        //A0 = m_particle_params[vi.type-1].A0;
-        gamma = m_particle_params[vi.type-1].gamma;
-      }
-    }
     if (m_system->compute_per_particle_energy())
       pi.add_pot_energy("vp",pot_eng);
     m_potential_energy += pot_eng;

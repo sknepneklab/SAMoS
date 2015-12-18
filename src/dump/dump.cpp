@@ -64,7 +64,8 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
                                                                                                                   m_print_header(false),
                                                                                                                   m_print_keys(false),
                                                                                                                   m_compress(false),
-                                                                                                                  m_output_dual(false)
+                                                                                                                  m_output_dual(false),
+                                                                                                                  m_dual_boundary(false)
 {
   m_type_ext["velocity"] = "vel";
   m_type_ext["xyz"] = "xyz";
@@ -179,6 +180,12 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_msg->msg(Messenger::INFO,"VTP file will contain dual mesh.");
     m_msg->write_config("dump."+fname+".dual","true");
   }
+  if (params.find("dual_boundary") != params.end())
+  {
+    m_dual_boundary = true;
+    m_msg->msg(Messenger::INFO,"VTP file will contain boundary faces for dual mesh.");
+    m_msg->write_config("dump."+fname+".dual_boundary","true");
+  }
   if (params.find("step_offset") != params.end())
   {
     m_time_step_offset = lexical_cast<int>(params["step_offset"]);;
@@ -205,6 +212,16 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_msg->add_config("dump."+fname+".quantity","omega");
   if (params.find("image_flags") != params.end())
     m_msg->add_config("dump."+fname+".quantity","image_flags");
+  if (params.find("parent") != params.end())
+    m_msg->add_config("dump."+fname+".quantity","parent");
+  if (params.find("a0") != params.end())
+    m_msg->add_config("dump."+fname+".quantity","a0");
+  if (params.find("cell_area") != params.end())
+    m_msg->add_config("dump."+fname+".quantity","cell_area");
+  if (params.find("cell_perim") != params.end())
+    m_msg->add_config("dump."+fname+".quantity","cell_perim");
+  if (params.find("boundary") != params.end())
+    m_msg->add_config("dump."+fname+".quantity","boundary");
   
   if (m_type == "dcd")
   {
@@ -420,6 +437,7 @@ void Dump::dump_data()
   double Ly = m_system->get_box()->Ly;
   double Lz = m_system->get_box()->Lz;
   int N = m_system->size();
+  Mesh& mesh = m_system->get_mesh();
   if (m_print_header)
   {
     m_out << "# ";
@@ -445,6 +463,16 @@ void Dump::dump_data()
       m_out << " ix  iy  iz ";
     if (m_params.find("parent") != m_params.end())
       m_out << " parent ";
+    if (m_params.find("a0") != m_params.end())
+      m_out << " a0 ";
+    if (m_params.find("cell_area") != m_params.end())
+      m_out << " cell_area ";
+    if (m_params.find("cell_perim") != m_params.end())
+      m_out << " cell_perim ";
+    if (m_params.find("cont_num") != m_params.end())
+      m_out << " cont_num ";
+    if (m_params.find("boundary") != m_params.end())
+      m_out << " boundary ";
     m_out << endl;
   }
   if (m_print_keys)
@@ -472,11 +500,14 @@ void Dump::dump_data()
       m_out << " ix  iy  iz ";
     if (m_params.find("parent") != m_params.end())
       m_out << " parent ";
+    if (m_params.find("a0") != m_params.end())
+      m_out << " a0 ";
     m_out << endl;
   }
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(i);
+    Vertex& V = mesh.get_vertices()[i];
     if (m_params.find("id") != m_params.end())
       m_out << format("%5d ") % p.get_id();
     if (m_params.find("tp") != m_params.end())
@@ -504,6 +535,65 @@ void Dump::dump_data()
       m_out << format(" %3d  %3d  %3d ") % p.ix % p.iy % p.iz;
     if (m_params.find("parent") != m_params.end())
       m_out << format(" %3d ") % p.get_parent();
+    if (m_params.find("a0") != m_params.end())
+      m_out << format("%8.5f ") % p.get_A0();
+    if (m_params.find("cell_area") != m_params.end())
+    {
+      if (!m_print_keys)
+      {
+        if (m_nlist->has_faces())
+          m_out << format("%8.5f ") % V.area;
+      }
+      else
+      {
+        m_msg->msg(Messenger::ERROR,"\"cell_area\" is not a valid key for the input file.");
+        throw runtime_error("Invalid key in dump.");
+      }
+    }
+    if (m_params.find("cell_perim") != m_params.end())
+    {
+      if (!m_print_keys)
+      {
+        if (m_nlist->has_faces())
+        m_out << format("%8.5f ") % V.perim;
+      }
+      else
+      {
+        m_msg->msg(Messenger::ERROR,"\"cell_perim\" is not a valid key for the input file.");
+        throw runtime_error("Invalid key in dump.");
+      }
+    }
+    if (m_params.find("cont_num") != m_params.end())
+    {
+      if (!m_print_keys)
+      {
+        if (m_nlist->has_contacts())
+          m_out << format("%2d ") % m_nlist->get_contacts(i).size();
+      } 
+      else
+      {
+        m_msg->msg(Messenger::ERROR,"\"cont_num\" is not a valid key for the input file.");
+        throw runtime_error("Invalid key in dump.");
+      }
+    }
+    if (m_params.find("boundary") != m_params.end())
+    {
+      if (!m_print_keys)
+      {
+        if (m_nlist->has_contacts())
+        {
+          if (V.boundary)
+            m_out << " 1 ";
+          else
+            m_out << " 0 ";
+        }
+      } 
+      else
+      {
+        m_msg->msg(Messenger::ERROR,"\"boundary\" is not a valid key for the input file.");
+        throw runtime_error("Invalid key in dump.");
+      }
+    }
     m_out << endl;
   }
 }
@@ -920,12 +1010,15 @@ void Dump::dump_vtp(int step)
       if (vertices[i].attached)
       {
         Vertex& V = vertices[i];
-        face->GetPointIds()->SetNumberOfIds(V.dual.size());
-        for (unsigned int d = 0; d < V.dual.size(); d++)
-          face->GetPointIds()->SetId(d, V.dual[d]);
-        faces->InsertNextCell(face);
-        areas->InsertNextValue(vertices[i].area);
-        perims->InsertNextValue(vertices[i].perim);
+        if (!V.boundary || (V.boundary && m_dual_boundary))
+        {
+          face->GetPointIds()->SetNumberOfIds(V.dual.size());
+          for (unsigned int d = 0; d < V.dual.size(); d++)
+            face->GetPointIds()->SetId(d, V.dual[d]);
+          faces->InsertNextCell(face);
+          areas->InsertNextValue(vertices[i].area);
+          perims->InsertNextValue(vertices[i].perim);
+        }
       }
     polydata->SetPolys(faces);
     polydata->GetCellData()->AddArray(areas);
