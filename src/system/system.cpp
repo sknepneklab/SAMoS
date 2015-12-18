@@ -780,7 +780,7 @@ double System::compute_area()
   for (int i = 0; i < mesh.size(); i++)
   {
     Vertex& V = mesh.get_vertices()[i];
-    if (!V.boundary)
+    if (!V.boundary && V.attached)
     {
       area += V.area;
       num++;
@@ -802,7 +802,7 @@ double System::compute_average_perimeter()
   for (int i = 0; i < N; i++)
   {
     Vertex& V = mesh.get_vertices()[i];
-    if (!V.boundary)
+    if (!V.boundary && V.attached)
     {
       perim += V.perim;
       num++;
