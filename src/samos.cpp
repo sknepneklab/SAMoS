@@ -876,10 +876,10 @@ int main(int argc, char* argv[])
                 }
                 for (vector<DumpPtr>::iterator it_d = dump.begin(); it_d != dump.end(); it_d++)
                   (*it_d)->dump(time_step);
-                for (vector<LoggerPtr>::iterator it_l = log.begin(); it_l != log.end(); it_l++)
-                  (*it_l)->log();
                 for (std::map<std::string, IntegratorPtr>::iterator it_integ = integrator.begin(); it_integ != integrator.end(); it_integ++)
                   (*it_integ).second->integrate();
+                for (vector<LoggerPtr>::iterator it_l = log.begin(); it_l != log.end(); it_l++)
+                  (*it_l)->log();
                 if (has_population)
                 {
                   for (vector<PopulationPtr>::iterator it_pop = population.begin(); it_pop != population.end(); it_pop++)
