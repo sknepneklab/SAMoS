@@ -79,7 +79,7 @@ void PairVertexParticlePotential::compute(double dt)
     if (m_phase_in)
       alpha = m_val->get_val(static_cast<int>(pi.age/dt));
     // First handle the vertex itself
-    if (!vi.boundary)  // For direct intecations treat only non-boundary vertices
+    if (!vi.boundary && vi.attached)  // For direct intecations treat only non-boundary vertices
     {
       if (m_has_part_params) 
       {

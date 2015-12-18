@@ -584,6 +584,8 @@ void Dump::dump_data()
         {
           if (V.boundary)
             m_out << " 1 ";
+          else if (!V.attached)
+            m_out << " 2 ";
           else
             m_out << " 0 ";
         }
