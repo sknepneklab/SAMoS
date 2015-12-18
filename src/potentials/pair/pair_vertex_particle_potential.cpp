@@ -130,6 +130,8 @@ void PairVertexParticlePotential::compute(double dt)
       pi.fx -= alpha*con_vec.x;
       pi.fy -= alpha*con_vec.y;
       pi.fz -= alpha*con_vec.z;
+      // add potential energy
+      m_potential_energy += pot_eng;
     }
     // Now check neighbours
     for (int j = 0; j < vi.n_edges; j++)
@@ -193,6 +195,5 @@ void PairVertexParticlePotential::compute(double dt)
     // potential energy
     if (m_system->compute_per_particle_energy())
       pi.add_pot_energy("vp",pot_eng);
-    m_potential_energy += pot_eng;
   }
 }
