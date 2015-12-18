@@ -542,7 +542,7 @@ void Dump::dump_data()
       if (!m_print_keys)
       {
         if (m_nlist->has_faces())
-          m_out << format("%20.17f ") % V.area;
+          m_out << format("%8.5f ") % V.area;
       }
       else
       {
