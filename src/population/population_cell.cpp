@@ -70,7 +70,7 @@ void PopulationCell::divide(int t)
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi); 
       Vertex& V = mesh.get_vertices()[p.get_id()];
-      if ( m_rng->drnd() < exp((V.area-m_max_A0)/m_div_rate) )
+      if (!V.boundary && m_rng->drnd() < exp((V.area-m_max_A0)/m_div_rate) )  // Only internal verices can divide
       {
         //cout << t << " " << V.area << " " << p.A0 << " " << exp((V.area-p.A0)/m_div_rate) << endl;
         Particle p_new(m_system->size(), p.get_type(), p.get_radius());
@@ -94,6 +94,7 @@ void PopulationCell::divide(int t)
         p_new.A0 = p.get_A0();
         p_new.set_radius(p.get_radius());
         p_new.set_type(p.get_type());
+        p_new.set_default_area(p.get_A0());
         for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)
           p_new.groups.push_back(*it_g);
         m_system->add_particle(p_new);

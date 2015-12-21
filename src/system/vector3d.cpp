@@ -51,17 +51,6 @@ double dot(const Vector3d& v1, const Vector3d& v2)
   return (v1.x*v2.x + v1.y*v2.y + v1.z*v2.z);
 }
 
-//! Compute cross product between two vectors
-Vector3d cross(const Vector3d& v1, const Vector3d& v2)
-{
-  return Vector3d(v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v1.x*v2.z, v1.x*v2.y - v1.y*v2.x);
-}
-
-//! Scale vector by a number
-Vector3d operator*(const double c, const Vector3d& v)
-{
-  return Vector3d(c*v.x, c*v.y, c*v.z);
-}
 
 //! Compute angle between two vectors. 3rd vector is used to get the right sign. 
 //! It is normal to the surface at a given point of orgigin of two points. 

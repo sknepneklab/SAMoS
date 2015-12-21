@@ -173,10 +173,22 @@ public:
 
 };
 
+//! Compute cross product between two vectors
+inline Vector3d cross(const Vector3d& v1, const Vector3d& v2)
+{
+  return Vector3d(v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v1.x*v2.z, v1.x*v2.y - v1.y*v2.x);
+}
+
+//! Scale vector by a number
+inline Vector3d operator*(const double c, const Vector3d& v)
+{
+  return Vector3d(c*v.x, c*v.y, c*v.z);
+}
+
 ostream& operator<<(ostream&, const Vector3d&);
 double dot(const Vector3d&, const Vector3d&);
-Vector3d cross(const Vector3d&, const Vector3d&);
-Vector3d operator*(const double, const Vector3d&);
+//Vector3d cross(const Vector3d&, const Vector3d&);
+//Vector3d operator*(const double, const Vector3d&);
 double angle(Vector3d&, Vector3d&, const Vector3d&);
 Vector3d mirror(Vector3d&, Vector3d&, Vector3d&);
 

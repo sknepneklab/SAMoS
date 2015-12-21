@@ -877,6 +877,7 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkDoubleArray> ids =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> types =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> radii =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> a0 =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> vel =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> dir =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> ndir =  vtkSmartPointer<vtkDoubleArray>::New();
@@ -887,6 +888,8 @@ void Dump::dump_vtp(int step)
     types->SetNumberOfComponents(1);
     radii->SetName("Radius");
     radii->SetNumberOfComponents(1);
+    a0->SetName("NativeArea");
+    a0->SetNumberOfComponents(1);
     vel->SetName("Velocity");
     vel->SetNumberOfComponents(3);
     dir->SetName("Director");
@@ -904,6 +907,7 @@ void Dump::dump_vtp(int step)
       ids->InsertNextValue(pi.get_id());
       types->InsertNextValue(pi.get_type());
       radii->InsertNextValue(pi.get_radius());
+      a0->InsertNextValue(pi.A0);
       vel->InsertNextTuple(v);
       dir->InsertNextTuple(n);
       ndir->InsertNextTuple(nn);
@@ -914,6 +918,7 @@ void Dump::dump_vtp(int step)
     polydata->GetPointData()->AddArray(ids);
     polydata->GetPointData()->AddArray(types);
     polydata->GetPointData()->AddArray(radii);
+    polydata->GetPointData()->AddArray(a0);
     polydata->GetPointData()->AddArray(vel);
     polydata->GetPointData()->AddArray(dir);
     polydata->GetPointData()->AddArray(ndir);
