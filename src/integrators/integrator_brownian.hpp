@@ -63,6 +63,7 @@ public:
   //! \param param Contains information about all parameters 
   IntegratorBrownian(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstrainerPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
   { 
+    m_msg->msg(Messenger::WARNING,"Brownian dynamics is a legacy integrator keep for backwards compatibility. It will be removed in later releaser. Please consider using brawnian_pos and brownian_align instead.");
     if (param.find("v0") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. Active velocity v0 not specified. Using default value 1.");

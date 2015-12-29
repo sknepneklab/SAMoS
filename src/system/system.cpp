@@ -280,6 +280,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
           p.set_default_area(A0);
           p.A0 = A0;
         }
+        if (has_keys)
+          if (column_key.find("mass") != column_key.end())  p.mass = lexical_cast<double>(s_line[column_key["mass"]]);
         p.set_flag(m_current_particle_flag);
         m_current_particle_flag++;
         m_particles.push_back(p);

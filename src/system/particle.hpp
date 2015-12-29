@@ -82,6 +82,7 @@ public:
     m_flag = 0;
     m_parent = -1;
     m_A0 = A0;
+    mass = 1.0;
   }
   
   //! Get particle id
@@ -221,6 +222,7 @@ public:
   vector<int> bonds;           //!< List of all bonds this particle belongs to
   vector<int> angles;          //!< List of all angles this particle belongs to
   int coordination;            //!< Keeps track of the number of neighbours
+  double mass;                 //!< Particle mass
   
 private:  // Make these attributes immutable 
   

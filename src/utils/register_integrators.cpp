@@ -52,4 +52,10 @@ void register_integrators(IntegratorMap& integrators)
   integrators["actomyo"] = boost::factory<IntegratorActomyoPtr>();
   // Register Brownian rod dynamics integrator with the integrators class factory
   integrators["brownian_rod"] = boost::factory<IntegratorBrownianRodPtr>();
+  // Register Brownian dynamics integrator for particle position with the integrators class factory
+  integrators["brownian_pos"] = boost::factory<IntegratorBrownianPosPtr>();
+  // Register Brownian dynamics integrator for alignment with the integrators class factory
+  integrators["brownian_align"] = boost::factory<IntegratorBrownianAlignPtr>();
+  // Register Langevin dynamics integrator for particle positions with the integrators class factory
+  integrators["langevin"] = boost::factory<IntegratorLangevinPtr>();
 }

@@ -70,8 +70,9 @@ public:
   external_grammar(ExternalData& external_data) : external_grammar::base_type(external)
   {
     external = (
-                  qi::as_string[keyword["gravity"]][phx::bind(&ExternalData::type, phx::ref(external_data)) = qi::_1 ]       /*! Handles gravitational potential */
-                | qi::as_string[keyword["harmonic"]][phx::bind(&ExternalData::type, phx::ref(external_data)) = qi::_1 ]      /*! Handles harmonic potential */
+                  qi::as_string[keyword["gravity"]][phx::bind(&ExternalData::type, phx::ref(external_data)) = qi::_1 ]         /*! Handles gravitational potential */
+                | qi::as_string[keyword["harmonic"]][phx::bind(&ExternalData::type, phx::ref(external_data)) = qi::_1 ]        /*! Handles harmonic potential */
+                | qi::as_string[keyword["self_propulsion"]][phx::bind(&ExternalData::type, phx::ref(external_data)) = qi::_1 ] /*! Handles self propulsion */
                   /* to add new potential: | qi::as_string[keyword["newpotential"]][phx::bind(&ExternalData::type, phx::ref(external_data)) = qi::_1 ] */
                 )
                 >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&ExternalData::params, phx::ref(external_data)) = qi::_1 ]

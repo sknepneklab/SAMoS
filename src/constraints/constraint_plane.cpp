@@ -127,7 +127,12 @@ void ConstraintPlane::rotate_director(Particle& p, double phi)
 */
 void ConstraintPlane::rotate_velocity(Particle& p, double phi)
 {
-  if (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end())
+  bool apply = false;
+  if (m_group == "all")
+    apply = true;
+  else
+    apply = (find(p.groups.begin(),p.groups.end(),m_group) != p.groups.end());
+  if (apply)
   {
     // Sine and cosine of the rotation angle
     double c = cos(phi), s = sin(phi);

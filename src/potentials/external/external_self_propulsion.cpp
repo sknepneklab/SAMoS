@@ -30,27 +30,27 @@
  * ************************************************************* */
 
 /*!
- * \file external_gravity_potential.cpp
+ * \file external_self_propulsion.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 23-Oct-2013
- * \brief Implementation of the external gravitational potential
- */
+ * \date 29-Dec-2015
+ * \brief Implementation of the self propulsion for active particles.
+ */ 
 
-#include "external_gravity_potential.hpp"
+#include "external_self_propulsion.hpp"
 
-/*! Apply external gravitational potential to all particles */
-void ExternalGravityPotential::compute()
+/*! Apply self propulsion to all particles */
+void ExternalSelfPropulsion::compute()
 {
   int N = m_system->size();
-  double g = m_g;
-
-  m_potential_energy = 0.0;
+  double alpha = m_alpha;
+  
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(i);
     if (m_has_params)
-      g = m_type_params[p.get_type()]["g"];
-    m_potential_energy += g*p.z;
-    p.fz -= g;
+      alpha = m_type_params[p.get_type()]["alpha"];
+    p.fx += alpha*p.nx;
+    p.fy += alpha*p.ny;
+    p.fz += alpha*p.nz;
   }
 }
