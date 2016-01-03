@@ -59,6 +59,7 @@ args = parser.parse_args()
 
 
 params = Param(args.directory+args.conffile)
+print params
 
 files = sorted(glob(args.directory + args.input+'*.dat'))[args.skip:]
 
