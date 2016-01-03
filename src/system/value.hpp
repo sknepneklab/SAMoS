@@ -191,6 +191,4 @@ private:
 typedef shared_ptr<ValueLinear> ValueLinearPtr;
 
 
-
-
 #endif

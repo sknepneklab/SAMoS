@@ -77,6 +77,9 @@ public:
     fx = 0.0; fy = 0.0; fz = 0.0; 
     tau_x = 0.0; tau_y = 0.0; tau_z = 0.0;
     Nx = 0.0; Ny = 0.0; Nz = 0.0;
+    s_xx = 0.0; s_xy = 0.0; s_xz = 0.0;
+    s_yx = 0.0; s_yy = 0.0; s_yz = 0.0;
+    s_zx = 0.0; s_zy = 0.0; s_zz = 0.0;
     age = 0.0;
     A0 = 3.14159265359*m_r*m_r; // Set native area to \pi r^2
     m_flag = 0;
@@ -214,6 +217,9 @@ public:
   //@}
   ///@{
   int Nx, Ny, Nz;              //!< Normal to the contraint, used for mesh orientation in tissues.
+  //@}
+  ///@{
+  double s_xx, s_xy, s_xz, s_yx, s_yy, s_yz, s_zx, s_zy, s_zz;   //!< Components of the stress tensor
   //@}
   double omega;                //!< Magnitude of the angular velocity (in the direction of the normal to the surface)
   double age;                  //!< Particle age (used when deciding to remove and split the particle)

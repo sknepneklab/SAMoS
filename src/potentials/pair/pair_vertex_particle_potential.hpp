@@ -111,6 +111,13 @@ public:
       m_msg->write_config("potential.pair.vertex_particle.phase_in","true");
     }    
     
+    if (param.find("compute_stress") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"VertexParticle pair potential. Compute per cell stress tensor.");
+      m_compute_stress = true;
+      m_msg->write_config("potential.pair.vertex_particle.compute_stress","true");
+    }
+    
     m_particle_params = new VertexParticleParameters[ntypes];
     for (int i = 0; i < ntypes; i++)
     {

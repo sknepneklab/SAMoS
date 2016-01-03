@@ -150,6 +150,9 @@ public:
     {
       Particle& p = m_particles[i];
       p.fx = 0.0; p.fy = 0.0; p.fz = 0.0;
+      p.s_xx = 0.0; p.s_xy = 0.0; p.s_xz = 0.0;
+      p.s_yx = 0.0; p.s_yy = 0.0; p.s_yz = 0.0;
+      p.s_zx = 0.0; p.s_zy = 0.0; p.s_zz = 0.0;
     }
   }
   

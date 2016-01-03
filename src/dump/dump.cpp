@@ -473,6 +473,8 @@ void Dump::dump_data()
       m_out << " cont_num ";
     if (m_params.find("boundary") != m_params.end())
       m_out << " boundary ";
+    if (m_params.find("stress") != m_params.end())
+      m_out << " s_xx  s_xy  s_xz  s_yx  s_yy  s_yz  s_zx  s_zy  s_zz ";
     m_out << endl;
   }
   if (m_print_keys)
@@ -593,6 +595,20 @@ void Dump::dump_data()
       else
       {
         m_msg->msg(Messenger::ERROR,"\"boundary\" is not a valid key for the input file.");
+        throw runtime_error("Invalid key in dump.");
+      }
+    }
+    if (m_params.find("stress") != m_params.end())
+    {
+      if (!m_print_keys)
+      {
+        m_out << format(" %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f ") % p.s_xx % p.s_xy % p.s_xz 
+                                                                                   % p.s_yx % p.s_yy % p.s_yz 
+                                                                                   % p.s_zx % p.s_zy % p.s_zz;
+      } 
+      else
+      {
+        m_msg->msg(Messenger::ERROR,"\"stress\" is not a valid key for the input file.");
         throw runtime_error("Invalid key in dump.");
       }
     }
@@ -878,6 +894,7 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkDoubleArray> types =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> radii =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> a0 =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> press =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> vel =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> dir =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> ndir =  vtkSmartPointer<vtkDoubleArray>::New();
@@ -890,6 +907,8 @@ void Dump::dump_vtp(int step)
     radii->SetNumberOfComponents(1);
     a0->SetName("NativeArea");
     a0->SetNumberOfComponents(1);
+    press->SetName("Pressure");
+    press->SetNumberOfComponents(1);
     vel->SetName("Velocity");
     vel->SetNumberOfComponents(3);
     dir->SetName("Director");
@@ -908,6 +927,7 @@ void Dump::dump_vtp(int step)
       types->InsertNextValue(pi.get_type());
       radii->InsertNextValue(pi.get_radius());
       a0->InsertNextValue(pi.A0);
+      press->InsertNextValue(pi.s_xx + pi.s_yy + pi.s_zz);
       vel->InsertNextTuple(v);
       dir->InsertNextTuple(n);
       ndir->InsertNextTuple(nn);
@@ -919,6 +939,7 @@ void Dump::dump_vtp(int step)
     polydata->GetPointData()->AddArray(types);
     polydata->GetPointData()->AddArray(radii);
     polydata->GetPointData()->AddArray(a0);
+    polydata->GetPointData()->AddArray(press);
     polydata->GetPointData()->AddArray(vel);
     polydata->GetPointData()->AddArray(dir);
     polydata->GetPointData()->AddArray(ndir);

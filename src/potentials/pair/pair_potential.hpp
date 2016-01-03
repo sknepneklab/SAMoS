@@ -75,12 +75,12 @@ public:
                                                                                                             m_has_pair_params(false),
                                                                                                             m_shifted(false),
                                                                                                             m_use_particle_radii(false),
-                                                                                                            m_phase_in(false)
-                                                                                                            { }
+                                                                                                            m_phase_in(false),
+                                                                                                            m_compute_stress(false)
+                                                                                                            {  }
                                                                                                        
   //! Destructor 
   virtual ~PairPotential() { }
-  
                                                                                                    
   //! Get the total potential energy
   double get_potential_energy() { return m_potential_energy; } //!< \return value of the total potential energy
@@ -99,15 +99,16 @@ public:
   
 protected:
        
-  SystemPtr m_system;              //!< Pointer to the System object
-  MessengerPtr m_msg;              //!< Handles messages sent to output
-  NeighbourListPtr m_nlist;        //!< Handles NeighbourList object
-  ValuePtr m_val;                  //!< Value object for phasing in particles
-  bool m_has_pair_params;          //!< Flag that controls if pair parameters are set
-  bool m_shifted;                  //!< If true, potential is shifted at cutoff
-  double m_potential_energy;       //!< Total potential energy
-  bool m_use_particle_radii;       //!< If true, base potential ranges (if they exist) on particle radii
-  bool m_phase_in;                 //!< If true, gradually switch on potential for particles that are younger than a given age
+  SystemPtr m_system;               //!< Pointer to the System object
+  MessengerPtr m_msg;               //!< Handles messages sent to output
+  NeighbourListPtr m_nlist;         //!< Handles NeighbourList object
+  ValuePtr m_val;                   //!< Value object for phasing in particles
+  bool m_has_pair_params;           //!< Flag that controls if pair parameters are set
+  bool m_shifted;                   //!< If true, potential is shifted at cutoff
+  double m_potential_energy;        //!< Total potential energy
+  bool m_use_particle_radii;        //!< If true, base potential ranges (if they exist) on particle radii
+  bool m_phase_in;                  //!< If true, gradually switch on potential for particles that are younger than a given age
+  bool m_compute_stress;            //!< If true, compute stress tensor
   
 };
 
