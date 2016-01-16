@@ -130,11 +130,11 @@ public:
   
   //! Set current time step
   //! \param step current time step
-  void set_step(int step) { m_time_step = step; cout << "Setting time step to " << step << endl;}
+  void set_step(int step) { m_time_step = step; }
   
   //! Set current run step
   //! \param step current run step
-  void set_run_step(int step) { m_run_step = step; cout << "Setting run step to " << step << endl;}
+  void set_run_step(int step) { m_run_step = step; }
   
   //! Get current time step
   int get_step() { return m_time_step; }  //!< \return current time step

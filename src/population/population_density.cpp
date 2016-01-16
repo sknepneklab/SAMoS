@@ -66,7 +66,7 @@ void PopulationDensity::divide(int t)
     int N = m_system->get_group(m_group_name)->get_size();
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();
     BoxPtr box = m_system->get_box();
-    double prob_div = m_div_rate*m_freq*m_system->get_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
+    double prob_div = m_div_rate*m_freq*m_system->get_integrator_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
     if (prob_div>1.0)
       {
 	cout << "Error: division rate " << prob_div << " is too large for current time step and attempt rate!" << endl;
@@ -159,7 +159,7 @@ void PopulationDensity::remove(int t)
     int N = m_system->get_group(m_group_name)->get_size();
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();
     vector<int> to_remove;
-    double prob_death = m_death_rate*m_freq*m_system->get_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
+    double prob_death = m_death_rate*m_freq*m_system->get_integrator_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
     if (prob_death>1.0)
       {
 	cout << "Error: death rate " << prob_death << " is too large for current time step and attempt rate!" << endl;
