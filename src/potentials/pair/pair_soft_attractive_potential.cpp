@@ -45,7 +45,9 @@ void PairSoftAttractivePotential::compute(double dt)
   double k = m_k;
   double ai, aj;
   double force_factor = 0.0;
-  double alpha = 1.0;  // phase in factor
+  double alpha_i = 1.0;  // phase in factor for particle i
+  double alpha_j = 1.0;  // phase in factor for particle j
+  double alpha = 1.0; // phase in factor for pair interaction (see below)
   
   if (m_system->compute_per_particle_energy())
   {
@@ -60,13 +62,29 @@ void PairSoftAttractivePotential::compute(double dt)
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
+    // A note on phasing in: m_val, the value object, has been pre-set with the number of phase in time steps
+    // It will give a linear interpolation between 0 and 1 based on the current age of the particle in time steps
+    // Second note: I could set the interpolation between 0.5 and 1, however then pair_vertex potential would be dubious
+    // Instead this is done manually here
     if (m_phase_in)
-      alpha = m_val->get_val(static_cast<int>(pi.age/dt));
+      alpha_i = 0.5*(1.0+m_val->get_val(static_cast<int>(pi.age/dt)));
     ai = pi.get_radius();
     vector<int>& neigh = m_nlist->get_neighbours(i);
     for (unsigned int j = 0; j < neigh.size(); j++)
     {
       Particle& pj = m_system->get_particle(neigh[j]);
+      if (m_phase_in)
+      {
+        alpha_j = 0.5*(1.0+m_val->get_val(static_cast<int>(pj.age/dt)));
+        // Determine global phase in factor: particles start at 0.5 strength (both daugthers of a division replace the mother)
+        // Except for the interaction between daugthers which starts at 0
+        if ((alpha_i<1.0) && (alpha_j < 1.0))
+        {
+	  alpha=alpha_i + alpha_j - 1.0;
+	}
+	else 
+	  alpha = alpha_i*alpha_j;
+      }
       k = m_pair_params[pi.get_type()-1][pj.get_type()-1].k;
       double fact = m_pair_params[pi.get_type()-1][pj.get_type()-1].fact;
       aj = pj.get_radius();

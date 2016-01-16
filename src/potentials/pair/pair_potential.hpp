@@ -66,7 +66,7 @@ public:
   //! \param sys Pointer to the System object
   //! \param msg Pointer to the internal state messenger
   //! \param nlist Pointer to the global neighbour list
-  //! \param val Value control object (for phasing in)
+  //! \param val Value control object (for phasing in). Line 340 of samos.cpp: The m_val(val) is set with the number of time steps to phase in
   //! \param param Contains information about all parameters 
   PairPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : m_system(sys), 
                                                                                                             m_msg(msg),

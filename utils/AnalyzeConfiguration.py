@@ -139,12 +139,13 @@ except:
 	data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params}
 if args.writeD:
 	dataD={'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out,'numdefects_v':numdefects_v_out}
-	data.update(data2)
+	data.update(dataD)
 if args.getStatsBasic:
 	dataS={'vel2av':vel2av,'phival':phival,'pressav':pressav,'energy':energy}
-	data.update(dataS)
+	data.update(dataD)
 if args.writeD:	
 	outpickle=args.directory+'defect_data.p'
+	
 else:
 	outpickle=args.directory+'configuration_data.p'
 print outpickle

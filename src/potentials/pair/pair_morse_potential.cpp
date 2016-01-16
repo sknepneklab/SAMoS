@@ -46,7 +46,9 @@ void PairMorsePotential::compute(double dt)
   double re = m_re;
   double rcut = m_rcut;
   double rcut_sq = rcut*rcut;
-  double alpha = 1.0;  // Phase in factor
+  double alpha_i = 1.0;  // phase in factor for particle i
+  double alpha_j = 1.0;  // phase in factor for particle j
+  double alpha = 1.0; // phase in factor for pair interaction (see below)
  
   if (m_system->compute_per_particle_energy())
   {
@@ -63,12 +65,24 @@ void PairMorsePotential::compute(double dt)
   {
     Particle& pi = m_system->get_particle(i);
     if (m_phase_in)
-      alpha = m_val->get_val(static_cast<int>(pi.age/dt));
+      alpha_i = 0.5*(1.0+m_val->get_val(static_cast<int>(pi.age/dt)));
     double ai = pi.get_radius();
     vector<int>& neigh = m_nlist->get_neighbours(i);
     for (unsigned int j = 0; j < neigh.size(); j++)
     {
       Particle& pj = m_system->get_particle(neigh[j]);
+      if (m_phase_in)
+      {
+        alpha_j = 0.5*(1.0+m_val->get_val(static_cast<int>(pj.age/dt)));
+        // Determine global phase in factor: particles start at 0.5 strength (both daugthers of a division replace the mother)
+        // Except for the interaction between daugthers which starts at 0
+        if ((alpha_i<1.0) && (alpha_j < 1.0))
+        {
+	  alpha=alpha_i + alpha_j - 1.0;
+	}
+	else 
+	  alpha = alpha_i*alpha_j;
+      }
       if (m_has_pair_params)
       {
         rcut = m_pair_params[pi.get_type()-1][pj.get_type()-1].rcut;

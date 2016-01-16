@@ -66,6 +66,13 @@ void PopulationDensity::divide(int t)
     int N = m_system->get_group(m_group_name)->get_size();
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();
     BoxPtr box = m_system->get_box();
+    double prob_div = m_div_rate*m_freq*m_system->get_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
+    if (prob_div>1.0)
+      {
+	cout << "Error: division rate " << prob_div << " is too large for current time step and attempt rate!" << endl;
+	cout << "We have: division " << m_div_rate << " frequency " << m_freq << " time step " << m_system->get_step() << endl;
+	throw runtime_error("Too high division.");
+      }
     for (int i = 0; i < N; i++)
     {
       int pi = particles[i];
@@ -87,8 +94,8 @@ void PopulationDensity::divide(int t)
         p_new.nx = p.nx; p_new.ny = p.ny; p_new.nz = p.nz;
         p_new.vx = p.vx; p_new.vy = p.vy; p_new.vz = p.vz;
         p_new.Nx = p.Nx; p_new.Ny = p.Ny; p_new.Nz = p.Nz;
-        //p.age = 0.0;
-        p_new.age = 0.0;
+        p.age = 0.0; // age of parent is 0
+        p_new.age = 0.0; // age of child is 0: make sure age-dependent potentials are consistent with this
         for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)
           p_new.groups.push_back(*it_g);
         if (m_rng->drnd() < m_type_change_prob_1)  // Attempt to change type, radius and group for first child
@@ -152,11 +159,17 @@ void PopulationDensity::remove(int t)
     int N = m_system->get_group(m_group_name)->get_size();
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();
     vector<int> to_remove;
+    double prob_death = m_death_rate*m_freq*m_system->get_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
+    if (prob_death>1.0)
+      {
+	cout << "Error: death rate " << prob_death << " is too large for current time step and attempt rate!" << endl;
+	throw runtime_error("Too high death.");
+      }
     for (int i = 0; i < N; i++)
     {
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi);
-      if (m_rng->drnd() < m_death_rate)
+      if (m_rng->drnd() < prob_death)
           to_remove.push_back(p.get_id());
     }
     int offset = 0;

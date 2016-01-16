@@ -62,11 +62,17 @@ void PopulationRandom::divide(int t)
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();
     bool periodic = m_system->get_periodic();
     BoxPtr box = m_system->get_box();
+    double prob_div = m_div_rate*m_freq*m_system->get_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
+    if (prob_div>1.0)
+      {
+	cout << "Error: division rate " << prob_div << " is too large for current time step and attempt rate!" << endl;
+	throw runtime_error("Too high division.");
+      }
     for (int i = 0; i < N; i++)
     {
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi);
-      if (m_rng->drnd() < p.age*m_div_rate)
+      if (m_rng->drnd() < p.age*prob_div)
       {
         Particle p_new(m_system->size(), p.get_type(), p.get_radius());
         p_new.x = p.x + m_alpha*p.get_radius()*p.nx;
@@ -151,11 +157,17 @@ void PopulationRandom::remove(int t)
     int N = m_system->get_group(m_group_name)->get_size();
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();
     vector<int> to_remove;
+    double prob_death = m_death_rate*m_freq*m_system->get_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
+    if (prob_death>1.0)
+      {
+	cout << "Error: death probability " << prob_death << " is too large for current time step and attempt rate!" << endl;
+	throw runtime_error("Too high death.");
+      }
     for (int i = 0; i < N; i++)
     {
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi);
-      if (m_rng->drnd() < p.age*m_death_rate)
+      if (m_rng->drnd() < p.age*prob_death)
         to_remove.push_back(p.get_id());
     }
     int offset = 0;

@@ -89,9 +89,9 @@ public:
     {
       m_msg->msg(Messenger::INFO,"Density population control. Setting division rate "+param["division_rate"]+".");
       m_div_rate =  lexical_cast<double>(param["division_rate"]);
-      if (m_div_rate < 0.0 || m_div_rate > 1.0)
+      if (m_div_rate < 0.0)
       {
-        m_msg->msg(Messenger::ERROR,"Density population control. Division probability has to be between 0 and 1.");
+        m_msg->msg(Messenger::ERROR,"Density population control. Division probability has to be positive.");
         throw runtime_error("Wrong division probability.");
       }
     }
