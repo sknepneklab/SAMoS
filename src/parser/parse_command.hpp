@@ -103,6 +103,7 @@ public:
                  | qi::as_string[keyword["ntypes"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]          /*! Handles number of types. */
                  | qi::as_string[keyword["config"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]          /*! Handles configuration file. */
                  | qi::as_string[keyword["pair_type_param"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ] /*! Handles particle type parameters for the pair potentials */
+                 | qi::as_string[keyword["timestep"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]        /*! Hangles global integrator step. */
                  /* to add new command: | qi::as_string[keyword["newcommand"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ] */
                )
                >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&CommandData::attrib_param_complex, phx::ref(command_data)) = qi::_1 ]

@@ -76,7 +76,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
                                                                              m_periodic(false),
                                                                              m_force_nlist_rebuild(false),
                                                                              m_nlist_rescale(1.0),
-                                                                             m_current_particle_flag(0)
+                                                                             m_current_particle_flag(0),
+                                                                             m_dt(0.0)
 {
   vector<int> types;
   vector<string> s_line;

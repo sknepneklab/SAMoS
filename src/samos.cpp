@@ -72,6 +72,7 @@ int main(int argc, char* argv[])
   PopulationData      population_data;
   BondData            bond_data;
   AngleData           angle_data;
+  TimeStepData        timestep_data;
   pairs_type          parameter_data;   // All parameters for different commands
   
   // Parser grammars
@@ -91,6 +92,7 @@ int main(int argc, char* argv[])
   population_grammar      population_parser(population_data);
   bond_grammar            bond_parser(bond_data);
   angle_grammar           angle_parser(angle_data);
+  timestep_grammar        timestep_parser(timestep_data);
   key_value_sequence      param_parser;
   
   // Class factories 
@@ -1300,6 +1302,31 @@ int main(int argc, char* argv[])
               throw std::runtime_error("Error parsing config line.");
             }
           }
+          else if (command_data.command == "timestep")       // if command is timestep, handle the global integrator timestep 
+          {
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), timestep_parser, qi::space))  
+            {
+              if (!defined["input"])  // we need to have system defined before we can add any constraints
+              {
+                if (defined["messages"])
+                  msg->msg(Messenger::ERROR,"System has not been defined. Please define system using \"input\" command before setting the integrator time step.");
+                else
+                  std::cerr << "System has not been defined. Please define system using \"input\" command before setting integrator time step." << std::endl;
+                throw std::runtime_error("System not defined.");
+              }
+              else
+              {
+                if (defined["messages"])
+                  msg->msg(Messenger::INFO,"Setting global integrator timestep to "+lexical_cast<string>(timestep_data.dt)+".");
+                sys->set_integrator_step(timestep_data.dt);
+              }
+            }
+            else
+            {
+              std::cerr << "Could not parse timestep command." << std::endl;
+              throw std::runtime_error("Could not parse timestep command.");
+            }
+          } 
         }
         else
         {

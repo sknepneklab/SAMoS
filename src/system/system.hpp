@@ -289,6 +289,13 @@ public:
   
   //! Update mesh information for tissue simulations
   void update_mesh();
+  
+  //! Set the value of the integrator time step
+  //! \param dt step size
+  void set_integrator_step(double dt)  { m_dt = dt; }
+  
+  //! Get the value of the integrator time step
+  double get_integrator_step() { return m_dt; }
     
 private:
   
@@ -310,9 +317,10 @@ private:
   int m_n_bond_types;                   //!< Number of different bond types
   int m_n_angle_types;                  //!< Number of different angle types
   int m_current_particle_flag;          //!< Keeps track of the last particle flag (distinct immutable id) of all particles. For bookkeeping. Clumsy as hell!  
+  double m_dt;                          //!< This is a global integrator step used by all integrators (\note: it can be overwritten by a specific integrator)
   bool m_has_exclusions;                //!< If true, there are bonded interactions in the system and therefore those are accompanied with exclusions
   vector<vector<int> > m_exclusions;    //!< Which particles to be excluded from computing non bonded interactions (basically everything in bonds and angles)
-    
+   
 };
 
 typedef shared_ptr<System> SystemPtr;
