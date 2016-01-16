@@ -57,7 +57,7 @@ void PairLJRodPotential::compute(double dt)
   double potential_energy;
   double alpha_i = 1.0;  // phase in factor for particle i
   double alpha_j = 1.0;  // phase in factor for particle j
-  double alpha = 1.0; // phase in factor for pair interaction (see below)
+  double alpha = 1.0;    // phase in factor for pair interaction (see below)
   double k;
   double inv_core_sq, inv_core_6, lj_core_sq;
   
@@ -75,7 +75,7 @@ void PairLJRodPotential::compute(double dt)
   {
     Particle& pi = m_system->get_particle(i);
     if (m_phase_in)
-      alpha_i = 0.5*(1.0+m_val->get_val(static_cast<int>(pi.age/dt)));
+      alpha_i = 0.5*(1.0 + m_val->get_val(static_cast<int>(pi.age/dt)));
     li2 = 0.5*pi.get_length();
     double ni_x = pi.nx, ni_y = pi.ny, ni_z = pi.nz; 
     vector<int>& neigh = m_nlist->get_neighbours(i);
@@ -84,15 +84,13 @@ void PairLJRodPotential::compute(double dt)
       Particle& pj = m_system->get_particle(neigh[j]);
       if (m_phase_in)
       {
-        alpha_j = 0.5*(1.0+m_val->get_val(static_cast<int>(pj.age/dt)));
+        alpha_j = 0.5*(1.0 + m_val->get_val(static_cast<int>(pj.age/dt)));
         // Determine global phase in factor: particles start at 0.5 strength (both daugthers of a division replace the mother)
         // Except for the interaction between daugthers which starts at 0
-        if ((alpha_i<1.0) && (alpha_j < 1.0))
-        {
-	  alpha=alpha_i + alpha_j - 1.0;
-	}
-	else 
-	  alpha = alpha_i*alpha_j;
+        if (alpha_i<1.0 && alpha_j < 1.0)
+	        alpha = alpha_i + alpha_j - 1.0;
+	      else 
+	        alpha = alpha_i*alpha_j;
       }
       if (m_has_pair_params)
       {

@@ -67,12 +67,12 @@ void PopulationDensity::divide(int t)
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();
     BoxPtr box = m_system->get_box();
     double prob_div = m_div_rate*m_freq*m_system->get_integrator_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
-    if (prob_div>1.0)
-      {
-	cout << "Error: division rate " << prob_div << " is too large for current time step and attempt rate!" << endl;
-	cout << "We have: division " << m_div_rate << " frequency " << m_freq << " time step " << m_system->get_step() << endl;
-	throw runtime_error("Too high division.");
-      }
+    if (prob_div > 1.0)
+    {
+	    m_msg->msg(Messenger::ERROR,"Division rate "+lexical_cast<string>(prob_div)+" is too large for current time step and attempt rate.");
+	    m_msg->msg(Messenger::INFO,"We have: division "+lexical_cast<string>(m_div_rate)+" frequency "+lexical_cast<string>(m_freq)+" time step "+lexical_cast<string>(m_system->get_step())+".");
+	    throw runtime_error("Too high division.");
+    }
     for (int i = 0; i < N; i++)
     {
       int pi = particles[i];

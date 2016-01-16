@@ -97,6 +97,7 @@ public:
       m_msg->msg(Messenger::ERROR,"Integrator step size has to be larger than 0. Did you forget to use \"timestep\" command?");
       throw runtime_error("Integrator step has not been set.");
     }
+    m_msg->write_config("integrator.dt",lexical_cast<string>(m_dt));
     if (param.find("group") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No group has been set. Assuming group 'all'.");
@@ -107,6 +108,7 @@ public:
       m_group_name = param["group"];
       m_msg->msg(Messenger::INFO,"Applying integrator to group "+m_group_name+".");
     }
+    m_msg->write_config("integrator.group",lexical_cast<string>(m_group_name));
   }
   
   //! Propagate system for a time step

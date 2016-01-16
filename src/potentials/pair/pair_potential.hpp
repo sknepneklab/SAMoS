@@ -77,7 +77,18 @@ public:
                                                                                                             m_use_particle_radii(false),
                                                                                                             m_phase_in(false),
                                                                                                             m_compute_stress(false)
-                                                                                                            {  }
+  {  
+    if (param.find("min_val") != param.end())
+    {
+      if (lexical_cast<double>(param["min_val"]) != 0.0)
+        m_msg->msg(Messenger::WARNING,"Minimum value for the phase-in factor is not set to 0 (it is equal "+param["min_val"]+"). Is that what you really want to do?");
+    }
+    if (param.find("max_val") != param.end())
+    {
+      if (lexical_cast<double>(param["max_val"]) != 1.0)
+        m_msg->msg(Messenger::WARNING,"Maximum value for the phase-in factor is not set to 1 (it is equal "+param["max_val"]+"). Is that what you really want to do?");
+    }
+  }
                                                                                                        
   //! Destructor 
   virtual ~PairPotential() { }

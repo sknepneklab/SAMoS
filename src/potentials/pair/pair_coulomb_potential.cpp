@@ -46,7 +46,7 @@ void PairCoulombPotential::compute(double dt)
   double sigma_sq = sigma*sigma;
   double phase_fact_i = 1.0;  // phase in factor for particle i
   double phase_fact_j = 1.0;  // phase in factor for particle j
-  double phase_fact = 1.0; // phase in factor for pair interaction (see below)
+  double phase_fact = 1.0;    // phase in factor for pair interaction (see below)
   
   if (m_system->compute_per_particle_energy())
   {
@@ -62,21 +62,19 @@ void PairCoulombPotential::compute(double dt)
   {
     Particle& pi = m_system->get_particle(i);
     if (m_phase_in)
-      phase_fact_i = 0.5*(1.0+m_val->get_val(static_cast<int>(pi.age/dt)));
+      phase_fact_i = 0.5*(1.0 + m_val->get_val(static_cast<int>(pi.age/dt)));
     for (int j = i+1; j < N; j++)
     {
       Particle& pj = m_system->get_particle(j);
       if (m_phase_in)
       {
-        phase_fact_j = 0.5*(1.0+m_val->get_val(static_cast<int>(pj.age/dt)));
+        phase_fact_j = 0.5*(1.0 + m_val->get_val(static_cast<int>(pj.age/dt)));
         // Determine global phase in factor: particles start at 0.5 strength (both daugthers of a division replace the mother)
         // Except for the interaction between daugthers which starts at 0
-        if ((phase_fact_i<1.0) && (phase_fact_j < 1.0))
-        {
-	  phase_fact=phase_fact_i + phase_fact_j - 1.0;
-	}
-	else 
-	  phase_fact = phase_fact_i*phase_fact_j;
+        if ( phase_fact_i < 1.0 && phase_fact_j < 1.0)
+	        phase_fact=phase_fact_i + phase_fact_j - 1.0;
+		    else 
+	        phase_fact = phase_fact_i*phase_fact_j;
       }
       if (m_has_pair_params)
       {
