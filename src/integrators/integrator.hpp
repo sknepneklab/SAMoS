@@ -81,12 +81,22 @@ public:
                                                                                                                                                                    m_constrainer(cons),
                                                                                                                                                                    m_temp(temp)
   { 
-    if (param.find("dt") == param.end())
+    if (param.find("dt") != param.end())
     {
-      m_msg->msg(Messenger::ERROR,"Time step for the integrator has not been set.");
-      throw runtime_error("Integrator time step not specified.");
+      m_msg->msg(Messenger::WARNING,"Integrator is setting its own time step size. While this is allowed, it may cause odd behaviour in case different integrators set different internal step size.");
+      m_msg->msg(Messenger::INFO,"Internal integrator time step set to "+param["dt"]+".");
+      m_dt = lexical_cast<double>(param["dt"]);
     }
-    m_dt = lexical_cast<double>(param["dt"]);
+    else
+    {
+      m_dt = m_system->get_integrator_step();
+      m_msg->msg(Messenger::INFO,"Using global (system-wide) integrator step size set to "+lexical_cast<string>(m_dt)+".");
+    }
+    if (m_dt <= 0.0)
+    {
+      m_msg->msg(Messenger::ERROR,"Integrator step size has to be larger than 0. Did you forget to use \"timestep\" command?");
+      throw runtime_error("Integrator step has not been set.");
+    }
     if (param.find("group") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No group has been set. Assuming group 'all'.");
