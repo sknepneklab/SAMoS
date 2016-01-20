@@ -142,7 +142,7 @@ if args.writeD:
 	data.update(dataD)
 if args.getStatsBasic:
 	dataS={'vel2av':vel2av,'phival':phival,'pressav':pressav,'energy':energy}
-	data.update(dataD)
+	data.update(dataS)
 if args.writeD:	
 	outpickle=args.directory+'defect_data.p'
 	
