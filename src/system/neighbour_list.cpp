@@ -341,7 +341,6 @@ bool NeighbourList::build_mesh()
     
   Mesh& mesh = m_system->get_mesh();
   int N = m_system->size();
-  
   for (int i = 0; i < N; i++)
     for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
       mesh.add_edge(i,m_contact_list[i][j]);
@@ -351,6 +350,7 @@ bool NeighbourList::build_mesh()
   mesh.generate_dual_mesh();
   mesh.postprocess();
   m_system->update_mesh();
+  
   
   return true;
    
@@ -365,7 +365,6 @@ bool NeighbourList::build_triangulation()
 {
   vector< pair<Point,unsigned> > points;
   int N = m_system->size();
-   
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
@@ -412,6 +411,7 @@ bool NeighbourList::build_triangulation()
       if (find(m_contact_list[i].begin(),m_contact_list[i].end(),k) == m_contact_list[i].end()) m_contact_list[i].push_back(k);
     }
   }
+  
  
   this->remove_dangling();
   

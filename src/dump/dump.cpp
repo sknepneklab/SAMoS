@@ -223,7 +223,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_msg->add_config("dump."+fname+".quantity","cell_perim");
   if (params.find("boundary") != params.end())
     m_msg->add_config("dump."+fname+".quantity","boundary");
-  if (params.find("group") == params.end())
+  if (params.find("group") != params.end())
     m_group = params["group"];
   m_msg->add_config("dump."+fname+".group",m_group);
   if (!m_system->has_group(m_group))
