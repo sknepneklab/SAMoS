@@ -580,49 +580,23 @@ void Dump::dump_data()
       m_out << format(" %3d ") % p.get_parent();
     if (m_params.find("area") != m_params.end())
       m_out << format("%10.6f ") % p.get_A0();
-    if (m_params.find("cell_area") != m_params.end())
+     if (m_params.find("cell_area") != m_params.end())
     {
-      if (!m_print_keys)
-      {
         if (m_nlist->has_faces())
           m_out << format("%10.6f ") % V.area;
-      }
-      else
-      {
-        m_msg->msg(Messenger::ERROR,"\"cell_area\" is not a valid key for the output file.");
-        throw runtime_error("Invalid key in dump.");
-      }
     }
     if (m_params.find("cell_perim") != m_params.end())
     {
-      if (!m_print_keys)
-      {
         if (m_nlist->has_faces())
-        m_out << format("%8.5f ") % V.perim;
-      }
-      else
-      {
-        m_msg->msg(Messenger::ERROR,"\"cell_perim\" is not a valid key for the output file.");
-        throw runtime_error("Invalid key in dump.");
-      }
+        m_out << format("%10.6f ") % V.perim;
     }
     if (m_params.find("cont_num") != m_params.end())
     {
-      if (!m_print_keys)
-      {
         if (m_nlist->has_contacts())
           m_out << format("%2d ") % m_nlist->get_contacts(i).size();
-      } 
-      else
-      {
-        m_msg->msg(Messenger::ERROR,"\"cont_num\" is not a valid key for the output file.");
-        throw runtime_error("Invalid key in dump.");
-      }
     }
     if (m_params.find("boundary") != m_params.end())
     {
-      if (!m_print_keys)
-      {
         if (m_nlist->has_contacts())
         {
           if (V.boundary)
@@ -632,27 +606,86 @@ void Dump::dump_data()
           else
             m_out << " 0 ";
         }
-      } 
-      else
-      {
-        m_msg->msg(Messenger::ERROR,"\"boundary\" is not a valid key for the output file.");
-        throw runtime_error("Invalid key in dump.");
-      }
     }
     if (m_params.find("stress") != m_params.end())
     {
-      if (!m_print_keys)
-      {
         m_out << format(" %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f ") % p.s_xx % p.s_xy % p.s_xz 
                                                                                    % p.s_yx % p.s_yy % p.s_yz 
                                                                                    % p.s_zx % p.s_zy % p.s_zz;
       } 
-      else
-      {
-        m_msg->msg(Messenger::ERROR,"\"stress\" is not a valid key for the output file.");
-        throw runtime_error("Invalid key in dump.");
-      }
-    }
+//     if (m_params.find("cell_area") != m_params.end())
+//     {
+//       if (!m_print_keys)
+//       {
+//         if (m_nlist->has_faces())
+//           m_out << format("%10.6f ") % V.area;
+//       }
+//       else
+//       {
+//         m_msg->msg(Messenger::ERROR,"\"cell_area\" is not a valid key for the output file.");
+//         throw runtime_error("Invalid key in dump.");
+//       }
+//     }
+//     if (m_params.find("cell_perim") != m_params.end())
+//     {
+//       if (!m_print_keys)
+//       {
+//         if (m_nlist->has_faces())
+//         m_out << format("%8.5f ") % V.perim;
+//       }
+//       else
+//       {
+//         m_msg->msg(Messenger::ERROR,"\"cell_perim\" is not a valid key for the output file.");
+//         throw runtime_error("Invalid key in dump.");
+//       }
+//     }
+//     if (m_params.find("cont_num") != m_params.end())
+//     {
+//       if (!m_print_keys)
+//       {
+//         if (m_nlist->has_contacts())
+//           m_out << format("%2d ") % m_nlist->get_contacts(i).size();
+//       } 
+//       else
+//       {
+//         m_msg->msg(Messenger::ERROR,"\"cont_num\" is not a valid key for the output file.");
+//         throw runtime_error("Invalid key in dump.");
+//       }
+//     }
+//     if (m_params.find("boundary") != m_params.end())
+//     {
+//       if (!m_print_keys)
+//       {
+//         if (m_nlist->has_contacts())
+//         {
+//           if (V.boundary)
+//             m_out << " 1 ";
+//           else if (!V.attached)
+//             m_out << " 2 ";
+//           else
+//             m_out << " 0 ";
+//         }
+//       } 
+//       else
+//       {
+//         m_msg->msg(Messenger::ERROR,"\"boundary\" is not a valid key for the output file.");
+//         throw runtime_error("Invalid key in dump.");
+//       }
+//     }
+//     if (m_params.find("stress") != m_params.end())
+//     {
+//       if (!m_print_keys)
+//       {
+//         m_out << format(" %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f ") % p.s_xx % p.s_xy % p.s_xz 
+//                                                                                    % p.s_yx % p.s_yy % p.s_yz 
+//                                                                                    % p.s_zx % p.s_zy % p.s_zz;
+//       } 
+//       else
+//       {
+//         m_msg->msg(Messenger::ERROR,"\"stress\" is not a valid key for the output file.");
+//         throw runtime_error("Invalid key in dump.");
+//       }
+//     }
     m_out << endl;
   }
 }
