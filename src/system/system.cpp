@@ -83,6 +83,7 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   vector<string> s_line;
   map<string, int> column_key;
   bool has_keys = false;
+  bool write_keys = false;
   int id = -1, tp;
   double r;
   ifstream inp;
@@ -106,16 +107,35 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   {
     trim(line);
     to_lower(line);
-    if (line[0] != '#' && line.size() > 0)
+    if (line.size() > 0)
     {
-      s_line = split_line(line);
-      if (s_line[0] == "keys:")
+      if ((has_keys) && (write_keys))
       {
         for (unsigned int col_idx = 1; col_idx < s_line.size(); col_idx++)
           column_key[s_line[col_idx]] = col_idx-1;
-        for (unsigned int col_idx = 1; col_idx < s_line.size(); col_idx++)
+        for (unsigned int col_idx = 1; col_idx < s_line.size(); col_idx++) 
+	{
           m_msg->msg(Messenger::INFO,"Column " + lexical_cast<string>(col_idx) + " of input file is : " + s_line[col_idx] + ".");
-        has_keys = true;
+	  cout << "Column " << lexical_cast<string>(col_idx) <<  " of input file is : " << s_line[col_idx] << endl;
+	}
+	write_keys=false;
+      }
+      s_line = split_line(line);
+      // Some variability in input files: a lot of them have the syntax # id type ... etc. This should also be read as keys!
+      if (s_line[0] == "#")
+      {
+	if ((s_line[1] == "id") || (s_line[1] == "type") || (s_line[1] == "radius") ||(s_line[1] == "x"))
+	{
+	  m_msg->msg(Messenger::WARNING,"Input format style '# id type radius' is deprecated and will be removed in a future version");
+	  cout << "Warning! Input format style '# id type radius' is deprecated and will be removed in a future version" << endl;
+	  has_keys = true;
+	  write_keys = true;
+	}
+      }
+      else if (s_line[0] == "keys:")
+      {
+	has_keys = true;
+        write_keys = true;
       }
       else if (s_line.size() < NUM_PART_ATTRIB && (!has_keys))
       {
@@ -138,10 +158,12 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         // read particle type
         if (has_keys)
         {
-          if (column_key.find("type") != column_key.end()) 
+          if (column_key.find("type") != column_key.end()) {
             tp = lexical_cast<int>(s_line[column_key["type"]]);
-          else
-            tp = 1;            
+	  }
+          else {
+            tp = 1;
+	  }
         }
         else
           tp = lexical_cast<int>(s_line[1]);
@@ -237,7 +259,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
           if (column_key.find("omega") != column_key.end())   p.omega = lexical_cast<double>(s_line[column_key["omega"]]);            
         }
         else
-          p.omega = lexical_cast<double>(s_line[12]);
+	  if (s_line.size() > 12)
+            p.omega = lexical_cast<double>(s_line[12]);
         // read length
         p.set_length(1.0);
         if (has_keys)
