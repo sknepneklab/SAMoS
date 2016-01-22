@@ -490,8 +490,8 @@ void Dump::dump_data()
       m_out << " nvx  nvy  nvz ";
     if (m_params.find("parent") != m_params.end())
       m_out << " parent ";
-    if (m_params.find("a0") != m_params.end())
-      m_out << " a0 ";
+    if (m_params.find("area") != m_params.end())
+      m_out << " area ";
     if (m_params.find("cell_area") != m_params.end())
       m_out << " cell_area ";
     if (m_params.find("cell_perim") != m_params.end())
@@ -531,8 +531,8 @@ void Dump::dump_data()
       m_out << " nvx  nvy  nvz ";
     if (m_params.find("parent") != m_params.end())
       m_out << " parent ";
-    if (m_params.find("a0") != m_params.end())
-      m_out << " a0 ";
+    if (m_params.find("area") != m_params.end())
+      m_out << " area ";
     m_out << endl;
   }
   for (int i = 0; i < N; i++)
@@ -568,7 +568,7 @@ void Dump::dump_data()
       m_out << format(" %10.6f  %10.6f  %10.6f") % p.Nx % p.Ny % p.Nz;
     if (m_params.find("parent") != m_params.end())
       m_out << format(" %3d ") % p.get_parent();
-    if (m_params.find("a0") != m_params.end())
+    if (m_params.find("area") != m_params.end())
       m_out << format("%8.5f ") % p.get_A0();
     if (m_params.find("cell_area") != m_params.end())
     {

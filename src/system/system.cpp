@@ -86,6 +86,16 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   bool write_keys = false;
   int id = -1, tp;
   double r;
+  // Here we list keys that appear in the old input file format
+  vector<string> old_keys;
+  old_keys.push_back("id");  old_keys.push_back("type");   old_keys.push_back("radius");
+  old_keys.push_back("x");  old_keys.push_back("y");   old_keys.push_back("z");    
+  old_keys.push_back("vx");  old_keys.push_back("vy");   old_keys.push_back("vz");    
+  old_keys.push_back("nx");  old_keys.push_back("ny");   old_keys.push_back("nz");
+  old_keys.push_back("omega");  old_keys.push_back("length");
+  old_keys.push_back("ix");  old_keys.push_back("iy");   old_keys.push_back("iz");    
+  // done with this odd setup
+  
   ifstream inp;
   inp.exceptions ( std::ifstream::failbit | std::ifstream::badbit );
   try
@@ -109,7 +119,7 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
     to_lower(line);
     if (line.size() > 0)
     {
-      if ((has_keys) && (write_keys))
+      if (has_keys && write_keys)
       {
         for (unsigned int col_idx = 1; col_idx < s_line.size(); col_idx++)
           column_key[s_line[col_idx]] = col_idx-1;
@@ -124,10 +134,11 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
       // Some variability in input files: a lot of them have the syntax # id type ... etc. This should also be read as keys!
       if (s_line[0] == "#")
       {
-	if ((s_line[1] == "id") || (s_line[1] == "type") || (s_line[1] == "radius") ||(s_line[1] == "x"))
+	//if (s_line.size() > 1 && (s_line[1] == "id" || s_line[1] == "type" || s_line[1] == "radius" || s_line[1] == "x"))
+        if (s_line.size() > 1 && find(old_keys.begin(), old_keys.end(), s_line[1]) != old_keys.end())
 	{
-	  m_msg->msg(Messenger::WARNING,"Input format style '# id type radius' is deprecated and will be removed in a future version");
-	  cout << "Warning! Input format style '# id type radius' is deprecated and will be removed in a future version" << endl;
+	  m_msg->msg(Messenger::WARNING,"Input format style '# id type radius' is deprecated and will be removed in a future version.");
+	  //cout << "Warning! Input format style '# id type radius' is deprecated and will be removed in a future version" << endl;
 	  has_keys = true;
 	  write_keys = true;
 	}

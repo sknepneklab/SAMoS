@@ -216,7 +216,7 @@ public:
   int ix, iy, iz;              //!< Periodic box image flags (to enable unwrapping of particle coordinates)
   //@}
   ///@{
-  int Nx, Ny, Nz;              //!< Normal to the contraint, used for mesh orientation in tissues.
+  double Nx, Ny, Nz;           //!< Normal to the contraint, used for mesh orientation in tissues.
   //@}
   ///@{
   double s_xx, s_xy, s_xz, s_yx, s_yy, s_yz, s_zx, s_zy, s_zz;   //!< Components of the stress tensor
