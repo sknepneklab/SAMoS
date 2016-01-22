@@ -49,6 +49,7 @@ ostream& operator<<(ostream& out, const Particle& p)
   << format("(x,y,z) : (%15.9e,%15.9e,%15.9e)\n") % p.x % p.y % p.z
   << format("(vx,vy,vz) : (%15.9e,%15.9e,%15.9e)\n") % p.vx % p.vy % p.vz
   << format("(nx,ny,nz) : (%15.9e,%15.9e,%15.9e)\n") % p.nx % p.ny % p.nz
+  << format("(nvx,nvy,nvz) : (%15.9e,%15.9e,%15.9e)\n") % p.Nx % p.Ny % p.Nz
   << format("(fx,fy,fz) : (%15.9e,%15.9e,%15.9e)\n") % p.fx % p.fy % p.fz
   << format("omega : %15.9e\n") % p.omega
   << format("coordination : %d\n") % p.coordination
