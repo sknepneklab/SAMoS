@@ -486,6 +486,8 @@ void Dump::dump_data()
       m_out << " omega ";
     if (m_params.find("image_flags") != m_params.end())
       m_out << " ix  iy  iz ";
+    if (m_params.find("normal") != m_params.end())
+      m_out << " nvx  nvy  nvz ";
     if (m_params.find("parent") != m_params.end())
       m_out << " parent ";
     if (m_params.find("a0") != m_params.end())
@@ -525,6 +527,8 @@ void Dump::dump_data()
       m_out << " omega ";
     if (m_params.find("image_flags") != m_params.end())
       m_out << " ix  iy  iz ";
+    if (m_params.find("normal") != m_params.end())
+      m_out << " nvx  nvy  nvz ";
     if (m_params.find("parent") != m_params.end())
       m_out << " parent ";
     if (m_params.find("a0") != m_params.end())
@@ -560,6 +564,8 @@ void Dump::dump_data()
       m_out << format("%8.5f ") % p.omega;
     if (m_params.find("image_flags") != m_params.end())
       m_out << format(" %3d  %3d  %3d ") % p.ix % p.iy % p.iz;
+    if (m_params.find("normal") != m_params.end())
+      m_out << format(" %10.6f  %10.6f  %10.6f") % p.Nx % p.Ny % p.Nz;
     if (m_params.find("parent") != m_params.end())
       m_out << format(" %3d ") % p.get_parent();
     if (m_params.find("a0") != m_params.end())
