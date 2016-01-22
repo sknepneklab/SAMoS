@@ -289,6 +289,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
       }
     }
   }
+  if (!has_keys)
+    m_msg->msg(Messenger::WARNING,"Data file uses obsolete format. Some code features will not function properly. Please consider using the new input format.");
   m_msg->msg(Messenger::INFO,"Read data for "+lexical_cast<string>(m_particles.size())+" particles.");
   m_msg->write_config("system.n_particles",lexical_cast<string>(m_particles.size()));
   inp.close();
