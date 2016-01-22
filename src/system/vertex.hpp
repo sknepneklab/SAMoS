@@ -45,6 +45,7 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <stdexcept>
 
 #include <boost/format.hpp>
 
@@ -54,6 +55,7 @@ using std::vector;
 using std::endl;
 using std::sin;
 using std::cos;
+using std::runtime_error;
 
 /*! Vertex class is a light-weight class that handles vertices in a mesh.
  *  A vertex can simply be a particle position or the position of the dual lattice
@@ -88,6 +90,8 @@ struct Vertex
    id = p.get_id();
    type = p.get_type();
    r = Vector3d(p.x,p.y,p.z);
+   if (p.Nx == 0.0 && p.Ny == 0.0 && p.Nz == 0.0)
+     throw runtime_error("Surface normal for each mesh vertex has to non-zero."); 
    N = Vector3d(p.Nx,p.Ny,p.Nz);
    z = 0;
    n_edges = 0;
