@@ -124,28 +124,28 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         for (unsigned int col_idx = 1; col_idx < s_line.size(); col_idx++)
           column_key[s_line[col_idx]] = col_idx-1;
         for (unsigned int col_idx = 1; col_idx < s_line.size(); col_idx++) 
-	{
+        {
           m_msg->msg(Messenger::INFO,"Column " + lexical_cast<string>(col_idx) + " of input file is : " + s_line[col_idx] + ".");
-	  cout << "Column " << lexical_cast<string>(col_idx) <<  " of input file is : " << s_line[col_idx] << endl;
-	}
-	write_keys=false;
+          cout << "Column " << lexical_cast<string>(col_idx) <<  " of input file is : " << s_line[col_idx] << endl;
+        }
+        write_keys=false;
       }
       s_line = split_line(line);
       // Some variability in input files: a lot of them have the syntax # id type ... etc. This should also be read as keys!
       if (s_line[0] == "#")
       {
-	//if (s_line.size() > 1 && (s_line[1] == "id" || s_line[1] == "type" || s_line[1] == "radius" || s_line[1] == "x"))
+	      //if (s_line.size() > 1 && (s_line[1] == "id" || s_line[1] == "type" || s_line[1] == "radius" || s_line[1] == "x"))
         if (s_line.size() > 1 && find(old_keys.begin(), old_keys.end(), s_line[1]) != old_keys.end())
-	{
-	  m_msg->msg(Messenger::WARNING,"Input format style '# id type radius' is deprecated and will be removed in a future version.");
-	  //cout << "Warning! Input format style '# id type radius' is deprecated and will be removed in a future version" << endl;
-	  has_keys = true;
-	  write_keys = true;
-	}
+        {
+          m_msg->msg(Messenger::WARNING,"Input format style '# id type radius' is deprecated and will be removed in a future version.");
+          //cout << "Warning! Input format style '# id type radius' is deprecated and will be removed in a future version" << endl;
+          has_keys = true;
+          write_keys = true;
+        }
       }
       else if (s_line[0] == "keys:")
       {
-	has_keys = true;
+	      has_keys = true;
         write_keys = true;
       }
       else if (s_line.size() < NUM_PART_ATTRIB && (!has_keys))
