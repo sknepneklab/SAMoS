@@ -1040,10 +1040,13 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
     vtkSmartPointer<vtkDoubleArray> areas =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> perims =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> pressure =  vtkSmartPointer<vtkDoubleArray>::New();
     areas->SetName("Area");
     areas->SetNumberOfComponents(1);
     perims->SetName("Perimeter");
     perims->SetNumberOfComponents(1);
+    pressure->SetName("Pressure");
+    pressure->SetNumberOfComponents(1);
     
     for (unsigned int i = 0; i < dual.size(); i++)
       points->InsertNextPoint (dual[i].x, dual[i].y, dual[i].z);      
@@ -1060,12 +1063,15 @@ void Dump::dump_vtp(int step)
             face->GetPointIds()->SetId(d, V.dual[d]);
           faces->InsertNextCell(face);
           areas->InsertNextValue(vertices[i].area);
+          Particle& p = m_system->get_particle(i);
           perims->InsertNextValue(vertices[i].perim);
+          pressure->InsertNextValue(p.s_xx + p.s_yy + p.s_zz);
         }
       }
     polydata->SetPolys(faces);
     polydata->GetCellData()->AddArray(areas);
     polydata->GetCellData()->AddArray(perims);
+    polydata->GetCellData()->AddArray(pressure);
   }
   
   // Write the file
