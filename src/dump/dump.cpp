@@ -533,8 +533,6 @@ void Dump::dump_data()
       m_out << " parent ";
     if (m_params.find("area") != m_params.end())
       m_out << " area ";
-<<<<<<< HEAD
-=======
     if (m_params.find("cell_area") != m_params.end())
       m_out << " cell_area ";
     if (m_params.find("cell_perim") != m_params.end())
@@ -545,7 +543,6 @@ void Dump::dump_data()
       m_out << " boundary ";
     if (m_params.find("stress") != m_params.end())
       m_out << " s_xx  s_xy  s_xz  s_yx  s_yy  s_yz  s_zx  s_zy  s_zz ";
->>>>>>> temp
     m_out << endl;
   }
   for (int i = 0; i < N; i++)
