@@ -904,6 +904,7 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkDoubleArray> a0 =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> press =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> vel =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> force =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> dir =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> ndir =  vtkSmartPointer<vtkDoubleArray>::New();
     
@@ -919,6 +920,8 @@ void Dump::dump_vtp(int step)
     press->SetNumberOfComponents(1);
     vel->SetName("Velocity");
     vel->SetNumberOfComponents(3);
+    force->SetName("Force");
+    force->SetNumberOfComponents(3);
     dir->SetName("Director");
     dir->SetNumberOfComponents(3);
     ndir->SetName("NDirector");
@@ -928,6 +931,7 @@ void Dump::dump_vtp(int step)
     {
       Particle& pi = m_system->get_particle(particles[i]);
       double v[3] = {pi.vx, pi.vy, pi.vz};
+      double f[3] = {pi.fx, pi.fy, pi.fz};
       double n[3] = {pi.nx, pi.ny, pi.nz};
       double nn[3] = {-pi.nx, -pi.ny, -pi.nz};
       points->InsertNextPoint ( pi.x, pi.y, pi.z );
@@ -937,6 +941,7 @@ void Dump::dump_vtp(int step)
       a0->InsertNextValue(pi.A0);
       press->InsertNextValue(pi.s_xx + pi.s_yy + pi.s_zz);
       vel->InsertNextTuple(v);
+      force->InsertNextTuple(f);
       dir->InsertNextTuple(n);
       ndir->InsertNextTuple(nn);
     }
@@ -949,6 +954,7 @@ void Dump::dump_vtp(int step)
     polydata->GetPointData()->AddArray(a0);
     polydata->GetPointData()->AddArray(press);
     polydata->GetPointData()->AddArray(vel);
+    polydata->GetPointData()->AddArray(force);
     polydata->GetPointData()->AddArray(dir);
     polydata->GetPointData()->AddArray(ndir);
     
@@ -983,15 +989,16 @@ void Dump::dump_vtp(int step)
       lens->SetNumberOfComponents(1);
       boundary->SetName("Boundary");
       boundary->SetNumberOfComponents(1);
+      // Edited for this to be backwards for better paraview plotting
       for (int i = 0; i < mesh.size(); i++)
       {
         Vertex& vert = mesh.get_vertices()[i];
         if (vert.boundary)
-          boundary->InsertNextValue(2);
+          boundary->InsertNextValue(0);
         else if (!vert.attached)
           boundary->InsertNextValue(1);
         else
-          boundary->InsertNextValue(0);
+          boundary->InsertNextValue(2);
       }
       polydata->GetPointData()->AddArray(boundary);
       for (int e = 0; e < mesh.nedges(); e++)
