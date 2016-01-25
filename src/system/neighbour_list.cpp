@@ -340,6 +340,11 @@ bool NeighbourList::build_mesh()
 {
     
   Mesh& mesh = m_system->get_mesh();
+  if (m_system->get_periodic())
+  {
+    BoxPtr box = m_system->get_box();
+    mesh.set_box(box->Lx, box->Ly, box->Lz);
+  }
   int N = m_system->size();
   for (int i = 0; i < N; i++)
     for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
@@ -350,7 +355,6 @@ bool NeighbourList::build_mesh()
   mesh.generate_dual_mesh();
   mesh.postprocess();
   m_system->update_mesh();
-  
   
   return true;
    

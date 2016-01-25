@@ -107,8 +107,11 @@ void PairVertexParticlePotential::compute(double dt)
         Vector3d& r_nu   = f_nu.rc; 
         Vector3d& r_nu_p = f_nu_p.rc; 
         Vector3d r_nu_i = r_nu - vi.r;
+        mesh.apply_periodic(r_nu_i);
         
-        Vector3d cross_prod_1 = cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
+        Vector3d r_nu_p_m_r_nu_m = r_nu_p - r_nu_m;
+        mesh.apply_periodic(r_nu_p_m_r_nu_m);
+        Vector3d cross_prod_1 = cross(r_nu_p_m_r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
         area_vec = area_vec + cross_prod_1;  //cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
         if (m_compute_stress)
         {
@@ -124,7 +127,13 @@ void PairVertexParticlePotential::compute(double dt)
           pi.s_zy = area_term*cross_prod_1.z*r_nu_i.y;
           pi.s_zz = area_term*cross_prod_1.z*r_nu_i.z;
         }
-        Vector3d cross_prod_2 = ((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit()).scaled(1.0/f_nu.n_sides);
+        Vector3d r_nu_m_r_nu_m = r_nu - r_nu_m;
+        mesh.apply_periodic(r_nu_m_r_nu_m);
+        Vector3d r_nu_p_m_r_nu = r_nu_p - r_nu;
+        mesh.apply_periodic(r_nu_p_m_r_nu);
+        Vector3d u1_m_u2 = r_nu_m_r_nu_m.unit()-r_nu_p_m_r_nu.unit();
+        mesh.apply_periodic(u1_m_u2);
+        Vector3d cross_prod_2 = u1_m_u2.scaled(1.0/f_nu.n_sides);
         perim_vec = perim_vec + cross_prod_2; //((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit()).scaled(1.0/f_nu.n_sides);
         if (m_compute_stress)
         {
@@ -142,7 +151,9 @@ void PairVertexParticlePotential::compute(double dt)
         }
         if (m_has_pair_params)
           lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[E.to].type - 1].lambda;
-        Vector3d cross_prod_3 = lambda*(r_nu - r_nu_m).unit().scaled(1.0/f_nu.n_sides);
+        r_nu_m_r_nu_m = r_nu - r_nu_m;
+        mesh.apply_periodic(r_nu_m_r_nu_m);
+        Vector3d cross_prod_3 = lambda*r_nu_m_r_nu_m.unit().scaled(1.0/f_nu.n_sides);
         con_vec = con_vec + cross_prod_3; //lambda*(r_nu - r_nu_m).unit().scaled(1.0/f_nu.n_sides);
         if (m_compute_stress)
         {
@@ -160,7 +171,10 @@ void PairVertexParticlePotential::compute(double dt)
         }
         if (m_has_pair_params)
           lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[En.to].type - 1].lambda;
-        Vector3d cross_prod_4 = lambda*(r_nu_p - r_nu).unit().scaled(1.0/f_nu.n_sides);
+        r_nu_p_m_r_nu = r_nu_p - r_nu;
+        mesh.apply_periodic(r_nu_p_m_r_nu);
+        Vector3d cross_prod_4 = lambda*r_nu_p_m_r_nu.unit().scaled(1.0/f_nu.n_sides);
+        mesh.apply_periodic(cross_prod_4);
         con_vec = con_vec - cross_prod_4; //lambda*(r_nu_p - r_nu).unit().scaled(1.0/f_nu.n_sides);
         if (m_compute_stress)
         { 
@@ -176,7 +190,9 @@ void PairVertexParticlePotential::compute(double dt)
           pi.s_zy -= cross_prod_4.z*r_nu_i.y;
           pi.s_zz -= cross_prod_4.z*r_nu_i.z;
         }
-        pot_eng += lambda*(r_nu - r_nu_m).len();
+        r_nu_m_r_nu_m = r_nu - r_nu_m;
+        mesh.apply_periodic(r_nu_m_r_nu_m);
+        pot_eng += lambda*r_nu_m_r_nu_m.len();
       }
       // area term
       double area_fact = -alpha*area_term;
@@ -229,8 +245,11 @@ void PairVertexParticlePotential::compute(double dt)
             Vector3d& r_nu   = f_nu.rc; 
             Vector3d& r_nu_p = f_nu_p.rc; 
             Vector3d r_nu_i = r_nu - vi.r;
+            mesh.apply_periodic(r_nu_i);
             
-            Vector3d cross_prod_1 = cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
+            Vector3d r_nu_p_m_r_nu_m = r_nu_p - r_nu_m;
+            mesh.apply_periodic(r_nu_p_m_r_nu_m);
+            Vector3d cross_prod_1 = cross(r_nu_p_m_r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
             area_vec = area_vec + cross_prod_1; // cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
             if (m_compute_stress)
             {
@@ -246,7 +265,14 @@ void PairVertexParticlePotential::compute(double dt)
               pi.s_zy += area_term*cross_prod_1.z*r_nu_i.y;
               pi.s_zz += area_term*cross_prod_1.z*r_nu_i.z;
             }
-            Vector3d cross_prod_2 = ((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit()).scaled(1.0/f_nu.n_sides);
+            Vector3d r_nu_m_r_nu_m = r_nu - r_nu_m;
+            mesh.apply_periodic(r_nu_m_r_nu_m);
+            Vector3d r_nu_p_m_r_nu = r_nu_p - r_nu;
+            mesh.apply_periodic(r_nu_p_m_r_nu);
+            Vector3d u1_m_u2 = r_nu_m_r_nu_m.unit() - r_nu_p_m_r_nu.unit();
+            mesh.apply_periodic(u1_m_u2);
+            Vector3d cross_prod_2 = u1_m_u2.scaled(1.0/f_nu.n_sides);
+            mesh.apply_periodic(cross_prod_2);
             perim_vec = perim_vec + cross_prod_2; //((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit()).scaled(1.0/f_nu.n_sides);
             if (m_compute_stress)
             {
@@ -264,7 +290,9 @@ void PairVertexParticlePotential::compute(double dt)
             }
             if (m_has_pair_params)
               lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[E.to].type - 1].lambda;
-            Vector3d cross_prod_3 = lambda*(r_nu - r_nu_m).unit().scaled(1.0/f_nu.n_sides);
+            r_nu_m_r_nu_m = r_nu - r_nu_m;
+            mesh.apply_periodic(r_nu_m_r_nu_m);
+            Vector3d cross_prod_3 = lambda*r_nu_m_r_nu_m.unit().scaled(1.0/f_nu.n_sides);
             con_vec = con_vec + cross_prod_3; //lambda*(r_nu - r_nu_m).unit().scaled(1.0/f_nu.n_sides);
             if (m_compute_stress)
             {
@@ -282,7 +310,8 @@ void PairVertexParticlePotential::compute(double dt)
             }
             if (m_has_pair_params)
               lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[Ep.to].type - 1].lambda;
-            Vector3d cross_prod_4 = lambda*(r_nu_p - r_nu).unit().scaled(1.0/f_nu.n_sides);
+            r_nu_p_m_r_nu = r_nu_p - r_nu;
+            Vector3d cross_prod_4 = lambda*r_nu_p_m_r_nu.unit().scaled(1.0/f_nu.n_sides);
             con_vec = con_vec - cross_prod_4; //lambda*(r_nu_p - r_nu).unit().scaled(1.0/f_nu.n_sides);
             if (m_compute_stress)
             {

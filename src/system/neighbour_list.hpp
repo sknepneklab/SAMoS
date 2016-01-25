@@ -133,8 +133,20 @@ public:
       m_msg->msg(Messenger::INFO,"Neighbour list will also build contact network.");
       m_msg->write_config("nlist.contact_network","true"); 
     }
+    if (param.find("build_faces") != param.end())
+    {
+      m_build_contacts = true;
+      m_build_faces = true;
+      m_msg->msg(Messenger::INFO,"Neighbour list will also build faces.");
+      m_msg->write_config("nlist.faces","true"); 
+    }
     if (param.find("triangulation") != param.end())
     {
+      if (m_system->get_periodic())
+      {
+        m_msg->msg(Messenger::ERROR,"Building faces using Delaunay triangulatin not supported for periodic boundary conditions.");
+        throw runtime_error("Delaunay triangulation not supported in periodic sytems.");
+      }
       m_triangulation = true;
       m_msg->msg(Messenger::INFO,"Faces will be build using Delaunay triangulation.");
       m_msg->write_config("nlist.triangulation","true"); 
@@ -150,18 +162,6 @@ public:
         m_msg->write_config("nlist.max_edge_len",param["max_edge_len"]);
         m_max_edge_len =  lexical_cast<double>(param["max_edge_len"]);
       }
-    }
-    if (param.find("build_faces") != param.end())
-    {
-      if (m_system->get_periodic())
-      {
-        m_msg->msg(Messenger::ERROR,"Building faces is not supported for periodic boundary conditions.");
-        throw runtime_error("Faces not supported in periodic sytems.");
-      }
-      m_build_contacts = true;
-      m_build_faces = true;
-      m_msg->msg(Messenger::INFO,"Neighbour list will also build faces.");
-      m_msg->write_config("nlist.faces","true"); 
     }
     if (param.find("contact_distance") == param.end())
     {

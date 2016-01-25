@@ -109,6 +109,7 @@ void Mesh::generate_faces()
         Vertex& Vp = m_vertices[vp];
         Vertex& Vn = m_vertices[vn];
         Vector3d ri = Vn.r - Vp.r;
+        this->apply_periodic(ri);
         angles.clear();
         for (unsigned int e = 0; e < Vn.edges.size(); e++)
         {
@@ -116,6 +117,7 @@ void Mesh::generate_faces()
           if (!Ej.visited && Ej.to != vp)
           {
             Vector3d rj = m_vertices[Ej.to].r - Vn.r;
+            this->apply_periodic(rj);
             angles.push_back(make_pair(e,M_PI - angle(ri,rj,Vn.N)));
           }
         }
@@ -134,7 +136,9 @@ void Mesh::generate_faces()
       int f_n = ( f == face.vertices.size() - 1) ? 0 : f + 1;
       Vector3d r1 = m_vertices[face.vertices[f]].r;
       Vector3d r2 = m_vertices[face.vertices[f_n]].r;
-      perim += (r1-r2).len();
+      Vector3d dr = r1-r2;
+      this->apply_periodic(dr);
+      perim += dr.len();
     }
     if (face.vertices.size() > 0)
     {
@@ -177,7 +181,9 @@ void Mesh::generate_dual_mesh()
         Edge& E = m_edges[face.edges[e]];
         //Vector3d rc = m_faces[m_edges[E.pair].face].rc;
         Vector3d r = m_vertices[E.to].r - m_vertices[E.from].r;
+        this->apply_periodic(r);
         Vector3d rn = m_vertices[E.from].r + r.scaled(0.5);//mirror(m_vertices[E.from].r,r,rc);
+        this->apply_periodic(rn);
         m_dual.push_back(rn);
         m_vertices[E.from].dual.push_back(m_ndual);
         m_vertices[E.to].dual.push_back(m_ndual);
@@ -208,7 +214,9 @@ void Mesh::update_dual_mesh()
         Edge& E = m_edges[face.edges[e]];
         //Vector3d rc = m_faces[m_edges[E.pair].face].rc;
         Vector3d r = m_vertices[E.to].r - m_vertices[E.from].r;
+        this->apply_periodic(r);
         Vector3d rn = m_vertices[E.from].r + r.scaled(0.5); //mirror(m_vertices[E.from].r,r,rc);
+        this->apply_periodic(rn);
         m_dual[i++] = rn;
       }
     }
@@ -256,13 +264,23 @@ void Mesh::compute_centre(int f)
 {
   Face& face = m_faces[f];
   double xc = 0.0, yc = 0.0, zc = 0.0;
-  for (int i = 0; i < face.n_sides; i++)
+  Vector3d& r0 = m_vertices[face.vertices[0]].r;
+  for (int i = 1; i < face.n_sides; i++)
   {
-    xc += m_vertices[face.vertices[i]].r.x;
-    yc += m_vertices[face.vertices[i]].r.y;
-    zc += m_vertices[face.vertices[i]].r.z;
+    Vector3d& ri = m_vertices[face.vertices[i]].r;
+    Vector3d dr = ri - r0;
+    this->apply_periodic(dr);
+    xc += dr.x;
+    yc += dr.y;
+    zc += dr.z;
+    //xc += m_vertices[face.vertices[i]].r.x;
+    //yc += m_vertices[face.vertices[i]].r.y;
+    //zc += m_vertices[face.vertices[i]].r.z;
   }
-  face.rc = Vector3d(xc/face.n_sides,yc/face.n_sides,zc/face.n_sides);
+  Vector3d rc = Vector3d(xc/face.n_sides+r0.x,yc/face.n_sides+r0.y,zc/face.n_sides+r0.z);
+  this->apply_periodic(rc);
+  face.rc = rc;
+  //face.rc = Vector3d(xc/face.n_sides,yc/face.n_sides,zc/face.n_sides);
 }
 
 /*! Order faces, edges and neighbours in the vertex star. At this point it is not possible
@@ -348,11 +366,14 @@ double Mesh::dual_area(int v)
   {
     int j = ( i == V.dual.size()-1) ? 0 : i + 1;
     Vector3d& r1 = m_dual[V.dual[i]];
+    this->apply_periodic(r1);
     Vector3d& r2 = m_dual[V.dual[j]];
+    this->apply_periodic(r2);
     //Vector3d& r1 = m_faces[m_edges[V.edges[i]].face].rc;
     //Vector3d& r2 = m_faces[m_edges[V.edges[j]].face].rc;
     
     Vector3d  rr = cross(r1,r2); 
+    this->apply_periodic(rr);
     V.area += dot(rr,V.N.unit());
   }
    
@@ -390,8 +411,12 @@ double Mesh::dual_perimeter(int v)
     //Vector3d& r1 = m_faces[m_edges[V.edges[i]].face].rc;
     //Vector3d& r2 = m_faces[m_edges[V.edges[j]].face].rc;
     Vector3d& r1 = m_dual[V.dual[i]];
+    this->apply_periodic(r1);
     Vector3d& r2 = m_dual[V.dual[j]];
-    V.perim += (r1-r2).len();
+    this->apply_periodic(r2);
+    Vector3d dr = r1 - r2;
+    this->apply_periodic(dr);
+    V.perim += dr.len();
   }
   return V.perim;
 }

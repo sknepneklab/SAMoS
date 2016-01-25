@@ -73,7 +73,7 @@ class Mesh
 {
 public:
   //! Construct a Mesh object
-  Mesh() : m_size(0), m_nedge(0), m_nface(0), m_ndual(0), m_is_triangulation(true), m_max_face_perim(20.0) {   }
+  Mesh() : m_size(0), m_nedge(0), m_nface(0), m_ndual(0), m_is_triangulation(true), m_max_face_perim(20.0), m_periodic(false) {   }
   
   //! Get mesh size
   int size() { return m_size; }
@@ -105,6 +105,30 @@ public:
   //! Set value of the maximum face perimeter
   //! \param val new value
   void set_max_face_perim(double val) { m_max_face_perim = val; }
+  
+  //! Set periodic box
+  //! \param lx box size in x direction 
+  //! \param ly box size in y direction 
+  //! \param lz box size in z direction 
+  void set_box(double lx, double ly, double lz)
+  {
+    m_periodic = true;
+    m_lx = lx; m_ly = ly; m_lz = lz;
+  }
+  
+  //! Apply periodic bondary conditions
+  void apply_periodic(Vector3d& v)
+  {
+    if (m_periodic)
+    {
+      if (v.x > 0.5*m_lx) v.x -= m_lx;
+      else if (v.x < -0.5*m_lx) v.x += m_lx;
+      if (v.y > 0.5*m_ly) v.y -= m_ly;
+      else if (v.y < -0.5*m_ly) v.y += m_ly; 
+      if (v.z > 0.5*m_lz) v.z -= m_lz;
+      else if (v.z < -0.5*m_lz) v.z += m_lz; 
+    }
+  }
   
   //! Resets the mesh
   void reset();
@@ -179,6 +203,10 @@ private:
   int m_ndual;   //!< Number of vertices in dual
   bool m_is_triangulation;  //!< If true, all faces are triangles (allows more assumptions)
   double m_max_face_perim;    //!< If face perimeter is greater than this value, reject face and treat it as a hole.
+  bool m_periodic;            //!< If true, use periodic boundary condition
+  double m_lx;        //!< Box size in x direction (only used if periodic)
+  double m_ly;        //!< Box size in x direction (only used if periodic)
+  double m_lz;        //!< Box size in x direction (only used if periodic)
     
   vector<Vertex> m_vertices;           //!< Contains all vertices
   vector<Edge> m_edges;                //!< Contains all edge
