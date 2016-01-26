@@ -316,10 +316,13 @@ void PairVertexParticlePotential::compute(double dt)
         pi.fz -= alpha*con_vec.z;
         if (m_compute_stress)
         {
-          double inv_area = 1.0/vi.area;
-          pi.s_xx *= inv_area;  pi.s_xy *= inv_area; pi.s_xz *= inv_area;
-          pi.s_yx *= inv_area;  pi.s_yy *= inv_area; pi.s_yz *= inv_area;
-          pi.s_zx *= inv_area;  pi.s_zy *= inv_area; pi.s_zz *= inv_area;
+          if (vi.area > 0)
+          {
+            double inv_area = 1.0/vi.area;
+            pi.s_xx *= inv_area;  pi.s_xy *= inv_area; pi.s_xz *= inv_area;
+            pi.s_yx *= inv_area;  pi.s_yy *= inv_area; pi.s_yz *= inv_area;
+            pi.s_zx *= inv_area;  pi.s_zy *= inv_area; pi.s_zz *= inv_area;
+          }
         }
       }
     }
