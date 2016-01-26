@@ -255,8 +255,9 @@ public:
   //! Build neighbour list
   void build();
   
-  //! Build faces
-  bool build_faces();
+  // Does actual contact and face building 
+  void build_mesh();
+    
   
 private:
   
@@ -286,9 +287,9 @@ private:
   // Checks if the contact is intersecting with other contacts
   bool contact_intersects(int, int);
   
-  // Do actual faces building for arbitrary face geometry
-  bool build_mesh();
-  
+   //! Build faces
+  void build_faces();
+ 
   // Remove dangling edges
   void remove_dangling();
   

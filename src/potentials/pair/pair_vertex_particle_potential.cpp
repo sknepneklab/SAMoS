@@ -59,6 +59,10 @@ void PairVertexParticlePotential::compute(double dt)
   double lambda = m_lambda;
   double alpha = 1.0;  // phase in factor
   double pot_eng = 0.0;
+  
+  if (m_system->get_step() % m_mesh_update_steps == 0)
+    m_nlist->build_mesh();
+  
   Mesh& mesh = m_system->get_mesh();
   
   if (m_system->compute_per_particle_energy())

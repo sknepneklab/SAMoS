@@ -43,17 +43,7 @@
 void NeighbourList::build()
 {
  //cout << "Building NL. " << endl;
- Mesh& mesh = m_system->get_mesh();
  m_list.clear();
- 
- if (m_build_contacts)
- {
-   mesh.reset();
-   m_contact_list.clear();
- }
- 
- if (m_build_faces)
-   mesh.reset();
   
  for (int i = 0; i < m_system->size(); i++)
  {
@@ -69,8 +59,20 @@ void NeighbourList::build()
   else
     this->build_nsq();
   
+  this->build_mesh();
+}
+
+/*! Build faces of the mesh from the particle locations */
+void NeighbourList::build_mesh()
+{
   if (m_build_contacts)
   {
+    Mesh& mesh = m_system->get_mesh();
+    mesh.reset();
+    m_contact_list.clear();
+     
+    for (int i = 0; i < m_system->size(); i++)
+      m_contact_list.push_back(vector<int>());
 #ifdef HAS_CGAL
     if (m_triangulation)
       this->build_triangulation();
@@ -80,12 +82,6 @@ void NeighbourList::build()
   }
   if (m_build_faces)
     this->build_faces();
-}
-
-/*! Build faces of the mesh from the particle locations */
-bool NeighbourList::build_faces()
-{
-  return this->build_mesh();
 }
 
 // Private methods below
@@ -336,7 +332,7 @@ bool NeighbourList::contact_intersects(int i, int j)
 /*! Build faces using contact network 
  *  Assumes that contacts have been built. 
 **/
-bool NeighbourList::build_mesh()
+void NeighbourList::build_faces()
 {
     
   Mesh& mesh = m_system->get_mesh();
@@ -350,9 +346,6 @@ bool NeighbourList::build_mesh()
   mesh.generate_dual_mesh();
   mesh.postprocess();
   m_system->update_mesh();
-  
-  
-  return true;
    
 }
 

@@ -118,6 +118,18 @@ public:
       m_msg->write_config("potential.pair.vertex_particle.compute_stress","true");
     }
     
+    if (param.find("mesh_update_steps") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Number of time steps between mesh updates in vertex-particle pair potential not set. Assuming default 1. (Perfomrance might be slow).");
+      m_mesh_update_steps = 1;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Number of time steps between mesh updates in vertex-particle pair potential set to "+param["mesh_update_steps"]+".");
+      m_mesh_update_steps = lexical_cast<int>(param["mesh_update_steps"]);
+    }
+    m_msg->write_config("potential.pair.vertex_particle.mesh_update_steps",lexical_cast<string>(m_mesh_update_steps));
+    
     m_particle_params = new VertexParticleParameters[ntypes];
     for (int i = 0; i < ntypes; i++)
     {
@@ -243,6 +255,7 @@ private:
   double m_gamma;                   //!< cell perimeter stiffness
   double m_lambda;                  //!< cell contact stiffness
   bool m_has_part_params;           //!< true if type specific particle parameters are given
+  int m_mesh_update_steps;          //!< number of time steps between mesh (tessalation) recalculation
   VertexParticleParameters*  m_particle_params;   //!< type specific particle parameters 
   VertexParticleParameters** m_pair_params;       //!< type specific pair parameters 
      
