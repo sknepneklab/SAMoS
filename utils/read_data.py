@@ -51,11 +51,23 @@ class ReadData:
     else:
       self.has_header = False
     if self.has_header:
-      header = lines[0].strip()[1:]
-      keys = header.split()
-      self.keys = {}
-      for k in keys: self.keys[k] = keys.index(k)
-      lines = lines[1:]
+      # Determine number of header lines and read the correct keys
+      nheader=0
+      read_keys=False
+      while read_keys==False:
+	if lines[nheader][0] == '#':
+	  header = lines[nheader].strip()[1:]
+	  keys = header.split()
+	  self.keys = {}
+	  for k in keys: self.keys[k] = keys.index(k)
+	  #print keys
+	  nheader+=1
+	  if (self.keys.has_key('id')) or (self.keys.has_key('type')) or (self.keys.has_key('radius')) or(self.keys.has_key('x')):
+	    read_keys=True
+	else:
+	  print "Error: There are no keys for these file, just comments! Cannot determine type of input!"
+      #print "Found " + str(nheader) + " lines of comments and keys "
+      lines = lines[nheader:]
       self.data = [[] for i in range(len(keys))]
     else:
       self.data = [[] for i in range(len(lines[0].split()))]

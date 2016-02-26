@@ -24,7 +24,8 @@ from Glassy import *
 from Writer import *
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--input", type=str, help="input file ")
+parser.add_argument("-i", "--input", type=str, help="input file (base name) ")
+parser.add_argument("-r", "--radii", type=str, help="radii file (initial configuration) ")
 parser.add_argument("-c", "--conffile", type=str, help="configuration file")
 parser.add_argument("-d", "--directory", type=str, help="input directory")
 parser.add_argument("-o", "--output", type=str, help="output directory")
@@ -36,10 +37,17 @@ parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many sa
 #parser.add_argument("--writeT",action='store_true', default=False, help="Output tesselation")
 #parser.add_argument("--writeD",action='store_true', default=False, help="Output defects")
 args = parser.parse_args()
-
-sim = SimRun(True,args.directory,args.conffile,args.input,args.skip,True)
+#sim = SimRun(True,args.directory,args.conffile,args.input,args.skip,True)
+sim = SimRun(args.directory,args.conffile,args.input,args.radii,args.skip,True)
 #sim.getMSD()
-sim.getVelcorr(0.5)
+bins,velcorr,fig=sim.getVelcorr(0.5)
+data={'bins':bins,'velcorr':velcorr,'configuration':args.conffile}
+outvel=args.output + '/velcorr.p'
+outfig=args.output + '/velcorr.pdf'
+pickle.dump(data,open(outvel,'wb'))
+plt.savefig(outfig)
+#plt.show()
+
 
 	
 	

@@ -75,8 +75,11 @@ class Configuration:
 		self.nval = np.column_stack((nx,ny,nz))
 		# Create the right geometry environment (TBC):
 		self.geom=geometries[param.constraint](param)
+		
 		print self.geom
 		if self.geom.periodic:
+			# Apply periodic geomtry conditions just in case (there seem to be some rounding errors floating around)
+			self.rval=self.geom.ApplyPeriodic2d(self.rval)
 			self.rval=self.geom.ApplyPeriodic12(np.array([0.0,0.0,0.0]),self.rval)
 		# unit normal to the surface (only sphere so far)
 		vel = np.sqrt(self.vval[:,0]**2 + self.vval[:,1]**2 + self.vval[:,2]**2)
@@ -111,7 +114,7 @@ class Configuration:
 		# Find potential neighbours from neighbour list first
 		cneighbours=self.clist.get_neighbours(self.rval[i,:])
 		#print "Cell list neighbours: " + str(len(cneighbours))
-		dist=self.geom.GeodesicDistance(self.rval[cneighbours,:],self.rval[i,:])
+		dist=self.geom.GeodesicDistance12(self.rval[cneighbours,:],self.rval[i,:])
 		#print "Mean cutoff: " + str(mult*dmax)
 		if self.monodisperse: 
 			neighbours=[cneighbours[index] for index,value in enumerate(dist) if value <mult*dmax]
@@ -127,6 +130,7 @@ class Configuration:
 	def compute_energy_and_pressure(self):
 		eng = np.zeros(self.N)
 		press = np.zeros(self.N)
+		ncon = np.zeros(self.N)
 		stress = np.zeros((self.N,3,3))
 		# Establish how many types of particles we have
 		# If it's only one, use the current setup
@@ -137,6 +141,7 @@ class Configuration:
 				for i in range(self.N):
 					#print "I am particle " + str(i)
 					neighbours, drvec, dr=self.getNeighbours(i,1,dmax)
+					ncon[i]=len(neighbours)
 					diff=self.radius[i]+self.radius[neighbours]-dr
 					fact = 0.5*k*diff
 					eng_val = fact*diff
@@ -157,6 +162,12 @@ class Configuration:
 				for i in range(self.N):
 					#print "I am particle " + str(i)
 					neighbours, drvec, dr=self.getNeighbours(i,rmax,dmax)
+					ncon[i]=len(neighbours)
+					#if ncon[i]!=6:
+					  #print i
+					  #print ncon[i]
+					  #print self.rval[i,:]
+					  #print drvec
 					scale=self.radius[i]+self.radius[neighbours]
 					diff=scale-dr
 					dscaled=diff/scale
@@ -189,6 +200,7 @@ class Configuration:
 				dmax=4*self.sigma
 				for i in range(self.N):
 					neighbours, drvec, dr=self.getNeighbours(i,re,dmax)
+					ncon[i]=len(neighbours)
 					eng_val=D*(1-np.exp(-a*(dr-re)))**2
 					fnorm=-2*a*D*np.exp(-a*(dr-re))*(1-np.exp(-a*(dr-re)))
 					Fvec=((fnorm/dr).transpose()*(drvec).transpose()).transpose()
@@ -207,7 +219,7 @@ class Configuration:
 		else:
 			# Do the Morse right now only ... will serve as a template
 			print "Warning! Multiple types of particles interacting have not yet been implemented! Returning zero energy and stresses"
-		return [eng, press, stress]
+		return [eng, press, ncon,stress]
 	
 	
 	# Flat case statistics (or other geometry statistics, if desired)
@@ -215,10 +227,14 @@ class Configuration:
 		vel2 = self.vval[:,0]**2 + self.vval[:,1]**2 + self.vval[:,2]**2
 		vel2av=np.mean(vel2)
 		phival=np.pi*np.sum(self.radius**2)/self.geom.area
-		eng, press,stress = self.compute_energy_and_pressure()
-		pressav=np.mean(press)
+		ndensity=self.N/self.geom.area
+		eng, press,ncon,stress = self.compute_energy_and_pressure()
+		pressure=np.sum(press)/self.geom.area
+		fmoment=np.mean(press)
 		energy=np.mean(eng)
-		return vel2av, phival,pressav,energy
+		energytot=np.sum(eng)
+		zav=np.mean(ncon)
+		return vel2av, phival,ndensity, pressure,fmoment,energy,energytot,zav
 	  
 	def getStatsBand(self,debug=False):
 		ez = np.array([0,0,1])  # lab frame z-axis

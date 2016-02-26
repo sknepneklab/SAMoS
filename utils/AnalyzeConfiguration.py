@@ -75,8 +75,12 @@ if args.writeD:
 if args.getStatsBasic:
 	vel2av=np.zeros(len(files))
 	phival=np.zeros(len(files))
-	pressav=np.zeros(len(files))
+	ndensity=np.zeros(len(files))
+	pressure=np.zeros(len(files))
+	fmoment=np.zeros(len(files))
 	energy=np.zeros(len(files))
+	energytot=np.zeros(len(files))
+	zav=np.zeros(len(files))
 
 u=0
 for f in files:
@@ -92,11 +96,16 @@ for f in files:
 		writeme.writeConfigurationVTK(conf,outparticles)
 	#plt.show()
 	if args.getStatsBasic:
-		vel2av[u], phival[u],pressav[u],energy[u]= conf.getStatsBasic()
+		vel2av[u], phival[u],ndensity[u], pressure[u],fmoment[u],energy[u],energytot[u],zav[u]=conf.getStatsBasic()
+		#vel2av[u], phival[u],pressav[u],energy[u]= conf.getStatsBasic()
 		print "Mean square velocity: " + str(vel2av[u])
 		print "Packing fraction: " + str(phival[u])
-		print "Mean pressure: " + str(pressav[u])
-		print "Energy: " + str(energy[u])
+		print "Number density: " + str(ndensity[u])
+		print "Pressure: " + str(pressure[u])
+		print "Mean force  moment: " + str(fmoment[u])
+		print "Energy per particle: " + str(energy[u])
+		print "Total energy: " + str(energytot[u])
+		print "Contact number: " + str(zav[u])
 	if args.writeD or args.writeT:
 		conf.getTangentBundle()
 		tess = Tesselation(conf)
@@ -141,7 +150,7 @@ if args.writeD:
 	dataD={'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out,'numdefects_v':numdefects_v_out}
 	data.update(dataD)
 if args.getStatsBasic:
-	dataS={'vel2av':vel2av,'phival':phival,'pressav':pressav,'energy':energy}
+	dataS={'vel2av':vel2av,'phival':phival,'ndensity':ndensity,'pressure':pressure,'fmoment':fmoment,'energy':energy,'energytot':energytot,'zav':zav}
 	data.update(dataS)
 if args.writeD:	
 	outpickle=args.directory+'defect_data.p'

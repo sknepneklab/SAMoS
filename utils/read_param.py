@@ -452,6 +452,7 @@ class Param:
 				print "Population parameters: "
 				print self.pop_params
 		except KeyError:
+			self.npopulation=0
 			pass
 		
 		self.nsteps = int(conf.key_words['run'][nNVE].name)

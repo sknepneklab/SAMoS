@@ -74,9 +74,9 @@ class CellList:
     #Lx, Ly, Lz = self.box
     #self.Lx, self.Ly, self.Lz = Lx, Ly, Lz 
     # Number and linear extensions of the boxes in all three dimensions
-    self.nx = int(self.geom.Lx/r_cut)
-    self.ny = int(self.geom.Ly/r_cut)
-    self.nz = int(self.geom.Lz/r_cut)
+    self.nx = int(np.ceil(self.geom.Lx/r_cut))
+    self.ny = int(np.ceil(self.geom.Ly/r_cut))
+    self.nz = int(np.ceil(self.geom.Lz/r_cut))
     self.dx = self.geom.Lx/float(self.nx)
     self.dy = self.geom.Ly/float(self.ny)
     self.dz = self.geom.Lz/float(self.nz)
@@ -102,52 +102,70 @@ class CellList:
   # Function appropriate to periodically wrap cell list boxes
   # or not entering the cell if it doesn't exist
   def PeriodicNeighbours(self,idx,i,j,k):
-     for ix in range(-1,2):
-	for iy in range(-1,2):
-	    for iz in range(-1,2):
-	      dobox=True
-	      iix, iiy, iiz = i + ix, j + iy, k + iz
-	      if (iix == self.nx): 
-		if self.geom.periodic:
-		  iix = 0
-		else:# do not wrap - there should not be a box here!
-		  dobox=False
-	      if (iiy == self.ny): 
-		if self.geom.periodic:
-		  iiy = 0
-		else:# do not wrap - there should not be a box here!
-		  dobox=False
-	      if (iiz == self.nz): 
-		if self.geom.periodic:
-		  iiz = 0
-		else:# do not wrap - there should not be a box here!
-		  dobox=False
-	      if (iix < 0):  
-		if self.geom.periodic:
-		  iix = self.nx - 1
-		else:# do not wrap - there should not be a box here!
-		  dobox=False
-	      if (iiy < 0):  
-		if self.geom.periodic:
-		  iiy = self.ny - 1   
-		else:
-		  dobox=False
-	      if (iiz < 0):  
-		if self.geom.periodic:
-		  iiz = self.nz - 1  
-		else:
-		  dobox=False
-	      # A neighbour is just a label of the neighbouring cell
-	      if dobox:
-		self.cell_list[idx].neighbors.append(self.ny*self.nz*iix + self.nz*iiy + iiz)
+	for ix in range(-1,2):
+	  for iy in range(-1,2):
+		for iz in range(-1,2):
+		  dobox=True
+		  iix, iiy, iiz = i + ix, j + iy, k + iz
+		  if (iix == self.nx): 
+			if self.geom.periodic:
+			  iix = 0
+			  #print "x-wrap right"
+			else:# do not wrap - there should not be a box here!
+			  dobox=False
+		  if (iiy == self.ny): 
+			if self.geom.periodic:
+			  iiy = 0
+			  #print "y-wrap right"
+			else:# do not wrap - there should not be a box here!
+			  dobox=False
+		  if (iiz == self.nz): 
+			if self.geom.periodic:
+			  iiz = 0
+			  #print "z-wrap right"
+			else:# do not wrap - there should not be a box here!
+			  dobox=False
+		  if (iix < 0):  
+			if self.geom.periodic:
+			  iix = self.nx - 1
+			  #print "x-wrap left"
+			else:# do not wrap - there should not be a box here!
+			  dobox=False
+		  if (iiy < 0):  
+			if self.geom.periodic:
+			  iiy = self.ny - 1   
+			  #print "y-wrap left"
+			else:
+			  dobox=False
+		  if (iiz < 0):  
+			if self.geom.periodic:
+			  iiz = self.nz - 1  
+			  #print "z-wrap left"
+			else:
+			  dobox=False
+		  # A neighbour is just a label of the neighbouring cell
+		  if dobox:
+			self.cell_list[idx].neighbors.append(self.ny*self.nz*iix + self.nz*iiy + iiz)
 			
   # Get the cell label for a given position vector v
   def get_cell_idx(self, rval):
-    rval=self.geom.ApplyPeriodic1d(rval)
-    xmin, ymin, zmin = -0.5*self.geom.Lx, -0.5*self.geom.Ly, -0.5*self.geom.Lz
-    i, j, k = int((rval[0]-xmin)/self.dx), int((rval[1]-ymin)/self.dy), int((rval[2]-zmin)/self.dz) 
-    cell_idx = self.ny*self.nz*i + self.nz*j + k
-    return cell_idx
+	rval=self.geom.ApplyPeriodic1d(rval)
+	xmin, ymin, zmin = -0.5*self.geom.Lx, -0.5*self.geom.Ly, -0.5*self.geom.Lz
+	i, j, k = int((rval[0]-xmin)/self.dx), int((rval[1]-ymin)/self.dy), int((rval[2]-zmin)/self.dz) 
+	# Some intractable rounding errors??
+	if i>=self.nx:
+		print i, " Too big x! ", self.nx
+		i=self.nx-1
+	if j>=self.ny:
+		print j, " Too big y!", self.ny
+		j=self.ny-1
+	if k>=self.nz:
+		print k, " Too big z!", self.nz
+		k=self.nz-1
+	cell_idx = self.ny*self.nz*i + self.nz*j + k
+	if cell_idx>=len(self.cell_list):
+		print cell_idx, " Too big index!"
+	return cell_idx
   
   # Add a particle to a cell: This means compute its cell index (if not given already)
   # Then add it with add_vertex of cell
@@ -180,6 +198,6 @@ class CellList:
     
     
   def printMe(self):
-      for cell in self.cell_list:
-	cell.printMe()
+	for cell in self.cell_list:
+	  cell.printMe()
       

@@ -82,13 +82,12 @@ class Geometry(object):
 		return a2
 		
 	def GeodesicDistance11(self,r1,r2):
-		return self.GeodesicDistance(r1,r2)
+		return np.sqrt(np.sum((r2-r1)**2,axis=1))
 	
 	def GeodesicDistance12(self,r1,r2):
-		return self.GeodesicDistance(r1,r2)
-	# Default: just the cartesian distance
-	def GeodesicDistance(self,r1,r2):
 		return np.sqrt(np.sum((r2-r1)**2,axis=1))
+	
+		
 	      
 	# Just the cartesian distance in the plane, modulo periodic boundary conditions
 	# Problem true to type right now ...
