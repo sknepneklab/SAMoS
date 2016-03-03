@@ -53,13 +53,18 @@ void NeighbourList::build()
    if (m_build_contacts)
      m_contact_list.push_back(vector<int>());
  }
-  
+
+ if (m_build_contacts)
+ {
+    Mesh& mesh = m_system->get_mesh();
+    mesh.reset();
+ }
  if (m_use_cell_list) 
-    this->build_cell();
-  else
-    this->build_nsq();
+   this->build_cell();
+ else
+   this->build_nsq();
   
-  this->build_mesh();
+ this->build_mesh();
 }
 
 /*! Build faces of the mesh from the particle locations */
@@ -67,10 +72,7 @@ void NeighbourList::build_mesh()
 {
   if (m_build_contacts)
   {
-    Mesh& mesh = m_system->get_mesh();
-    mesh.reset();
     m_contact_list.clear();
-     
     for (int i = 0; i < m_system->size(); i++)
       m_contact_list.push_back(vector<int>());
 #ifdef HAS_CGAL
@@ -334,7 +336,6 @@ bool NeighbourList::contact_intersects(int i, int j)
 **/
 void NeighbourList::build_faces()
 {
-    
   Mesh& mesh = m_system->get_mesh();
   int N = m_system->size();
   for (int i = 0; i < N; i++)

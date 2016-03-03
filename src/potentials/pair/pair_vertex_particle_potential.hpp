@@ -120,8 +120,8 @@ public:
     
     if (param.find("mesh_update_steps") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Number of time steps between mesh updates in vertex-particle pair potential not set. Assuming default 1. (Perfomrance might be slow).");
-      m_mesh_update_steps = 1;
+      m_msg->msg(Messenger::WARNING,"Number of time steps between mesh updates in vertex-particle pair potential not set. Assuming default 0. No updates beyond those during the neighbour list and/or regular equiangulation steps for triangular lattices will be made.");
+      m_mesh_update_steps = 0;
     }
     else
     {

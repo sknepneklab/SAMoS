@@ -441,7 +441,7 @@ int Mesh::opposite_vertex(int e)
     if (f.n_sides > 3)
       throw runtime_error("Vertex opposite to an edge is only defined for triangular faces.");
     for (int i = 0; i < f.n_sides; i++)
-      if ((f.vertices[i] != edge.from) && (f.vertices[i] != edge.from))
+      if ((f.vertices[i] != edge.from) && (f.vertices[i] != edge.to))
         return f.vertices[i];
     throw runtime_error("Vertex opposite to an edge: Mesh is not consistent. There is likely a bug in how edges and faces are updated.");
   }
@@ -460,12 +460,18 @@ void Mesh::edge_flip(int e)
   
   Edge& E = m_edges[e];
   Edge& Ep = m_edges[E.pair];
-  
+    
   if (E.boundary || Ep.boundary)
     return;   // We cannot flip a boundary edge.
   
   Face& F  = m_faces[E.face];
   Face& Fp = m_faces[Ep.face];
+  
+  cout << "########## before ##########" << endl;
+  cout << "------ F -------" << endl;
+  cout << F << endl;
+  cout << "------ Fp -------" << endl;
+  cout << Fp << endl;
   
   // Get four edges surrounding the edge to be flipped
   Edge& E1 = m_edges[E.next];
@@ -481,6 +487,8 @@ void Mesh::edge_flip(int e)
   Vertex& V3 = m_vertices[this->opposite_vertex(E.id)];
   Vertex& V4 = m_vertices[this->opposite_vertex(Ep.id)];
   
+  cout << "------------- V1 ----------------" << endl;
+  cout << V1 << endl;
   // Update vetices of the flipped half-edge pair
   E.from = V4.id;  Ep.from = V3.id;
   E.to = V3.id;    Ep.to = V4.id;
@@ -528,6 +536,15 @@ void Mesh::edge_flip(int e)
   
   // Make sure that the vertex stars are all properly ordered
   
+  cout << "########## after ##########" << endl;
+  cout << "------ F -------" << endl;
+  cout << F << endl;
+  cout << "------ Fp -------" << endl;
+  cout << Fp << endl;
+  
+  cout << "------------- V1 ----------------" << endl;
+  cout << V1 << endl;
+  
   this->order_star(V1.id);
   this->order_star(V2.id);
   this->order_star(V3.id);
@@ -538,6 +555,12 @@ void Mesh::edge_flip(int e)
   this->dual_area(V2.id);   this->dual_perimeter(V2.id);
   this->dual_area(V3.id);   this->dual_perimeter(V3.id);
   this->dual_area(V4.id);   this->dual_perimeter(V4.id);
+  
+  cout << "########## after ##########" << endl;
+  cout << "------ F -------" << endl;
+  cout << F << endl;
+  cout << "------ Fp -------" << endl;
+  cout << Fp << endl;
     
 }
 
@@ -548,8 +571,10 @@ void Mesh::edge_flip(int e)
 */
 void Mesh::equiangulate()
 {
+  cout << "Entered equiangulate" << endl;
   if (!m_is_triangulation)
     return;   // We cannot equiangulate a non-triangular mesh
+  cout << "Still in equiangulate" << endl;
   bool flips = true;
   while (flips)
   {
@@ -558,16 +583,19 @@ void Mesh::equiangulate()
     {
       Edge& E = m_edges[e];
       Edge& Ep = m_edges[E.pair];
-      Vertex& V1 = m_vertices[this->opposite_vertex(E.id)];
-      Vertex& V2 = m_vertices[this->opposite_vertex(Ep.id)];
-      Face& F1 = m_faces[E.face];
-      Face& F2 = m_faces[Ep.face];
-      double angle_1 = F1.get_angle(V1.id);
-      double angle_2 = F2.get_angle(V2.id);
-      if (angle_1 + angle_2 > M_PI)
+      if (!(E.boundary || Ep.boundary))
       {
-        this->edge_flip(E.id);
-        flips = true;
+        Vertex& V1 = m_vertices[this->opposite_vertex(E.id)];
+        Vertex& V2 = m_vertices[this->opposite_vertex(Ep.id)];
+        Face& F1 = m_faces[E.face];
+        Face& F2 = m_faces[Ep.face];
+        double angle_1 = F1.get_angle(V1.id);
+        double angle_2 = F2.get_angle(V2.id);
+        if (angle_1 + angle_2 > M_PI)
+        {
+          this->edge_flip(E.id);
+          flips = true;
+        }
       }
     }
     if (flips)
