@@ -109,6 +109,18 @@ struct Vertex
     z++;
   }
   
+  //! Remove neighbour
+  //! \param v neighbour index
+  void remove_neighbour(int v)
+  {
+    vector<int>::iterator it = find(neigh.begin(), neigh.end(), v);
+    if (it != neigh.end())
+    {
+      neigh.erase(it);
+      z--;
+    }
+  }
+  
   //! Add edge
   //! \param e edge index
   void add_edge(int e)
@@ -117,6 +129,18 @@ struct Vertex
     n_edges++;
   }
    
+  //! Remove edge
+  //! \param e edge index
+  void remove_edge(int e)
+  {
+    vector<int>::iterator it = find(edges.begin(), edges.end(), e);
+    if (it != edges.end())
+    {
+      edges.erase(it);
+      n_edges--;
+    }
+  }
+  
   //! Add face
   //! \param f face index
   void add_face(int f)
@@ -125,6 +149,17 @@ struct Vertex
     n_faces++;
   } 
   
+  //! Remove face
+  //! \param f face index
+  void remove_face(int f)
+  {
+    vector<int>::iterator it = find(faces.begin(), faces.end(), f);
+    if (it != faces.end())
+    {
+      faces.erase(it);
+      n_faces--;
+    }
+  }
    
   int id;                      //!< Vertex id
   int type;                    //!< Vertex type 

@@ -72,11 +72,32 @@ struct Face
     n_sides++;
   }
   
+  //! Remove a vertex
+  //! \param v vertex index
+  void remove_vertex(int v)
+  {
+    vector<int>::iterator it = find(vertices.begin(), vertices.end(), v);
+    if (it != vertices.end())
+    {
+      vertices.erase(it);
+      n_sides--;
+    }
+  }
+  
   //! Add an edge
   //! \param e edge index
   void add_edge(int e)
   {
     edges.push_back(e);
+  }
+  
+  //! Remove an edge
+  //! \param e edge index
+  void remove_edge(int e)
+  {
+    vector<int>::iterator it = find(edges.begin(), edges.end(), e);
+    if (it != edges.end())
+      edges.erase(it);
   }
   
   //! Check if vertex belongs to the face
@@ -86,6 +107,15 @@ struct Face
     return (find(vertices.begin(), vertices.end(), v) != vertices.end());
   }
   
+  //! Get angle at a vertex
+  //! \param v vertex index
+  double get_angle(int v)
+  {
+     for(int i = 0; i < n_sides; i++)
+       if (vertices[i] == v)
+         return angles[i];
+     return -1.0;  // If vertex does not belong to the face, return -1.
+  }
   
   int id;                      //!< Face id
   int n_sides;                 //!< Number of sides
@@ -97,7 +127,8 @@ struct Face
   Vector3d rc;                 //!< Coordiantes of geometric centre of the face
   
   vector<int> vertices;        //!< Contains all vertices
-  vector<int> edges;           //!< contains all edges
+  vector<int> edges;           //!< Contains all edges
+  vector<double> angles;       //!< Contains angles at each vertex (in radians)
     
 };
 

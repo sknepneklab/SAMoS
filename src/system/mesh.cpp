@@ -265,6 +265,29 @@ void Mesh::compute_centre(int f)
   face.rc = Vector3d(xc/face.n_sides,yc/face.n_sides,zc/face.n_sides);
 }
 
+/*! Computes interior angles at each vertex of the face. 
+ *  It assumes that vertices are ordered and computes the vertex angle as the 
+ *  angle between vectors along two edges meeting at the vertex.
+ *  \param f id of the face 
+*/
+void Mesh::compute_angles(int f)
+{
+  Face& face = m_faces[f];
+  face.angles.clear();
+  int i_m, i_p;
+  for (int i = 0; i < face.n_sides; i++)
+  {
+    i_m = (i == 0) ? face.n_sides - 1 : i - 1;
+    i_p = (i == face.n_sides-1) ? 0 : i + 1;
+    Vector3d& ri = m_vertices[face.vertices[i]].r;
+    Vector3d& ri_m = m_vertices[face.vertices[i_m]].r;
+    Vector3d& ri_p = m_vertices[face.vertices[i_p]].r;
+    Vector3d dr1 = (ri_p - ri);
+    Vector3d dr2 = (ri_m - ri);
+    face.angles.push_back(std::abs(angle(dr1,dr2,m_vertices[face.vertices[i]].N)));
+  }
+}
+
 /*! Order faces, edges and neighbours in the vertex star. At this point it is not possible
  *  to determine if the order is clockwise or counterclockwise. This 
  *  will be corrected for once the normal to the vertex is known.
@@ -394,6 +417,27 @@ double Mesh::dual_perimeter(int v)
     V.perim += (r1-r2).len();
   }
   return V.perim;
+}
+
+/*! Return index of the vertex oposite to an edge. 
+ *  This only makes sense if the face is a triangle.
+ *  If it is not, we throw a runtime error message.
+ *  \param e edge index
+*/
+int Mesh::opposite_vertex(int e)
+{
+  Edge& edge = m_edges[e];
+  if (!edge.boundary)
+  {
+    Face& f = m_faces[edge.face];
+    if (f.n_sides > 3)
+      throw runtime_error("Vertex opposite to an edge is only defined for triangular faces.");
+    for (int i = 0; i < f.n_sides; i++)
+      if ((f.vertices[i] != edge.from) && (f.vertices[i] != edge.from))
+        return f.vertices[i];
+    throw runtime_error("Vertex opposite to an edge: Mesh is not consistent. There is likely a bug in how edges and faces are updated.");
+  }
+  return -1;  // If edge is boundary, return -1.
 }
 
 

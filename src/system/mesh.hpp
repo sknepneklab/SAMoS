@@ -162,6 +162,9 @@ public:
   //! Compute face centre
   void compute_centre(int);
   
+  //! Compute face angles
+  void compute_angles(int);
+  
   //! Order vertex star
   void order_star(int);
   
@@ -170,6 +173,9 @@ public:
   
   //! Dual perimeter
   double dual_perimeter(int);
+  
+  //! Opposite vertex
+  int opposite_vertex(int);
     
 private:  
   
