@@ -946,5 +946,6 @@ void System::update_mesh()
       m_mesh.dual_perimeter(i);
       m_mesh.dual_area(i); 
     }
+    m_mesh.equiangulate();
   }
 }

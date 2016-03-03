@@ -57,7 +57,7 @@ struct Edge
   //! \param id edge id
   //! \param i id of 1st vertex
   //! \param j id of 2nd vertex
-  Edge(int id, int i, int j) : id(id), from(i), to(j), face(NO_FACE), visited(false), pair(-1), boundary(false), dual(-1), next(-1)  {   }
+  Edge(int id, int i, int j) : id(id), from(i), to(j), next(-1), face(NO_FACE), visited(false), pair(-1), boundary(false), dual(-1)  {   }
   
   //! Check if vertex belongs to the edge
   //! \param v vertex id

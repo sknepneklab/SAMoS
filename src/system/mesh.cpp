@@ -104,6 +104,7 @@ void Mesh::generate_faces()
       face.add_vertex(vn);
       face.add_edge(E.id);
       int vp = seed;
+      int prev_edge = E.id;
       while (vn != seed)
       {
         Vertex& Vp = m_vertices[vp];
@@ -124,8 +125,11 @@ void Mesh::generate_faces()
         Ej.visited = true;
         if (Ej.to != seed) face.add_vertex(Ej.to);
         face.add_edge(Ej.id);
+        m_edges[prev_edge].next = Ej.id;
+        prev_edge = Ej.id;
         vp = vn;
         vn = Ej.to;
+        if (vn == seed) m_edges[prev_edge].next = E.id;   // original edge is the "next" edge for last edge in the loop 
       }      
     }
     double perim = 0.0;
@@ -146,6 +150,8 @@ void Mesh::generate_faces()
         m_edges[face.edges[f]].face = m_nface;
       m_nface++;
     }
+    if (face.vertices.size() > 3 && (!face.is_hole))
+      m_is_triangulation = false;
   }
 }
 
@@ -162,6 +168,7 @@ void Mesh::generate_dual_mesh()
     if (!face.is_hole)
     {
       this->compute_centre(f);
+      this->compute_angles(f);
       m_dual.push_back(face.rc);
       for (int e = 0; e < face.n_sides; e++)
       {
@@ -199,6 +206,7 @@ void Mesh::update_dual_mesh()
     if (!face.is_hole)
     {
       this->compute_centre(f);
+      this->compute_angles(f);
       m_dual[i++] = face.rc;
     }
     else
@@ -440,4 +448,129 @@ int Mesh::opposite_vertex(int e)
   return -1;  // If edge is boundary, return -1.
 }
 
+/*! This is one of the simplest mesh moves that changes it topology. 
+ *  Namely we flip an edge (pair of half-edges) shred by two trangles. Needless to say,
+ *  this move is only defiened for triangulations.
+ *  \param e id of the half-edge to flip (its pair is also flipped)
+*/
+void Mesh::edge_flip(int e)
+{
+  if (!m_is_triangulation)
+    return;  // Edge flip is only defined for triangulations
+  
+  Edge& E = m_edges[e];
+  Edge& Ep = m_edges[E.pair];
+  
+  if (E.boundary || Ep.boundary)
+    return;   // We cannot flip a boundary edge.
+  
+  Face& F  = m_faces[E.face];
+  Face& Fp = m_faces[Ep.face];
+  
+  // Get four edges surrounding the edge to be flipped
+  Edge& E1 = m_edges[E.next];
+  Edge& E2 = m_edges[E1.next];
+  Edge& E3 = m_edges[Ep.next];
+  Edge& E4 = m_edges[E3.next];
+  
+  assert(E2.next == E.id && E4.next == Ep.id);
+  
+  // Get four vertices that are involved in the flip
+  Vertex& V1 = m_vertices[E.from];
+  Vertex& V2 = m_vertices[Ep.from];
+  Vertex& V3 = m_vertices[this->opposite_vertex(E.id)];
+  Vertex& V4 = m_vertices[this->opposite_vertex(Ep.id)];
+  
+  // Update vetices of the flipped half-edge pair
+  E.from = V4.id;  Ep.from = V3.id;
+  E.to = V3.id;    Ep.to = V4.id;
+  
+  // Update who follows whom  
+  E.next = E2.id;
+  E2.next = E3.id;
+  E3.next = E.id;
+  
+  Ep.next = E4.id;
+  E4.next = E1.id;
+  E1.next = Ep.id;
+  
+  // Update face 1
+  F.vertices[0] = E.from;   F.edges[0] = E.id;
+  F.vertices[1] = E2.from;  F.edges[1] = E2.id;
+  F.vertices[2] = E3.from;  F.edges[2] = E3.id;
+  this->compute_centre(F.id);
+  this->compute_angles(F.id);
+  
+  // Update face 2
+  Fp.vertices[0] = Ep.from;  Fp.edges[0] = Ep.id;
+  Fp.vertices[1] = E4.from;  Fp.edges[1] = E4.id;
+  Fp.vertices[2] = E1.from;  Fp.edges[2] = E1.id;
+  this->compute_centre(Fp.id);
+  this->compute_angles(Fp.id);
+  
+  // Now we need to clean up vertices and their neighbours
+  V1.remove_neighbour(V2.id);
+  V1.remove_edge(E.id);
+  V1.remove_face(Fp.id);
+  
+  V2.remove_neighbour(V1.id);
+  V2.remove_edge(Ep.id);
+  V2.remove_face(F.id);
+  
+  V3.add_neighbour(V4.id);
+  V4.add_neighbour(V3.id);
+  
+  V4.add_edge(E.id);
+  V3.add_edge(Ep.id);
+  
+  V3.add_face(Fp.id);
+  V4.add_face(F.id);
+  
+  // Make sure that the vertex stars are all properly ordered
+  
+  this->order_star(V1.id);
+  this->order_star(V2.id);
+  this->order_star(V3.id);
+  this->order_star(V4.id);
+  
+  // Update area and permiters for the dual
+  this->dual_area(V1.id);   this->dual_perimeter(V1.id);
+  this->dual_area(V2.id);   this->dual_perimeter(V2.id);
+  this->dual_area(V3.id);   this->dual_perimeter(V3.id);
+  this->dual_area(V4.id);   this->dual_perimeter(V4.id);
+    
+}
 
+/*! Implements the equiangulation of the mesh. This is a procedure where 
+ *  all edges that have the sum of their opposing angles larger than pi 
+ *  flipped. This procedure is guaranteed to converge and at the end one 
+ *  recovers a Delaunday triangulation. 
+*/
+void Mesh::equiangulate()
+{
+  if (!m_is_triangulation)
+    return;   // We cannot equiangulate a non-triangular mesh
+  bool flips = true;
+  while (flips)
+  {
+    flips = false;
+    for (int e = 0; e < m_nedge; e++)
+    {
+      Edge& E = m_edges[e];
+      Edge& Ep = m_edges[E.pair];
+      Vertex& V1 = m_vertices[this->opposite_vertex(E.id)];
+      Vertex& V2 = m_vertices[this->opposite_vertex(Ep.id)];
+      Face& F1 = m_faces[E.face];
+      Face& F2 = m_faces[Ep.face];
+      double angle_1 = F1.get_angle(V1.id);
+      double angle_2 = F2.get_angle(V2.id);
+      if (angle_1 + angle_2 > M_PI)
+      {
+        this->edge_flip(E.id);
+        flips = true;
+      }
+    }
+    if (flips)
+      this->generate_dual_mesh();
+  }
+}

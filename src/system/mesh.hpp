@@ -49,6 +49,7 @@
 #include <utility>
 #include <algorithm>
 #include <exception>
+#include <cassert>
 
 #include <boost/format.hpp>
 
@@ -176,6 +177,12 @@ public:
   
   //! Opposite vertex
   int opposite_vertex(int);
+  
+  //! Flip edge
+  void edge_flip(int);
+  
+  //! Mesh equiangulation
+  void equiangulate();
     
 private:  
   
@@ -183,7 +190,7 @@ private:
   int m_nedge;   //!< Number of edges
   int m_nface;   //!< Number of faces
   int m_ndual;   //!< Number of vertices in dual
-  bool m_is_triangulation;  //!< If true, all faces are triangles (allows more assumptions)
+  bool m_is_triangulation;    //!< If true, all faces are triangles (allows more assumptions)
   double m_max_face_perim;    //!< If face perimeter is greater than this value, reject face and treat it as a hole.
     
   vector<Vertex> m_vertices;           //!< Contains all vertices
