@@ -167,8 +167,8 @@ void Mesh::generate_dual_mesh()
     Face& face = m_faces[f];
     if (!face.is_hole)
     {
-      this->compute_centre(f);
       this->compute_angles(f);
+      this->compute_centre(f);
       m_dual.push_back(face.rc);
       for (int e = 0; e < face.n_sides; e++)
       {
@@ -205,8 +205,8 @@ void Mesh::update_dual_mesh()
     Face& face = m_faces[f];
     if (!face.is_hole)
     {
-      this->compute_centre(f);
       this->compute_angles(f);
+      this->compute_centre(f);
       m_dual[i++] = face.rc;
     }
     else
@@ -256,24 +256,26 @@ void Mesh::postprocess()
     this->order_star(v);
 }
 
-/*! Computes geometric centre of a face. Coordinates are stored in 
+/*! Computes centre of a face. If the face is not triangle, compute geometric centre.
+ *  If the face is a triangle, but it is obtuse, also compute geometric centre.
+ *  Otherwise, compute circumcentre.
  *  the Face object.
  *  \param id of the face 
 */
 void Mesh::compute_centre(int f)
 {
   Face& face = m_faces[f];
-  double xc = 0.0, yc = 0.0, zc = 0.0;
-  for (int i = 0; i < face.n_sides; i++)
-  {
-    xc += m_vertices[face.vertices[i]].r.x;
-    yc += m_vertices[face.vertices[i]].r.y;
-    zc += m_vertices[face.vertices[i]].r.z;
-  }
-  face.rc = Vector3d(xc/face.n_sides,yc/face.n_sides,zc/face.n_sides);
+  bool geom = false;
+  if (face.n_sides > 3)
+    geom = true;
+  else
+    for (int i = 0; i < face.n_sides; i++)
+      if (face.angles[i] < 0.0)  geom = true;   // angles holds cosines; negative cosine means angle > PI/2 ==> obtuse
+  if (geom) this->compute_geometric_centre(f);
+  else this->compute_circumcentre(f);  
 }
 
-/*! Computes interior angles at each vertex of the face. 
+/*! Computes cosines of interior angles at each vertex of the face. 
  *  It assumes that vertices are ordered and computes the vertex angle as the 
  *  angle between vectors along two edges meeting at the vertex.
  *  \param f id of the face 
@@ -290,9 +292,10 @@ void Mesh::compute_angles(int f)
     Vector3d& ri = m_vertices[face.vertices[i]].r;
     Vector3d& ri_m = m_vertices[face.vertices[i_m]].r;
     Vector3d& ri_p = m_vertices[face.vertices[i_p]].r;
-    Vector3d dr1 = (ri_p - ri);
-    Vector3d dr2 = (ri_m - ri);
-    face.angles.push_back(std::abs(angle(dr1,dr2,m_vertices[face.vertices[i]].N)));
+    Vector3d dr1 = (ri_p - ri).unit();
+    Vector3d dr2 = (ri_m - ri).unit();
+    face.angles.push_back(dr1.dot(dr2));
+    //face.angles.push_back(std::abs(angle(dr1,dr2,m_vertices[face.vertices[i]].N)));
   }
 }
 
@@ -399,7 +402,7 @@ double Mesh::dual_area(int v)
   return V.area;
 }
 
-/*! Compute lenght of duals perimeter
+/*! Compute length of dual's perimeter
  *  \f$ l_i = \sum_{\mu}\left|\vec r_\mu-\vec r_{\mu+1}\right| \f$
  *  were \f$ \vec r_\mu \f$ is the coodinate of the cetre of face \f$ \mu \f$.
  *  \note We assume that faces are ordered, otherwise the result will be 
@@ -443,6 +446,8 @@ int Mesh::opposite_vertex(int e)
     for (int i = 0; i < f.n_sides; i++)
       if ((f.vertices[i] != edge.from) && (f.vertices[i] != edge.to))
         return f.vertices[i];
+    cout << edge << endl;
+    cout << f << endl;
     throw runtime_error("Vertex opposite to an edge: Mesh is not consistent. There is likely a bug in how edges and faces are updated.");
   }
   return -1;  // If edge is boundary, return -1.
@@ -467,11 +472,11 @@ void Mesh::edge_flip(int e)
   Face& F  = m_faces[E.face];
   Face& Fp = m_faces[Ep.face];
   
-  cout << "########## before ##########" << endl;
-  cout << "------ F -------" << endl;
-  cout << F << endl;
-  cout << "------ Fp -------" << endl;
-  cout << Fp << endl;
+//   cout << "########## before ##########" << endl;
+//   cout << "------ F -------" << endl;
+//   cout << F << endl;
+//   cout << "------ Fp -------" << endl;
+//   cout << Fp << endl;
   
   // Get four edges surrounding the edge to be flipped
   Edge& E1 = m_edges[E.next];
@@ -487,8 +492,8 @@ void Mesh::edge_flip(int e)
   Vertex& V3 = m_vertices[this->opposite_vertex(E.id)];
   Vertex& V4 = m_vertices[this->opposite_vertex(Ep.id)];
   
-  cout << "------------- V1 ----------------" << endl;
-  cout << V1 << endl;
+//   cout << "------------- V1 ----------------" << endl;
+//   cout << V1 << endl;
   // Update vetices of the flipped half-edge pair
   E.from = V4.id;  Ep.from = V3.id;
   E.to = V3.id;    Ep.to = V4.id;
@@ -502,18 +507,24 @@ void Mesh::edge_flip(int e)
   E4.next = E1.id;
   E1.next = Ep.id;
   
+  // Update face info for edges
+  E3.face = F.id;
+  E1.face = Fp.id;
+  
+  // Update dual info
+  E3.dual = E2.dual;
+  E1.dual = E4.dual;
+  
   // Update face 1
   F.vertices[0] = E.from;   F.edges[0] = E.id;
   F.vertices[1] = E2.from;  F.edges[1] = E2.id;
   F.vertices[2] = E3.from;  F.edges[2] = E3.id;
-  this->compute_centre(F.id);
   this->compute_angles(F.id);
   
   // Update face 2
   Fp.vertices[0] = Ep.from;  Fp.edges[0] = Ep.id;
   Fp.vertices[1] = E4.from;  Fp.edges[1] = E4.id;
   Fp.vertices[2] = E1.from;  Fp.edges[2] = E1.id;
-  this->compute_centre(Fp.id);
   this->compute_angles(Fp.id);
   
   // Now we need to clean up vertices and their neighbours
@@ -536,14 +547,14 @@ void Mesh::edge_flip(int e)
   
   // Make sure that the vertex stars are all properly ordered
   
-  cout << "########## after ##########" << endl;
-  cout << "------ F -------" << endl;
-  cout << F << endl;
-  cout << "------ Fp -------" << endl;
-  cout << Fp << endl;
-  
-  cout << "------------- V1 ----------------" << endl;
-  cout << V1 << endl;
+//   cout << "########## after ##########" << endl;
+//   cout << "------ F -------" << endl;
+//   cout << F << endl;
+//   cout << "------ Fp -------" << endl;
+//   cout << Fp << endl;
+//   
+//   cout << "------------- V1 ----------------" << endl;
+//   cout << V1 << endl;
   
   this->order_star(V1.id);
   this->order_star(V2.id);
@@ -556,11 +567,11 @@ void Mesh::edge_flip(int e)
   this->dual_area(V3.id);   this->dual_perimeter(V3.id);
   this->dual_area(V4.id);   this->dual_perimeter(V4.id);
   
-  cout << "########## after ##########" << endl;
-  cout << "------ F -------" << endl;
-  cout << F << endl;
-  cout << "------ Fp -------" << endl;
-  cout << Fp << endl;
+//   cout << "########## after ##########" << endl;
+//   cout << "------ F -------" << endl;
+//   cout << F << endl;
+//   cout << "------ Fp -------" << endl;
+//   cout << Fp << endl;
     
 }
 
@@ -571,10 +582,10 @@ void Mesh::edge_flip(int e)
 */
 void Mesh::equiangulate()
 {
-  cout << "Entered equiangulate" << endl;
+  //cout << "Entered equiangulate" << endl;
   if (!m_is_triangulation)
     return;   // We cannot equiangulate a non-triangular mesh
-  cout << "Still in equiangulate" << endl;
+  //cout << "Still in equiangulate" << endl;
   bool flips = true;
   while (flips)
   {
@@ -591,14 +602,57 @@ void Mesh::equiangulate()
         Face& F2 = m_faces[Ep.face];
         double angle_1 = F1.get_angle(V1.id);
         double angle_2 = F2.get_angle(V2.id);
-        if (angle_1 + angle_2 > M_PI)
+        //if (angle_1 + angle_2 > M_PI)
+        if (angle_1 + angle_2 < 0.0)
         {
           this->edge_flip(E.id);
           flips = true;
         }
       }
     }
-    if (flips)
-      this->generate_dual_mesh();
   }
+}
+
+// Private members
+
+/*! Computes circumcentre of a face (assumes that face is a triangle).
+ *  Coordinates are stored in the Face object.
+ *  Formula for circumcenter is given as:
+ *  Let \f$ \mathbf{A} \f$, \f$ \mathbf{B} \f$, and \f$ \mathbf{C} \f$ be 3-dimensional points, which form the vertices of a triangle.
+ *  If we define,
+ *  \f$ \mathbf{a} = \mathbf{A}-\mathbf{C}, \f$ and 
+ *  \f$ \mathbf{b} = \mathbf{B}-\mathbf{C}. \f$, the circumcentre is given as
+ *  \f$ p_0 = \frac{(\left\|\mathbf{a}\right\|^2\mathbf{b}-\left\|\mathbf{b}\right\|^2\mathbf{a})
+                      \times (\mathbf{a} \times \mathbf{b})}
+                  {2 \left\|\mathbf{a}\times\mathbf{b}\right\|^2} + \mathbf{C} \f$.
+ *  \param id of the face 
+*/
+void Mesh::compute_circumcentre(int f)
+{
+  Face& face = m_faces[f];
+  Vertex& A = m_vertices[face.vertices[0]];
+  Vertex& B = m_vertices[face.vertices[1]];
+  Vertex& C = m_vertices[face.vertices[2]];
+  Vector3d a = A.r - C.r;
+  Vector3d b = B.r - C.r;
+  Vector3d a_x_b = cross(a,b);
+
+  face.rc = 0.5/a_x_b.len2()*cross(a.len2()*b-b.len2()*a,a_x_b) + C.r;
+}
+
+/*! Computes geometric centre of a face. Coordinates are stored in 
+ *  the Face object.
+ *  \param id of the face 
+*/
+void Mesh::compute_geometric_centre(int f)
+{
+  Face& face = m_faces[f];
+  double xc = 0.0, yc = 0.0, zc = 0.0;
+  for (int i = 0; i < face.n_sides; i++)
+  {
+    xc += m_vertices[face.vertices[i]].r.x;
+    yc += m_vertices[face.vertices[i]].r.y;
+    zc += m_vertices[face.vertices[i]].r.z;
+  }
+  face.rc = Vector3d(xc/face.n_sides,yc/face.n_sides,zc/face.n_sides);
 }

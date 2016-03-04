@@ -128,7 +128,7 @@ struct Face
   
   vector<int> vertices;        //!< Contains all vertices
   vector<int> edges;           //!< Contains all edges
-  vector<double> angles;       //!< Contains angles at each vertex (in radians)
+  vector<double> angles;       //!< Contains cosines of angles at each vertex (in radians)
     
 };
 

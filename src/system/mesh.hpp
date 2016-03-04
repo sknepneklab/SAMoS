@@ -200,6 +200,12 @@ private:
   map<pair<int,int>, int> m_edge_face; //!< Relates pairs of faces to edges
   vector<Vector3d> m_dual;             //!< Coordinates of the dual mesh
   
+  //! Compute face circumcentre
+  void compute_circumcentre(int);
+  
+  //! Compute face geometric centre
+  void compute_geometric_centre(int);
+  
 };
 
 #endif

@@ -898,8 +898,8 @@ void Dump::dump_vtp(int step)
     int N = m_system->get_group(m_group)->get_size();
     vector<int> particles = m_system->get_group(m_group)->get_particles();
     
-    vtkSmartPointer<vtkDoubleArray> ids =  vtkSmartPointer<vtkDoubleArray>::New();
-    vtkSmartPointer<vtkDoubleArray> types =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkIntArray> ids =  vtkSmartPointer<vtkIntArray>::New();
+    vtkSmartPointer<vtkIntArray> types =  vtkSmartPointer<vtkIntArray>::New();
     vtkSmartPointer<vtkDoubleArray> radii =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> a0 =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> press =  vtkSmartPointer<vtkDoubleArray>::New();
@@ -1038,9 +1038,12 @@ void Dump::dump_vtp(int step)
     vector<Vertex>& vertices = mesh.get_vertices();
     vector<Vector3d>& dual = mesh.get_dual();
     vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
+    vtkSmartPointer<vtkIntArray> ids =  vtkSmartPointer<vtkIntArray>::New();
     vtkSmartPointer<vtkDoubleArray> areas =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> perims =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> pressure =  vtkSmartPointer<vtkDoubleArray>::New();
+    ids->SetName("Id");
+    areas->SetNumberOfComponents(1);
     areas->SetName("Area");
     areas->SetNumberOfComponents(1);
     perims->SetName("Perimeter");
@@ -1049,8 +1052,12 @@ void Dump::dump_vtp(int step)
     pressure->SetNumberOfComponents(1);
     
     for (unsigned int i = 0; i < dual.size(); i++)
+    {
       points->InsertNextPoint (dual[i].x, dual[i].y, dual[i].z);      
+      ids->InsertNextValue(i);
+    }
     polydata->SetPoints(points);
+    polydata->GetPointData()->AddArray(ids);
     
     for (unsigned int i = 0; i < vertices.size(); i++)
       if (vertices[i].attached)
@@ -1069,6 +1076,7 @@ void Dump::dump_vtp(int step)
         }
       }
     polydata->SetPolys(faces);
+    polydata->GetCellData()->AddArray(ids);
     polydata->GetCellData()->AddArray(areas);
     polydata->GetCellData()->AddArray(perims);
     polydata->GetCellData()->AddArray(pressure);
