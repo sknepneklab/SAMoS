@@ -196,7 +196,7 @@ void Mesh::generate_dual_mesh()
   m_ndual = m_dual.size();    
 }
 
-/*! Update position of the dual vertices */
+/*! Update position of the dual vertices as well as the cell centre Jacobian */
 void Mesh::update_dual_mesh()
 {
   int i = 0;
@@ -220,6 +220,7 @@ void Mesh::update_dual_mesh()
         m_dual[i++] = rn;
       }
     }
+    this->fc_jacobian(f);
   }   
 }
 
@@ -257,29 +258,35 @@ void Mesh::postprocess()
 }
 
 /*! Computes centre of a face. If the face is not triangle, compute geometric centre.
- *  If the face is a triangle, but it is obtuse, also compute geometric centre.
- *  Otherwise, compute circumcentre.
+ *  If the face is a triangle, compute circumcenter or geometric center depending on the
+ *  value of the m_circumcenter flag. Always compute geometric centre for faces at the boundary.
  *  the Face object.
  *  \param id of the face 
 */
 void Mesh::compute_centre(int f)
 {
   Face& face = m_faces[f];
-  /* This needs to be tested. It seems that combining circumcenters and geometric centres
-      is not full consistent. For the time being we only use geometric centres.
-      \todo Test role of circumcenters.
-  */
-  /* 
-  bool geom = false;
-  if (face.n_sides > 3)
-    geom = true;
+  if (!m_circumcenter)
+    this->compute_geometric_centre(f);
   else
-    for (int i = 0; i < face.n_sides; i++)
-      if (face.angles[i] < 0.0)  geom = true;   // angles holds cosines; negative cosine means angle > PI/2 ==> obtuse
-  if (geom) this->compute_geometric_centre(f);
-  else this->compute_circumcentre(f); 
-  */
-  this->compute_circumcentre(f); 
+  {
+    bool geom = false;
+    if (face.n_sides > 3)
+      geom = true;
+    else
+    {
+      for (int i = 0; i < face.n_sides; i++)
+      {
+        if (m_edges[m_edges[face.edges[i]].pair].boundary) // Face is at the boundary is one of the pair of one of its half-edges is a boundary face
+        { 
+          geom = true;
+          break;
+        }
+      }
+    }
+    if (geom) this->compute_geometric_centre(f);
+    else this->compute_circumcentre(f); 
+  }
 }
 
 /*! Computes cosines of interior angles at each vertex of the face. 
@@ -620,6 +627,114 @@ void Mesh::equiangulate()
   }
 }
 
+/*! For a triangular mesh compute derivatives (gradients) of the
+ *  position of the face centre with respect to the position of
+ *  each individual triangle vertices. We assume that the face (triangle)
+ *  is oriented counterclockwise.
+ *  \param f id of the face
+*/
+void Mesh::fc_jacobian(int f)
+{
+  Face& face = m_faces[f];
+  if (face.n_sides > 3)
+    return;
+  face.drcdr.clear();
+  face.drcdr.push_back(Matrix3d());
+  face.drcdr.push_back(Matrix3d());
+  face.drcdr.push_back(Matrix3d());
+  
+  Vector3d& ri = m_vertices[face.vertices[0]].r;
+  Vector3d& rj = m_vertices[face.vertices[1]].r;
+  Vector3d& rk = m_vertices[face.vertices[2]].r;
+
+  Vector3d rjk = rj - rk;
+  Vector3d rki = rk - ri;
+  Vector3d rij = ri - rj;
+  
+  double rjk_2 = rjk.len2(), rki_2 = rki.len2(), rij_2 = rij.len2();
+  double L_2 = rjk_2 + rki_2 + rij_2;
+  double lambda_1 = rjk_2*(L_2 - 2*rjk_2);
+  double lambda_2 = rki_2*(L_2 - 2*rki_2);
+  double lambda_3 = rij_2*(L_2 - 2*rij_2);
+  
+  double Lambda = lambda_1 + lambda_2 + lambda_3;
+  
+  Vector3d drjk_2_drj =  2*rjk;  Vector3d drjk_2_drk = -2*rjk;
+  Vector3d drki_2_dri = -2*rki;  Vector3d drki_2_drk =  2*rki;
+  Vector3d drij_2_dri =  2*rij;  Vector3d drij_2_drj = -2*rij;
+  
+  Vector3d dl1_dri =  2*rjk_2*(-rki + rij);
+  Vector3d dl2_dri = -2*(rjk_2 + rij_2 - 2*rki_2)*rki + 2*rki_2*rij;
+  Vector3d dl3_dri =  2*(rjk_2 + rki_2 - 2*rij_2)*rij - 2*rij_2*rki;
+  
+  Vector3d dl1_drj =  2*(rki_2 + rij_2 - 2*rjk_2)*rjk - 2*rjk_2*rij;
+  Vector3d dl2_drj =  2*rki_2*(rjk - rij);
+  Vector3d dl3_drj = -2*(rjk_2 + rki_2 - 2*rij_2)*rij + 2*rij_2*rjk;
+  
+  Vector3d dl1_drk = -2*(rki_2 + rij_2 - 2*rjk_2)*rjk + 2*rjk_2*rki;
+  Vector3d dl2_drk =  2*(rjk_2 + rij_2 - 2*rki_2)*rki - 2*rki_2*rjk;
+  Vector3d dl3_drk =  2*rij_2*(-rjk + rki);
+  
+  Vector3d dLam_dri = dl1_dri + dl2_dri + dl3_dri;
+  Vector3d dLam_drj = dl1_drj + dl2_drj + dl3_drj;
+  Vector3d dLam_drk = dl1_drk + dl2_drk + dl3_drk;
+  
+  double Lambda_2 = Lambda*Lambda;
+  double inv_Lambda_2 = 1.0/Lambda_2;
+  Vector3d dl1_div_Lam_dri = inv_Lambda_2*(Lambda*dl1_dri - lambda_1*dLam_dri);
+  Vector3d dl2_div_Lam_dri = inv_Lambda_2*(Lambda*dl2_dri - lambda_2*dLam_dri);
+  Vector3d dl3_div_Lam_dri = inv_Lambda_2*(Lambda*dl3_dri - lambda_3*dLam_dri);
+  
+  Vector3d dl1_div_Lam_drj = inv_Lambda_2*(Lambda*dl1_drj - lambda_1*dLam_drj);
+  Vector3d dl2_div_Lam_drj = inv_Lambda_2*(Lambda*dl2_drj - lambda_2*dLam_drj);
+  Vector3d dl3_div_Lam_drj = inv_Lambda_2*(Lambda*dl3_drj - lambda_3*dLam_drj);
+  
+  Vector3d dl1_div_Lam_drk = inv_Lambda_2*(Lambda*dl1_drk - lambda_1*dLam_drk);
+  Vector3d dl2_div_Lam_drk = inv_Lambda_2*(Lambda*dl2_drk - lambda_2*dLam_drk);
+  Vector3d dl3_div_Lam_drk = inv_Lambda_2*(Lambda*dl3_drk - lambda_3*dLam_drk);
+  
+  double l1_div_Lam = lambda_1/Lambda, l2_div_Lam = lambda_2/Lambda, l3_div_Lam = lambda_3/Lambda;
+  
+  // p = i
+  face.drcdr[0].M[0][0] = dl1_div_Lam_dri.x*ri.x + l1_div_Lam + dl2_div_Lam_dri.x*rj.x + dl3_div_Lam_dri.x*rk.x;
+  face.drcdr[0].M[0][1] = dl1_div_Lam_dri.x*ri.y              + dl2_div_Lam_dri.x*rj.y + dl3_div_Lam_dri.x*rk.y;
+  face.drcdr[0].M[0][2] = dl1_div_Lam_dri.x*ri.z              + dl2_div_Lam_dri.x*rj.z + dl3_div_Lam_dri.x*rk.z;
+
+  face.drcdr[0].M[1][0] = dl1_div_Lam_dri.y*ri.x  + dl2_div_Lam_dri.y*rj.x              + dl3_div_Lam_dri.y*rk.x;
+  face.drcdr[0].M[1][1] = dl1_div_Lam_dri.y*ri.y  + dl2_div_Lam_dri.y*rj.y + l1_div_Lam + dl3_div_Lam_dri.y*rk.y;
+  face.drcdr[0].M[1][2] = dl1_div_Lam_dri.y*ri.z  + dl2_div_Lam_dri.y*rj.z              + dl3_div_Lam_dri.y*rk.z;
+  
+  face.drcdr[0].M[2][0] = dl1_div_Lam_dri.z*ri.x + dl2_div_Lam_dri.z*rj.x + dl3_div_Lam_dri.z*rk.x;
+  face.drcdr[0].M[2][1] = dl1_div_Lam_dri.z*ri.y + dl2_div_Lam_dri.z*rj.y + dl3_div_Lam_dri.z*rk.y;
+  face.drcdr[0].M[2][2] = dl1_div_Lam_dri.z*ri.z + dl2_div_Lam_dri.z*rj.z + dl3_div_Lam_dri.z*rk.z + l1_div_Lam;
+  
+  // p = j
+  face.drcdr[1].M[0][0] = dl1_div_Lam_drj.x*ri.x + l2_div_Lam + dl2_div_Lam_drj.x*rj.x + dl3_div_Lam_drj.x*rk.x;
+  face.drcdr[1].M[0][1] = dl1_div_Lam_drj.x*ri.y              + dl2_div_Lam_drj.x*rj.y + dl3_div_Lam_drj.x*rk.y;
+  face.drcdr[1].M[0][2] = dl1_div_Lam_drj.x*ri.z              + dl2_div_Lam_drj.x*rj.z + dl3_div_Lam_drj.x*rk.z;
+
+  face.drcdr[1].M[1][0] = dl1_div_Lam_drj.y*ri.x + dl2_div_Lam_drj.y*rj.x              + dl3_div_Lam_drj.y*rk.x;
+  face.drcdr[1].M[1][1] = dl1_div_Lam_drj.y*ri.y + dl2_div_Lam_drj.y*rj.y + l2_div_Lam + dl3_div_Lam_drj.y*rk.y;
+  face.drcdr[1].M[1][2] = dl1_div_Lam_drj.y*ri.z + dl2_div_Lam_drj.y*rj.z              + dl3_div_Lam_drj.y*rk.z;
+  
+  face.drcdr[1].M[2][0] = dl1_div_Lam_drj.z*ri.x + dl2_div_Lam_drj.z*rj.x + dl3_div_Lam_drj.z*rk.x;
+  face.drcdr[1].M[2][1] = dl1_div_Lam_drj.z*ri.y + dl2_div_Lam_drj.z*rj.y + dl3_div_Lam_drj.z*rk.y;
+  face.drcdr[1].M[2][2] = dl1_div_Lam_drj.z*ri.z + dl2_div_Lam_drj.z*rj.z + dl3_div_Lam_drj.z*rk.z + l2_div_Lam;
+  
+  // p = k
+  face.drcdr[2].M[0][0] = dl1_div_Lam_drk.x*ri.x + l3_div_Lam + dl2_div_Lam_drk.x*rj.x + dl3_div_Lam_drk.x*rk.x;
+  face.drcdr[2].M[0][1] = dl1_div_Lam_drk.x*ri.y              + dl2_div_Lam_drk.x*rj.y + dl3_div_Lam_drk.x*rk.y;
+  face.drcdr[2].M[0][2] = dl1_div_Lam_drk.x*ri.z              + dl2_div_Lam_drk.x*rj.z + dl3_div_Lam_drk.x*rk.z;
+
+  face.drcdr[2].M[1][0] = dl1_div_Lam_drk.y*ri.x + dl2_div_Lam_drk.y*rj.x              + dl3_div_Lam_drk.y*rk.x;
+  face.drcdr[2].M[1][1] = dl1_div_Lam_drk.y*ri.y + dl2_div_Lam_drk.y*rj.y + l3_div_Lam + dl3_div_Lam_drk.y*rk.y;
+  face.drcdr[2].M[1][2] = dl1_div_Lam_drk.y*ri.z + dl2_div_Lam_drk.y*rj.z              + dl3_div_Lam_drk.y*rk.z;
+  
+  face.drcdr[2].M[2][0] = dl1_div_Lam_drk.z*ri.x + dl2_div_Lam_drk.z*rj.x + dl3_div_Lam_drk.z*rk.x;
+  face.drcdr[2].M[2][1] = dl1_div_Lam_drk.z*ri.y + dl2_div_Lam_drk.z*rj.y + dl3_div_Lam_drk.z*rk.y;
+  face.drcdr[2].M[2][2] = dl1_div_Lam_drk.z*ri.z + dl2_div_Lam_drk.z*rj.z + dl3_div_Lam_drk.z*rk.z + l3_div_Lam;
+}
+
 // Private members
 
 /*! Computes circumcentre of a face (assumes that face is a triangle).
@@ -637,14 +752,26 @@ void Mesh::equiangulate()
 void Mesh::compute_circumcentre(int f)
 {
   Face& face = m_faces[f];
-  Vertex& A = m_vertices[face.vertices[0]];
-  Vertex& B = m_vertices[face.vertices[1]];
-  Vertex& C = m_vertices[face.vertices[2]];
-  Vector3d a = A.r - C.r;
-  Vector3d b = B.r - C.r;
-  Vector3d a_x_b = cross(a,b);
+  if (face.n_sides > 3)
+    return;
+  
+  Vector3d& ri = m_vertices[face.vertices[0]].r;
+  Vector3d& rj = m_vertices[face.vertices[1]].r;
+  Vector3d& rk = m_vertices[face.vertices[2]].r;
 
-  face.rc = 0.5/a_x_b.len2()*cross(a.len2()*b-b.len2()*a,a_x_b) + C.r;
+  Vector3d rjk = rj - rk;
+  Vector3d rki = rk - ri;
+  Vector3d rij = ri - rj;
+  
+  double rjk_2 = rjk.len2(), rki_2 = rki.len2(), rij_2 = rij.len2();
+  double L_2 = rjk_2 + rki_2 + rij_2;
+  double lambda_1 = rjk_2*(L_2 - 2*rjk_2);
+  double lambda_2 = rki_2*(L_2 - 2*rki_2);
+  double lambda_3 = rij_2*(L_2 - 2*rij_2);
+  
+  double Lambda = lambda_1 + lambda_2 + lambda_3;
+
+  face.rc = (lambda_1/Lambda)*ri + (lambda_2/Lambda)*rj + (lambda_3/Lambda)*rk; 
 }
 
 /*! Computes geometric centre of a face. Coordinates are stored in 

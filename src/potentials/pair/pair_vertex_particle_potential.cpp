@@ -113,8 +113,8 @@ void PairVertexParticlePotential::compute(double dt)
         Vector3d& r_nu_p = f_nu_p.rc; 
         Vector3d r_nu_i = r_nu - vi.r;
         
-        Vector3d cross_prod_1 = cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
-        area_vec = area_vec + cross_prod_1;  //cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
+        Vector3d cross_prod_1 = f_nu.get_jacobian(i)*cross(r_nu_p - r_nu_m, Nvec).scaled(0.5);
+        area_vec = area_vec + cross_prod_1;  
         if (m_compute_stress)
         {
           pi.s_xx = area_term*cross_prod_1.x*r_nu_i.x;
@@ -129,8 +129,8 @@ void PairVertexParticlePotential::compute(double dt)
           pi.s_zy = area_term*cross_prod_1.z*r_nu_i.y;
           pi.s_zz = area_term*cross_prod_1.z*r_nu_i.z;
         }
-        Vector3d cross_prod_2 = ((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit()).scaled(1.0/f_nu.n_sides);
-        perim_vec = perim_vec + cross_prod_2; //((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit()).scaled(1.0/f_nu.n_sides);
+        Vector3d cross_prod_2 = f_nu.get_jacobian(i)*((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit());
+        perim_vec = perim_vec + cross_prod_2; 
         if (m_compute_stress)
         {
           pi.s_xx += perim_term*cross_prod_2.x*r_nu_i.x;
@@ -147,7 +147,7 @@ void PairVertexParticlePotential::compute(double dt)
         }
         if (m_has_pair_params)
           lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[E.to].type - 1].lambda;
-        Vector3d cross_prod_3 = lambda*(r_nu - r_nu_m).unit().scaled(1.0/f_nu.n_sides);
+        Vector3d cross_prod_3 = lambda*(f_nu.get_jacobian(i)*(r_nu - r_nu_m).unit());
         con_vec = con_vec + cross_prod_3; //lambda*(r_nu - r_nu_m).unit().scaled(1.0/f_nu.n_sides);
         if (m_compute_stress)
         {
@@ -165,7 +165,7 @@ void PairVertexParticlePotential::compute(double dt)
         }
         if (m_has_pair_params)
           lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[En.to].type - 1].lambda;
-        Vector3d cross_prod_4 = lambda*(r_nu_p - r_nu).unit().scaled(1.0/f_nu.n_sides);
+        Vector3d cross_prod_4 = lambda*(f_nu.get_jacobian(i)*(r_nu_p - r_nu).unit());
         con_vec = con_vec - cross_prod_4; //lambda*(r_nu_p - r_nu).unit().scaled(1.0/f_nu.n_sides);
         if (m_compute_stress)
         { 
@@ -235,7 +235,7 @@ void PairVertexParticlePotential::compute(double dt)
             Vector3d& r_nu_p = f_nu_p.rc; 
             Vector3d r_nu_i = r_nu - vi.r;
             
-            Vector3d cross_prod_1 = cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
+            Vector3d cross_prod_1 = f_nu.get_jacobian(i)*cross(r_nu_p - r_nu_m, Nvec);
             area_vec = area_vec + cross_prod_1; // cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
             if (m_compute_stress)
             {
@@ -251,7 +251,7 @@ void PairVertexParticlePotential::compute(double dt)
               pi.s_zy += area_term*cross_prod_1.z*r_nu_i.y;
               pi.s_zz += area_term*cross_prod_1.z*r_nu_i.z;
             }
-            Vector3d cross_prod_2 = ((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit()).scaled(1.0/f_nu.n_sides);
+            Vector3d cross_prod_2 = f_nu.get_jacobian(i)*((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit());
             perim_vec = perim_vec + cross_prod_2; //((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit()).scaled(1.0/f_nu.n_sides);
             if (m_compute_stress)
             {
@@ -269,7 +269,7 @@ void PairVertexParticlePotential::compute(double dt)
             }
             if (m_has_pair_params)
               lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[E.to].type - 1].lambda;
-            Vector3d cross_prod_3 = lambda*(r_nu - r_nu_m).unit().scaled(1.0/f_nu.n_sides);
+            Vector3d cross_prod_3 = lambda*(f_nu.get_jacobian(i)*(r_nu - r_nu_m).unit());
             con_vec = con_vec + cross_prod_3; //lambda*(r_nu - r_nu_m).unit().scaled(1.0/f_nu.n_sides);
             if (m_compute_stress)
             {
@@ -287,7 +287,7 @@ void PairVertexParticlePotential::compute(double dt)
             }
             if (m_has_pair_params)
               lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[Ep.to].type - 1].lambda;
-            Vector3d cross_prod_4 = lambda*(r_nu_p - r_nu).unit().scaled(1.0/f_nu.n_sides);
+            Vector3d cross_prod_4 = lambda*(f_nu.get_jacobian(i)*(r_nu_p - r_nu).unit());
             con_vec = con_vec - cross_prod_4; //lambda*(r_nu_p - r_nu).unit().scaled(1.0/f_nu.n_sides);
             if (m_compute_stress)
             {

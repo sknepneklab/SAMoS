@@ -47,6 +47,7 @@
 #include <boost/format.hpp>
 
 #include "vector3d.hpp"
+#include "matrix3d.hpp"
 
 using boost::format;
 using std::ostream;
@@ -117,6 +118,15 @@ struct Face
      return -1.0;  // If vertex does not belong to the face, return -1.
   }
   
+  //! Return Jacobian of the face centre with respect to a given vertex
+  //! \param v id of the vertex
+  Matrix3d& get_jacobian(int v)
+  {
+    for (unsigned int i = 0; i < vertices.size(); i++)
+      if (vertices[i] == v) return drcdr[i];
+    return drcdr[0];
+  }
+  
   int id;                      //!< Face id
   int n_sides;                 //!< Number of sides
   bool edge_face;              //!< Face is an edge face if all its edges are at the boundary
@@ -129,6 +139,7 @@ struct Face
   vector<int> vertices;        //!< Contains all vertices
   vector<int> edges;           //!< Contains all edges
   vector<double> angles;       //!< Contains cosines of angles at each vertex (in radians)
+  vector<Matrix3d> drcdr;      //!< Contains derivatives of the face centres with respect to its vertices
     
 };
 

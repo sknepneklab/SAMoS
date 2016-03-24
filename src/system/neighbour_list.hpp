@@ -109,7 +109,8 @@ public:
                                                                                                  m_triangulation(false),
                                                                                                  m_contact_dist(0.0),
                                                                                                  m_max_perim(20.0),
-                                                                                                 m_max_edge_len(7.0)
+                                                                                                 m_max_edge_len(7.0),
+                                                                                                 m_circumcenter(true)
   {
     m_msg->write_config("nlist.cut",lexical_cast<string>(m_cut));
     m_msg->write_config("nlist.pad",lexical_cast<string>(m_pad));
@@ -196,6 +197,18 @@ public:
       m_msg->write_config("nlist.contact_distance",param["max_perimeter"]);
       m_max_perim =  lexical_cast<double>(param["max_perimeter"]);
     }
+    if (param.find("circumcenter") != param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Neighbour list. Using circumcenters for mesh dual.");
+      m_msg->write_config("nlist.circumcenter","true");
+      m_circumcenter = true;
+    }
+    else    
+    {
+      m_msg->msg(Messenger::INFO,"Neighbour list. Using geometric centers for mesh dual.");
+      m_msg->write_config("nlist.circumcenter","false");
+      m_circumcenter = false;
+    }
     this->build();
   }
   
@@ -275,6 +288,7 @@ private:
   double m_contact_dist;           //!< Distance over which to assume particles to be in contact 
   double m_max_perim;              //!< Maximum value of the perimeter beyond which face becomes a hole.
   double m_max_edge_len;           //!< Maximum value of the edge beyond which we drop it (for triangulations)
+  bool m_circumcenter;             //!< If true, use cell circumcenters when computing duals. 
   vector<vector<int> >  m_contact_list;    //!< Holds the contact list for each particle
     
   // Actual neighbour list builds

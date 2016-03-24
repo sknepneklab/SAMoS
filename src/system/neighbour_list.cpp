@@ -58,6 +58,7 @@ void NeighbourList::build()
  {
     Mesh& mesh = m_system->get_mesh();
     mesh.reset();
+    mesh.set_circumcenter(m_circumcenter);
  }
  if (m_use_cell_list) 
    this->build_cell();

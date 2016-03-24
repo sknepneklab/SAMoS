@@ -74,7 +74,7 @@ class Mesh
 {
 public:
   //! Construct a Mesh object
-  Mesh() : m_size(0), m_nedge(0), m_nface(0), m_ndual(0), m_is_triangulation(true), m_max_face_perim(20.0) {   }
+  Mesh() : m_size(0), m_nedge(0), m_nface(0), m_ndual(0), m_is_triangulation(true), m_max_face_perim(20.0), m_circumcenter(true) {   }
   
   //! Get mesh size
   int size() { return m_size; }
@@ -109,6 +109,10 @@ public:
   
   //! Resets the mesh
   void reset();
+  
+  //! Sets the circumcenter flag
+  //! \param val value of the circumcenter flag
+  void set_circumcenter(bool val) { m_circumcenter = val; }
   
   //! Add a vertex
   //! \param p particle
@@ -183,6 +187,9 @@ public:
   
   //! Mesh equiangulation
   void equiangulate();
+  
+  //! Face centre Jacobian
+  void fc_jacobian(int);
     
 private:  
   
@@ -192,6 +199,7 @@ private:
   int m_ndual;   //!< Number of vertices in dual
   bool m_is_triangulation;    //!< If true, all faces are triangles (allows more assumptions)
   double m_max_face_perim;    //!< If face perimeter is greater than this value, reject face and treat it as a hole.
+  bool m_circumcenter;        //!< If true, compute face circumcenters. Otherwise compute geometric centre. 
     
   vector<Vertex> m_vertices;           //!< Contains all vertices
   vector<Edge> m_edges;                //!< Contains all edge
