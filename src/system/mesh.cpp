@@ -659,10 +659,6 @@ void Mesh::fc_jacobian(int f)
   
   double Lambda = lambda_1 + lambda_2 + lambda_3;
   
-  Vector3d drjk_2_drj =  2*rjk;  Vector3d drjk_2_drk = -2*rjk;
-  Vector3d drki_2_dri = -2*rki;  Vector3d drki_2_drk =  2*rki;
-  Vector3d drij_2_dri =  2*rij;  Vector3d drij_2_drj = -2*rij;
-  
   Vector3d dl1_dri =  2*rjk_2*(-rki + rij);
   Vector3d dl2_dri = -2*(rjk_2 + rij_2 - 2*rki_2)*rki + 2*rki_2*rij;
   Vector3d dl3_dri =  2*(rjk_2 + rki_2 - 2*rij_2)*rij - 2*rij_2*rki;
