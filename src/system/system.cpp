@@ -942,6 +942,7 @@ void System::update_mesh()
     }
     m_mesh.equiangulate();
     m_mesh.update_dual_mesh();
+    m_mesh.update_face_properties();
     for (int i = 0; i < m_mesh.size(); i++)
     {
       m_mesh.dual_perimeter(i);
