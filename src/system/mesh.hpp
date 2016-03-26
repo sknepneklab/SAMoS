@@ -194,6 +194,8 @@ public:
   //! Update face properties
   void update_face_properties();
   
+  //! Remove obtuse boundary faces
+  bool remove_obtuse_boundary();
     
 private:  
   
@@ -217,6 +219,12 @@ private:
   
   //! Compute face geometric centre
   void compute_geometric_centre(int);
+  
+  //! Remove pair of edges
+  void remove_edge_pair(int);
+  
+  //! Compute face area
+  double face_area(int);
   
 };
 

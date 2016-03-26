@@ -63,7 +63,7 @@ struct Face
 {
   //! Construct a Face object
   //! \param id face id
-  Face(int id) : id(id), n_sides(0), edge_face(false), ordered(false), type(1), is_hole(false), boundary(false), obtuse(false), rc(0,0,0) {   }
+  Face(int id) : id(id), n_sides(0), edge_face(false), ordered(false), type(1), is_hole(false), boundary(false), obtuse(false), area(0.0), rc(0,0,0) {   }
   
   //! Add a vertex
   //! \param v adds a vertex
@@ -135,6 +135,7 @@ struct Face
   bool is_hole;                //!< If true, this face is actually a hole
   bool boundary;               //!< Face is boundary is one of its edges is boundary
   bool obtuse;                 //!< Face is obtuse if one of its angles is larger than pi/2
+  double area;                 //!< Area of the face
   
   Vector3d rc;                 //!< Coordiantes of geometric centre of the face
   

@@ -205,29 +205,41 @@ void PairVertexParticlePotential::compute(double dt)
     {
       Particle& pj = m_system->get_particle(vi.neigh[j]);
       Vertex& vj = mesh.get_vertices()[vi.neigh[j]];
-      if (!vj.boundary)  // For direct intecations treat only non-boundary vertices
+      //if (!vj.boundary)  // For direct intecations treat only non-boundary vertices
       {
         if (m_has_part_params) 
         {
           K  = m_particle_params[vj.type-1].K;
           gamma = m_particle_params[vj.type-1].gamma;
         }
-        double dA = (vj.area - pj.A0);
+        double dA;
+        if (!vj.boundary) dA = (vj.area - pj.A0);
+        else dA = 0.0;
+        //double dA = (vj.area - pj.A0);
         double area_term = K*dA;
         double perim_term = gamma*vj.perim;
         Vector3d area_vec(0.0,0.0,0.0);
         Vector3d perim_vec(0.0,0.0,0.0);
         Vector3d con_vec(0.0,0.0,0.0);
         Vector3d Nvec = Vector3d(pj.Nx, pj.Ny, pj.Nz);
-        for (int e = 0; e < vj.n_edges; e++)
+        int offset;
+        if (!vj.boundary) offset = 0;
+        else offset = 1;
+        for (int e = offset; e < vj.n_edges-offset; e++)
         {
+          if (vj.boundary)
+            cout << e << "  " << vj << endl;
           Edge& E = mesh.get_edges()[vj.edges[e]];
           Face& f_nu   = mesh.get_faces()[E.face];
           if (f_nu.has_vertex(i))
           {
             Edge& Ep = mesh.get_edges()[vj.edges[prev(e,vj.n_edges)]];
             Edge& En = mesh.get_edges()[vj.edges[next(e,vj.n_edges)]];
-        
+            if (vj.boundary)
+            {
+              cout << Ep << endl;
+              cout << En << endl;
+             }         
             Face& f_nu_m = mesh.get_faces()[Ep.face];
             Face& f_nu_p = mesh.get_faces()[En.face];
             Vector3d& r_nu_m = f_nu_m.rc; 
@@ -321,7 +333,7 @@ void PairVertexParticlePotential::compute(double dt)
         pi.fz -= alpha*con_vec.z;
         if (m_compute_stress)
         {
-          if (vi.area > 0)
+          if (!vi.boundary && vi.area > 0)
           {
             double inv_area = 1.0/vi.area;
             pi.s_xx *= inv_area;  pi.s_xy *= inv_area; pi.s_xz *= inv_area;
