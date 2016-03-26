@@ -266,27 +266,10 @@ void Mesh::postprocess()
 void Mesh::compute_centre(int f)
 {
   Face& face = m_faces[f];
-  if (!m_circumcenter)
+  if (!m_circumcenter && face.n_sides > 3)
     this->compute_geometric_centre(f);
   else
-  {
-    bool geom = false;
-    if (face.n_sides > 3)
-      geom = true;
-    else
-    {
-      for (int i = 0; i < face.n_sides; i++)
-      {
-        if (m_edges[m_edges[face.edges[i]].pair].boundary) // Face is at the boundary is one of the pair of one of its half-edges is a boundary face
-        { 
-          geom = true;
-          break;
-        }
-      }
-    }
-    if (geom) this->compute_geometric_centre(f);
-    else this->compute_circumcentre(f); 
-  }
+    this->compute_circumcentre(f); 
 }
 
 /*! Computes cosines of interior angles at each vertex of the face. 
@@ -642,7 +625,7 @@ void Mesh::fc_jacobian(int f)
   face.drcdr.push_back(Matrix3d());
   face.drcdr.push_back(Matrix3d());
   face.drcdr.push_back(Matrix3d());
-  
+
   Vector3d& ri = m_vertices[face.vertices[0]].r;
   Vector3d& rj = m_vertices[face.vertices[1]].r;
   Vector3d& rk = m_vertices[face.vertices[2]].r;
@@ -658,11 +641,7 @@ void Mesh::fc_jacobian(int f)
   double lambda_3 = rij_2*(L_2 - 2*rij_2);
   
   double Lambda = lambda_1 + lambda_2 + lambda_3;
-  
-  Vector3d drjk_2_drj =  2*rjk;  Vector3d drjk_2_drk = -2*rjk;
-  Vector3d drki_2_dri = -2*rki;  Vector3d drki_2_drk =  2*rki;
-  Vector3d drij_2_dri =  2*rij;  Vector3d drij_2_drj = -2*rij;
-  
+    
   Vector3d dl1_dri =  2*rjk_2*(-rki + rij);
   Vector3d dl2_dri = -2*(rjk_2 + rij_2 - 2*rki_2)*rki + 2*rki_2*rij;
   Vector3d dl3_dri =  2*(rjk_2 + rki_2 - 2*rij_2)*rij - 2*rij_2*rki;
@@ -735,9 +714,37 @@ void Mesh::fc_jacobian(int f)
   face.drcdr[2].M[2][2] = dl1_div_Lam_drk.z*ri.z + dl2_div_Lam_drk.z*rj.z + dl3_div_Lam_drk.z*rk.z + l3_div_Lam;
 }
 
+/*! This is an auxiliary memebr fucntion that loops over all faces
+ *  and updates its properties such as the boundary and obtuse flags.
+**/
+void Mesh::update_face_properties()
+{
+  for (int f = 0; f < m_nface; f++)
+  {
+    Face& face = m_faces[f];
+    face.boundary = false;
+    face.obtuse = false;
+    if (!face.is_hole)
+    {
+      for (int i = 0; i < face.n_sides; i++)
+        if (m_edges[m_edges[face.edges[i]].pair].boundary) // Face is at the boundary is one of the pair of one of its half-edges is a boundary face
+        { 
+          face.boundary = true;
+          break;
+        }
+      for (int i = 0; i < face.n_sides; i++)
+        if (face.get_angle(face.vertices[i]) < 0.0)
+        {
+          face.obtuse = true;
+          break;
+        }
+    }
+  }
+}
+
 // Private members
 
-/*! Computes circumcentre of a face (assumes that face is a triangle).
+/*! Computes circumcenter of a face (assumes that face is a triangle).
  *  Coordinates are stored in the Face object.
  *  Formula for circumcenter is given as:
  *  Let \f$ \mathbf{A} \f$, \f$ \mathbf{B} \f$, and \f$ \mathbf{C} \f$ be 3-dimensional points, which form the vertices of a triangle.
@@ -790,3 +797,4 @@ void Mesh::compute_geometric_centre(int f)
   }
   face.rc = Vector3d(xc/face.n_sides,yc/face.n_sides,zc/face.n_sides);
 }
+

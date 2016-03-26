@@ -190,6 +190,10 @@ public:
   
   //! Face centre Jacobian
   void fc_jacobian(int);
+  
+  //! Update face properties
+  void update_face_properties();
+  
     
 private:  
   

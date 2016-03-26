@@ -56,6 +56,10 @@ ostream& operator<<(ostream& out, const Face& f)
   out << endl;
   if (f.is_hole)
     out << "Face is a hole." << endl;
+  if (f.boundary)
+    out << "Face is at the boundary." << endl;
+  if (f.obtuse)
+    out << "Face is obtuse." << endl;
   out << " ------------------------------------";
   out << endl;
   return out;

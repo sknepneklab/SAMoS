@@ -63,7 +63,7 @@ struct Face
 {
   //! Construct a Face object
   //! \param id face id
-  Face(int id) : id(id), n_sides(0), edge_face(false), ordered(false), type(1), is_hole(false), rc(0,0,0) {   }
+  Face(int id) : id(id), n_sides(0), edge_face(false), ordered(false), type(1), is_hole(false), boundary(false), obtuse(false), rc(0,0,0) {   }
   
   //! Add a vertex
   //! \param v adds a vertex
@@ -133,6 +133,8 @@ struct Face
   bool ordered;                //!< if true, vertices in the face are ordered
   int type;                    //!< Face type. This is help determine parameters for interactions that depend in the dual vertex
   bool is_hole;                //!< If true, this face is actually a hole
+  bool boundary;               //!< Face is boundary is one of its edges is boundary
+  bool obtuse;                 //!< Face is obtuse if one of its angles is larger than pi/2
   
   Vector3d rc;                 //!< Coordiantes of geometric centre of the face
   
