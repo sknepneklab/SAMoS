@@ -749,7 +749,7 @@ void Mesh::update_face_properties()
           break;
         }
       for (int i = 0; i < face.n_sides; i++)
-        if (face.get_angle(face.vertices[i]) < 0.0)
+        if (!m_vertices[face.vertices[i]].boundary && face.get_angle(face.vertices[i]) < 0.0)
         {
           face.obtuse = true;
           break;
@@ -777,7 +777,9 @@ bool Mesh::remove_obtuse_boundary()
     Face& face = m_faces[f];
     //cout << "average area : " << average_area << endl;
     //cout << face << endl;
-    if (face.boundary && face.obtuse && face.area < 0.1*average_area)
+    //if (face.boundary && face.obtuse && face.area < 0.1*average_area)
+    //if (face.boundary && face.obtuse)
+    if (face.boundary && face.obtuse && face.area < 0.05*average_area)
     {
       //cout << "TO REMOVE " << endl << face << endl;
       for (int e = 0; e < face.n_sides; e++)
