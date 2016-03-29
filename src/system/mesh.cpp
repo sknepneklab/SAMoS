@@ -641,6 +641,26 @@ void Mesh::fc_jacobian(int f)
   face.drcdr.push_back(Matrix3d());
   face.drcdr.push_back(Matrix3d());
   face.drcdr.push_back(Matrix3d());
+  
+  if (face.boundary && face.obtuse)
+  {
+    // p = i
+    face.drcdr[0].M[0][0] = 0.0;  face.drcdr[0].M[0][1] = 0.0;  face.drcdr[0].M[0][2] = 0.0;
+    face.drcdr[0].M[1][0] = 0.0;  face.drcdr[0].M[1][1] = 0.0;  face.drcdr[0].M[1][2] = 0.0;
+    face.drcdr[0].M[2][0] = 0.0;  face.drcdr[0].M[2][1] = 0.0;  face.drcdr[0].M[2][2] = 0.0;
+
+    // p = j
+    face.drcdr[1].M[0][0] = 0.5;  face.drcdr[1].M[0][1] = 0.0;  face.drcdr[1].M[0][2] = 0.0;
+    face.drcdr[1].M[1][0] = 0.0;  face.drcdr[1].M[1][1] = 0.5;  face.drcdr[1].M[1][2] = 0.0;
+    face.drcdr[1].M[2][0] = 0.0;  face.drcdr[1].M[2][1] = 0.0;  face.drcdr[1].M[2][2] = 0.5;
+    
+    // p = k
+    face.drcdr[2].M[0][0] = 0.5;  face.drcdr[2].M[0][1] = 0.0;  face.drcdr[2].M[0][2] = 0.0;
+    face.drcdr[2].M[1][0] = 0.0;  face.drcdr[2].M[1][1] = 0.5;  face.drcdr[2].M[1][2] = 0.0;
+    face.drcdr[2].M[2][0] = 0.0;  face.drcdr[2].M[2][1] = 0.0;  face.drcdr[2].M[2][2] = 0.5;
+    
+    return;
+  }
 
   Vector3d& ri = m_vertices[face.vertices[0]].r;
   Vector3d& rj = m_vertices[face.vertices[1]].r;
@@ -754,6 +774,27 @@ void Mesh::update_face_properties()
           face.obtuse = true;
           break;
         }
+      if (face.boundary && face.obtuse)
+      {
+        for (int e = 0; e < face.n_sides; e++) 
+        {
+          Edge& E = m_edges[face.edges[e]];
+          if (m_vertices[E.from].boundary && m_vertices[E.to].boundary)
+          {
+            Vector3d& rj = m_vertices[E.from].r;
+            Vector3d& rk = m_vertices[E.to].r;
+            face.rc = 0.5*(rj+rk);
+            m_dual[E.dual] = face.rc;
+            cout << "from: " << E.from << endl;
+            cout << "to: " << E.to << endl;
+            cout << face << endl;
+            cout << m_vertices[E.from] << endl;
+            cout << m_vertices[E.to] << endl;
+            cout << m_vertices[this->opposite_vertex(E.id)] << endl;
+            break;
+          }
+        }
+      }
     }
   }
 }
