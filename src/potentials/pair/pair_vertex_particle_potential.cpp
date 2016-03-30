@@ -205,7 +205,7 @@ void PairVertexParticlePotential::compute(double dt)
     {
       Particle& pj = m_system->get_particle(vi.neigh[j]);
       Vertex& vj = mesh.get_vertices()[vi.neigh[j]];
-      //if (!vj.boundary)  // For direct intecations treat only non-boundary vertices
+      if (!vj.boundary)  // For direct intecations treat only non-boundary vertices
       {
         if (m_has_part_params) 
         {
@@ -246,6 +246,9 @@ void PairVertexParticlePotential::compute(double dt)
             Vector3d& r_nu   = f_nu.rc; 
             Vector3d& r_nu_p = f_nu_p.rc; 
             Vector3d r_nu_i = r_nu - vi.r;
+            
+            if (vj.boundary)
+              cout << f_nu.get_jacobian(i) << endl;
             
             Vector3d cross_prod_1 = f_nu.get_jacobian(i)*cross(r_nu_p - r_nu_m, Nvec);
             area_vec = area_vec + cross_prod_1; // cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
