@@ -785,12 +785,13 @@ void Mesh::update_face_properties()
             Vector3d& rk = m_vertices[E.to].r;
             face.rc = 0.5*(rj+rk);
             m_dual[E.dual] = face.rc;
-            cout << "from: " << E.from << endl;
-            cout << "to: " << E.to << endl;
-            cout << face << endl;
-            cout << m_vertices[E.from] << endl;
-            cout << m_vertices[E.to] << endl;
-            cout << m_vertices[this->opposite_vertex(E.id)] << endl;
+            this->fc_jacobian(f);
+            //cout << "from: " << E.from << endl;
+            //cout << "to: " << E.to << endl;
+            //cout << face << endl;
+            //cout << m_vertices[E.from] << endl;
+            //cout << m_vertices[E.to] << endl;
+            //cout << m_vertices[this->opposite_vertex(E.id)] << endl;
             break;
           }
         }
