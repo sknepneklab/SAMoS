@@ -57,6 +57,7 @@ ostream& operator<<(ostream& out, const Face& f)
       out << f.angles[i] << " ";
   }
   out << endl << "area : " << f.area;
+  out << endl << "rc : " << f.rc;
   out << endl;
   if (f.is_hole)
     out << "Face is a hole." << endl;
