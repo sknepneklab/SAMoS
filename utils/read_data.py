@@ -48,6 +48,11 @@ class ReadData:
     lines = map(lambda x: x.strip(), lines)
     if lines[0][0] == '#':
       self.has_header = True
+    elif lines[0].startswith('keys'):
+        # This version of read_data can't handle the new style .dat keys 
+        #  Hence here is a fix
+        lines[0] = lines[0].replace('keys:', '#')
+        self.has_header = True
     else:
       self.has_header = False
     if self.has_header:
