@@ -96,6 +96,20 @@ public:
     return (x == v.x && y == v.y && z == v.z);
   }
   
+  //! Add vector to current vector
+  Vector3d& operator+=(const Vector3d& v)
+  {
+    x += v.x;  y += v.y;  z += v.z;
+    return *this;
+  }
+  
+  //! Subtract vector from current vector
+  Vector3d& operator-=(const Vector3d& v)
+  {
+    x -= v.x;  y -= v.y;  z -= v.z;
+    return *this;
+  }
+  
   //! Euclidean dot product with another vector
   double dot(const Vector3d& v)
   {

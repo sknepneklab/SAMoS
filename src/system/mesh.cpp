@@ -422,7 +422,8 @@ double Mesh::dual_perimeter(int v)
     //Vector3d& r2 = m_faces[m_edges[V.edges[j]].face].rc;
     Vector3d& r1 = m_dual[V.dual[i]];
     Vector3d& r2 = m_dual[V.dual[j]];
-    V.perim += (r1-r2).len();
+    if (!(V.boundary && j == 0))
+      V.perim += (r1-r2).len();
   }
   return V.perim;
 }
@@ -517,12 +518,14 @@ void Mesh::edge_flip(int e)
   F.vertices[1] = E2.from;  F.edges[1] = E2.id;
   F.vertices[2] = E3.from;  F.edges[2] = E3.id;
   this->compute_angles(F.id);
+  this->compute_centre(F.id);
   
   // Update face 2
   Fp.vertices[0] = Ep.from;  Fp.edges[0] = Ep.id;
   Fp.vertices[1] = E4.from;  Fp.edges[1] = E4.id;
   Fp.vertices[2] = E1.from;  Fp.edges[2] = E1.id;
   this->compute_angles(Fp.id);
+  this->compute_centre(Fp.id);
   
   // Now we need to clean up vertices and their neighbours
   V1.remove_neighbour(V2.id);
@@ -542,6 +545,18 @@ void Mesh::edge_flip(int e)
   V3.add_face(Fp.id);
   V4.add_face(F.id);
   
+  // Finally, we need to update edge_map
+  map<pair<int,int>, int>::iterator it = m_edge_map.find(make_pair(V1.id,V2.id));
+  if (it != m_edge_map.end())
+     m_edge_map.erase(it);
+     
+  it = m_edge_map.find(make_pair(V2.id,V1.id));
+  if (it != m_edge_map.end())
+     m_edge_map.erase(it);
+  
+  m_edge_map[make_pair(V3.id,V4.id)]  = Ep.id;
+  m_edge_map[make_pair(V4.id,V3.id)]  = E.id;
+  
   // Make sure that the vertex stars are all properly ordered
   
 //   cout << "########## after ##########" << endl;
@@ -552,6 +567,7 @@ void Mesh::edge_flip(int e)
 //   
 //   cout << "------------- V1 ----------------" << endl;
 //   cout << V1 << endl;
+  
   
   this->order_star(V1.id);
   this->order_star(V2.id);
@@ -625,6 +641,26 @@ void Mesh::fc_jacobian(int f)
   face.drcdr.push_back(Matrix3d());
   face.drcdr.push_back(Matrix3d());
   face.drcdr.push_back(Matrix3d());
+  
+  if (face.boundary && face.obtuse)
+  {
+    // p = i
+    face.drcdr[0].M[0][0] = 0.0;  face.drcdr[0].M[0][1] = 0.0;  face.drcdr[0].M[0][2] = 0.0;
+    face.drcdr[0].M[1][0] = 0.0;  face.drcdr[0].M[1][1] = 0.0;  face.drcdr[0].M[1][2] = 0.0;
+    face.drcdr[0].M[2][0] = 0.0;  face.drcdr[0].M[2][1] = 0.0;  face.drcdr[0].M[2][2] = 0.0;
+
+    // p = j
+    face.drcdr[1].M[0][0] = 0.5;  face.drcdr[1].M[0][1] = 0.0;  face.drcdr[1].M[0][2] = 0.0;
+    face.drcdr[1].M[1][0] = 0.0;  face.drcdr[1].M[1][1] = 0.5;  face.drcdr[1].M[1][2] = 0.0;
+    face.drcdr[1].M[2][0] = 0.0;  face.drcdr[1].M[2][1] = 0.0;  face.drcdr[1].M[2][2] = 0.5;
+    
+    // p = k
+    face.drcdr[2].M[0][0] = 0.5;  face.drcdr[2].M[0][1] = 0.0;  face.drcdr[2].M[0][2] = 0.0;
+    face.drcdr[2].M[1][0] = 0.0;  face.drcdr[2].M[1][1] = 0.5;  face.drcdr[2].M[1][2] = 0.0;
+    face.drcdr[2].M[2][0] = 0.0;  face.drcdr[2].M[2][1] = 0.0;  face.drcdr[2].M[2][2] = 0.5;
+    
+    return;
+  }
 
   Vector3d& ri = m_vertices[face.vertices[0]].r;
   Vector3d& rj = m_vertices[face.vertices[1]].r;
@@ -727,20 +763,96 @@ void Mesh::update_face_properties()
     if (!face.is_hole)
     {
       for (int i = 0; i < face.n_sides; i++)
-        if (m_edges[m_edges[face.edges[i]].pair].boundary) // Face is at the boundary is one of the pair of one of its half-edges is a boundary face
+        if (m_edges[m_edges[face.edges[i]].pair].boundary) // Face is at the boundary if the pair of one of its half-edges is a boundary edge
         { 
           face.boundary = true;
           break;
         }
       for (int i = 0; i < face.n_sides; i++)
-        if (face.get_angle(face.vertices[i]) < 0.0)
+        if (!m_vertices[face.vertices[i]].boundary && face.get_angle(face.vertices[i]) < 0.0)
         {
           face.obtuse = true;
           break;
         }
+      if (face.boundary && face.obtuse)
+      {
+        for (int e = 0; e < face.n_sides; e++) 
+        {
+          Edge& E = m_edges[face.edges[e]];
+          if (m_vertices[E.from].boundary && m_vertices[E.to].boundary)
+          {
+            Vector3d& rj = m_vertices[E.from].r;
+            Vector3d& rk = m_vertices[E.to].r;
+            face.rc = 0.5*(rj+rk);
+            m_dual[E.dual] = face.rc;
+            this->fc_jacobian(f);
+            //cout << "from: " << E.from << endl;
+            //cout << "to: " << E.to << endl;
+            //cout << face << endl;
+            //cout << m_vertices[E.from] << endl;
+            //cout << m_vertices[E.to] << endl;
+            //cout << m_vertices[this->opposite_vertex(E.id)] << endl;
+            break;
+          }
+        }
+      }
     }
   }
 }
+
+/*! Loop over all boundary faces. If the face is obtuse,
+ *  remove the edge boundary edge. This leaves the face 
+ *  information invalid. All faces need to be rebuilt.
+*/
+bool Mesh::remove_obtuse_boundary()
+{
+  bool removed = false;
+  
+  double average_area = 0.0;
+  for (int f = 0; f < m_nface; f++)
+    average_area += this->face_area(f); 
+  
+  average_area /= m_nface;
+  
+  for (int f = 0; f < m_nface; f++)
+  {
+    Face& face = m_faces[f];
+    //cout << "average area : " << average_area << endl;
+    //cout << face << endl;
+    //if (face.boundary && face.obtuse && face.area < 0.1*average_area)
+    //if (face.boundary && face.obtuse)
+    if (face.boundary && face.obtuse && face.area < 0.05*average_area)
+    {
+      //cout << "TO REMOVE " << endl << face << endl;
+      for (int e = 0; e < face.n_sides; e++)
+      {
+        if (m_edges[m_edges[face.edges[e]].pair].boundary) 
+        {
+          this->remove_edge_pair(face.edges[e]);
+          removed = true;
+          break;
+        }
+      }
+      if (removed)
+        for (int v = 0; v < face.n_sides; v++)
+          m_vertices[face.vertices[v]].boundary = true;   // upon removal all vertices are boundary
+    }
+   }
+   
+   if (removed)
+   {
+     m_nface = 0;
+     m_faces.clear();
+     for (int e = 0; e < m_nedge; e++)
+     {
+        m_edges[e].visited = false;
+        m_edges[e].boundary = false;
+     }
+   }
+   
+   return removed;
+}
+
 
 // Private members
 
@@ -798,3 +910,97 @@ void Mesh::compute_geometric_centre(int f)
   face.rc = Vector3d(xc/face.n_sides,yc/face.n_sides,zc/face.n_sides);
 }
 
+/*! This is an auxiliary function used to remove a pair of edges.
+ *  It updates the edge and vertex information, but leaves faces 
+ *  inconsistent. It is to be used in conjunction with the function
+ *  the weeds out obtuse boundary faces. After its application, all faces
+ *  have to be rebuilt.
+ *  \param e index of one of the edges
+*/
+void Mesh::remove_edge_pair(int e)
+{
+  Edge& E = m_edges[e];
+  Edge& Ep = m_edges[E.pair];
+  
+  Vertex& V1 = m_vertices[E.from];
+  Vertex& V2 = m_vertices[Ep.from];
+  
+  V1.remove_neighbour(V2.id);
+  V2.remove_neighbour(V1.id);
+  
+  V1.remove_edge(E.id);
+  V2.remove_edge(Ep.id);
+  
+  map<pair<int,int>, int>::iterator it = m_edge_map.find(make_pair(V1.id,V2.id));
+  if (it != m_edge_map.end())
+     m_edge_map.erase(it);
+     
+  it = m_edge_map.find(make_pair(V2.id,V1.id));
+  if (it != m_edge_map.end())
+     m_edge_map.erase(it);
+     
+  int e1 = (E.id < Ep.id) ? E.id : Ep.id;
+  int e2 = (e1 == E.id) ? Ep.id : E.id;
+  
+  // Remove first edge
+  vector<Edge>::iterator it_e = find(m_edges.begin(), m_edges.end(), e1);
+  if (it_e != m_edges.end()) m_edges.erase(it_e);
+  
+  // Remove second edge
+  it_e = find(m_edges.begin(), m_edges.end(), e2);
+  if (it_e != m_edges.end()) m_edges.erase(it_e);
+  
+  // Relabel edges
+  m_nedge = m_edges.size();
+  for (int ee = 0; ee < m_nedge; ee++)
+  {
+    m_edges[ee].id = ee;
+    if (m_edges[ee].pair > e1 && m_edges[ee].pair < e2) m_edges[ee].pair -= 1;
+    else if (m_edges[ee].pair > e2) m_edges[ee].pair -= 2;
+  }
+  
+  // Relabel vertex edge info
+  for (int i = 0; i < m_size; i++)
+  {
+     Vertex& V = m_vertices[i];
+     for (int ee = 0; ee < V.n_edges; ee++)
+        if (V.edges[ee] > e1 && V.edges[ee] < e2) V.edges[ee] -= 1;
+        else if (V.edges[ee] > e2) V.edges[ee] -= 2;
+  }
+  
+  // Relabel edge_map info
+  for (it = m_edge_map.begin(); it != m_edge_map.end(); it++)
+    if ((*it).second > e1 && (*it).second < e2) (*it).second -= 1;
+    else if ((*it).second > e2) (*it).second -= 2;
+  
+  // Relabel face edge info
+  for (int f = 0; f < m_nface; f++)
+  {
+    Face& face = m_faces[f];
+    for (int ee = 0; ee < face.n_sides; ee++)
+      if (face.edges[ee] > e1 && face.edges[ee] < e2) face.edges[ee] -= 1;
+      else if (face.edges[ee] > e2) face.edges[ee] -= 2;
+  }
+}
+
+/*! Compute ares of a face.
+ *  \param f face id
+*/
+double Mesh::face_area(int f)
+{
+  Face& face = m_faces[f];
+  
+  Vector3d& r0 = m_vertices[face.vertices[0]].r;
+  
+  face.area = 0.0;
+  for (int i = 1; i < face.n_sides-1; i++)
+  {
+    Vector3d& r1 = m_vertices[face.vertices[i]].r;
+    Vector3d& r2 = m_vertices[face.vertices[i+1]].r;
+    face.area += cross(r1-r0,r2-r0).len(); 
+  }
+  
+  face.area *= 0.5;
+  
+  return face.area;
+}

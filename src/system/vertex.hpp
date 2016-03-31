@@ -160,6 +160,12 @@ struct Vertex
       n_faces--;
     }
   }
+  
+  //! Compare if the id of the vertex is equal to an integer value
+  bool operator==(int val)
+  {
+     return (id == val);
+  }
    
   int id;                      //!< Vertex id
   int type;                    //!< Vertex type 

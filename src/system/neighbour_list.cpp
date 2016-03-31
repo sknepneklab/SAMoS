@@ -348,6 +348,20 @@ void NeighbourList::build_faces()
   mesh.generate_dual_mesh();
   mesh.postprocess();
   m_system->update_mesh();
+  
+//   bool removed_obtuse = false;
+//   while (!removed_obtuse)
+//   {
+//     removed_obtuse = true;
+//     if (mesh.remove_obtuse_boundary())
+//     { 
+//       mesh.generate_faces();
+//       mesh.generate_dual_mesh();
+//       mesh.postprocess();
+//       m_system->update_mesh();
+//       removed_obtuse = false;
+//     }
+//   }
    
 }
 
