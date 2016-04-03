@@ -54,12 +54,12 @@ void NeighbourList::build()
      m_contact_list.push_back(vector<int>());
  }
 
- if (m_build_contacts)
- {
-    Mesh& mesh = m_system->get_mesh();
-    mesh.reset();
-    mesh.set_circumcenter(m_circumcenter);
- }
+ //if (m_build_contacts)
+ //{
+ //   Mesh& mesh = m_system->get_mesh();
+ //   mesh.reset();
+ //   mesh.set_circumcenter(m_circumcenter);
+ //}
  if (m_use_cell_list) 
    this->build_cell();
  else
@@ -78,7 +78,11 @@ void NeighbourList::build_mesh()
       m_contact_list.push_back(vector<int>());
 #ifdef HAS_CGAL
     if (m_triangulation)
+    {
+      this->build_contacts();
+      this->build_faces();
       this->build_triangulation();
+    }
     else
 #endif
       this->build_contacts();
@@ -106,8 +110,8 @@ void NeighbourList::build_nsq()
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
-    if (m_build_contacts)
-      mesh.add_vertex(pi);
+    //if (m_build_contacts)
+    //  mesh.add_vertex(pi);
     for (int j = i + 1; j < N; j++)
     {
       Particle& pj = m_system->get_particle(j);
@@ -155,8 +159,8 @@ void NeighbourList::build_cell()
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
-    if (m_build_contacts)
-      mesh.add_vertex(pi);
+    //if (m_build_contacts)
+    //  mesh.add_vertex(pi);
     int cell_idx = m_cell_list->get_cell_idx(pi);
     vector<int>& neigh_cells = m_cell_list->get_cell(cell_idx).get_neighbours();  // per design includes this cell as well
     for (vector<int>::iterator it = neigh_cells.begin(); it != neigh_cells.end(); it++)
@@ -338,31 +342,38 @@ bool NeighbourList::contact_intersects(int i, int j)
 void NeighbourList::build_faces()
 {
   Mesh& mesh = m_system->get_mesh();
+  mesh.reset();
   int N = m_system->size();
   for (int i = 0; i < N; i++)
+  {
+    Particle& pi = m_system->get_particle(i);
+    mesh.add_vertex(pi);
     for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
       mesh.add_edge(i,m_contact_list[i][j]);
+  }
   
+  mesh.set_circumcenter(m_circumcenter);
   mesh.set_max_face_perim(m_max_perim);
   mesh.generate_faces();
   mesh.generate_dual_mesh();
   mesh.postprocess();
   m_system->update_mesh();
   
-//   bool removed_obtuse = false;
-//   while (!removed_obtuse)
-//   {
-//     removed_obtuse = true;
-//     if (mesh.remove_obtuse_boundary())
-//     { 
-//       mesh.generate_faces();
-//       mesh.generate_dual_mesh();
-//       mesh.postprocess();
-//       m_system->update_mesh();
-//       removed_obtuse = false;
-//     }
-//   }
-   
+  /*
+   bool removed_obtuse = false;
+   while (!removed_obtuse)
+   {
+     removed_obtuse = true;
+     if (mesh.remove_obtuse_boundary())
+     { 
+       mesh.generate_faces();
+       mesh.generate_dual_mesh();
+       mesh.postprocess();
+       m_system->update_mesh();
+       removed_obtuse = false;
+     }
+   }
+   */
 }
 
 #ifdef HAS_CGAL
@@ -372,6 +383,15 @@ void NeighbourList::build_faces()
 */
 bool NeighbourList::build_triangulation()
 {
+  // Wipe out the contact list we created with contacts 
+  // It was there only temporarily to help us find boundaries
+  m_contact_list.clear();
+  for (int i = 0; i < m_system->size(); i++)
+      m_contact_list.push_back(vector<int>());
+  
+  // Here we start rebuilding 
+  Mesh& mesh = m_system->get_mesh();
+  vector<pair<int,int> >& boundary = mesh.get_boundary();
   vector< pair<Point,unsigned> > points;
   int N = m_system->size();
   for (int i = 0; i < N; i++)
@@ -391,30 +411,42 @@ bool NeighbourList::build_triangulation()
   for(Delaunay::Finite_faces_iterator fit = triangulation.finite_faces_begin(); fit != triangulation.finite_faces_end(); fit++)
   {
     Delaunay::Face_handle face = fit;
-    unsigned int i = face->vertex(0)->info();
-    unsigned int j = face->vertex(1)->info();
-    unsigned int k = face->vertex(2)->info();
+    int i = face->vertex(0)->info();
+    int j = face->vertex(1)->info();
+    int k = face->vertex(2)->info();
     //cout << i << " " << j << " " << k << endl;
     Particle& pi = m_system->get_particle(i);
     Particle& pj = m_system->get_particle(j);
     Particle& pk = m_system->get_particle(k);
+    bool add_ij = true;
+    if (mesh.is_boundary_vertex(i) && mesh.is_boundary_vertex(j) && find(boundary.begin(),boundary.end(),make_pair(i,j)) == boundary.end())
+      add_ij = false;
+  
+    bool add_jk = true;
+    if (mesh.is_boundary_vertex(j) && mesh.is_boundary_vertex(k) && find(boundary.begin(),boundary.end(),make_pair(j,k)) == boundary.end())
+      add_jk = false;
+    
+    bool add_ki = true;
+    if (mesh.is_boundary_vertex(k) && mesh.is_boundary_vertex(i) && find(boundary.begin(),boundary.end(),make_pair(k,i)) == boundary.end())
+      add_ki = false;
+    
     double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
     m_system->apply_periodic(dx,dy,dz);
-    if (std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
+    if (add_ij && std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
     {
       if (find(m_contact_list[i].begin(),m_contact_list[i].end(),j) == m_contact_list[i].end()) m_contact_list[i].push_back(j);
       if (find(m_contact_list[j].begin(),m_contact_list[j].end(),i) == m_contact_list[j].end()) m_contact_list[j].push_back(i);
     }
     dx = pj.x - pk.x, dy = pj.y - pk.y, dz = pj.z - pk.z;
     m_system->apply_periodic(dx,dy,dz);
-    if (std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
+    if (add_jk && std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
     {
       if (find(m_contact_list[j].begin(),m_contact_list[j].end(),k) == m_contact_list[j].end()) m_contact_list[j].push_back(k);
       if (find(m_contact_list[k].begin(),m_contact_list[k].end(),j) == m_contact_list[k].end()) m_contact_list[k].push_back(j);
     }
     dx = pk.x - pi.x, dy = pk.y - pi.y, dz = pk.z - pi.z;
     m_system->apply_periodic(dx,dy,dz);
-    if (std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
+    if (add_ki && std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
     {
       if (find(m_contact_list[k].begin(),m_contact_list[k].end(),i) == m_contact_list[k].end()) m_contact_list[k].push_back(i);
       if (find(m_contact_list[i].begin(),m_contact_list[i].end(),k) == m_contact_list[i].end()) m_contact_list[i].push_back(k);
@@ -423,6 +455,7 @@ bool NeighbourList::build_triangulation()
   
  
   this->remove_dangling();
+  
   
   return true;
   

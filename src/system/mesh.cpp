@@ -65,6 +65,7 @@ void Mesh::reset()
   m_edges.clear();              
   m_faces.clear();              
   m_edge_map.clear();  
+  m_edge_face.clear();
 }
 
 /*! Add and edge to the list of edges. Edge is defined
@@ -90,6 +91,7 @@ void Mesh::add_edge(int ei, int ej)
 */
 void Mesh::generate_faces()
 {
+  m_is_triangulation = true;
   vector<vert_angle> angles;
   for (int i = 0; i < m_nedge; i++)
   {
@@ -233,6 +235,7 @@ void Mesh::postprocess()
   m_size = m_vertices.size();
   m_nedge = m_edges.size();
   m_nface = m_faces.size();
+  m_boundary.clear();
   //for (int i = 0; i < m_size; i++)
   //  if (m_vertices[i].edges.size() == 0) m_vertices[i].boundary = true;
   for (int f = 0; f < m_nface; f++)
@@ -243,7 +246,12 @@ void Mesh::postprocess()
       for (unsigned int v = 0; v < face.vertices.size(); v++)
         m_vertices[face.vertices[v]].boundary = true;
       for (unsigned int e = 0; e < face.edges.size(); e++)
-        m_edges[face.edges[e]].boundary = true;
+      {
+        Edge& E = m_edges[face.edges[e]];
+        E.boundary = true;
+        m_boundary.push_back(make_pair(E.from,E.to));
+        m_boundary.push_back(make_pair(E.to,E.from));
+      }
     }
   }
   for (int e = 0; e < m_nedge; e++)
@@ -821,7 +829,7 @@ bool Mesh::remove_obtuse_boundary()
     //cout << face << endl;
     //if (face.boundary && face.obtuse && face.area < 0.1*average_area)
     //if (face.boundary && face.obtuse)
-    if (face.boundary && face.obtuse && face.area < 0.05*average_area)
+    if (face.boundary && face.obtuse && face.area < 0.1*average_area)
     {
       //cout << "TO REMOVE " << endl << face << endl;
       for (int e = 0; e < face.n_sides; e++)

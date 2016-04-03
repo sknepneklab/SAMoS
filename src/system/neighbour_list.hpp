@@ -41,6 +41,7 @@
 
 #include <vector>
 #include <stdexcept>
+#include <utility>
 
 //#include <boost/property_map/property_map.hpp>
 //#include <boost/ref.hpp>
@@ -57,6 +58,7 @@
 #include "parse_parameters.hpp"
 
 using std::vector;
+using std::pair;
 
 #ifdef HAS_CGAL
 /*! Typdefs for CGAL library */

@@ -101,6 +101,14 @@ struct Vertex
    attached = true;
   }
   
+  ~Vertex()
+  {
+    neigh.clear();           
+    edges.clear();           
+    faces.clear();           
+    dual.clear();            
+  }
+  
   //! Add neighbour
   //! \param v neighbour index
   void add_neighbour(int v)
