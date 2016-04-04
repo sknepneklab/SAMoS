@@ -206,6 +206,9 @@ public:
   {
     return m_vertices[v].boundary;
   }
+  
+  //! Compute angle deficit at a boundary vertex
+  double angle_deficit(int);
     
 private:  
   

@@ -84,7 +84,8 @@ void PairVertexParticlePotential::compute(double dt)
     if (m_phase_in)
       alpha = m_val->get_val(static_cast<int>(pi.age/dt));
     // First handle the vertex itself
-    if (!vi.boundary && vi.attached)  // For direct intecations treat only non-boundary vertices
+    //if (!vi.boundary && vi.attached)  // For direct intecations treat only non-boundary vertices
+    if (vi.attached)
     {
       if (m_has_part_params) 
       {
@@ -94,6 +95,7 @@ void PairVertexParticlePotential::compute(double dt)
       //double dA = (vi.area - pi.A0);
       double dA = 0.0; 
       if (!vi.boundary) dA = (vi.area - pi.A0);
+      else dA = (vi.area - mesh.angle_deficit(i)*pi.A0);
       double area_term = K*dA;
       double perim_term = gamma*vi.perim;
       pot_eng = 0.5*(K*dA*dA+gamma*vi.perim*vi.perim);
@@ -212,7 +214,7 @@ void PairVertexParticlePotential::compute(double dt)
     {
       Particle& pj = m_system->get_particle(vi.neigh[j]);
       Vertex& vj = mesh.get_vertices()[vi.neigh[j]];
-      if (!vj.boundary)  // For direct intecations treat only non-boundary vertices
+      //if (!vj.boundary)  // For direct intecations treat only non-boundary vertices
       {
         if (m_has_part_params) 
         {
@@ -221,7 +223,7 @@ void PairVertexParticlePotential::compute(double dt)
         }
         double dA = 0.0;
         if (!vj.boundary) dA = (vj.area - pj.A0);
-        //double dA = (vj.area - pj.A0);
+        else dA = (vj.area -  mesh.angle_deficit(vj.id)*pj.A0);
         double area_term = K*dA;
         double perim_term = gamma*vj.perim;
         Vector3d area_vec(0.0,0.0,0.0);

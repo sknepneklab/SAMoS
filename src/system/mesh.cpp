@@ -380,19 +380,47 @@ double Mesh::dual_area(int v)
     throw runtime_error("Vertex star has to be ordered before dual area can be computed.");
   Vertex& V = m_vertices[v];
   if (!V.attached) return 0.0;
-  //if (V.boundary) return 0.0;
-  
-  V.area = 0.0;
-  for (unsigned int i = 0; i < V.dual.size(); i++)
-  {
-    int j = ( i == V.dual.size()-1) ? 0 : i + 1;
-    Vector3d& r1 = m_dual[V.dual[i]];
-    Vector3d& r2 = m_dual[V.dual[j]];
-    //Vector3d& r1 = m_faces[m_edges[V.edges[i]].face].rc;
-    //Vector3d& r2 = m_faces[m_edges[V.edges[j]].face].rc;
     
-    Vector3d  rr = cross(r1,r2); 
-    V.area += dot(rr,V.N.unit());
+  V.area = 0.0;
+  if (!V.boundary)
+  {
+    for (unsigned int i = 0; i < V.dual.size(); i++)
+    {
+      int j = ( i == V.dual.size()-1) ? 0 : i + 1;
+      Vector3d& r1 = m_dual[V.dual[i]];
+      Vector3d& r2 = m_dual[V.dual[j]];
+            
+      Vector3d  rr = cross(r1,r2); 
+      V.area += dot(rr,V.N.unit());
+    }
+  }
+  else
+  {
+    for (int f = 0; f < V.n_faces; f++)
+    {
+      Face& face = m_faces[V.faces[f]];
+      int fn = (f == V.n_faces-1) ? 0 : f + 1;
+      Face& face_n = m_faces[V.faces[fn]];
+      if (!(face.is_hole || face_n.is_hole))
+      {
+        Vector3d rr = cross(V.r-face.rc,V.r-face_n.rc);
+        V.area += fabs(dot(rr,V.N.unit()));
+      }
+      if (face.boundary && !face.obtuse)
+      {
+        for (int i = 0; i < face.n_sides; i++)
+          if (m_edges[m_edges[face.edges[i]].pair].boundary) 
+          {
+            Edge& E = m_edges[face.edges[i]];
+            Vector3d& rj = m_vertices[E.from].r;
+            Vector3d& rk = m_vertices[E.to].r;
+            Vector3d r = 0.5*(rj+rk);
+            Vector3d  rr = cross(V.r-r,V.r-face.rc);
+            V.area += fabs(dot(rr,V.N.unit()));
+            break;
+          }
+      }
+    }
   }
    
   V.area *= 0.5;
@@ -423,15 +451,46 @@ double Mesh::dual_perimeter(int v)
   //if (V.boundary) return 0.0;
   
   V.perim  = 0.0;
-  for (unsigned int i = 0; i < V.dual.size(); i++)
+  if (!V.boundary)
   {
-    int j = ( i == V.dual.size()-1) ? 0 : i + 1;
-    //Vector3d& r1 = m_faces[m_edges[V.edges[i]].face].rc;
-    //Vector3d& r2 = m_faces[m_edges[V.edges[j]].face].rc;
-    Vector3d& r1 = m_dual[V.dual[i]];
-    Vector3d& r2 = m_dual[V.dual[j]];
-    if (!(V.boundary && j == 0))
-      V.perim += (r1-r2).len();
+    for (unsigned int i = 0; i < V.dual.size(); i++)
+    {
+      int j = ( i == V.dual.size()-1) ? 0 : i + 1;
+      //Vector3d& r1 = m_faces[m_edges[V.edges[i]].face].rc;
+      //Vector3d& r2 = m_faces[m_edges[V.edges[j]].face].rc;
+      Vector3d& r1 = m_dual[V.dual[i]];
+      Vector3d& r2 = m_dual[V.dual[j]];
+      if (!(V.boundary && j == 0))
+        V.perim += (r1-r2).len();
+    }
+  }
+  else
+  {
+    for (int f = 0; f < V.n_faces; f++)
+    {
+      Face& face = m_faces[V.faces[f]];
+      int fn = (f == V.n_faces-1) ? 0 : f + 1;
+      Face& face_n = m_faces[V.faces[fn]];
+      if (!(face.is_hole || face_n.is_hole))
+      {
+        Vector3d rr = face.rc-face_n.rc;
+        V.perim += rr.len();
+      }
+      if (face.boundary && !face.obtuse)
+      {
+        for (int i = 0; i < face.n_sides; i++)
+          if (m_edges[m_edges[face.edges[i]].pair].boundary) 
+          {
+            Edge& E = m_edges[face.edges[i]];
+            Vector3d& rj = m_vertices[E.from].r;
+            Vector3d& rk = m_vertices[E.to].r;
+            Vector3d r = 0.5*(rj+rk);
+            Vector3d  rr = r-face.rc;
+            V.perim += rr.len();
+            break;
+          }
+      }
+    }
   }
   return V.perim;
 }
@@ -794,12 +853,6 @@ void Mesh::update_face_properties()
             face.rc = 0.5*(rj+rk);
             m_dual[E.dual] = face.rc;
             this->fc_jacobian(f);
-            //cout << "from: " << E.from << endl;
-            //cout << "to: " << E.to << endl;
-            //cout << face << endl;
-            //cout << m_vertices[E.from] << endl;
-            //cout << m_vertices[E.to] << endl;
-            //cout << m_vertices[this->opposite_vertex(E.id)] << endl;
             break;
           }
         }
@@ -859,6 +912,26 @@ bool Mesh::remove_obtuse_boundary()
    }
    
    return removed;
+}
+
+/*! Find the angle deficit at a boundary vertex. This is 
+ *  the angle between two boundary edges that that originate from the vertex.
+ *  \param v vertex id
+*/
+double Mesh::angle_deficit(int v)
+{
+  Vertex& V = m_vertices[v];
+  if (!V.boundary)
+    return 0.0;
+  
+  double angle = 0.0;
+  for (int f = 0; f < V.n_faces; f++)
+  {
+    Face& face = m_faces[V.faces[f]];
+    if (!face.is_hole)
+      angle += face.get_angle(v);
+  }
+  return 2.0*M_PI-angle;
 }
 
 

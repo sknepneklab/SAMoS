@@ -103,7 +103,7 @@ void NeighbourList::build_nsq()
   double cut = m_cut+m_pad;
   double cut2 = cut*cut;
   double d2;
-  Mesh& mesh = m_system->get_mesh();
+  //Mesh& mesh = m_system->get_mesh();
   
   m_old_state.clear();
   
@@ -150,7 +150,7 @@ void NeighbourList::build_cell()
   double cut = m_cut+m_pad;
   double cut2 = cut*cut;
   double d2;
-  Mesh& mesh = m_system->get_mesh();
+  //Mesh& mesh = m_system->get_mesh();
   
   m_old_state.clear();
   
