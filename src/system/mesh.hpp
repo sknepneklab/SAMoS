@@ -100,6 +100,9 @@ public:
   //! Get edge-face data structure
   map<pair<int,int>, int>& get_edge_face() { return m_edge_face; }
   
+  //! Get the information about boundary vertex pairs
+  vector<pair<int,int> >& get_boundary() { return m_boundary; }
+  
   //! Get maximum face perimeter
   double get_max_face_perim() {  return m_max_face_perim; }
   
@@ -196,6 +199,16 @@ public:
   
   //! Remove obtuse boundary faces
   bool remove_obtuse_boundary();
+  
+  //! Return true if the vertex is a boundary vertex
+  //! \param v index of the vertex
+  bool is_boundary_vertex(int v)
+  {
+    return m_vertices[v].boundary;
+  }
+  
+  //! Compute angle deficit at a boundary vertex
+  double angle_deficit(int);
     
 private:  
   
@@ -213,6 +226,7 @@ private:
   map<pair<int,int>, int> m_edge_map;  //!< Relates vertex indices to edge ids
   map<pair<int,int>, int> m_edge_face; //!< Relates pairs of faces to edges
   vector<Vector3d> m_dual;             //!< Coordinates of the dual mesh
+  vector<pair<int,int> > m_boundary;   //!< List of vertex pair that are on the boundary
   
   //! Compute face circumcentre
   void compute_circumcentre(int);

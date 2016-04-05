@@ -65,6 +65,14 @@ struct Face
   //! \param id face id
   Face(int id) : id(id), n_sides(0), edge_face(false), ordered(false), type(1), is_hole(false), boundary(false), obtuse(false), area(0.0), rc(0,0,0) {   }
   
+  ~Face()
+  {
+    vertices.clear();        
+    edges.clear();           
+    angles.clear();    
+    drcdr.clear();     
+  }
+  
   //! Add a vertex
   //! \param v adds a vertex
   void add_vertex(int v)
