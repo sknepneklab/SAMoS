@@ -12,8 +12,10 @@ from QET.qet import QET
 
 
 
-# debugging 
 import sys
+
+# debugging 
+
 def dirk(A):
     print A
     print dir(A)
@@ -30,10 +32,6 @@ def nostdout():
     yield
     sys.stdout = save_stdout
 
-# openmesh has a vector object
-# too lazy to use this to convert to numpy arrays
-def omvec(vec):
-    return np.array([vec[0], vec[1], vec[2]])
 # want to print a vector object
 def dumpvec(vec):
     print omvec(vec)
@@ -64,6 +62,13 @@ def scatter(mesh, mesh2):
     plt.show()
 
 
+# Start of feature code
+
+# openmesh has a vector object
+# too lazy to use this to convert to numpy arrays
+# fixed to three dimensions...
+def omvec(vec):
+    return np.array([vec[0], vec[1], vec[2]])
 
 class PVmesh(object):
     def __init__(self, tri):
@@ -72,12 +77,7 @@ class PVmesh(object):
         # the edge mesh (dual mesh)
         self.mesh = None
 
-        # Keep track of the mesh properties for each mesh (?)
-        self.triprops = []
-        self.meshprops = []
-
         # openmesh doesn't store edge lengths?
-        #self.trilprop, self.trilvecprop = self._helengths(self.tri, vec=True) 
         self.tri_lprop, self.tri_lvecprop =  self._helengths(self.tri)
         print 'trimesh'
         diagnose(self.tri)
@@ -96,9 +96,11 @@ class PVmesh(object):
         print 'Calculating Area and perimeter'
         self._set_face_properties()
 
-    def _helengths(self, tri, vec=False):
+    def _helengths(self, tri):
         #store lengths as half edge property
         # And also half edge vectors
+
+        # phase out this property and keep vectors
         lprop = HPropHandle()
         tri.add_property(lprop, 'length_s')
 
@@ -115,7 +117,7 @@ class PVmesh(object):
             npvf = omvec(tri.point(vf))
             vedge = npvt - npvf
             ls = sum(vedge**2)
-            # phase out this property and keep vectors
+
             tri.set_property(lprop, heh, ls)
             tri.set_property(lprop, heho, ls)
 
@@ -134,30 +136,27 @@ class PVmesh(object):
         lambda_prop = FPropHandle()
         self.tri.add_property(lambda_prop, 'lambda')
         self.lambda_prop = lambda_prop
+
         # map mesh faces onto trivertices
         # This map should only map integers onto themselves 
-        # but this is more or less an accident 
+        # Consider phasing out these dictionaries. The face and vertice arrays
+        #  should match up.
         self.vfmap = {}
         self.fvmap = {}
 
         ccenters = np.zeros((self.tri.n_faces(),3))
         for j, fh in enumerate(self.tri.faces()):
-            #print 'fh.idx()'
-            #print fh.idx()
             # Calculate circumcentres of mesh
             l_s = np.zeros(3)
-            #vvs = np.zeros((3,3))
             vhs = []
             for i, heh in enumerate(self.tri.fh(fh)):
                 l_s[i] = self.tri.property(lprop, heh)
                 vtmp = self.tri.to_vertex_handle(heh)
                 vhs.append(vtmp)
-                #vvs[i] = omvec(self.tri.point(vtmp))
+                
             # match up vertices and edges 
             vhs = np.roll(vhs, -1, axis=0)
             vi, vj, vk = [omvec(self.tri.point(vh)) for vh in vhs]
-            #vi, vj, vk = np.roll(vvs, -1, axis=0)
-            #print vi 
             lsi, lsj, lsk = l_s
             lli = lsi*(lsj + lsk - lsi)
             llj = lsj*(lsk + lsi - lsj)
@@ -214,7 +213,6 @@ class PVmesh(object):
         primprop = FPropHandle()
         mesh.add_property(primprop, 'prim')
 
-
         for fh in mesh.faces():
             area = 0.
             prim = 0.
@@ -253,7 +251,7 @@ class PVmesh(object):
 
     def set_constants(self, K, Gamma):
         # Putting aside the contact constants for now
-        # Constants for Area and Perimeter should be in .dat file but let them be set 
+        # Constants for Area and Perimeter should be in .dat file? Let them be set manually.
         # We shall use properties of the mesh again to keep everything consistent
         mesh = self.mesh
         kprop = FPropHandle()
@@ -271,7 +269,7 @@ class PVmesh(object):
         self.gammaprop = gammaprop
 
     def calculate_energy(self):
-        # And attach them as a property to the faces of the mesh (inner vertices of triangulation)
+        # And attach values as a property to the faces of the mesh (inner vertices of triangulation)
         mesh = self.mesh
         tri = self.tri
         # Organise the properties we will use
@@ -325,7 +323,6 @@ class PVmesh(object):
             dlamqdrp = {}
             # Get the corresponding face
             tri_fh = tri.face_handle(vh.idx())
-            hehq = tri.halfedge_handle(tri_fh)
             lq = np.zeros((3,3))
             lqs = np.zeros(3)
             r_q = np.zeros((3,3))
@@ -335,8 +332,6 @@ class PVmesh(object):
                 lqs[i] = tri.property(tri_lprop, hehq)
                 vhi = tri.to_vertex_handle(hehq)
                 r_qvh.append(vhi.idx())
-                #hehq = tri.next_halfedge_handle(hehq)
-            #r_q = np.roll(r_q, -1, axis=0)
             r_qvh = np.roll(r_qvh, -1, axis=0)
             r_q = np.array([omvec(self.tri.point(self.tri.vertex_handle(trivh))) for trivh in r_qvh])
             rjk, rki, rij = -lq
@@ -369,12 +364,9 @@ class PVmesh(object):
             gamma = sum(lambdaq.values())
             # Now for the jacobian
             # mu is fixed here, we are inside the loop over mesh vertices
-            # alternative, numpy.multiply.outer, swapaxes, sum
-            # Einsums straight from the notes
             drmudrp = {}
             for p in dlamqdrp.keys():
                 t1 = gamma * np.einsum('qm,qn->mn', dlamqdrp[p], r_q)
-                #t2 = gamma * np.einsum('p,mn->pmn', lambdaq, np.identity(3))
                 t2 = gamma * lambdaq[p] * np.identity(3)
                 lqrq = np.einsum('q,qn->n', lambdaq.values(), r_q)
                 t3 = np.einsum('n,m->mn', lqrq, dLambdadrp[p])
@@ -383,7 +375,7 @@ class PVmesh(object):
 
             # Caluculate area and perimeter derivatives on the vertices 
             #dAdrmu 
-            # next and previous vertex
+            # need next and previous vertex
             # halfedge attached here is outgoing
             hehout = mesh.halfedge_handle(vh)
             vhplus = mesh.to_vertex_handle(hehout)
@@ -408,17 +400,17 @@ class PVmesh(object):
         assert tri.get_property_handle(prefareaprop, 'prefarea')
 
         # Could iterate over all the vertices and assign loops (face ids)
-        # Have to take care with the boundary
         # Put this in a separate loop for now since it is a bit special
-        # We shall retrive the faces by calling mesh.facehandle[fids[i]]
 
         # setup helper functions
+        # It's natural to use sets and the intersect() method for dealing with loops
         def loop(fh):
             vhs = []
             for vh in mesh.fv(fh):
                 vhidx = vh.idx()
                 vhs.append(vhidx)
             return set(vhs)
+        # Nearest Neighbour faces
         def nnfaces(fh):
             fhs = []
             for heh in mesh.fh(fh):
@@ -479,6 +471,7 @@ class PVmesh(object):
 
             # And the nearest neighbours contribution
             # Can put these blocks together by adding full loops to interloops
+            # In the mean time just duplicate the code.
             area_nnsum = 0.
             prim_nnsum = 0.
             for fnn, vidset in interloops[fhidx].items():
