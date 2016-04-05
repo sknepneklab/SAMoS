@@ -303,6 +303,8 @@ class PVmesh(object):
         print 'total energy of mesh', 
         print tenergy
 
+        self.enprop = enprop
+
     def calculate_forces(self):
         # Maybe start by calculating d[lambda_i]/d[r_p] for {i,j,k} on each face p
         # Convenience
@@ -395,6 +397,7 @@ class PVmesh(object):
 
         fprop = FPropHandle()
         mesh.add_property(fprop, 'force')
+        self.fprop = fprop
 
         prefareaprop = VPropHandle()
         assert tri.get_property_handle(prefareaprop, 'prefarea')
@@ -509,7 +512,31 @@ class PVmesh(object):
             # fix up the r_q, lambda_q etc..
 
             # we can try visualising the dual, etc.
-            
+
+    def out_force_energy(self, outfile):
+        # use OrderedDict
+        # Still aren't explicitely handling the particle ids as we should be
+
+        outfe = OrderedDict()
+        ids, energy, fx, fy = [], [], [], []
+        for vh in self.tri.vertices():
+            if self.tri.is_boundary(vh):
+                continue
+            ids.append(vh.idx())
+            fh = self.mesh.face_handle(self.vfmap[vh.idx()])
+            energy.append(self.mesh.property(self.enprop, fh))
+            fxx, fyy, _ = self.mesh.property(self.fprop, fh)
+            fx.append(fxx)
+            fy.append(fyy)
+        outfe['id'] = ids
+        outfe['energy'] = energy
+        outfe['fx'] = fx
+        outfe['fy'] = fy
+
+        with open(outfile, 'w') as fo:
+            print 'saving force and energy to ', fo.name
+            dump(outfe, fo)
+
 
     ''' This is really the constructor '''
     @classmethod
@@ -573,5 +600,10 @@ if __name__=='__main__':
     print 'saving ', tout
     #writemesh(PV.tri, tout)
     writetriforce(PV, tout)
+
+    # Dump the force and energy
+    fef = 'force_energy.dat'
+    PV.out_force_energy(fef)
+
 
 

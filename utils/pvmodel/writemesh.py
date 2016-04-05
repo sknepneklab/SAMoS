@@ -2,9 +2,6 @@
 import sys
 from openmesh import *
 
-
-#from openmesh import *
-
 import numpy as np
 import vtk
 
@@ -180,5 +177,32 @@ def writetriforce(pv, outfile):
     writer.SetDataModeToAscii()
     writer.Write()
 
+
+### These are general methods copied from my command.py module
+
+#print square data to file, first column is int and rest are floats.
+def dump(dd, fo):
+    nc = len(dd.keys())
+    fo.write(''.join(['# ', '%s\t'*nc, '\n']) % tuple(dd.keys()))
+    ddv = dd.values()
+    nr = len(ddv[0]) # assumption
+    outstr = '%d\t' + '%f\t'*(nc-1) + '\n' # assumption
+    for i in range(nr):
+        tup = tuple([ddvi[i] for ddvi in ddv])
+        fo.write(outstr % tup)
+
+def readdump(fo):
+    headers = fo.next()[1:].split()
+    dd = {}
+    for h in headers:
+        dd[h] = []
+    for line in fo:
+        for i, dat in enumerate(line.split()):
+            ev = float
+            if i is 0:
+                ev = int
+            dd[headers[i]].append( ev(dat) )
+    return dd
+    
 
 

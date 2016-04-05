@@ -1,0 +1,10 @@
+
+This folder contains python analysis code of the particle-vertex model.
+
+This code uses scipy.Delaunay for triangulation and the python bindings of OpenMesh (http://www.openmesh.org/).
+Installing the OpenMesh package also installs the python bindings by default.
+
+IMPORTANT
+The triangulation produced by scipy.Delaunay is not automatically oriented by default for atleast scipy 0.13 and lower.
+Upgrading to the latest stable version, 0.17.0, fixes the problem and this is currently a requirement for the code.
+
