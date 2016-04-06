@@ -86,7 +86,11 @@ class Configuration:
 		self.vhat=((self.vval).transpose()/(vel).transpose()).transpose()
 		
 		# Create the cell list
-		self.clist=CellList(self.geom,param.nlist_rcut)
+		cellsize=param.nlist_rcut
+		if cellsize>5*self.sigma:
+			cellsize=5*self.sigma
+			print "Warning! Reduced the cell size to manageable proportions (5 times mean radius). Re-check if simulating very long objects!"
+		self.clist=CellList(self.geom,cellsize)
 		# Populate it with all the particles:
 		for k in range(self.N):
 			self.clist.add_particle(self.rval[k,:],k)
@@ -119,8 +123,12 @@ class Configuration:
 		if self.monodisperse: 
 			neighbours=[cneighbours[index] for index,value in enumerate(dist) if value <mult*dmax]
 		else:
-			neighbours=[cneighbours[index] for index,value in enumerate(dist) if value < mult*(self.radius[i]+self.radius[index])]
+			neighbours=[cneighbours[index] for index,value in enumerate(dist) if value < mult*(self.radius[i]+self.radius[cneighbours[index]])]
 		neighbours.remove(i)
+		## Stupid one for debugging purposes:
+		#dist=self.geom.GeodesicDistance12(self.rval,self.rval[i,:])
+		#neighbours = [index for index, value in enumerate(dist) if value < mult*(self.radius[i]+self.radius[index])]
+		#neighbours.remove(i)
 		#print "Contact neighbours: " + str(len(neighbours))
 		#print neighbours
 		drvec=self.geom.ApplyPeriodic2d(self.rval[neighbours,:]-self.rval[i,:])
@@ -163,6 +171,10 @@ class Configuration:
 					#print "I am particle " + str(i)
 					neighbours, drvec, dr=self.getNeighbours(i,rmax,dmax)
 					ncon[i]=len(neighbours)
+					if len(neighbours)>0:
+						if (np.amin(dr)<0.2):
+						  print i
+						  print np.amin(dr)
 					#if ncon[i]!=6:
 					  #print i
 					  #print ncon[i]
@@ -179,7 +191,7 @@ class Configuration:
 					eng_val=np.empty((len(neighbours),))
 					# repulsive ones
 					factor[rep] = k*diff[rep]
-					eng_val[rep] = factor[rep]*diff[rep]
+					eng_val[rep] = 0.5*factor[rep]*diff[rep]
 					# attractive ones
 					factor[att]=-k*(rmax*scale[att]-dr[att])
 					eng0=0.5*k*(fact*scale[att])**2
@@ -190,7 +202,8 @@ class Configuration:
 					for v in range(3):
 						for w in range(3):
 							stress[neighbours,v,w]+=0.5*drvec[:,v]*Fvec[:,w]	
-					eng[neighbours]+=eng_val
+					# Taking into account double counting
+					eng[neighbours]+=0.5*eng_val
 					press[neighbours]+=press_val
 			elif self.param.potential=='morse':
 				# We are morse by hand right now ...

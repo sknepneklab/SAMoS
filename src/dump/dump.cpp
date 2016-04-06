@@ -560,14 +560,14 @@ void Dump::dump_data()
     if (m_params.find("coordinate") != m_params.end())
     {
       if (m_params.find("unwrap") != m_params.end())
-        m_out << format(" %10.6f  %10.6f  %10.6f") % (p.x + p.ix*Lx) % (p.y + p.iy*Ly) % (p.z + p.iz*Lz);
+        m_out << format(" %16.10e  %16.10e  %16.10e") % (p.x + p.ix*Lx) % (p.y + p.iy*Ly) % (p.z + p.iz*Lz);
       else
-        m_out << format(" %10.6f  %10.6f  %10.6f") % p.x % p.y % p.z;
+        m_out << format(" %16.10e  %16.10e  %16.10e") % p.x % p.y % p.z;
     }
     if (m_params.find("velocity") != m_params.end())
-      m_out << format(" %10.6f  %10.6f  %10.6f") % p.vx % p.vy % p.vz;
+      m_out << format(" %12.7e  %12.7e  %12.7e") % p.vx % p.vy % p.vz;
     if (m_params.find("force") != m_params.end())
-      m_out << format(" %10.6f  %10.6f  %10.6f") % p.fx % p.fy % p.fz;
+      m_out << format(" %12.7e  %12.7e  %12.7e") % p.fx % p.fy % p.fz;
     if (m_params.find("director") != m_params.end())
       m_out << format(" %10.6f  %10.6f  %10.6f") % p.nx % p.ny % p.nz;
     if (m_params.find("omega") != m_params.end())
@@ -705,9 +705,9 @@ void Dump::dump_xyzv()
   {
     Particle& p = m_system->get_particle(particles[i]);
     if (m_params.find("velocity") != m_params.end())
-      m_out << format("%c\t%10.6f\t%10.6f\t%10.6f\t%10.6f\t%10.6f\t%10.6f") % static_cast<char>(64+p.get_type()) % p.x % p.y % p.z % (scale*p.vx) % (scale*p.vy) % (scale*p.vz) << endl;
+      m_out << format("%c\t%12.7e\t%12.7e\t%12.7e\t%12.7e\t%12.7e\t%12.7e") % static_cast<char>(64+p.get_type()) % p.x % p.y % p.z % (scale*p.vx) % (scale*p.vy) % (scale*p.vz) << endl;
     else
-      m_out << format("%c\t%10.6f\t%10.6f\t%10.6f\t%10.6f\t%10.6f\t%10.6f") % static_cast<char>(64+p.get_type()) % p.x % p.y % p.z % (scale*p.nx) % (scale*p.ny) % (scale*p.nz) << endl;
+      m_out << format("%c\t%12.7e\t%12.7e\t%12.7e\t%12.7e\t%12.7e\t%12.7e") % static_cast<char>(64+p.get_type()) % p.x % p.y % p.z % (scale*p.nx) % (scale*p.ny) % (scale*p.nz) << endl;
   }
 }
 

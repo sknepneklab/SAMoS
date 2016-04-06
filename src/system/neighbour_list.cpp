@@ -48,7 +48,7 @@ void NeighbourList::build()
  for (int i = 0; i < m_system->size(); i++)
  {
    Particle& p = m_system->get_particle(i);
-   p.coordination = 0;
+   //p.coordination = 0;
    m_list.push_back(vector<int>());
    if (m_build_contacts)
      m_contact_list.push_back(vector<int>());
@@ -124,11 +124,11 @@ void NeighbourList::build_nsq()
       if (d2 < cut2)
       {
         double r = pi.get_radius() + pj.get_radius();
-        if (d2 < r*r)
-        {
-          pi.coordination++;
-          pj.coordination++;
-        }
+        //if (d2 < r*r)
+        //{
+          //pi.coordination++;
+          //pj.coordination++;
+        //}
       }
       
     }
@@ -181,11 +181,11 @@ void NeighbourList::build_cell()
           if (d2 < cut2)
           {
             double r = pi.get_radius() + pj.get_radius();
-            if (d2 < r*r)
-            {
-              pi.coordination++;
-              pj.coordination++;
-            }
+            //if (d2 < r*r)
+            //{
+            //  pi.coordination++;
+            //  pj.coordination++;
+            //}
           } 
         }
       }
