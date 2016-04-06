@@ -375,25 +375,37 @@ class PVmesh(object):
                 drmudrp[p] = (1/gamma**2) * (t1 + t2 - t3)
             mesh.set_property(drmudrp_prop, vh, drmudrp)
 
-            # Caluculate area and perimeter derivatives on the vertices 
-            #dAdrmu 
-            # need next and previous vertex
-            # halfedge attached here is outgoing
-            hehout = mesh.halfedge_handle(vh)
-            vhplus = mesh.to_vertex_handle(hehout)
-            hehin = mesh.prev_halfedge_handle(hehout)
-            vhminus = mesh.from_vertex_handle(hehin)
-            vplus, vminus = omvec(mesh.point(vhplus)), omvec(mesh.point(vhminus))
-            dAdrmu = np.cross(vplus, self.normal) - np.cross(vminus, self.normal)
-            mesh.set_property(dAdrmu_prop, vh, dAdrmu)
-            
-            #dPdrmu
-            # get lengths
-            vhpt = omvec(mesh.point(vh))
-            lvm = vhpt - vminus
-            lvp = vplus - vhpt
-            dPdrmu = lvm/norm(lvm) - lvp/norm(lvp)
-            mesh.set_property(dPdrmu_prop, vh, dPdrmu)
+        # dAdrmu[fhid][vhid]  
+        dAdrmu = {}
+        dPdrmu = {}
+        for fh in mesh.faces():
+            fhid = fh.idx()
+            dAdrmu[fhid] = {}
+            dPdrmu[fhid] = {}
+            for vh in mesh.fv(fh):
+                vhid = vh.idx()
+
+                # Caluculate area and perimeter derivatives on the vertices 
+                #dAdrmu 
+                # need next and previous vertex
+                # halfedge attached here is outgoing
+                hehout = mesh.halfedge_handle(vh)
+                vhplus = mesh.to_vertex_handle(hehout)
+                hehin = mesh.prev_halfedge_handle(hehout)
+                vhminus = mesh.from_vertex_handle(hehin)
+                vplus, vminus = omvec(mesh.point(vhplus)), omvec(mesh.point(vhminus))
+                dAdrmu[fhid][vhid] = np.cross(vplus, self.normal) - np.cross(vminus, self.normal)
+                #print dAdrmu
+                
+                #dPdrmu
+                # get lengths
+                vhpt = omvec(mesh.point(vh))
+                lvm = vhpt - vminus
+                lvp = vplus - vhpt
+                dPdrmu[fhid][vhid] = lvm/norm(lvm) - lvp/norm(lvp)
+
+            #mesh.set_property(dAdrmu_prop, vh, dAdrmu)
+            #mesh.set_property(dPdrmu_prop, vh, dPdrmu)
 
         fprop = FPropHandle()
         mesh.add_property(fprop, 'force')
@@ -460,13 +472,13 @@ class PVmesh(object):
             for mu in loop(fh):
                 muvh = mesh.vertex_handle(mu)
                 drmudrp = mesh.property(drmudrp_prop, muvh)
-                dAdrmu = mesh.property(dAdrmu_prop, muvh)
-                dPdrmu = mesh.property(dPdrmu_prop, muvh)
+                #dAdrmu = mesh.property(dAdrmu_prop, muvh)
+                #dPdrmu = mesh.property(dPdrmu_prop, muvh)
                 #print drmudrp[fhidx] # really, all the ids match up?
                 #print dAdrmu
                 #print dPdrmu
-                ac = np.einsum('mn,m->n', drmudrp[fhidx], dAdrmu)
-                pc = np.einsum('mn,m->n', drmudrp[fhidx], dPdrmu)
+                ac = np.einsum('mn,m->n', drmudrp[fhidx], dAdrmu[fhidx][mu])
+                pc = np.einsum('mn,m->n', drmudrp[fhidx], dPdrmu[fhidx][mu])
                 asum += ac
                 psum += pc
             farea = farea_fac * asum
@@ -493,10 +505,14 @@ class PVmesh(object):
                 for vhid in vidset:
                     vhnn = mesh.vertex_handle(vhid)
                     drmudrp = mesh.property(drmudrp_prop, vhnn)
-                    dAdrmu = mesh.property(dAdrmu_prop, vhnn)
-                    dPdrmu = mesh.property(dPdrmu_prop, vhnn)
-                    ac = np.einsum('mn,m->n', drmudrp[fnn], dAdrmu)
-                    pc = np.einsum('mn,m->n', drmudrp[fnn], dPdrmu)
+
+                    a = dAdrmu[fhidx][vhid]
+                    b = dAdrmu[fnn][vhid]
+                    #assert  np.array_equal(a, b), str(a,b)
+                    #print a, b
+
+                    ac = np.einsum('mn,m->n', drmudrp[fnn], dAdrmu[fnn][vhid])
+                    pc = np.einsum('mn,m->n', drmudrp[fnn], dPdrmu[fnn][vhid])
                     asum += ac
                     psum += pc
                 area_nnsum += farea_fac * asum
