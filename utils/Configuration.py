@@ -33,6 +33,8 @@ from Geometry import *
 from read_param import *
 from read_data import *
 from CellList import *
+from Interaction import *
+
 try:
 	import matplotlib.pyplot as plt
 	from mpl_toolkits.mplot3d import Axes3D
@@ -60,10 +62,10 @@ class Configuration:
 			# MISSING: read them in from the initial configuration
 			self.radius = np.array([1.0 for i in range(self.N)])
 			self.monodisperse=True
-			self.sigma=1.0
+			#self.sigma=1.0
 		else: 
 			self.radius = np.array(data.data[data.keys['radius']])	
-			self.sigma = np.mean(self.radius)
+			#self.sigma = np.mean(self.radius)
 		if data.keys.has_key('type'):
 			self.ptype = data.data[data.keys['type']]
 		else:
@@ -75,8 +77,10 @@ class Configuration:
 		self.nval = np.column_stack((nx,ny,nz))
 		# Create the right geometry environment (TBC):
 		self.geom=geometries[param.constraint](param)
-		
 		print self.geom
+		# Create the Interaction class
+		self.inter=Interaction(self.param,self.radius)
+		
 		if self.geom.periodic:
 			# Apply periodic geomtry conditions just in case (there seem to be some rounding errors floating around)
 			self.rval=self.geom.ApplyPeriodic2d(self.rval)
@@ -87,8 +91,8 @@ class Configuration:
 		
 		# Create the cell list
 		cellsize=param.nlist_rcut
-		if cellsize>5*self.sigma:
-			cellsize=5*self.sigma
+		if cellsize>5*self.inter.sigma:
+			cellsize=5*self.inter.sigma
 			print "Warning! Reduced the cell size to manageable proportions (5 times mean radius). Re-check if simulating very long objects!"
 		self.clist=CellList(self.geom,cellsize)
 		# Populate it with all the particles:
@@ -140,98 +144,13 @@ class Configuration:
 		press = np.zeros(self.N)
 		ncon = np.zeros(self.N)
 		stress = np.zeros((self.N,3,3))
-		# Establish how many types of particles we have
-		# If it's only one, use the current setup
-		if self.param.ntypes==1:
-			if self.param.potential=='soft':
-				k=self.param.pot_params['k']
-				dmax=2*self.sigma
-				for i in range(self.N):
-					#print "I am particle " + str(i)
-					neighbours, drvec, dr=self.getNeighbours(i,1,dmax)
-					ncon[i]=len(neighbours)
-					diff=self.radius[i]+self.radius[neighbours]-dr
-					fact = 0.5*k*diff
-					eng_val = fact*diff
-					press_val = fact*dr
-					# Stress (force moment) has to be element by element) r_a F_b = -k r_a dist_b 
-					drvec=self.rval[neighbours,:]-self.rval[i,:]
-					Fvec=k*((diff/dr).transpose()*(drvec).transpose()).transpose()
-					for u in range(3):
-						for v in range(3):
-							stress[neighbours,u,v]+=0.5*drvec[:,u]*Fvec[:,v]
-					eng[neighbours]+=eng_val
-					press[neighbours]+=press_val
-			elif self.param.potential=='soft_attractive':
-				k=self.param.pot_params['k']
-				fact=self.param.pot_params['re_fact']-1.0
-				rmax=1+2.0*fact
-				dmax=2*self.sigma
-				for i in range(self.N):
-					#print "I am particle " + str(i)
-					neighbours, drvec, dr=self.getNeighbours(i,rmax,dmax)
-					ncon[i]=len(neighbours)
-					if len(neighbours)>0:
-						if (np.amin(dr)<0.2):
-						  print i
-						  print np.amin(dr)
-					#if ncon[i]!=6:
-					  #print i
-					  #print ncon[i]
-					  #print self.rval[i,:]
-					  #print drvec
-					scale=self.radius[i]+self.radius[neighbours]
-					diff=scale-dr
-					dscaled=diff/scale
-					rep = [index for index, value in enumerate(dscaled) if value > -fact]
-					#print "Before upshot ones: " + str(len(rep))
-					att = [index for index, value in enumerate(dscaled) if value <= -fact]
-					#print "Attractive after upshot ones: " + str(len(att))
-					factor=np.empty((len(neighbours),))
-					eng_val=np.empty((len(neighbours),))
-					# repulsive ones
-					factor[rep] = k*diff[rep]
-					eng_val[rep] = 0.5*factor[rep]*diff[rep]
-					# attractive ones
-					factor[att]=-k*(rmax*scale[att]-dr[att])
-					eng0=0.5*k*(fact*scale[att])**2
-					eng_val[att] = eng0+(eng0-(factor[att]**2)/k)
-					# Common pressure and stress formula
-					Fvec=((factor/dr).transpose()*(drvec).transpose()).transpose()
-					press_val=0.5*factor*dr
-					for v in range(3):
-						for w in range(3):
-							stress[neighbours,v,w]+=0.5*drvec[:,v]*Fvec[:,w]	
-					# Taking into account double counting
-					eng[neighbours]+=0.5*eng_val
-					press[neighbours]+=press_val
-			elif self.param.potential=='morse':
-				# We are morse by hand right now ...
-				D=self.param.pot_params['D']
-				re=self.param.pot_params['re']
-				a=self.param.pot.params['a']
-				dmax=4*self.sigma
-				for i in range(self.N):
-					neighbours, drvec, dr=self.getNeighbours(i,re,dmax)
-					ncon[i]=len(neighbours)
-					eng_val=D*(1-np.exp(-a*(dr-re)))**2
-					fnorm=-2*a*D*np.exp(-a*(dr-re))*(1-np.exp(-a*(dr-re)))
-					Fvec=((fnorm/dr).transpose()*(drvec).transpose()).transpose()
-					press_val=fnorm*dr
-					for u in range(3):
-						for v in range(3):
-							stress[neighbours,u,v]+=0.5*drvec[:,u]*Fvec[:,v]
-					eng[neighbours]+=eng_val
-					press[neighbours]+=press_val
-			elif self.param.potential=='gaussian':
-				print "Warning! Gaussian interaction has not yet been implemented! Returning zero energy and stresses"
-			elif self.param.potential=='rod':
-				print "Warning! Rod interaction has not yet been implemented! Returning zero energy and stresses"
-			else:
-				print "Warning! Unknown interaction type! Returning zero energy and stresses"
-		else:
-			# Do the Morse right now only ... will serve as a template
-			print "Warning! Multiple types of particles interacting have not yet been implemented! Returning zero energy and stresses"
+		for i in range(self.N):
+			neighbours, drvec, dr=self.getNeighbours(i,self.inter.getMult(),self.inter.getDmax())
+			ncon[i]=len(neighbours)
+			eng[neighbours]+=self.inter.getEnergy(i,neighbours,drvec,dr)
+			press_val,stress_val=self.inter.getStresses(i,neighbours,drvec,dr)
+			stress[neighbours,:,:]+=stress_val
+			press[neighbours]+=press_val
 		return [eng, press, ncon,stress]
 	
 	
