@@ -922,16 +922,16 @@ double Mesh::angle_deficit(int v)
 {
   Vertex& V = m_vertices[v];
   if (!V.boundary)
-    return 0.0;
+    return 1.0;
   
   double angle = 0.0;
   for (int f = 0; f < V.n_faces; f++)
   {
     Face& face = m_faces[V.faces[f]];
     if (!face.is_hole)
-      angle += face.get_angle(v);
+      angle += std::acos(face.get_angle(v));
   }
-  return 2.0*M_PI-angle;
+  return 1.0 - (2.0*M_PI-angle)/(2.0*M_PI);
 }
 
 
