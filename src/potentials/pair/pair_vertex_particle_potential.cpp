@@ -85,7 +85,7 @@ void PairVertexParticlePotential::compute(double dt)
       alpha = m_val->get_val(static_cast<int>(pi.age/dt));
     // First handle the vertex itself
     //if (!vi.boundary && vi.attached)  // For direct intecations treat only non-boundary vertices
-    if (vi.attached)
+    if (vi.attached && !vi.boundary)
     {
       if (m_has_part_params) 
       {
@@ -111,7 +111,7 @@ void PairVertexParticlePotential::compute(double dt)
         Face& f_nu_m = mesh.get_faces()[Ep.face];
         Face& f_nu   = mesh.get_faces()[E.face];
         Face& f_nu_p = mesh.get_faces()[En.face];
-       
+         
         Vector3d& r_nu_m = f_nu_m.rc; 
         Vector3d& r_nu   = f_nu.rc; 
         Vector3d& r_nu_p = f_nu_p.rc; 
