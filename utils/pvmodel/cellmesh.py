@@ -224,8 +224,8 @@ class PVmesh(object):
                 l = norm(lvec)
                 prim += l
             area = area/2
-            #print 'setting area of', area
-            #print 'setting perimeter of', prim
+            print 'setting area of', area
+            print 'setting perimeter of', prim
             mesh.set_property(areaprop, fh, area)
             mesh.set_property(primprop, fh, prim)
 
@@ -315,10 +315,6 @@ class PVmesh(object):
 
         drmudrp_prop = VPropHandle()
         mesh.add_property(drmudrp_prop, 'drmudrp')
-        dAdrmu_prop = VPropHandle()
-        mesh.add_property(dAdrmu_prop, 'dAdrmu')
-        dPdrmu_prop = VPropHandle()
-        mesh.add_property(dPdrmu_prop, 'dPdrmu')
 
         for vh in mesh.vertices():
             #dlamqdrp {tri_vh.idx() : np(3,3) }
@@ -357,12 +353,19 @@ class PVmesh(object):
             dlamqdrp[k][0,:] = -2*(ljs + lks - 2*lis)*rjk + 2*lis*rki
             dlamqdrp[k][1,:] = 2*(lis + lks -2*ljs)*rki - 2*ljs*rjk
             dlamqdrp[k][2,:] = 2*lks*(-rjk + rki)
+
             dLambdadrp = {}
             for key, arr in dlamqdrp.items():
                 dLambdadrp[key] = np.sum(arr, axis=0)
 
             # ordering... 
             lambdaq = tri.property(self.lambda_prop, tri_fh)
+
+            #print 'r_q'
+            #print r_q
+            #print lambdaq.values()
+
+
             gamma = sum(lambdaq.values())
             # Now for the jacobian
             # mu is fixed here, we are inside the loop over mesh vertices
@@ -373,6 +376,8 @@ class PVmesh(object):
                 lqrq = np.einsum('q,qn->n', lambdaq.values(), r_q)
                 t3 = np.einsum('n,m->mn', lqrq, dLambdadrp[p])
                 drmudrp[p] = (1/gamma**2) * (t1 + t2 - t3)
+            #print drmudrp
+            #print 
             mesh.set_property(drmudrp_prop, vh, drmudrp)
 
         # dAdrmu[fhid][vhid]  
@@ -382,17 +387,19 @@ class PVmesh(object):
             fhid = fh.idx()
             dAdrmu[fhid] = {}
             dPdrmu[fhid] = {}
-            for vh in mesh.fv(fh):
+            loop = list(mesh.fv(fh))
+            nl = len(loop)
+            for i, vh in enumerate(loop):
                 vhid = vh.idx()
 
                 # Caluculate area and perimeter derivatives on the vertices 
                 #dAdrmu 
                 # need next and previous vertex
                 # halfedge attached here is outgoing
-                hehout = mesh.halfedge_handle(vh)
-                vhplus = mesh.to_vertex_handle(hehout)
-                hehin = mesh.prev_halfedge_handle(hehout)
-                vhminus = mesh.from_vertex_handle(hehin)
+                ni = (i+1) % nl
+                npr = (i-1) % nl
+                vhplus = loop[ni]
+                vhminus = loop[npr]
                 vplus, vminus = omvec(mesh.point(vhplus)), omvec(mesh.point(vhminus))
                 dAdrmu[fhid][vhid] = np.cross(vplus, self.normal) - np.cross(vminus, self.normal)
                 #print dAdrmu
@@ -403,6 +410,7 @@ class PVmesh(object):
                 lvm = vhpt - vminus
                 lvp = vplus - vhpt
                 dPdrmu[fhid][vhid] = lvm/norm(lvm) - lvp/norm(lvp)
+        #print dAdrmu
 
             #mesh.set_property(dAdrmu_prop, vh, dAdrmu)
             #mesh.set_property(dPdrmu_prop, vh, dPdrmu)
@@ -411,10 +419,17 @@ class PVmesh(object):
         mesh.add_property(fprop, 'force')
         self.fprop = fprop
 
+
+        self.imfprop = FPropHandle()
+        mesh.add_property(self.imfprop, 'imforce')
+
+        self.nnfprop = FPropHandle()
+        mesh.add_property(self.nnfprop, 'nnforce')
+
         prefareaprop = VPropHandle()
         assert tri.get_property_handle(prefareaprop, 'prefarea')
 
-        # Could iterate over all the vertices and assign loops (face ids)
+        # Could iterate over all the vertices and assign loops 
         # Put this in a separate loop for now since it is a bit special
 
         # setup helper functions
@@ -455,7 +470,8 @@ class PVmesh(object):
                 intset = loops[fhidx].intersection(loops[fhjdx])
                 interloops[fhidx][fhjdx] = intset
 
-        # It remains to do sum complicated math over loops of nearest neighbours, etc..
+        # It remains to do some complicated math over loops of nearest neighbours, etc..
+        #print drmudrp[0]
         for fh in mesh.faces():
             fhidx = fh.idx()
             kp = mesh.property(self.kprop, fh)
@@ -465,30 +481,30 @@ class PVmesh(object):
             prim = mesh.property(self.mesh_primprop, fh)
 
             # Immediate contribution
-            farea_fac = -(kp/4.) * (area - prefarea)  
-            fprim_fac = -(gammap/2.) * prim
-            asum = 0.
-            psum = 0.
+            farea_fac = -(kp/2.) * (area - prefarea)  
+            fprim_fac = -(gammap) * prim
+            asum = np.zeros(3)
+            psum = np.zeros(3)
             for mu in loop(fh):
                 muvh = mesh.vertex_handle(mu)
                 drmudrp = mesh.property(drmudrp_prop, muvh)
-                #dAdrmu = mesh.property(dAdrmu_prop, muvh)
-                #dPdrmu = mesh.property(dPdrmu_prop, muvh)
                 #print drmudrp[fhidx] # really, all the ids match up?
-                #print dAdrmu
-                #print dPdrmu
-                ac = np.einsum('mn,m->n', drmudrp[fhidx], dAdrmu[fhidx][mu])
-                pc = np.einsum('mn,m->n', drmudrp[fhidx], dPdrmu[fhidx][mu])
+                
+                ac = np.einsum('m,mn->n', dAdrmu[fhidx][mu], drmudrp[fhidx])
+                print ac
+
+                pc = np.einsum('m,mn->n', dPdrmu[fhidx][mu], drmudrp[fhidx])
                 asum += ac
                 psum += pc
+
             farea = farea_fac * asum
             fprim = fprim_fac * psum
 
             # And the nearest neighbours contribution
             # Can put these blocks together by adding full loops to interloops
             # In the mean time just duplicate the code.
-            area_nnsum = 0.
-            prim_nnsum = 0.
+            area_nnsum = np.zeros(3)
+            prim_nnsum = np.zeros(3)
             for fnn, vidset in interloops[fhidx].items():
                 #print 'looping over %d vertices' % len(vidset)
                 fhnn = mesh.face_handle(fnn)
@@ -498,29 +514,29 @@ class PVmesh(object):
                 area = mesh.property(self.mesh_areaprop, fhnn)
                 prim = mesh.property(self.mesh_primprop, fhnn)
 
-                farea_fac = -(kp/4.) * (area - prefarea)  
-                fprim_fac = -(gammap/2.) * prim
-                asum = 0.
-                psum = 0.
+                farea_fac = -(kp/2.) * (area - prefarea)  
+                fprim_fac = -(gammap) * prim
+                asum = np.zeros(3)
+                psum = np.zeros(3)
+
                 for vhid in vidset:
                     vhnn = mesh.vertex_handle(vhid)
                     drmudrp = mesh.property(drmudrp_prop, vhnn)
 
-                    a = dAdrmu[fhidx][vhid]
-                    b = dAdrmu[fnn][vhid]
-                    #assert  np.array_equal(a, b), str(a,b)
-                    #print a, b
-
-                    ac = np.einsum('mn,m->n', drmudrp[fnn], dAdrmu[fnn][vhid])
-                    pc = np.einsum('mn,m->n', drmudrp[fnn], dPdrmu[fnn][vhid])
+                    ac = np.einsum('m,mn->n', dAdrmu[fnn][vhid], drmudrp[fnn])
+                    pc = np.einsum('m,mn->n', dPdrmu[fnn][vhid], drmudrp[fnn])
                     asum += ac
                     psum += pc
                 area_nnsum += farea_fac * asum
                 prim_nnsum += fprim_fac * psum
 
-            totalforce = (farea + area_nnsum) + (fprim + prim_nnsum)
+            imforce = farea + fprim
+            nnforce = area_nnsum + prim_nnsum
+            totalforce = imforce + nnforce
 
             mesh.set_property(fprop, fh, totalforce)
+            mesh.set_property(self.imfprop, fh, imforce)
+            mesh.set_property(self.nnfprop, fh, nnforce)
 
             #print totalforce
 
@@ -586,6 +602,18 @@ class PVmesh(object):
 if __name__=='__main__':
 
     epidat = '/home/dan/cells/run/rpatch/epithelial_equilini.dat'
+
+    import argparse
+    parser = argparse.ArgumentParser()
+ 
+    parser.add_argument("-i", "--input", type=str, default=epidat, help="Input dat file")
+    parser.add_argument("-d", "--dir", type=str, default='/home/dan/tmp/', help="Output directory")
+    #parser.add_argument("-o", "--input", type=str, default=epidat, help="Input dat file")
+
+    args = parser.parse_args()
+    epidat = args.input
+
+
     rdat = ReadData(epidat)
     PV = PVmesh.datbuild(rdat)
 
@@ -593,7 +621,7 @@ if __name__=='__main__':
     nf = PV.mesh.n_faces()
     # Could easily read these from a .conf file
     k = 1.
-    gamma = 1.
+    gamma = 0.
     K = np.full(nf, k)
     Gamma = np.full(nf, gamma)
     PV.set_constants(K, Gamma)
@@ -605,7 +633,7 @@ if __name__=='__main__':
     import os.path as path
 
 
-    outdir = '/home/dan/cells/cypy/test/'
+    outdir = args.dir
 
 
     mout = path.join(outdir, 'cellmesh.vtp')

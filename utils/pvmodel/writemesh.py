@@ -130,22 +130,39 @@ def writetriforce(pv, outfile):
     fprop = FPropHandle()
     assert pv.mesh.get_property_handle(fprop, 'force')
 
-    #for fh in pv.mesh.faces():
-        #fov = pv.mesh.property(fprop, fh)
-        #print 'fid, force', fh.idx(), fov
 
-    for vh in mesh.vertices():
-        pt =omvec(mesh.point(vh))
+    imforce = vtk.vtkDoubleArray()
+    imforce.SetNumberOfComponents(3)
+    imforce.SetName("imforce")
+
+    nnforce = vtk.vtkDoubleArray()
+    nnforce.SetNumberOfComponents(3)
+    nnforce.SetName("nnforce")
+
+    idtriv = vtk.vtkDoubleArray()
+    idtriv.SetNumberOfComponents(1)
+    idtriv.SetName("id")
+
+    for vh in pv.tri.vertices():
+        pt =omvec(pv.tri.point(vh))
         Points.InsertNextPoint(pt)
         # hack to deal with boundaries
         fov = [0., 0., 0.]
-        if not mesh.is_boundary(vh):
+        fim = [0., 0., 0.]
+        fnn = [0., 0., 0.]
+        if not pv.tri.is_boundary(vh):
             # get appropriate face
-            fh = pv.mesh.face_handle(vh.idx())
+            #fh = pv.mesh.face_handle(vh.idx())
+            fh = pv.mesh.face_handle(pv.vfmap[vh.idx()])
             fov = pv.mesh.property(fprop, fh)
+            fim = pv.mesh.property(pv.imfprop, fh)
+            fnn = pv.mesh.property(pv.nnfprop, fh)
             #print fh.idx()
             #print fov
         force.InsertNextTuple3(*fov)
+        imforce.InsertNextTuple3(*fim)
+        nnforce.InsertNextTuple3(*fnn)
+        idtriv.InsertNextValue(vh.idx())
 
     for fh in mesh.faces():
         vhids = []
@@ -165,6 +182,9 @@ def writetriforce(pv, outfile):
     polydata.SetPolys(Faces)
 
     polydata.GetPointData().AddArray(force)
+    polydata.GetPointData().AddArray(imforce)
+    polydata.GetPointData().AddArray(nnforce)
+    polydata.GetPointData().AddArray(idtriv)
 
     polydata.Modified()
     writer = vtk.vtkXMLPolyDataWriter()
@@ -181,15 +201,19 @@ def writetriforce(pv, outfile):
 ### These are general methods copied from my command.py module
 
 #print square data to file, first column is int and rest are floats.
-def dump(dd, fo):
+def dump(dd, fo, htag='#'):
     nc = len(dd.keys())
-    fo.write(''.join(['# ', '%s\t'*nc, '\n']) % tuple(dd.keys()))
+    fo.write(''.join([htag+' ', '%s\t'*nc, '\n']) % tuple(dd.keys()))
     ddv = dd.values()
     nr = len(ddv[0]) # assumption
     outstr = '%d\t' + '%f\t'*(nc-1) + '\n' # assumption
     for i in range(nr):
         tup = tuple([ddvi[i] for ddvi in ddv])
         fo.write(outstr % tup)
+
+def datdump(dd, fo):
+    htag = 'keys:'
+    dump(dd, fo, htag=htag)
 
 def readdump(fo):
     headers = fo.next()[1:].split()
