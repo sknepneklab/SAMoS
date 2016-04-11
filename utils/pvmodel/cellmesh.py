@@ -364,7 +364,6 @@ class PVmesh(object):
             dLambdadrp = {}
             for key, arr in dlamqdrp.items():
                 dLambdadrp[key] = np.sum(arr, axis=0)
-
             # ordering... 
             lambdaq = tri.property(self.lambda_prop, tri_fh)
 
@@ -375,10 +374,8 @@ class PVmesh(object):
                 t1 = gamma * np.einsum('qm,qn->mn', dlamqdrp[p], r_q)
                 t2 = gamma * lambdaq[p] * np.identity(3)
                 lqrq = np.einsum('q,qn->n', lambdaq.values(), r_q)
-                #t3 = np.einsum('n,m->nm', lqrq, dLambdadrp[p])
                 t3 = np.outer(dLambdadrp[p], lqrq)
                 drmudrp[vh.idx()][p] = (1/gamma**2) * (t1 + t2 - t3)
-            #mesh.set_property(drmudrp_prop, vh, drmudrp)
 
         # dAdrmu[fhid][vhid]  
         dAdrmu = {}
@@ -395,18 +392,14 @@ class PVmesh(object):
                 vhid = vh.idx()
 
                 # Caluculate area and perimeter derivatives on the vertices 
-                #dAdrmu 
-                # need next and previous vertex
+                # need next and previous vertices
                 ni = (i+1) % nl
                 npr = (i-1) % nl
                 vhplus = loop[ni]
                 vhminus = loop[npr]
 
-                #print vhplus.idx(), vhid, vhminus.idx()
-
                 vplus, vminus = omvec(mesh.point(vhplus)), omvec(mesh.point(vhminus))
                 dAdrmu[fhid][vhid] = np.cross(vplus, self.normal) - np.cross(vminus, self.normal)
-                #print dAdrmu[fhid][vhid] 
                 
                 #dPdrmu
                 # get lengths
@@ -414,9 +407,6 @@ class PVmesh(object):
                 lvm = vhpt - vminus
                 lvp = vplus - vhpt
                 dPdrmu[fhid][vhid] = lvm/norm(lvm) - lvp/norm(lvp)
-
-            #mesh.set_property(dAdrmu_prop, vh, dAdrmu)
-            #mesh.set_property(dPdrmu_prop, vh, dPdrmu)
 
         fprop = FPropHandle()
         mesh.add_property(fprop, 'force')
@@ -480,7 +470,6 @@ class PVmesh(object):
             area = mesh.property(self.mesh_areaprop, fh)
             prefarea = mesh.property(self.mesh_prefareaprop, fh)
             prim = mesh.property(self.mesh_primprop, fh)
-            #print kp, area, prefarea
 
             # Immediate contribution
             farea_fac = -(kp/2.) * (area - prefarea)  
@@ -488,22 +477,15 @@ class PVmesh(object):
             asum = np.zeros(3)
             psum = np.zeros(3)
             for mu in loop(fh):
-                muvh = mesh.vertex_handle(mu)
-                #drmudrp = mesh.property(drmudrp_prop, muvh)
-                #print drmudrp[fhidx] # really, all the ids match up?
-                
                 # order mn really important
                 #ac = np.einsum('mn,m->n', np.transpose(drmudrp[mu][fhidx]), dAdrmu[fhidx][mu])
                 ac = np.einsum('m,nm->n', dAdrmu[fhidx][mu], drmudrp[mu][fhidx])
-
                 pc = np.einsum('m,nm->n', dPdrmu[fhidx][mu], drmudrp[mu][fhidx])
                 asum += ac
                 psum += pc
 
             farea = farea_fac * asum
             fprim = fprim_fac * psum
-
-            ####
 
             # And the nearest neighbours contribution
             # Can put these blocks together by adding full loops to interloops
@@ -525,8 +507,6 @@ class PVmesh(object):
                 psum = np.zeros(3)
 
                 for vhid in vidset:
-                    vhnn = mesh.vertex_handle(vhid)
-
                     ac = np.einsum('m,nm->n', dAdrmu[fnn][vhid], drmudrp[vhid][fnn])
                     pc = np.einsum('m,nm->n', dPdrmu[fnn][vhid], drmudrp[vhid][fnn])
                     asum += ac
