@@ -38,6 +38,16 @@
 
 #include "neighbour_list.hpp"
 
+/* Auxiliary function which checks the side particle is on with respect to a line
+*/
+static int check_side(Particle& pi, Particle& pj, Particle& pk)
+{
+  double val = (pj.x-pi.x)*(pk.y-pi.y) - (pj.y-pi.y)*(pk.x-pi.x);
+  return (val < 0.0) ? -1 : 1;
+}
+
+
+
 /*! Build neighbour list using N^2 algorithm 
 */
 void NeighbourList::build()
@@ -420,15 +430,39 @@ bool NeighbourList::build_triangulation()
     Particle& pk = m_system->get_particle(k);
     bool add_ij = true;
     if (mesh.is_boundary_vertex(i) && mesh.is_boundary_vertex(j) && find(boundary.begin(),boundary.end(),make_pair(i,j)) == boundary.end())
+    {
       add_ij = false;
+      // make sure that we don't have a stuation where the edge is actually legitmate
+      vector<int>& neigh_i = this->get_neighbours(i);
+      vector<int>& neigh_j = this->get_neighbours(j);
+      add_ij = !(this->same_side_line(pi,pj,neigh_i));
+      if (!add_ij)
+        add_ij = !(this->same_side_line(pi,pj,neigh_j));
+    }
   
     bool add_jk = true;
     if (mesh.is_boundary_vertex(j) && mesh.is_boundary_vertex(k) && find(boundary.begin(),boundary.end(),make_pair(j,k)) == boundary.end())
+    {
       add_jk = false;
+      // make sure that we don't have a stuation where the edge is actually legitmate
+      vector<int>& neigh_j = this->get_neighbours(j);
+      vector<int>& neigh_k = this->get_neighbours(k);
+      add_jk = !(this->same_side_line(pj,pk,neigh_j));
+      if (!add_jk)
+        add_jk = !(this->same_side_line(pj,pk,neigh_k));
+    }
     
     bool add_ki = true;
     if (mesh.is_boundary_vertex(k) && mesh.is_boundary_vertex(i) && find(boundary.begin(),boundary.end(),make_pair(k,i)) == boundary.end())
+    {
       add_ki = false;
+      // make sure that we don't have a stuation where the edge is actually legitmate
+      vector<int>& neigh_k = this->get_neighbours(k);
+      vector<int>& neigh_i = this->get_neighbours(i);
+      add_ki = !(this->same_side_line(pk,pi,neigh_k));
+      if (!add_ki)
+        add_ki = !(this->same_side_line(pk,pi,neigh_i));
+    }
     
     double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
     m_system->apply_periodic(dx,dy,dz);
@@ -483,6 +517,35 @@ void NeighbourList::remove_dangling()
       }
     }
   }
+}
+
+/*! Aufiliary function which checks if all negbours are on the same side a line connecting two 
+ *  particles. This is used in constructing meshes to make sure that some edges are not 
+ *  removed by accident
+**/
+bool NeighbourList::same_side_line(Particle& pi, Particle& pj, vector<int>& neigh)
+{
+  int side = 0;
+  bool same = true;
+  for (unsigned int n = 0; n < neigh.size(); n++)
+  {
+    Particle& pk = m_system->get_particle(neigh[n]);
+    if (pi.get_id() != pk.get_id() && pj.get_id() != pk.get_id())
+    {
+      if (side == 0)
+        side = check_side(pi,pj,pk);
+      else
+      {
+        if (side != check_side(pi,pj,pk))
+        {
+          cout << pi.get_id() << " " <<  pj.get_id()  << " " << pk.get_id() << " " <<  side << "  " << check_side(pi,pj,pk) << endl;
+          same = false;
+          break;
+        }
+      }
+    }
+  }
+  return same;
 }
 
 

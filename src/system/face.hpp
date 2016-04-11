@@ -43,6 +43,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <stdexcept>
 
 #include <boost/format.hpp>
 
@@ -55,6 +56,7 @@ using std::string;
 using std::vector;
 using std::endl;
 using std::find;
+using std::runtime_error;
 
 /*! Face class keeps track of the face information in the mesh
  *
@@ -132,7 +134,7 @@ struct Face
   {
     for (unsigned int i = 0; i < vertices.size(); i++)
       if (vertices[i] == v) return drcdr[i];
-    return drcdr[0];
+    throw runtime_error("Error in Jacobian. Vertex does not belong to the face.");
   }
   
   int id;                      //!< Face id

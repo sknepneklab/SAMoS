@@ -196,7 +196,7 @@ public:
     else    
     {
       m_msg->msg(Messenger::INFO,"Neighbour list.  Setting maximum face perimeter to "+param["max_perimeter"]+".");
-      m_msg->write_config("nlist.contact_distance",param["max_perimeter"]);
+      m_msg->write_config("nlist.max_perimeter",param["max_perimeter"]);
       m_max_perim =  lexical_cast<double>(param["max_perimeter"]);
     }
     if (param.find("circumcenter") != param.end())
@@ -313,7 +313,10 @@ private:
   // Build Delaunay triangulation
   bool build_triangulation();
 #endif
-    
+   
+  // Check if all particles are on the same side
+  bool same_side_line(Particle&, Particle&, vector<int>&);
+  
 };
 
 typedef shared_ptr<NeighbourList> NeighbourListPtr;

@@ -779,41 +779,41 @@ void Mesh::fc_jacobian(int f)
   
   // p = i
   face.drcdr[0].M[0][0] = dl1_div_Lam_dri.x*ri.x + l1_div_Lam + dl2_div_Lam_dri.x*rj.x + dl3_div_Lam_dri.x*rk.x;
-  face.drcdr[0].M[0][1] = dl1_div_Lam_dri.x*ri.y              + dl2_div_Lam_dri.x*rj.y + dl3_div_Lam_dri.x*rk.y;
-  face.drcdr[0].M[0][2] = dl1_div_Lam_dri.x*ri.z              + dl2_div_Lam_dri.x*rj.z + dl3_div_Lam_dri.x*rk.z;
+  face.drcdr[0].M[0][1] = dl1_div_Lam_dri.y*ri.x              + dl2_div_Lam_dri.y*rj.x + dl3_div_Lam_dri.y*rk.x;
+  face.drcdr[0].M[0][2] = dl1_div_Lam_dri.z*ri.x              + dl2_div_Lam_dri.z*rj.x + dl3_div_Lam_dri.z*rk.x;
 
-  face.drcdr[0].M[1][0] = dl1_div_Lam_dri.y*ri.x  + dl2_div_Lam_dri.y*rj.x              + dl3_div_Lam_dri.y*rk.x;
+  face.drcdr[0].M[1][0] = dl1_div_Lam_dri.x*ri.y  + dl2_div_Lam_dri.x*rj.y              + dl3_div_Lam_dri.x*rk.y;
   face.drcdr[0].M[1][1] = dl1_div_Lam_dri.y*ri.y  + dl2_div_Lam_dri.y*rj.y + l1_div_Lam + dl3_div_Lam_dri.y*rk.y;
-  face.drcdr[0].M[1][2] = dl1_div_Lam_dri.y*ri.z  + dl2_div_Lam_dri.y*rj.z              + dl3_div_Lam_dri.y*rk.z;
+  face.drcdr[0].M[1][2] = dl1_div_Lam_dri.z*ri.y  + dl2_div_Lam_dri.z*rj.y              + dl3_div_Lam_dri.z*rk.y;
   
-  face.drcdr[0].M[2][0] = dl1_div_Lam_dri.z*ri.x + dl2_div_Lam_dri.z*rj.x + dl3_div_Lam_dri.z*rk.x;
-  face.drcdr[0].M[2][1] = dl1_div_Lam_dri.z*ri.y + dl2_div_Lam_dri.z*rj.y + dl3_div_Lam_dri.z*rk.y;
+  face.drcdr[0].M[2][0] = dl1_div_Lam_dri.x*ri.z + dl2_div_Lam_dri.x*rj.z + dl3_div_Lam_dri.x*rk.z;
+  face.drcdr[0].M[2][1] = dl1_div_Lam_dri.y*ri.z + dl2_div_Lam_dri.y*rj.z + dl3_div_Lam_dri.y*rk.z;
   face.drcdr[0].M[2][2] = dl1_div_Lam_dri.z*ri.z + dl2_div_Lam_dri.z*rj.z + dl3_div_Lam_dri.z*rk.z + l1_div_Lam;
   
   // p = j
   face.drcdr[1].M[0][0] = dl1_div_Lam_drj.x*ri.x + l2_div_Lam + dl2_div_Lam_drj.x*rj.x + dl3_div_Lam_drj.x*rk.x;
-  face.drcdr[1].M[0][1] = dl1_div_Lam_drj.x*ri.y              + dl2_div_Lam_drj.x*rj.y + dl3_div_Lam_drj.x*rk.y;
-  face.drcdr[1].M[0][2] = dl1_div_Lam_drj.x*ri.z              + dl2_div_Lam_drj.x*rj.z + dl3_div_Lam_drj.x*rk.z;
+  face.drcdr[1].M[0][1] = dl1_div_Lam_drj.y*ri.x              + dl2_div_Lam_drj.y*rj.x + dl3_div_Lam_drj.y*rk.x;
+  face.drcdr[1].M[0][2] = dl1_div_Lam_drj.z*ri.x              + dl2_div_Lam_drj.z*rj.x + dl3_div_Lam_drj.z*rk.x;
 
-  face.drcdr[1].M[1][0] = dl1_div_Lam_drj.y*ri.x + dl2_div_Lam_drj.y*rj.x              + dl3_div_Lam_drj.y*rk.x;
+  face.drcdr[1].M[1][0] = dl1_div_Lam_drj.x*ri.y + dl2_div_Lam_drj.x*rj.y              + dl3_div_Lam_drj.x*rk.y;
   face.drcdr[1].M[1][1] = dl1_div_Lam_drj.y*ri.y + dl2_div_Lam_drj.y*rj.y + l2_div_Lam + dl3_div_Lam_drj.y*rk.y;
-  face.drcdr[1].M[1][2] = dl1_div_Lam_drj.y*ri.z + dl2_div_Lam_drj.y*rj.z              + dl3_div_Lam_drj.y*rk.z;
+  face.drcdr[1].M[1][2] = dl1_div_Lam_drj.z*ri.y + dl2_div_Lam_drj.z*rj.y              + dl3_div_Lam_drj.z*rk.y;
   
-  face.drcdr[1].M[2][0] = dl1_div_Lam_drj.z*ri.x + dl2_div_Lam_drj.z*rj.x + dl3_div_Lam_drj.z*rk.x;
-  face.drcdr[1].M[2][1] = dl1_div_Lam_drj.z*ri.y + dl2_div_Lam_drj.z*rj.y + dl3_div_Lam_drj.z*rk.y;
+  face.drcdr[1].M[2][0] = dl1_div_Lam_drj.x*ri.z + dl2_div_Lam_drj.x*rj.z + dl3_div_Lam_drj.x*rk.z;
+  face.drcdr[1].M[2][1] = dl1_div_Lam_drj.y*ri.z + dl2_div_Lam_drj.y*rj.z + dl3_div_Lam_drj.y*rk.z;
   face.drcdr[1].M[2][2] = dl1_div_Lam_drj.z*ri.z + dl2_div_Lam_drj.z*rj.z + dl3_div_Lam_drj.z*rk.z + l2_div_Lam;
   
   // p = k
   face.drcdr[2].M[0][0] = dl1_div_Lam_drk.x*ri.x + l3_div_Lam + dl2_div_Lam_drk.x*rj.x + dl3_div_Lam_drk.x*rk.x;
-  face.drcdr[2].M[0][1] = dl1_div_Lam_drk.x*ri.y              + dl2_div_Lam_drk.x*rj.y + dl3_div_Lam_drk.x*rk.y;
-  face.drcdr[2].M[0][2] = dl1_div_Lam_drk.x*ri.z              + dl2_div_Lam_drk.x*rj.z + dl3_div_Lam_drk.x*rk.z;
+  face.drcdr[2].M[0][1] = dl1_div_Lam_drk.y*ri.x              + dl2_div_Lam_drk.y*rj.x + dl3_div_Lam_drk.y*rk.x;
+  face.drcdr[2].M[0][2] = dl1_div_Lam_drk.z*ri.x              + dl2_div_Lam_drk.z*rj.x + dl3_div_Lam_drk.z*rk.x;
 
-  face.drcdr[2].M[1][0] = dl1_div_Lam_drk.y*ri.x + dl2_div_Lam_drk.y*rj.x              + dl3_div_Lam_drk.y*rk.x;
+  face.drcdr[2].M[1][0] = dl1_div_Lam_drk.x*ri.y + dl2_div_Lam_drk.x*rj.y              + dl3_div_Lam_drk.x*rk.y;
   face.drcdr[2].M[1][1] = dl1_div_Lam_drk.y*ri.y + dl2_div_Lam_drk.y*rj.y + l3_div_Lam + dl3_div_Lam_drk.y*rk.y;
-  face.drcdr[2].M[1][2] = dl1_div_Lam_drk.y*ri.z + dl2_div_Lam_drk.y*rj.z              + dl3_div_Lam_drk.y*rk.z;
+  face.drcdr[2].M[1][2] = dl1_div_Lam_drk.z*ri.y + dl2_div_Lam_drk.z*rj.y              + dl3_div_Lam_drk.z*rk.y;
   
-  face.drcdr[2].M[2][0] = dl1_div_Lam_drk.z*ri.x + dl2_div_Lam_drk.z*rj.x + dl3_div_Lam_drk.z*rk.x;
-  face.drcdr[2].M[2][1] = dl1_div_Lam_drk.z*ri.y + dl2_div_Lam_drk.z*rj.y + dl3_div_Lam_drk.z*rk.y;
+  face.drcdr[2].M[2][0] = dl1_div_Lam_drk.x*ri.z + dl2_div_Lam_drk.x*rj.z + dl3_div_Lam_drk.x*rk.z;
+  face.drcdr[2].M[2][1] = dl1_div_Lam_drk.y*ri.z + dl2_div_Lam_drk.y*rj.z + dl3_div_Lam_drk.y*rk.z;
   face.drcdr[2].M[2][2] = dl1_div_Lam_drk.z*ri.z + dl2_div_Lam_drk.z*rj.z + dl3_div_Lam_drk.z*rk.z + l3_div_Lam;
 }
 
@@ -922,16 +922,16 @@ double Mesh::angle_deficit(int v)
 {
   Vertex& V = m_vertices[v];
   if (!V.boundary)
-    return 0.0;
+    return 1.0;
   
   double angle = 0.0;
   for (int f = 0; f < V.n_faces; f++)
   {
     Face& face = m_faces[V.faces[f]];
     if (!face.is_hole)
-      angle += face.get_angle(v);
+      angle += std::acos(face.get_angle(v));
   }
-  return 2.0*M_PI-angle;
+  return 1.0 - (2.0*M_PI-angle)/(2.0*M_PI);
 }
 
 
