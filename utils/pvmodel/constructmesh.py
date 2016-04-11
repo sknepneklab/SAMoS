@@ -27,11 +27,16 @@ def makeout(rvals, parea):
         outd['area'].append( parea[i] )
     return outd
 
+npnormal= np.array([0.,0.,1.])
+def fillout(outd, normal=npnormal):
+    #OrderedDict(
+    pass
+
+
 # Single cell, n sides
 
-
-def single(nsides, origin=[0.,0.,0.]):
-    parea = 5.
+def single(nsides,prefarea=5., origin=[0.,0.,0.]):
+    parea = prefarea
     rvals = np.array(origin).reshape((1,3))
     rad = np.linspace(-np.pi, np.pi, nsides, endpoint=False)
     nb = len(rad)
@@ -40,18 +45,15 @@ def single(nsides, origin=[0.,0.,0.]):
     z = np.zeros(nb)
     area = np.full(nb+1, parea)
     rbound = np.column_stack([x, y, z])
-    print rvals
-    print rbound
     rvals = np.vstack([rvals, rbound])
     #print np.column_stack([x, y, z])
-    print rvals
 
     outd = makeout(rvals, area)
     return outd
 single.defaults = [6]
 single.call = ['single( nsides )']
 
-    #wr.datdump
+
 
 if __name__=='__main__':
     import argparse
