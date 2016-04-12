@@ -63,6 +63,7 @@ using std::endl;
 using std::copy;
 using std::sort;
 using std::reverse;
+using std::rotate;
 using std::runtime_error;
 
 typedef pair<int,int> VertexPair;

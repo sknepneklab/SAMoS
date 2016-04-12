@@ -432,6 +432,25 @@ double Mesh::dual_area(int v)
     reverse(V.neigh.begin(),V.neigh.end());
   }
   
+  // Now we make sure that the start around boundary vertex is
+  // ordered such that fist and last edges are boundary edges
+  if (V.boundary)
+  {
+    int pos = 0;
+    for (int i = 0; i < V.n_edges; i++)
+    {
+      Edge& E = m_edges[V.edges[i]];
+      if (m_edges[E.pair].boundary)
+      {
+        pos = i;
+        break;
+      }
+    }
+    rotate(V.edges.begin(), V.edges.begin()+pos, V.edges.end());
+    rotate(V.dual.begin(), V.dual.begin()+pos, V.dual.end());
+    rotate(V.neigh.begin(), V.neigh.begin()+pos, V.neigh.end());
+  }
+  
   return V.area;
 }
 
