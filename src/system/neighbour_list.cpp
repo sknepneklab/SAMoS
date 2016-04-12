@@ -46,7 +46,16 @@ static int check_side(Particle& pi, Particle& pj, Particle& pk)
   return (val < 0.0) ? -1 : 1;
 }
 
-
+/* Auxiliary function which checks if the projection onto the segment is within the segment
+*/
+static int check_projection(Particle& pi, Particle& pj, Particle& pk)
+{
+  double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
+  double p_dot_AB = (pk.x-pi.x)*dx+(pk.y-pi.y)*dy+(pk.z-pi.z)*dz;
+  double AB_2 = dx*dx + dy*dy + dz*dz;
+  double t = p_dot_AB/AB_2;
+  return (t >= 0.0 && t <= 1.0);
+}
 
 /*! Build neighbour list using N^2 algorithm 
 */
@@ -531,19 +540,20 @@ bool NeighbourList::same_side_line(Particle& pi, Particle& pj, vector<int>& neig
   {
     Particle& pk = m_system->get_particle(neigh[n]);
     if (pi.get_id() != pk.get_id() && pj.get_id() != pk.get_id())
-    {
-      if (side == 0)
-        side = check_side(pi,pj,pk);
-      else
+      if (check_projection(pi,pj,pk))
       {
-        if (side != check_side(pi,pj,pk))
+        if (side == 0)
+          side = check_side(pi,pj,pk);
+        else
         {
-          cout << pi.get_id() << " " <<  pj.get_id()  << " " << pk.get_id() << " " <<  side << "  " << check_side(pi,pj,pk) << endl;
-          same = false;
-          break;
+          if (side != check_side(pi,pj,pk))
+          {
+            //cout << pi.get_id() << " " <<  pj.get_id()  << " " << pk.get_id() << " " <<  side << "  " << check_side(pi,pj,pk) << endl;
+            same = false;
+            break;
+          }
         }
       }
-    }
   }
   return same;
 }
