@@ -224,6 +224,8 @@ void Mesh::update_dual_mesh()
     }
     this->fc_jacobian(f);
   }   
+  for (int v = 0; v < m_size; v++)
+    this->angle_deficit_deriv(v);
 }
 
 
@@ -449,6 +451,14 @@ double Mesh::dual_area(int v)
     rotate(V.edges.begin(), V.edges.begin()+pos, V.edges.end());
     rotate(V.dual.begin(), V.dual.begin()+pos, V.dual.end());
     rotate(V.neigh.begin(), V.neigh.begin()+pos, V.neigh.end());
+    // We are almost done. We just need to check is the second edge is also boundary, 
+    // in which case we need one more rotation
+    if (m_edges[m_edges[V.edges[1]].pair].boundary)
+    {
+      rotate(V.edges.begin(), V.edges.begin()+1, V.edges.end());
+      rotate(V.dual.begin(), V.dual.begin()+1, V.dual.end());
+      rotate(V.neigh.begin(), V.neigh.begin()+1, V.neigh.end());  
+    }
   }
   
   return V.area;
@@ -951,6 +961,45 @@ double Mesh::angle_deficit(int v)
       angle += std::acos(face.get_angle(v));
   }
   return 1.0 - (2.0*M_PI-angle)/(2.0*M_PI);
+}
+
+/*! Compute derivatives of the angle deficit. 
+ *  This only makes sense for boundary vertices
+*/
+void Mesh::angle_deficit_deriv(int v)
+{
+  Vertex& V = m_vertices[v]; 
+  if (!V.boundary)
+    return;
+  
+  V.angle_def.clear();
+  
+  double sign = (this->angle_deficit(v) < M_PI) ? 1.0 : -1.0;
+  
+  // Note: Boundary star is ordered such that fist and last edges are at the boundary
+  Vector3d& ri = V.r;
+  Vector3d& rj = m_vertices[V.neigh[0]].r;
+  Vector3d& rk = m_vertices[V.neigh[V.neigh.size()-1]].r;   
+  
+  Vector3d rji = rj - ri;
+  Vector3d rki = rk - ri;
+  double rji_len = rji.len(), rki_len = rki.len();
+  double rji_len_2 = rji_len*rji_len, rki_len_2 = rki_len*rki_len;
+  double rji_dot_rki = dot(rji,rki);
+  double norm_dot = rji_dot_rki/(rji_len*rki_len);
+  
+  Vector3d fj = 1.0/(rji_len_2*rki_len_2)*(rji_len*rki_len*rki - rji_dot_rki*rki_len*rji); 
+  Vector3d fk = 1.0/(rji_len_2*rki_len_2)*(rji_len*rki_len*rji - rji_dot_rki*rji_len*rki);
+  Vector3d fi = -(fj+fk);
+  
+  double fact = 0.0;
+  if (fabs(norm_dot) > 1e-6)
+    fact = sign/(2*M_PI)*1.0/sqrt(1.0 - norm_dot);
+  
+  V.angle_def.push_back(fact*fi);
+  V.angle_def.push_back(fact*fj);
+  V.angle_def.push_back(fact*fk);
+  
 }
 
 

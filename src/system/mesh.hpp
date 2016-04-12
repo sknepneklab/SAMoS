@@ -210,6 +210,9 @@ public:
   
   //! Compute angle deficit at a boundary vertex
   double angle_deficit(int);
+  
+  //! Compute derivatives of angle deficit
+  void angle_deficit_deriv(int);
     
 private:  
   
