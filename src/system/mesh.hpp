@@ -63,6 +63,7 @@ using std::endl;
 using std::copy;
 using std::sort;
 using std::reverse;
+using std::rotate;
 using std::runtime_error;
 
 typedef pair<int,int> VertexPair;
@@ -74,7 +75,7 @@ class Mesh
 {
 public:
   //! Construct a Mesh object
-  Mesh() : m_size(0), m_nedge(0), m_nface(0), m_ndual(0), m_is_triangulation(true), m_max_face_perim(20.0) {   }
+  Mesh() : m_size(0), m_nedge(0), m_nface(0), m_ndual(0), m_is_triangulation(true), m_max_face_perim(20.0), m_circumcenter(true) {   }
   
   //! Get mesh size
   int size() { return m_size; }
@@ -100,6 +101,9 @@ public:
   //! Get edge-face data structure
   map<pair<int,int>, int>& get_edge_face() { return m_edge_face; }
   
+  //! Get the information about boundary vertex pairs
+  vector<pair<int,int> >& get_boundary() { return m_boundary; }
+  
   //! Get maximum face perimeter
   double get_max_face_perim() {  return m_max_face_perim; }
   
@@ -109,6 +113,10 @@ public:
   
   //! Resets the mesh
   void reset();
+  
+  //! Sets the circumcenter flag
+  //! \param val value of the circumcenter flag
+  void set_circumcenter(bool val) { m_circumcenter = val; }
   
   //! Add a vertex
   //! \param p particle
@@ -183,6 +191,28 @@ public:
   
   //! Mesh equiangulation
   void equiangulate();
+  
+  //! Face centre Jacobian
+  void fc_jacobian(int);
+  
+  //! Update face properties
+  void update_face_properties();
+  
+  //! Remove obtuse boundary faces
+  bool remove_obtuse_boundary();
+  
+  //! Return true if the vertex is a boundary vertex
+  //! \param v index of the vertex
+  bool is_boundary_vertex(int v)
+  {
+    return m_vertices[v].boundary;
+  }
+  
+  //! Compute angle deficit at a boundary vertex
+  double angle_deficit(int);
+  
+  //! Compute derivatives of angle deficit
+  void angle_deficit_deriv(int);
     
 private:  
   
@@ -192,6 +222,7 @@ private:
   int m_ndual;   //!< Number of vertices in dual
   bool m_is_triangulation;    //!< If true, all faces are triangles (allows more assumptions)
   double m_max_face_perim;    //!< If face perimeter is greater than this value, reject face and treat it as a hole.
+  bool m_circumcenter;        //!< If true, compute face circumcenters. Otherwise compute geometric centre. 
     
   vector<Vertex> m_vertices;           //!< Contains all vertices
   vector<Edge> m_edges;                //!< Contains all edge
@@ -199,12 +230,19 @@ private:
   map<pair<int,int>, int> m_edge_map;  //!< Relates vertex indices to edge ids
   map<pair<int,int>, int> m_edge_face; //!< Relates pairs of faces to edges
   vector<Vector3d> m_dual;             //!< Coordinates of the dual mesh
+  vector<pair<int,int> > m_boundary;   //!< List of vertex pair that are on the boundary
   
   //! Compute face circumcentre
   void compute_circumcentre(int);
   
   //! Compute face geometric centre
   void compute_geometric_centre(int);
+  
+  //! Remove pair of edges
+  void remove_edge_pair(int);
+  
+  //! Compute face area
+  double face_area(int);
   
 };
 

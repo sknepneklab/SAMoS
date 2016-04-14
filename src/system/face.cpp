@@ -50,12 +50,21 @@ ostream& operator<<(ostream& out, const Face& f)
   out << endl << "edges : ";
   for (int i = 0; i < f.n_sides; i++)
     out << f.edges[i] << " ";
-  out << endl << "angles : ";
-  for (int i = 0; i < f.n_sides; i++)
-    out << f.angles[i] << " ";
+  if (!f.is_hole)
+  {
+    out << endl << "angles : ";
+    for (int i = 0; i < f.n_sides; i++)
+      out << f.angles[i] << " ";
+  }
+  out << endl << "area : " << f.area;
+  out << endl << "rc : " << f.rc;
   out << endl;
   if (f.is_hole)
     out << "Face is a hole." << endl;
+  if (f.boundary)
+    out << "Face is at the boundary." << endl;
+  if (f.obtuse)
+    out << "Face is obtuse." << endl;
   out << " ------------------------------------";
   out << endl;
   return out;

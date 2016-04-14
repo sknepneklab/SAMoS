@@ -71,6 +71,11 @@ struct Edge
     return to;
   }
   
+  //! Compare if the id of the vertex is equal to an integer value
+  bool operator==(int val)
+  {
+     return (id == val);
+  }
     
   int id;                       //!< Edge id
   int from;                     //!< Id of vertex half-edge starts at

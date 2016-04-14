@@ -101,6 +101,14 @@ struct Vertex
    attached = true;
   }
   
+  ~Vertex()
+  {
+    neigh.clear();           
+    edges.clear();           
+    faces.clear();           
+    dual.clear();            
+  }
+  
   //! Add neighbour
   //! \param v neighbour index
   void add_neighbour(int v)
@@ -160,6 +168,20 @@ struct Vertex
       n_faces--;
     }
   }
+  
+  //! Compare if the id of the vertex is equal to an integer value
+  bool operator==(int val)
+  {
+     return (id == val);
+  }
+  
+  //! Get the corresponding angle deficit derivative
+  Vector3d& get_angle_def(int v)
+  {
+    if (v == id) return angle_def[0];  // note that vertices in the boundary star are ordered in a way to allow this assumption on indices
+    else if (v == neigh[0]) return angle_def[1];
+    else return angle_def[2]; 
+  }
    
   int id;                      //!< Vertex id
   int type;                    //!< Vertex type 
@@ -181,6 +203,7 @@ struct Vertex
   vector<int> edges;           //!< Contains indices of all edges that originate at this vertex
   vector<int> faces;           //!< Contains indices of faces this vertex belongs to
   vector<int> dual;            //!< Centres of all faces surrounding it. Boundary vertices are special.
+  vector<Vector3d> angle_def;  //!< Contains derivatives with respect to three coordinates at the boundary 
     
 };
 

@@ -43,10 +43,12 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <stdexcept>
 
 #include <boost/format.hpp>
 
 #include "vector3d.hpp"
+#include "matrix3d.hpp"
 
 using boost::format;
 using std::ostream;
@@ -54,6 +56,7 @@ using std::string;
 using std::vector;
 using std::endl;
 using std::find;
+using std::runtime_error;
 
 /*! Face class keeps track of the face information in the mesh
  *
@@ -62,7 +65,15 @@ struct Face
 {
   //! Construct a Face object
   //! \param id face id
-  Face(int id) : id(id), n_sides(0), edge_face(false), ordered(false), type(1), is_hole(false), rc(0,0,0) {   }
+  Face(int id) : id(id), n_sides(0), edge_face(false), ordered(false), type(1), is_hole(false), boundary(false), obtuse(false), area(0.0), rc(0,0,0) {   }
+  
+  ~Face()
+  {
+    vertices.clear();        
+    edges.clear();           
+    angles.clear();    
+    drcdr.clear();     
+  }
   
   //! Add a vertex
   //! \param v adds a vertex
@@ -117,18 +128,31 @@ struct Face
      return -1.0;  // If vertex does not belong to the face, return -1.
   }
   
+  //! Return Jacobian of the face centre with respect to a given vertex
+  //! \param v id of the vertex
+  Matrix3d& get_jacobian(int v)
+  {
+    for (unsigned int i = 0; i < vertices.size(); i++)
+      if (vertices[i] == v) return drcdr[i];
+    throw runtime_error("Error in Jacobian. Vertex does not belong to the face.");
+  }
+  
   int id;                      //!< Face id
   int n_sides;                 //!< Number of sides
   bool edge_face;              //!< Face is an edge face if all its edges are at the boundary
   bool ordered;                //!< if true, vertices in the face are ordered
   int type;                    //!< Face type. This is help determine parameters for interactions that depend in the dual vertex
   bool is_hole;                //!< If true, this face is actually a hole
+  bool boundary;               //!< Face is boundary is one of its edges is boundary
+  bool obtuse;                 //!< Face is obtuse if one of its angles is larger than pi/2
+  double area;                 //!< Area of the face
   
   Vector3d rc;                 //!< Coordiantes of geometric centre of the face
   
   vector<int> vertices;        //!< Contains all vertices
   vector<int> edges;           //!< Contains all edges
   vector<double> angles;       //!< Contains cosines of angles at each vertex (in radians)
+  vector<Matrix3d> drcdr;      //!< Contains derivatives of the face centres with respect to its vertices
     
 };
 
