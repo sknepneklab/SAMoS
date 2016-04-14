@@ -225,7 +225,7 @@ void Mesh::update_dual_mesh()
     this->fc_jacobian(f);
   }   
   for (int v = 0; v < m_size; v++)
-    this->angle_deficit_deriv(v);
+    this->angle_factor_deriv(v);
 }
 
 
@@ -315,6 +315,7 @@ void Mesh::order_star(int v)
 {
   Vertex& V = m_vertices[v];
   V.dual.clear();
+  V.neigh.clear();
   vector<int> edges;
   
   if (V.edges.size() > 0)
@@ -360,6 +361,26 @@ void Mesh::order_star(int v)
           V.dual.push_back(En.dual);
         }
       }
+      V.neigh.push_back(E.to);
+    }
+    // Now we make sure that the start around boundary vertex is
+    // ordered such that first edge is a boundary edge.
+    if (V.boundary)
+    {
+      int pos = 0;
+      for (int i = 0; i < V.n_edges; i++)
+      {
+        Edge& E = m_edges[V.edges[i]];
+        if (m_edges[E.pair].boundary)
+        {
+          pos = i;
+          break;
+        }
+      }
+      rotate(V.edges.begin(), V.edges.begin()+pos, V.edges.end());
+      rotate(V.dual.begin(), V.dual.begin()+pos, V.dual.end());
+      rotate(V.neigh.begin(), V.neigh.begin()+pos, V.neigh.end());
+      rotate(V.faces.begin(), V.faces.begin()+pos, V.faces.end());
     }
   }
   else 
@@ -408,6 +429,7 @@ double Mesh::dual_area(int v)
         Vector3d rr = cross(V.r-face.rc,V.r-face_n.rc);
         V.area += fabs(dot(rr,V.N.unit()));
       }
+      /*
       if (face.boundary && !face.obtuse)
       {
         for (int i = 0; i < face.n_sides; i++)
@@ -422,6 +444,7 @@ double Mesh::dual_area(int v)
             break;
           }
       }
+      */
     }
   }
    
@@ -432,33 +455,6 @@ double Mesh::dual_area(int v)
     reverse(V.dual.begin(),V.dual.end());
     reverse(V.edges.begin(),V.edges.end());
     reverse(V.neigh.begin(),V.neigh.end());
-  }
-  
-  // Now we make sure that the start around boundary vertex is
-  // ordered such that fist and last edges are boundary edges
-  if (V.boundary)
-  {
-    int pos = 0;
-    for (int i = 0; i < V.n_edges; i++)
-    {
-      Edge& E = m_edges[V.edges[i]];
-      if (m_edges[E.pair].boundary)
-      {
-        pos = i;
-        break;
-      }
-    }
-    rotate(V.edges.begin(), V.edges.begin()+pos, V.edges.end());
-    rotate(V.dual.begin(), V.dual.begin()+pos, V.dual.end());
-    rotate(V.neigh.begin(), V.neigh.begin()+pos, V.neigh.end());
-    // We are almost done. We just need to check is the second edge is also boundary, 
-    // in which case we need one more rotation
-    if (m_edges[m_edges[V.edges[1]].pair].boundary)
-    {
-      rotate(V.edges.begin(), V.edges.begin()+1, V.edges.end());
-      rotate(V.dual.begin(), V.dual.begin()+1, V.dual.end());
-      rotate(V.neigh.begin(), V.neigh.begin()+1, V.neigh.end());  
-    }
   }
   
   return V.area;
@@ -505,6 +501,7 @@ double Mesh::dual_perimeter(int v)
         Vector3d rr = face.rc-face_n.rc;
         V.perim += rr.len();
       }
+      /*
       if (face.boundary && !face.obtuse)
       {
         for (int i = 0; i < face.n_sides; i++)
@@ -519,6 +516,7 @@ double Mesh::dual_perimeter(int v)
             break;
           }
       }
+      */
     }
   }
   return V.perim;
@@ -738,26 +736,6 @@ void Mesh::fc_jacobian(int f)
   face.drcdr.push_back(Matrix3d());
   face.drcdr.push_back(Matrix3d());
   
-  if (face.boundary && face.obtuse)
-  {
-    // p = i
-    face.drcdr[0].M[0][0] = 0.0;  face.drcdr[0].M[0][1] = 0.0;  face.drcdr[0].M[0][2] = 0.0;
-    face.drcdr[0].M[1][0] = 0.0;  face.drcdr[0].M[1][1] = 0.0;  face.drcdr[0].M[1][2] = 0.0;
-    face.drcdr[0].M[2][0] = 0.0;  face.drcdr[0].M[2][1] = 0.0;  face.drcdr[0].M[2][2] = 0.0;
-
-    // p = j
-    face.drcdr[1].M[0][0] = 0.5;  face.drcdr[1].M[0][1] = 0.0;  face.drcdr[1].M[0][2] = 0.0;
-    face.drcdr[1].M[1][0] = 0.0;  face.drcdr[1].M[1][1] = 0.5;  face.drcdr[1].M[1][2] = 0.0;
-    face.drcdr[1].M[2][0] = 0.0;  face.drcdr[1].M[2][1] = 0.0;  face.drcdr[1].M[2][2] = 0.5;
-    
-    // p = k
-    face.drcdr[2].M[0][0] = 0.5;  face.drcdr[2].M[0][1] = 0.0;  face.drcdr[2].M[0][2] = 0.0;
-    face.drcdr[2].M[1][0] = 0.0;  face.drcdr[2].M[1][1] = 0.5;  face.drcdr[2].M[1][2] = 0.0;
-    face.drcdr[2].M[2][0] = 0.0;  face.drcdr[2].M[2][1] = 0.0;  face.drcdr[2].M[2][2] = 0.5;
-    
-    return;
-  }
-
   Vector3d& ri = m_vertices[face.vertices[0]].r;
   Vector3d& rj = m_vertices[face.vertices[1]].r;
   Vector3d& rk = m_vertices[face.vertices[2]].r;
@@ -870,6 +848,7 @@ void Mesh::update_face_properties()
           face.obtuse = true;
           break;
         }
+      /*
       if (face.boundary && face.obtuse)
       {
         for (int e = 0; e < face.n_sides; e++) 
@@ -886,6 +865,7 @@ void Mesh::update_face_properties()
           }
         }
       }
+      */
     }
   }
 }
@@ -943,30 +923,38 @@ bool Mesh::remove_obtuse_boundary()
    return removed;
 }
 
-/*! Find the angle deficit at a boundary vertex. This is 
- *  the angle between two boundary edges that that originate from the vertex.
+/*! Find the factor to scale the native area with for the boundary vertices.
+ *  This factor is computed as \f$ \zeta = \frac{2\pi - \Delta\theta}{2\pi} \f$,
+ *  where \f$ \Delta\theta \f$ is the angle deficit at the vertex.
  *  \param v vertex id
 */
-double Mesh::angle_deficit(int v)
+double Mesh::angle_factor(int v)
 {
-  Vertex& V = m_vertices[v];
-  if (!V.boundary)
+  Vertex& Vi = m_vertices[v];
+  if (!Vi.boundary)
     return 1.0;
   
-  double angle = 0.0;
-  for (int f = 0; f < V.n_faces; f++)
-  {
-    Face& face = m_faces[V.faces[f]];
-    if (!face.is_hole)
-      angle += std::acos(face.get_angle(v));
-  }
-  return 1.0 - (2.0*M_PI-angle)/(2.0*M_PI);
+  Edge& E1 = m_edges[Vi.edges[0]];    // First edge is a boundary edge
+  Edge& En = m_edges[m_edges[Vi.edges[Vi.n_edges-1]].pair];
+  Face& f1 = m_faces[E1.face];
+  Face& fn = m_faces[En.face];
+  
+  Vector3d r_nu_1_i = f1.rc - Vi.r;
+  Vector3d r_nu_n_i = fn.rc - Vi.r;
+  
+  double angle = std::acos(dot(r_nu_1_i,r_nu_n_i)/(r_nu_1_i.len()*r_nu_n_i.len()));
+  bool complementary_angle = dot(cross(r_nu_1_i,r_nu_n_i),Vi.N) > 0.0;
+    
+  if (complementary_angle) 
+    angle = 2*M_PI - angle;
+  
+  return (2.0*M_PI-angle)/(2.0*M_PI);
 }
 
-/*! Compute derivatives of the angle deficit. 
- *  This only makes sense for boundary vertices
+/*! Compute derivatives of the angle angle factor for boundary vertices.
+ *  \param v index of the vertex
 */
-void Mesh::angle_deficit_deriv(int v)
+void Mesh::angle_factor_deriv(int v)
 {
   Vertex& V = m_vertices[v]; 
   if (!V.boundary)
@@ -974,32 +962,46 @@ void Mesh::angle_deficit_deriv(int v)
   
   V.angle_def.clear();
   
-  double sign = (this->angle_deficit(v) < M_PI) ? 1.0 : -1.0;
+  Edge& E1 = m_edges[V.edges[0]];
+  Edge& En = m_edges[m_edges[V.edges[V.n_edges-1]].pair];
   
-  // Note: Boundary star is ordered such that fist and last edges are at the boundary
-  Vector3d& ri = V.r;
-  Vector3d& rj = m_vertices[V.neigh[0]].r;
-  Vector3d& rk = m_vertices[V.neigh[V.neigh.size()-1]].r;   
+  Face& f1 = m_faces[E1.face];
+  Face& fn = m_faces[En.face];
   
-  Vector3d rji = rj - ri;
-  Vector3d rki = rk - ri;
-  double rji_len = rji.len(), rki_len = rki.len();
-  double rji_len_2 = rji_len*rji_len, rki_len_2 = rki_len*rki_len;
-  double rji_dot_rki = dot(rji,rki);
-  double norm_dot = rji_dot_rki/(rji_len*rki_len);
+  if (f1.n_sides != 3 || fn.n_sides != 3)
+    return;
   
-  Vector3d fj = 1.0/(rji_len_2*rki_len_2)*(rji_len*rki_len*rki - rji_dot_rki*rki_len*rji); 
-  Vector3d fk = 1.0/(rji_len_2*rki_len_2)*(rji_len*rki_len*rji - rji_dot_rki*rji_len*rki);
-  Vector3d fi = -(fj+fk);
+  Vertex& Vj = m_vertices[E1.to];
+  Vertex& Vk = m_vertices[m_edges[V.edges[V.n_edges-1]].to];
   
+  Vector3d  r_nu_1_ri = f1.rc - V.r;
+  Vector3d  r_nu_n_ri = fn.rc - V.r;
+  
+  double sign = (dot(cross(r_nu_1_ri,r_nu_n_ri),V.N) < 0.0) ? 1.0 : -1.0;
+  
+  double len_r_nu_1_ri = r_nu_1_ri.len();
+  double len_r_nu_n_ri = r_nu_n_ri.len();
+  double len_r_nu_1_ri_2 = len_r_nu_1_ri*len_r_nu_1_ri;
+  double len_r_nu_n_ri_2 = len_r_nu_n_ri*len_r_nu_n_ri;
+  double r_nu_1_ri_dot_r_nu_n_ri = dot(r_nu_1_ri,r_nu_n_ri);
+  
+  Vector3d d_ri = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_n_ri*f1.get_jacobian(V.id)-r_nu_n_ri + r_nu_1_ri*fn.get_jacobian(V.id) - r_nu_1_ri)
+                  -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_1_ri*(r_nu_n_ri.unit())*fn.get_jacobian(V.id) - len_r_nu_1_ri*r_nu_n_ri.unit()
+                                                                              + len_r_nu_n_ri*(r_nu_1_ri.unit())*f1.get_jacobian(V.id) - len_r_nu_n_ri*r_nu_1_ri.unit());
+  Vector3d d_rj = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_n_ri*f1.get_jacobian(Vj.id))
+                 -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_n_ri*(r_nu_1_ri.unit())*f1.get_jacobian(Vj.id));
+
+  Vector3d d_rk = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_1_ri*fn.get_jacobian(Vk.id))
+                 -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_1_ri*(r_nu_n_ri.unit())*fn.get_jacobian(Vk.id));
+ 
   double fact = 0.0;
-  if (fabs(norm_dot) > 1e-6)
-    fact = sign/(2*M_PI)*1.0/sqrt(1.0 - norm_dot);
-  
-  V.angle_def.push_back(fact*fi);
-  V.angle_def.push_back(fact*fj);
-  V.angle_def.push_back(fact*fk);
-  
+  if (fabs(r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)) < 1.0)
+    fact = sign/(2.0*M_PI)*1.0/sqrt(1.0 - r_nu_1_ri_dot_r_nu_n_ri*r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2));               
+                 
+  V.angle_def.push_back(fact*d_ri);
+  V.angle_def.push_back(fact*d_rj);
+  V.angle_def.push_back(fact*d_rk);  
+    
 }
 
 

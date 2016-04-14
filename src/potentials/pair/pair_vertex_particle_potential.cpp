@@ -95,7 +95,7 @@ void PairVertexParticlePotential::compute(double dt)
       //double dA = (vi.area - pi.A0);
       double dA = 0.0; 
       if (!vi.boundary) dA = (vi.area - pi.A0);
-      else dA = (vi.area - mesh.angle_deficit(i)*pi.A0);
+      else dA = (vi.area - mesh.angle_factor(i)*pi.A0);
       double area_term = 0.5*K*dA;
       double perim_term = gamma*vi.perim;
       pot_eng = 0.5*(K*dA*dA+gamma*vi.perim*vi.perim);
@@ -199,11 +199,11 @@ void PairVertexParticlePotential::compute(double dt)
       pi.fz += area_fact*area_vec.z;
       if (vi.boundary)
       {
-        double add_area = 2.0*area_fact*pi.A0;
+        double add_area = -2.0*area_fact*pi.A0;
         Vector3d& ang_def = vi.get_angle_def(vi.id);
-        pi.fx -= add_area*ang_def.x;
-        pi.fy -= add_area*ang_def.y;
-        pi.fz -= add_area*ang_def.z;
+        pi.fx += add_area*ang_def.x;
+        pi.fy += add_area*ang_def.y;
+        pi.fz += add_area*ang_def.z;
       }
       // perimeter term
       double perim_fact = -alpha*perim_term;
@@ -231,7 +231,7 @@ void PairVertexParticlePotential::compute(double dt)
         }
         double dA = 0.0;
         if (!vj.boundary) dA = (vj.area - pj.A0);
-        else dA = (vj.area -  mesh.angle_deficit(vj.id)*pj.A0);
+        else dA = (vj.area -  mesh.angle_factor(vj.id)*pj.A0);
         double area_term = 0.5*K*dA;
         double perim_term = gamma*vj.perim;
         Vector3d area_vec(0.0,0.0,0.0);

@@ -208,11 +208,11 @@ public:
     return m_vertices[v].boundary;
   }
   
-  //! Compute angle deficit at a boundary vertex
-  double angle_deficit(int);
+  //! Compute angle area scaling factor for boundary vertices
+  double angle_factor(int);
   
-  //! Compute derivatives of angle deficit
-  void angle_deficit_deriv(int);
+  //! Compute derivatives of the angle factor for boudnary vertices
+  void angle_factor_deriv(int);
     
 private:  
   
