@@ -63,7 +63,7 @@ class Cell:
     
   
 class CellList:
-  # Create my boxes
+  # Create my boxes           
   def __init__(self,geom, r_cut):
     self.geom=geom
     self.r_cut = r_cut
@@ -74,9 +74,9 @@ class CellList:
     #Lx, Ly, Lz = self.box
     #self.Lx, self.Ly, self.Lz = Lx, Ly, Lz 
     # Number and linear extensions of the boxes in all three dimensions
-    self.nx = int(np.ceil(self.geom.Lx/r_cut))
-    self.ny = int(np.ceil(self.geom.Ly/r_cut))
-    self.nz = int(np.ceil(self.geom.Lz/r_cut))
+    self.nx = int(self.geom.Lx/r_cut)
+    self.ny = int(self.geom.Ly/r_cut)
+    self.nz = int(self.geom.Lz/r_cut)
     self.dx = self.geom.Lx/float(self.nx)
     self.dy = self.geom.Ly/float(self.ny)
     self.dz = self.geom.Lz/float(self.nz)

@@ -276,10 +276,21 @@ void Mesh::postprocess()
 void Mesh::compute_centre(int f)
 {
   Face& face = m_faces[f];
-  if (!m_circumcenter && face.n_sides > 3)
-    this->compute_geometric_centre(f);
+  /*
+  bool geom = false;
+  if (face.n_sides > 3)
+    geom = true;
   else
-    this->compute_circumcentre(f); 
+    for (int i = 0; i < face.n_sides; i++)
+      if (face.angles[i] < 0.0)  geom = true;   // angles holds cosines; negative cosine means angle > PI/2 ==> obtuse
+  if (geom) this->compute_geometric_centre(f);
+  else this->compute_circumcentre(f);  
+  */
+  this->compute_geometric_centre(f);
+  //if (!m_circumcenter && face.n_sides > 3)
+  //  this->compute_geometric_centre(f);
+  //else
+  //  this->compute_circumcentre(f); 
 }
 
 /*! Computes cosines of interior angles at each vertex of the face. 
