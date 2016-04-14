@@ -361,6 +361,8 @@ class PVmesh(object):
             dlamqdrp[k][1,:] = 2*(lis + lks -2*ljs)*rki - 2*ljs*rjk
             dlamqdrp[k][2,:] = 2*lks*(-rjk + rki)
 
+            #print dlamqdrp[i] + dlamqdrp[j] + dlamqdrp[k]
+
             dLambdadrp = {}
             for key, arr in dlamqdrp.items():
                 dLambdadrp[key] = np.sum(arr, axis=0)
@@ -376,6 +378,10 @@ class PVmesh(object):
                 lqrq = np.einsum('q,qn->n', lambdaq.values(), r_q)
                 t3 = np.outer(dLambdadrp[p], lqrq)
                 drmudrp[vh.idx()][p] = (1/gamma**2) * (t1 + t2 - t3)
+            aa,ab,ac = dlamqdrp.values()
+
+            print aa + ab + ac
+            print 
 
         # dAdrmu[fhid][vhid]  
         dAdrmu = {}
@@ -479,8 +485,13 @@ class PVmesh(object):
             for mu in loop(fh):
                 # order mn really important
                 #ac = np.einsum('mn,m->n', np.transpose(drmudrp[mu][fhidx]), dAdrmu[fhidx][mu])
-                ac = np.einsum('m,nm->n', dAdrmu[fhidx][mu], drmudrp[mu][fhidx])
-                pc = np.einsum('m,nm->n', dPdrmu[fhidx][mu], drmudrp[mu][fhidx])
+                #ac = np.einsum('nm,m->n', drmudrp[mu][fhidx], dAdrmu[fhidx][mu])
+                # This essentially transposes drmudrp and then multiplies.
+                # Check explicitely with Rastko. I don't know why the chain rule specifies the order of the terms here.
+                # However I am pretty sure that the result is correct.
+                # change the Jacobian to be the right way round. Then this should be n,nm -> m
+                ac = np.einsum('n,mn->m', dAdrmu[fhidx][mu], drmudrp[mu][fhidx])
+                pc = np.einsum('n,mn->m', dPdrmu[fhidx][mu], drmudrp[mu][fhidx])
                 asum += ac
                 psum += pc
 
@@ -507,8 +518,8 @@ class PVmesh(object):
                 psum = np.zeros(3)
 
                 for vhid in vidset:
-                    ac = np.einsum('m,nm->n', dAdrmu[fnn][vhid], drmudrp[vhid][fnn])
-                    pc = np.einsum('m,nm->n', dPdrmu[fnn][vhid], drmudrp[vhid][fnn])
+                    ac = np.einsum('m,nm->n', dAdrmu[fnn][vhid], drmudrp[vhid][fhidx])
+                    pc = np.einsum('m,nm->n', dPdrmu[fnn][vhid], drmudrp[vhid][fhidx])
                     asum += ac
                     psum += pc
                 area_nnsum += farea_fac * asum
