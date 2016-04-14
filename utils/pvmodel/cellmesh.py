@@ -82,6 +82,11 @@ class PVmesh(object):
         print 'trimesh'
         diagnose(self.tri)
 
+        self.boundary = True
+        # might have to switch from storing things on mesh faces to storing them on trimesh vertices. I.e. area perimeter
+        # halfcells = {trimesh.idx() : [mesh vhids] } # should be correctly ordered
+        self.halfcells = {}
+
         self._dual()
         print 'mesh'
         diagnose(self.mesh)
@@ -96,7 +101,7 @@ class PVmesh(object):
         print 'Calculating Area and perimeter'
         self._set_face_properties()
 
-    def _helengths(self, tri):
+   def _helengths(self, tri):
         #store lengths as half edge property
         # And also half edge vectors
 
@@ -137,12 +142,7 @@ class PVmesh(object):
         self.tri.add_property(lambda_prop, 'lambda')
         self.lambda_prop = lambda_prop
 
-        # map mesh faces onto trivertices
-        # This map should only map integers onto themselves 
-        # Consider phasing out these dictionaries. The face and vertice arrays
-        #  should match up.
-        self.vfmap = {}
-        self.fvmap = {}
+        # Trimesh vertice ids and mesh faces ids naturally match up
 
         ccenters = np.zeros((self.tri.n_faces(),3))
         for j, fh in enumerate(self.tri.faces()):
@@ -197,8 +197,12 @@ class PVmesh(object):
             vhs = list(mverts[fhs])
             mfh = self.mesh.add_face(vhs)
 
-            self.vfmap[mfh.idx()] = vh.idx() 
-            self.fvmap[vh.idx()] = mfh.idx()
+        if self.boundary:
+            # Keep track of the boundary half-faces
+            pass
+
+
+
 
 
     def _set_face_properties(self):
@@ -260,7 +264,7 @@ class PVmesh(object):
         mesh.add_property(gammaprop, 'Gamma')
         #for fh in mesh.faces():
         for i, (ki, gi) in enumerate(zip(K, Gamma)):
-            fhidx = self.fvmap[i]
+            fhidx = i
             fh = mesh.face_handle(fhidx)
             mesh.set_property(kprop, fh, ki)
             mesh.set_property(gammaprop, fh, gi)
@@ -366,22 +370,27 @@ class PVmesh(object):
             dLambdadrp = {}
             for key, arr in dlamqdrp.items():
                 dLambdadrp[key] = np.sum(arr, axis=0)
-            # ordering... 
             lambdaq = tri.property(self.lambda_prop, tri_fh)
 
             gamma = sum(lambdaq.values())
             # Now for the jacobian
             # mu is fixed here, we are inside the loop over mesh vertices
+            # I switch the terms in the einsum and outer here so that the Jacobian is the right way around
+            # Update the notes to reflect this accurately
+
+            # OK now I am really confused. Switch the order in the t3 term doesn't change anything in the single cell case.
+            # Which way round should they both be?
             for p in dlamqdrp.keys():
-                t1 = gamma * np.einsum('qm,qn->mn', dlamqdrp[p], r_q)
+                t1 = gamma * np.einsum('qm,qn->mn', r_q, dlamqdrp[p])
+                #t1 = gamma * np.einsum('qm,qn->mn', dlamqdrp[p], r_q)
                 t2 = gamma * lambdaq[p] * np.identity(3)
                 lqrq = np.einsum('q,qn->n', lambdaq.values(), r_q)
-                t3 = np.outer(dLambdadrp[p], lqrq)
+                t3 = np.outer(lqrq, dLambdadrp[p])
+                #t3 = np.outer(dLambdadrp[p], lqrq)
                 drmudrp[vh.idx()][p] = (1/gamma**2) * (t1 + t2 - t3)
-            aa,ab,ac = dlamqdrp.values()
+                #drmudrp[vh.idx()][p] = drmudrp[vh.idx()][p].T 
 
-            print aa + ab + ac
-            print 
+            #aa,ab,ac = dlamqdrp.values()
 
         # dAdrmu[fhid][vhid]  
         dAdrmu = {}
@@ -490,8 +499,8 @@ class PVmesh(object):
                 # Check explicitely with Rastko. I don't know why the chain rule specifies the order of the terms here.
                 # However I am pretty sure that the result is correct.
                 # change the Jacobian to be the right way round. Then this should be n,nm -> m
-                ac = np.einsum('n,mn->m', dAdrmu[fhidx][mu], drmudrp[mu][fhidx])
-                pc = np.einsum('n,mn->m', dPdrmu[fhidx][mu], drmudrp[mu][fhidx])
+                ac = np.einsum('n,nm->m', dAdrmu[fhidx][mu], drmudrp[mu][fhidx])
+                pc = np.einsum('n,nm->m', dPdrmu[fhidx][mu], drmudrp[mu][fhidx])
                 asum += ac
                 psum += pc
 
@@ -518,8 +527,8 @@ class PVmesh(object):
                 psum = np.zeros(3)
 
                 for vhid in vidset:
-                    ac = np.einsum('m,nm->n', dAdrmu[fnn][vhid], drmudrp[vhid][fhidx])
-                    pc = np.einsum('m,nm->n', dPdrmu[fnn][vhid], drmudrp[vhid][fhidx])
+                    ac = np.einsum('n,nm->m', dAdrmu[fnn][vhid], drmudrp[vhid][fhidx])
+                    pc = np.einsum('n,nm->m', dPdrmu[fnn][vhid], drmudrp[vhid][fhidx])
                     asum += ac
                     psum += pc
                 area_nnsum += farea_fac * asum
@@ -550,7 +559,7 @@ class PVmesh(object):
             if self.tri.is_boundary(vh):
                 continue
             ids.append(vh.idx())
-            fh = self.mesh.face_handle(self.vfmap[vh.idx()])
+            fh = self.mesh.face_handle(vh.idx())
             energy.append(self.mesh.property(self.enprop, fh))
             fxx, fyy, _ = self.mesh.property(self.fprop, fh)
             fx.append(fxx)
