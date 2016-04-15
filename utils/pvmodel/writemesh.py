@@ -153,7 +153,7 @@ def writetriforce(pv, outfile):
         if not pv.tri.is_boundary(vh):
             # get appropriate face
             #fh = pv.mesh.face_handle(vh.idx())
-            fh = pv.mesh.face_handle(pv.vfmap[vh.idx()])
+            fh = pv.mesh.face_handle(vh.idx())
             fov = pv.mesh.property(fprop, fh)
             fim = pv.mesh.property(pv.imfprop, fh)
             fnn = pv.mesh.property(pv.nnfprop, fh)
