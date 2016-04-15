@@ -169,6 +169,13 @@ class PVmesh(object):
         self.tri.add_property(lambda_prop, 'lambda')
         self.lambda_prop = lambda_prop
 
+        self.boundary_prop = VPropHandle()
+        self.tri.add_property(self.boundary_prop, 'boundary')
+
+        self.boundaries = [] # [[]]
+        # add list as well to keep track of which boundary halfedge is outgoing from the vertex
+        self.b_nheh = []
+
         # Trimesh vertice ids and mesh faces ids naturally match up
 
         ccenters = np.zeros((self.tri.n_faces(),3))
@@ -200,47 +207,53 @@ class PVmesh(object):
         for j, cc in enumerate(ccenters):
             mverts[j] = self.mesh.add_vertex(PolyMesh.Point(*cc))
         # Add faces
-        boundary = 0 #logging
+        bval = 0
         for vh in self.tri.vertices():
             if self.tri.is_boundary(vh):
-                boundary += 1
-                continue
-            # construct the face by stepping around the halfedges
-            heh = self.tri.halfedge_handle(vh)
-            fhs = [ self.tri.face_handle(heh).idx() ]
-            start = heh.idx()
-            step = -1
-            while True:
-                hehp = self.tri.prev_halfedge_handle(heh)
-                heho = self.tri.opposite_halfedge_handle(hehp)
-                if heho.idx() == start:
-                    break
-                fh_this = self.tri.face_handle(heho)
-                fhs.append(fh_this.idx())
-                heh = heho
+                is_new = True not in map(lambda boundary: vh.idx() in boundary, self.boundaries)
+                if is_new:
+                    bval += 1
+                    print 'new boundary'
+                    self.boundaries.append([])
+                    self.b_nheh.append([])
+                    for heh in self.iterable_boundary(self.tri, vh):
+                        self.boundaries[-1].append( self.tri.from_vertex_handle(heh).idx() )
+                        self.b_nheh[-1].append(heh)
+                self.tri.set_property(self.boundary_prop, vh, bval)
+            else: # Internal vertex
+                # construct the face by stepping around the halfedges
+                heh = self.tri.halfedge_handle(vh)
+                fhs = [ self.tri.face_handle(heh).idx() ]
+                start = heh.idx()
+                while True:
+                    hehp = self.tri.prev_halfedge_handle(heh)
+                    heho = self.tri.opposite_halfedge_handle(hehp)
+                    if heho.idx() == start:
+                        break
+                    fh_this = self.tri.face_handle(heho)
+                    fhs.append(fh_this.idx())
+                    heh = heho
 
-            # need a dictionary to map trimesh face ids onto mesh vertices (ccenters)
-            # or do we (?)
-            vhs = list(mverts[fhs])
-            mfh = self.mesh.add_face(vhs)
+                # need a dictionary to map trimesh face ids onto mesh vertices (ccenters)
+                # or do we (?)
+                vhs = list(mverts[fhs])
+                mfh = self.mesh.add_face(vhs)
+                self.tri.set_property(self.boundary_prop, vh, 0)
 
-        self.boundaries = [] # [[]]
-        # add this stupid list as well to keep track of which boundary halfedge is outgoing from the vertex
-        self.b_nheh = []
-        if self.boundary:
-            # Keep track of the boundary half-faces
-            # Keep in mind there could be several boundaries
-            #vhids = map(lambda x: x.idx(), list(self.tri.vertices()))
-            for vh in self.tri.vertices():
-                if self.tri.is_boundary(vh):
-                    is_new = True not in map(lambda boundary: vh.idx() in boundary, self.boundaries)
-                    if is_new:
-                        print 'new boundary'
-                        self.boundaries.append([])
-                        self.b_nheh.append([])
-                        for heh in self.iterable_boundary(self.tri, vh):
-                            self.boundaries[-1].append( self.tri.from_vertex_handle(heh).idx() )
-                            self.b_nheh[-1].append(heh)
+        #if self.boundary:
+            ## Keep track of the boundary half-faces
+            ## Keep in mind there could be several boundaries
+            ##vhids = map(lambda x: x.idx(), list(self.tri.vertices()))
+            #for vh in self.tri.vertices():
+                #if self.tri.is_boundary(vh):
+                    #is_new = True not in map(lambda boundary: vh.idx() in boundary, self.boundaries)
+                    #if is_new:
+                        #print 'new boundary'
+                        #self.boundaries.append([])
+                        #self.b_nheh.append([])
+                        #for heh in self.iterable_boundary(self.tri, vh):
+                            #self.boundaries[-1].append( self.tri.from_vertex_handle(heh).idx() )
+                            #self.b_nheh[-1].append(heh)
             for i, boundary in enumerate(self.boundaries):
                 for j, vhid in enumerate(boundary):
                     vh = self.tri.vertex_handle(vhid)
@@ -248,100 +261,86 @@ class PVmesh(object):
                     hehp = self.tri.prev_halfedge_handle(hehn)
                     heho = self.tri.opposite_halfedge_handle(hehp)
                     first_fhid = self.tri.face_handle(heho).idx()
-
                     halfcell = np.array([fh.idx() for fh in self.tri.vf(vh)])
-
                     # re-ordering 
                     n = np.where(halfcell==first_fhid)[0][0]
                     halfcell = np.roll(halfcell, n)
                     self.halfcells[vhid] = halfcell
                     
-            #print self.halfcells
 
     def _set_face_properties(self):
         # organise the properties we will use
         mesh = self.mesh
-        areaprop = FPropHandle()
-        mesh.add_property(areaprop, 'area')
-        primprop = FPropHandle()
-        mesh.add_property(primprop, 'prim')
+        tri = self.tri
+        areaprop = VPropHandle()
+        self.tri.add_property(areaprop, 'area')
+        primprop = VPropHandle()
+        self.tri.add_property(primprop, 'prim')
 
-        for fh in mesh.faces():
+        for vh in tri.vertices():
+            vhid = vh.idx()
             area = 0.
             prim = 0.
-            for heh in mesh.fh(fh):
-                rmu = omvec(mesh.point(mesh.from_vertex_handle(heh)))
-                rmup = omvec(mesh.point(mesh.to_vertex_handle(heh)))
-                area += np.dot(np.cross(rmu, rmup), self.normal)
-                lvec = mesh.property(self.mesh_lvecprop, heh)
-                l = norm(lvec)
-                prim += l
-            area = area/2
+            boundary =tri.property(self.boundary_prop, vh)
+            if boundary is 0:
+                fh = mesh.face_handle(vh.idx())
+                for heh in mesh.fh(fh):
+                    # mirror this with the boundary calculation and forget about lvecprop
+                    rmu = omvec(mesh.point(mesh.from_vertex_handle(heh)))
+                    rmup = omvec(mesh.point(mesh.to_vertex_handle(heh)))
+                    area += np.dot(np.cross(rmu, rmup), self.normal)
+                    lvec = mesh.property(self.mesh_lvecprop, heh)
+                    l = norm(lvec)
+                    prim += l
+                area = area/2
+            else:
+                # calculate area for boundary vertices
+                hcell = self.halfcells[vhid]
+                hcellpts = map(lambda x: omvec(self.mesh.point(mesh.vertex_handle(x))), hcell) 
+                r_i = omvec(self.tri.point(vh))
+                hcellpts.append(r_i)
+                n = len(hcellpts)
+                for i, hpt in enumerate(hcellpts):
+                    ip = (i+1) % n
+                    area += np.dot(np.cross(hpt, hcellpts[ip]), self.normal)
+                    l = norm(hpt-hcellpts[ip])
+                    prim += l
+                area = area/2
             #print 'setting area of', area
             #print 'setting perimeter of', prim
-            mesh.set_property(areaprop, fh, area)
-            mesh.set_property(primprop, fh, prim)
+            self.tri.set_property(areaprop, vh, area)
+            self.tri.set_property(primprop, vh, prim)
 
-        self.mesh_areaprop = areaprop
-        self.mesh_primprop = primprop
-
-        if self.boundary:
-            # Calculate area and angular defecit for the boundary cells
-            for boundary in self.boundaries:
-                for vhid in boundary:
-                    hcell = self.halfcells[vhid]
-                    mu_1, mu_n = idtopt(mesh, hcell[0]), idtopt(mesh,hcell[-1])
-                    r_i = omvec(self.tri.point(self.tri.vertex_handle(vhid)))
-                    hcellpts = map(lambda x: omvec(self.tri.point(mesh.vertex_handle(x))), hcell) 
-                    hcellpts.append(r_i)
-                    te1 = np.dot(np.cross(r_i, mu_1), self.normal)
-                    te2 = -np.dot(np.cross(r_i, mu_n), self.normal)
-                    te3 = 0.
-                    for i, rmuid in enumerate(hcell[:-1]):
-                        rmu = idtopt(mesh, rmuid)
-                        rmup = idtopt(mesh, hcell[i+1])
-                        te3 += np.dot(np.cross(rmu, rmup), self.normal)
-                    area = te1 + te2 + te3
-                    print area
-
-                    #move area and perimeter from mesh faces to trimesh vertices
-
-                    #self.tri.set_property(areaprop, 
-            
+        self.areaprop = areaprop
+        self.primprop = primprop
 
     def set_constants(self, K, Gamma):
         # Putting aside the contact constants for now
         # Constants for Area and Perimeter should be in .dat file? Let them be set manually.
         # We shall use properties of the mesh again to keep everything consistent
         mesh = self.mesh
-        kprop = FPropHandle()
-        mesh.add_property(kprop, 'K')
-        gammaprop = FPropHandle()
-        mesh.add_property(gammaprop, 'Gamma')
+        kprop = VPropHandle()
+        self.tri.add_property(kprop, 'K')
+        gammaprop = VPropHandle()
+        self.tri.add_property(gammaprop, 'Gamma')
         #for fh in mesh.faces():
         for i, (ki, gi) in enumerate(zip(K, Gamma)):
-            fhidx = i
-            fh = mesh.face_handle(fhidx)
-            mesh.set_property(kprop, fh, ki)
-            mesh.set_property(gammaprop, fh, gi)
+            vh = self.tri.vertex_handle(i)
+            self.tri.set_property(kprop, vh, ki)
+            self.tri.set_property(gammaprop, vh, gi)
 
         self.kprop = kprop
         self.gammaprop = gammaprop
+
 
     def calculate_energy(self):
         # And attach values as a property to the faces of the mesh (inner vertices of triangulation)
         mesh = self.mesh
         tri = self.tri
-        # Organise the properties we will use
-        prefareaprop = VPropHandle()
-        assert tri.get_property_handle(prefareaprop, 'prefarea')
-        areaprop = FPropHandle()
-        assert mesh.get_property_handle(areaprop, 'area')
-        primprop = FPropHandle()
-        assert mesh.get_property_handle(primprop, 'prim')
+
         # might as well store the energy associated with each face
-        enprop = FPropHandle()
-        mesh.add_property(enprop, 'energy')
+        enprop = VPropHandle()
+        tri.add_property(enprop, 'energy')
 
         # Iterate over faces
         print 'calculating energies for each face'
@@ -350,15 +349,16 @@ class PVmesh(object):
             # get corresponding vertex
             # We are retrieving the preferred area from trimesh currently. Could be simpler.
             vh = tri.vertex_handle(fh.idx())
-            prefarea = tri.property( prefareaprop, vh )
-            area = mesh.property(areaprop, fh)
-            k = mesh.property(self.kprop, fh)
+            prefarea = tri.property( self.prefareaprop, vh )
+            area = self.tri.property(self.areaprop, vh)
+            k = self.tri.property(self.kprop, vh)
+
             farea = k/2 * (area - prefarea)**2
-            gamma = mesh.property(self.gammaprop, fh)
-            perim = mesh.property(primprop, fh)
+            gamma = tri.property(self.gammaprop, vh)
+            perim = tri.property(self.primprop, vh)
             fprim = gamma/2 * perim**2
             fen = farea + fprim
-            mesh.set_property(enprop, fh, fen)
+            tri.set_property(enprop, vh, fen)
             tenergy += fen
         print 'total energy of mesh', 
         print tenergy
@@ -370,11 +370,9 @@ class PVmesh(object):
         # Convenience
         mesh = self.mesh
         tri = self.tri
+
         tri_lprop = self.tri_lprop
         tri_lvecprop = self.tri_lvecprop
-
-        #drmudrp_prop = VPropHandle()
-        #mesh.add_property(drmudrp_prop, 'drmudrp')
 
         # drmudrp[mesh_vhid, mesh_fhid, :]
         drmudrp = {}
@@ -479,15 +477,18 @@ class PVmesh(object):
                 lvp = vplus - vhpt
                 dPdrmu[fhid][vhid] = lvm/norm(lvm) - lvp/norm(lvp)
 
-        fprop = FPropHandle()
-        mesh.add_property(fprop, 'force')
+
+
+
+        fprop = VPropHandle()
+        tri.add_property(fprop, 'force')
         self.fprop = fprop
 
-        self.imfprop = FPropHandle()
-        mesh.add_property(self.imfprop, 'imforce')
+        #self.imfprop = FPropHandle()
+        #mesh.add_property(self.imfprop, 'imforce')
 
-        self.nnfprop = FPropHandle()
-        mesh.add_property(self.nnfprop, 'nnforce')
+        #self.nnfprop = FPropHandle()
+        #mesh.add_property(self.nnfprop, 'nnforce')
 
         prefareaprop = VPropHandle()
         assert tri.get_property_handle(prefareaprop, 'prefarea')
@@ -534,15 +535,15 @@ class PVmesh(object):
                 interloops[fhidx][fhjdx] = intset
 
         # It remains to do some complicated math over loops of nearest neighbours, etc..
-        for fh in mesh.faces():
+        for trivh in tri.vertices():
+            fh = self.mesh.face_handle(trivh.idx())
             fhidx = fh.idx()
-            trivh = self.tri.vertex_handle(fhidx)
             # fhidx = trimesh vertices id
-            kp = mesh.property(self.kprop, fh)
-            gammap = mesh.property(self.gammaprop, fh)
-            area = mesh.property(self.mesh_areaprop, fh)
-            prefarea = self.tri.property(self.tri_prefareaprop, trivh)
-            prim = mesh.property(self.mesh_primprop, fh)
+            kp = tri.property(self.kprop, trivh)
+            gammap = tri.property(self.gammaprop, trivh)
+            area = tri.property(self.areaprop, trivh)
+            prim = tri.property(self.primprop, trivh)
+            prefarea = self.tri.property(self.prefareaprop, trivh)
 
             # Immediate contribution
             farea_fac = -(kp/2.) * (area - prefarea)  
@@ -575,11 +576,12 @@ class PVmesh(object):
                 fhnn = mesh.face_handle(fnn)
                 trivh = self.tri.vertex_handle(fnn)
 
-                kp = mesh.property(self.kprop, fhnn)
-                gammap = mesh.property(self.gammaprop, fhnn)
-                area = mesh.property(self.mesh_areaprop, fhnn)
-                prim = mesh.property(self.mesh_primprop, fhnn)
-                prefarea = self.tri.property(self.tri_prefareaprop, trivh)
+                kp = tri.property(self.kprop, trivh)
+                gammap = tri.property(self.gammaprop, trivh)
+
+                area = tri.property(self.areaprop, trivh)
+                prim = tri.property(self.primprop, trivh)
+                prefarea = tri.property(self.prefareaprop, trivh)
 
                 farea_fac = -(kp/2.) * (area - prefarea)  
                 fprim_fac = -(gammap) * prim
@@ -598,9 +600,10 @@ class PVmesh(object):
             nnforce = area_nnsum + prim_nnsum
             totalforce = imforce + nnforce
 
-            mesh.set_property(fprop, fh, totalforce)
-            mesh.set_property(self.imfprop, fh, imforce)
-            mesh.set_property(self.nnfprop, fh, nnforce)
+            print totalforce
+            tri.set_property(fprop, trivh, totalforce)
+            #mesh.set_property(self.imfprop, fh, imforce)
+            #mesh.set_property(self.nnfprop, fh, nnforce)
 
             #print totalforce
 
@@ -616,12 +619,13 @@ class PVmesh(object):
         outfe = OrderedDict()
         ids, energy, fx, fy = [], [], [], []
         for vh in self.tri.vertices():
-            if self.tri.is_boundary(vh):
+            if self.tri.is_boundary(vh) and self.boundary:
                 continue
             ids.append(vh.idx())
             fh = self.mesh.face_handle(vh.idx())
-            energy.append(self.mesh.property(self.enprop, fh))
-            fxx, fyy, _ = self.mesh.property(self.fprop, fh)
+            energy.append(self.tri.property(self.enprop, vh))
+            fvh =  self.tri.property(self.fprop, vh)
+            fxx, fyy, _ = fvh
             fx.append(fxx)
             fy.append(fyy)
         outfe['id'] = ids
@@ -660,7 +664,8 @@ class PVmesh(object):
         for f in dd.simplices:
             tri.add_face(list(mverts[f])) 
         PV = PVmesh(tri)
-        PV.tri_prefareaprop = prefareaprop # We cheekily add this to the initialisation to avoid recovering it later
+        # We cheekily add this to the initialisation to avoid recovering it later
+        PV.prefareaprop = prefareaprop
         return PV
 
 
@@ -683,7 +688,8 @@ if __name__=='__main__':
     PV = PVmesh.datbuild(rdat)
 
     # Handle K, and Gamma
-    nf = PV.mesh.n_faces()
+    #nf = PV.mesh.n_faces()
+    nf = PV.tri.n_vertices()
     # Could easily read these from a .conf file
     k = 1.
     gamma = 0.
@@ -692,7 +698,7 @@ if __name__=='__main__':
     PV.set_constants(K, Gamma)
 
     PV.calculate_energy()
-    PV.calculate_forces()
+    #PV.calculate_forces()
 
     from writemesh import *
     import os.path as path
@@ -703,12 +709,11 @@ if __name__=='__main__':
 
     mout = path.join(outdir, 'cellmesh.vtp')
     print 'saving ', mout
-    writemeshenergy(PV.mesh, mout)
+    writemeshenergy(PV, mout)
 
-    tout = path.join(outdir, 'trimesh.vtp')
-    print 'saving ', tout
-    #writemesh(PV.tri, tout)
-    writetriforce(PV, tout)
+    #tout = path.join(outdir, 'trimesh.vtp')
+    #print 'saving ', tout
+    #writetriforce(PV, tout)
 
     # Dump the force and energy
     fef = 'force_energy.dat'

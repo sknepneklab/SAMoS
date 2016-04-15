@@ -54,33 +54,53 @@ def writemesh(mesh, outfile):
 
 
 # take an openmesh object and write it as .vtk with faces
-def writemeshenergy(mesh, outfile):
-
-
+def writemeshenergy(PV, outfile):
+    
+    tri = PV.tri
+    mesh = PV.mesh
     Points = vtk.vtkPoints()
     Faces = vtk.vtkCellArray()
 
     energy = vtk.vtkDoubleArray()
     energy.SetNumberOfComponents(1)
     energy.SetName("energy")
-    enprop = FPropHandle()
-    mesh.get_property_handle(enprop, 'energy')
+    enprop = VPropHandle()
+    tri.get_property_handle(enprop, 'energy')
 
     force = vtk.vtkDoubleArray()
     force.SetNumberOfComponents(3)
     force.SetName("force")
-    fprop = FPropHandle()
-    assert mesh.get_property_handle(fprop, 'force')
+    fprop = VPropHandle()
+    assert tri.get_property_handle(fprop, 'force')
 
     for vh in mesh.vertices():
         pt =omvec(mesh.point(vh))
         Points.InsertNextPoint(pt)
 
-    for fh in mesh.faces():
+    # throw the edge vertices on the end
+    nmv = mesh.n_vertices()
+    boundary_vmap  = {}
+    i = 0 # the boundary vertice count
+    for boundary in PV.boundaries:
+        for vhid in boundary:
+            boundary_vmap[vhid] = nmv + i
+            pt = omvec(tri.point(tri.vertex_handle(vhid)))
+            Points.InsertNextPoint(pt)
+            i += 1
+        
+
+    # Can actually add the boundary polygons here and show them 
+    for vh in tri.vertices():
+        fh = mesh.face_handle(vh.idx())
         vhids = []
-        for vh in mesh.fv(fh):
-            # need to store all the relevant vertex ids
-            vhids.append(vh.idx())
+        boundary = tri.is_boundary(vh)
+        if not boundary:
+            for vh in mesh.fv(fh):
+                # need to store all the relevant vertex ids
+                vhids.append(vh.idx())
+        else:
+            # We append the vertex id that we are assigning to the edge vertex above
+            vhids = PV.halfcells[vh.idx()] + np.array([boundary_vmap[vh.idx()]])
         n = len(vhids)
         Polygon = vtk.vtkPolygon()
         Polygon.GetPointIds().SetNumberOfIds(n)
@@ -88,10 +108,12 @@ def writemeshenergy(mesh, outfile):
             Polygon.GetPointIds().SetId(i, vhid)
         Faces.InsertNextCell(Polygon)
 
-        fen = mesh.property(enprop, fh)
+        fen = tri.property(enprop, vh)
         energy.InsertNextValue(fen)
 
-        fov = mesh.property(fprop, fh)
+        fov = tri.property(fprop, vh)
+        if fov is None:
+            fov = [0.,0.,0.]
         force.InsertNextTuple3(*fov)
 
 
