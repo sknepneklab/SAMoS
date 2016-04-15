@@ -944,6 +944,7 @@ int main(int argc, char* argv[])
                   }
                   if (nlist_rebuild)
                   {
+                    cout << "Rebuilding neighbour list at time step : " << t << endl;
                     nlist->build();
                     nlist_builds++;
                   }

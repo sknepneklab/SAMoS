@@ -66,7 +66,7 @@ void NeighbourList::build()
   
  for (int i = 0; i < m_system->size(); i++)
  {
-   Particle& p = m_system->get_particle(i);
+   //Particle& p = m_system->get_particle(i);
    //p.coordination = 0;
    m_list.push_back(vector<int>());
    if (m_build_contacts)

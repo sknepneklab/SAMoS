@@ -339,10 +339,10 @@ void PairVertexParticlePotential::compute(double dt)
         pi.fz += area_fact*area_vec.z;
         if (vi.boundary)
         {
-          double add_area = 2.0*area_fact*pi.A0;
-          pi.fx -= add_area*add_area_vec.x;
-          pi.fy -= add_area*add_area_vec.y;
-          pi.fz -= add_area*add_area_vec.z;
+          double add_area = -2.0*area_fact*pi.A0;
+          pi.fx += add_area*add_area_vec.x;
+          pi.fy += add_area*add_area_vec.y;
+          pi.fz += add_area*add_area_vec.z;
         }
         // perimeter term
         double perim_fact = -alpha*perim_term;
