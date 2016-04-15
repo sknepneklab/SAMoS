@@ -70,6 +70,9 @@ def scatter(mesh, mesh2):
 def omvec(vec):
     return np.array([vec[0], vec[1], vec[2]])
 
+def idtopt(mesh, rmuid):
+    return omvec(mesh.point(mesh.vertex_handle(rmuid)))
+
 class PVmesh(object):
     def __init__(self, tri):
 
@@ -282,22 +285,29 @@ class PVmesh(object):
         self.mesh_areaprop = areaprop
         self.mesh_primprop = primprop
 
-        #Lets move the prefarea onto the mesh aswell
-        tri_prefareaprop = VPropHandle()
-        assert self.tri.get_property_handle(tri_prefareaprop, 'prefarea')
+        if self.boundary:
+            # Calculate area and angular defecit for the boundary cells
+            for boundary in self.boundaries:
+                for vhid in boundary:
+                    hcell = self.halfcells[vhid]
+                    mu_1, mu_n = idtopt(mesh, hcell[0]), idtopt(mesh,hcell[-1])
+                    r_i = omvec(self.tri.point(self.tri.vertex_handle(vhid)))
+                    hcellpts = map(lambda x: omvec(self.tri.point(mesh.vertex_handle(x))), hcell) 
+                    hcellpts.append(r_i)
+                    te1 = np.dot(np.cross(r_i, mu_1), self.normal)
+                    te2 = -np.dot(np.cross(r_i, mu_n), self.normal)
+                    te3 = 0.
+                    for i, rmuid in enumerate(hcell[:-1]):
+                        rmu = idtopt(mesh, rmuid)
+                        rmup = idtopt(mesh, hcell[i+1])
+                        te3 += np.dot(np.cross(rmu, rmup), self.normal)
+                    area = te1 + te2 + te3
+                    print area
 
-        prefareaprop = FPropHandle()
-        mesh.add_property(prefareaprop, 'prefarea')
-        for vh in self.tri.vertices():
-            if self.tri.is_boundary(vh):
-                continue
-            fhid = vh.idx()
-            fh = mesh.face_handle(fhid)
-            prefarea = self.tri.property(tri_prefareaprop, vh)
-            mesh.set_property(prefareaprop, fh, prefarea)
+                    #move area and perimeter from mesh faces to trimesh vertices
 
-        self.mesh_prefareaprop = prefareaprop
-
+                    #self.tri.set_property(areaprop, 
+            
 
     def set_constants(self, K, Gamma):
         # Putting aside the contact constants for now
@@ -526,11 +536,12 @@ class PVmesh(object):
         # It remains to do some complicated math over loops of nearest neighbours, etc..
         for fh in mesh.faces():
             fhidx = fh.idx()
-            # fhidx = trimesh vertices
+            trivh = self.tri.vertex_handle(fhidx)
+            # fhidx = trimesh vertices id
             kp = mesh.property(self.kprop, fh)
             gammap = mesh.property(self.gammaprop, fh)
             area = mesh.property(self.mesh_areaprop, fh)
-            prefarea = mesh.property(self.mesh_prefareaprop, fh)
+            prefarea = self.tri.property(self.tri_prefareaprop, trivh)
             prim = mesh.property(self.mesh_primprop, fh)
 
             # Immediate contribution
@@ -562,11 +573,13 @@ class PVmesh(object):
             for fnn, vidset in interloops[fhidx].items():
                 #print 'looping over %d vertices' % len(vidset)
                 fhnn = mesh.face_handle(fnn)
+                trivh = self.tri.vertex_handle(fnn)
+
                 kp = mesh.property(self.kprop, fhnn)
                 gammap = mesh.property(self.gammaprop, fhnn)
-                prefarea = mesh.property(self.mesh_prefareaprop, fhnn)
                 area = mesh.property(self.mesh_areaprop, fhnn)
                 prim = mesh.property(self.mesh_primprop, fhnn)
+                prefarea = self.tri.property(self.tri_prefareaprop, trivh)
 
                 farea_fac = -(kp/2.) * (area - prefarea)  
                 fprim_fac = -(gammap) * prim
@@ -647,6 +660,7 @@ class PVmesh(object):
         for f in dd.simplices:
             tri.add_face(list(mverts[f])) 
         PV = PVmesh(tri)
+        PV.tri_prefareaprop = prefareaprop # We cheekily add this to the initialisation to avoid recovering it later
         return PV
 
 
