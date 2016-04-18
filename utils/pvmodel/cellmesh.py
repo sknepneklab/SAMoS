@@ -10,7 +10,7 @@ from read_data import ReadData
 
 from QET.qet import QET
 
-
+from math import pi 
 
 import sys
 
@@ -107,10 +107,7 @@ class PVmesh(object):
         self._set_face_properties()
         
     def _helengths(self, tri):
-        #store lengths as half edge property
-        # And also half edge vectors
-
-        # phase out this property and keep vectors
+        # store half edge vectors as half edge property
 
         lvecprop = HPropHandle()
         tri.add_property(lvecprop, 'lvec')
@@ -179,7 +176,6 @@ class PVmesh(object):
         self.b_nheh = []
 
         # Trimesh vertice ids and mesh faces ids naturally match up
-
         ccenters = np.zeros((self.tri.n_faces(),3))
         for j, fh in enumerate(self.tri.faces()):
             # Calculate circumcentres of mesh
@@ -259,11 +255,14 @@ class PVmesh(object):
         self.tri.add_property(areaprop, 'area')
         primprop = VPropHandle()
         self.tri.add_property(primprop, 'prim')
+        self.btheta_prop = VPropHandle()
+        self.tri.add_property(self.btheta_prop, 'angular defecit')
 
         for vh in tri.vertices():
             vhid = vh.idx()
             area = 0.
             prim = 0.
+            ag = 1. # Angular defecit. Set it to one for internal vertices
             boundary =tri.property(self.boundary_prop, vh)
             if boundary is 0:
                 fh = mesh.face_handle(vh.idx())
@@ -289,6 +288,22 @@ class PVmesh(object):
                     l = norm(hpt-hcellpts[ip])
                     prim += l
                 area = area/2
+
+                # Calculate angular defecit for boundary vertices
+                # Could store real angular defecit here or the updated target areas
+                # Go with storing angular defecit
+                r_p = omvec(tri.point(vh))
+                hc = self.halfcells[vh.idx()]
+                r_mu_1, r_mu_n = idtopt(mesh, hc[0]), idtopt(mesh, hc[-1])
+                r_mu_1_p = r_mu_1 - r_p
+                r_mu_n_p = r_mu_n - r_p
+                dtheta = np.arccos( np.dot(r_mu_1_p, r_mu_n_p) / (norm(r_mu_1_p) * norm(r_mu_n_p)) )
+                sg = np.dot( np.cross(r_mu_1_p , r_mu_n_p), self.normal) >= 0
+                ag = dtheta if sg else 2*pi - dtheta
+                ag /= 2*pi
+
+            self.tri.set_property(self.btheta_prop, vh, ag)
+            #print 'setting angular defecit of', ag
             #print 'setting area of', area
             #print 'setting perimeter of', prim
             self.tri.set_property(areaprop, vh, area)
@@ -329,13 +344,13 @@ class PVmesh(object):
         print 'calculating energies for each face'
         tenergy = 0
         for vh in tri.vertices():
-            #vh = tri.vertex_handle(fh.idx())
 
             prefarea = tri.property( self.prefareaprop, vh )
+            ag = tri.property( self.btheta_prop,vh)
             area = self.tri.property(self.areaprop, vh)
             k = self.tri.property(self.kprop, vh)
 
-            farea = k/2 * (area - prefarea)**2
+            farea = k/2 * (area - ag*prefarea)**2
             gamma = tri.property(self.gammaprop, vh)
             perim = tri.property(self.primprop, vh)
             fprim = gamma/2 * perim**2
@@ -408,22 +423,12 @@ class PVmesh(object):
             lambdaq = tri.property(self.lambda_prop, tri_fh)
 
             gamma = sum(lambdaq.values())
-            # Now for the jacobian
-            # mu is fixed here, we are inside the loop over mesh vertices
-            # I switch the terms in the einsum and outer here so that the Jacobian is the right way around
-            # Update the notes to reflect this accurately
-
-            # OK now I am really confused. Switch the order in the t3 term doesn't change anything in the single cell case.
-            # Which way round should they both be?
+            # The jacobian for each mesh vertex and adjacent face
             for p in dlamqdrp.keys():
                 t1 = gamma * np.einsum('qm,qn->mn', r_q, dlamqdrp[p])
-                #t1 = gamma * np.einsum('qm,qn->mn', dlamqdrp[p], r_q)
                 t2 = gamma * lambdaq[p] * np.identity(3)
                 lqrq = np.einsum('q,qn->n', lambdaq.values(), r_q)
-                t3 = np.outer(lqrq, dLambdadrp[p])
-                #t3 = np.outer(dLambdadrp[p], lqrq)
                 drmudrp[vh.idx()][p] = (1/gamma**2) * (t1 + t2 - t3)
-                #drmudrp[vh.idx()][p] = drmudrp[vh.idx()][p].T 
 
         # dAdrmu[fhid][vhid]  
         dAdrmu = {}

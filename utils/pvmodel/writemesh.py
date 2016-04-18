@@ -116,11 +116,6 @@ def writemeshenergy(pv, outfile):
         b_id = tri.property(pv.boundary_prop, vh)
         boundary.InsertNextValue(b_id)
 
-        #fov = tri.property(fprop, vh)
-        #if fov is None:
-            #fov = [0.,0.,0.]
-        #force.InsertNextTuple3(*fov) 
-
     print 'added faces', nfaces
 
 
