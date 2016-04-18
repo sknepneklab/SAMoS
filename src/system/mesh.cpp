@@ -443,11 +443,7 @@ double Mesh::dual_area(int v)
     {
       Face& F = m_faces[V.faces[f]];
       Face& Fn = m_faces[V.faces[f+1]];
-      V.area += dot(cross(F.rc-V.r,Fn.rc-V.r),V.N);
-      cout << F << endl;
-      cout << "area : " << this->face_area(F.id);
-      cout << Fn << endl;
-      cout << dot(cross(F.rc-V.r,Fn.rc-V.r),V.N) << endl;
+      V.area += cross(F.rc-V.r,Fn.rc-V.r).len();
     }
   }
   /*
@@ -480,13 +476,7 @@ double Mesh::dual_area(int v)
   */ 
   V.area *= 0.5;
 
-  /*
-  if (V.area < 0.0) 
-  {
-    cout << V << endl;
-    
-  }
-  */
+  
   return V.area;
 }
 
@@ -963,11 +953,9 @@ double Mesh::angle_factor(int v)
   Vertex& Vi = m_vertices[v];
   if (!Vi.boundary)
     return 1.0;
-  
-  Edge& E1 = m_edges[Vi.edges[0]];    // First edge is a boundary edge
-  Edge& En = m_edges[m_edges[Vi.edges[Vi.n_edges-1]].pair];
-  Face& f1 = m_faces[E1.face];
-  Face& fn = m_faces[En.face];
+ 
+  Face& f1 = m_faces[Vi.faces[0]];
+  Face& fn = m_faces[Vi.faces[Vi.n_faces-2]];
   
   Vector3d r_nu_1_i = f1.rc - Vi.r;
   Vector3d r_nu_n_i = fn.rc - Vi.r;
@@ -992,16 +980,13 @@ void Mesh::angle_factor_deriv(int v)
   
   V.angle_def.clear();
   
-  Edge& E1 = m_edges[V.edges[0]];
-  Edge& En = m_edges[m_edges[V.edges[V.n_edges-1]].pair];
-  
-  Face& f1 = m_faces[E1.face];
-  Face& fn = m_faces[En.face];
+  Face& f1 = m_faces[V.faces[0]];
+  Face& fn = m_faces[V.faces[V.n_faces-2]];
   
   if (f1.n_sides != 3 || fn.n_sides != 3)
     return;
   
-  Vertex& Vj = m_vertices[E1.to];
+  Vertex& Vj = m_vertices[m_edges[V.edges[0]].to];
   Vertex& Vk = m_vertices[m_edges[V.edges[V.n_edges-1]].to];
   
   Vector3d  r_nu_1_ri = f1.rc - V.r;
