@@ -428,6 +428,7 @@ class PVmesh(object):
                 t1 = gamma * np.einsum('qm,qn->mn', r_q, dlamqdrp[p])
                 t2 = gamma * lambdaq[p] * np.identity(3)
                 lqrq = np.einsum('q,qn->n', lambdaq.values(), r_q)
+                t3 = np.outer(lqrq, dLambdadrp[p])
                 drmudrp[vh.idx()][p] = (1/gamma**2) * (t1 + t2 - t3)
 
         # dAdrmu[fhid][vhid]  
