@@ -147,6 +147,7 @@ class PVmesh(object):
         # We need to find the boundary one specifically
         for heh in mesh.voh(vh):
             if is_boundary_he(mesh, heh):
+                #print 'found boundary edge for vhid', vh.idx()
                 start_he = heh
         assert start_he is not None
         he_i = start_he
@@ -158,6 +159,16 @@ class PVmesh(object):
                     raise StopIteration
         return iterable(he_i, start_he, mesh)
 
+    def iterate_boundary_vertex(self, tri, hehp):
+        assert tri.is_boundary(hehp)
+        facels = []
+        while True:
+            heho = tri.opposite_halfedge_handle(hehp)
+            if tri.is_boundary(heho):
+                break
+            facels.append(tri.face_handle(heho).idx())
+            hehp = tri.prev_halfedge_handle(heho)
+        return facels
 
     def _dual(self):
         print 'calculating the dual'
@@ -234,26 +245,10 @@ class PVmesh(object):
                     fhs.append(fh_this.idx())
                     heh = heho
 
-                # need a dictionary to map trimesh face ids onto mesh vertices (ccenters)
-                # or do we (?)
                 vhs = list(mverts[fhs])
                 mfh = self.mesh.add_face(vhs)
                 self.tri.set_property(self.boundary_prop, vh, 0)
 
-        #if self.boundary:
-            ## Keep track of the boundary half-faces
-            ## Keep in mind there could be several boundaries
-            ##vhids = map(lambda x: x.idx(), list(self.tri.vertices()))
-            #for vh in self.tri.vertices():
-                #if self.tri.is_boundary(vh):
-                    #is_new = True not in map(lambda boundary: vh.idx() in boundary, self.boundaries)
-                    #if is_new:
-                        #print 'new boundary'
-                        #self.boundaries.append([])
-                        #self.b_nheh.append([])
-                        #for heh in self.iterable_boundary(self.tri, vh):
-                            #self.boundaries[-1].append( self.tri.from_vertex_handle(heh).idx() )
-                            #self.b_nheh[-1].append(heh)
             for i, boundary in enumerate(self.boundaries):
                 for j, vhid in enumerate(boundary):
                     vh = self.tri.vertex_handle(vhid)
@@ -261,11 +256,18 @@ class PVmesh(object):
                     hehp = self.tri.prev_halfedge_handle(hehn)
                     heho = self.tri.opposite_halfedge_handle(hehp)
                     first_fhid = self.tri.face_handle(heho).idx()
-                    halfcell = np.array([fh.idx() for fh in self.tri.vf(vh)])
+
+                    # write custom function for iterating around a vertex starting from hehp
+                    halfcell= self.iterate_boundary_vertex(self.tri, hehp)
+
+                    #halfcell = np.array([fh.idx() for fh in self.tri.vf(vh)])
                     # re-ordering 
-                    n = np.where(halfcell==first_fhid)[0][0]
-                    halfcell = np.roll(halfcell, n)
+                    #n = np.where(halfcell==first_fhid)[0][0]
+                    #halfcell = np.roll(halfcell, n)
+
                     self.halfcells[vhid] = halfcell
+        #print 'length of boundary'
+        #print len(self.boundaries[0])
                     
 
     def _set_face_properties(self):
@@ -345,10 +347,9 @@ class PVmesh(object):
         # Iterate over faces
         print 'calculating energies for each face'
         tenergy = 0
-        for fh in mesh.faces():
-            # get corresponding vertex
-            # We are retrieving the preferred area from trimesh currently. Could be simpler.
-            vh = tri.vertex_handle(fh.idx())
+        for vh in tri.vertices():
+            #vh = tri.vertex_handle(fh.idx())
+
             prefarea = tri.property( self.prefareaprop, vh )
             area = self.tri.property(self.areaprop, vh)
             k = self.tri.property(self.kprop, vh)
@@ -444,11 +445,10 @@ class PVmesh(object):
                 drmudrp[vh.idx()][p] = (1/gamma**2) * (t1 + t2 - t3)
                 #drmudrp[vh.idx()][p] = drmudrp[vh.idx()][p].T 
 
-            #aa,ab,ac = dlamqdrp.values()
-
         # dAdrmu[fhid][vhid]  
         dAdrmu = {}
         dPdrmu = {}
+        # todo vertices
         for fh in mesh.faces():
             fhid = fh.idx()
             dAdrmu[fhid] = {}
@@ -477,9 +477,6 @@ class PVmesh(object):
                 lvp = vplus - vhpt
                 dPdrmu[fhid][vhid] = lvm/norm(lvm) - lvp/norm(lvp)
 
-
-
-
         fprop = VPropHandle()
         tri.add_property(fprop, 'force')
         self.fprop = fprop
@@ -490,14 +487,13 @@ class PVmesh(object):
         #self.nnfprop = FPropHandle()
         #mesh.add_property(self.nnfprop, 'nnforce')
 
-        prefareaprop = VPropHandle()
-        assert tri.get_property_handle(prefareaprop, 'prefarea')
-
         # Could iterate over all the vertices and assign loops 
         # Put this in a separate loop for now since it is a bit special
 
         # setup helper functions
         # It's natural to use sets and the intersect() method for dealing with loops
+
+        # deal with boundaries
         def loop(fh):
             vhs = []
             for vh in mesh.fv(fh):
@@ -545,19 +541,19 @@ class PVmesh(object):
             prim = tri.property(self.primprop, trivh)
             prefarea = self.tri.property(self.prefareaprop, trivh)
 
+            # tmp
+            boundary = tri.is_boundary(trivh)
+            if boundary:
+                totalforce = np.zeros(3)
+                tri.set_property(fprop, trivh, totalforce)
+                continue
+
             # Immediate contribution
             farea_fac = -(kp/2.) * (area - prefarea)  
             fprim_fac = -(gammap) * prim
             asum = np.zeros(3)
             psum = np.zeros(3)
             for mu in loop(fh):
-                # order mn really important
-                #ac = np.einsum('mn,m->n', np.transpose(drmudrp[mu][fhidx]), dAdrmu[fhidx][mu])
-                #ac = np.einsum('nm,m->n', drmudrp[mu][fhidx], dAdrmu[fhidx][mu])
-                # This essentially transposes drmudrp and then multiplies.
-                # Check explicitely with Rastko. I don't know why the chain rule specifies the order of the terms here.
-                # However I am pretty sure that the result is correct.
-                # change the Jacobian to be the right way round. Then this should be n,nm -> m
                 ac = np.einsum('n,nm->m', dAdrmu[fhidx][mu], drmudrp[mu][fhidx])
                 pc = np.einsum('n,nm->m', dPdrmu[fhidx][mu], drmudrp[mu][fhidx])
                 asum += ac
@@ -578,7 +574,6 @@ class PVmesh(object):
 
                 kp = tri.property(self.kprop, trivh)
                 gammap = tri.property(self.gammaprop, trivh)
-
                 area = tri.property(self.areaprop, trivh)
                 prim = tri.property(self.primprop, trivh)
                 prefarea = tri.property(self.prefareaprop, trivh)
@@ -598,14 +593,12 @@ class PVmesh(object):
 
             imforce = farea + fprim
             nnforce = area_nnsum + prim_nnsum
+
             totalforce = imforce + nnforce
 
-            print totalforce
             tri.set_property(fprop, trivh, totalforce)
             #mesh.set_property(self.imfprop, fh, imforce)
             #mesh.set_property(self.nnfprop, fh, nnforce)
-
-            #print totalforce
 
             # we got all the way to a value but now we need to go back and
             # fix up the r_q, lambda_q etc..
@@ -678,7 +671,7 @@ if __name__=='__main__':
  
     parser.add_argument("-i", "--input", type=str, default=epidat, help="Input dat file")
     parser.add_argument("-d", "--dir", type=str, default='/home/dan/tmp/', help="Output directory")
-    #parser.add_argument("-o", "--input", type=str, default=epidat, help="Input dat file")
+    #parser.add_argument("-o", "--output", type=str, default=epidat, help="Input dat file")
 
     args = parser.parse_args()
     epidat = args.input
@@ -698,7 +691,7 @@ if __name__=='__main__':
     PV.set_constants(K, Gamma)
 
     PV.calculate_energy()
-    #PV.calculate_forces()
+    PV.calculate_forces()
 
     from writemesh import *
     import os.path as path
@@ -708,16 +701,16 @@ if __name__=='__main__':
 
 
     mout = path.join(outdir, 'cellmesh.vtp')
-    print 'saving ', mout
+    #print 'saving ', mout
     writemeshenergy(PV, mout)
 
-    #tout = path.join(outdir, 'trimesh.vtp')
+    tout = path.join(outdir, 'trimesh.vtp')
     #print 'saving ', tout
-    #writetriforce(PV, tout)
+    writetriforce(PV, tout)
 
     # Dump the force and energy
     fef = 'force_energy.dat'
-    PV.out_force_energy(fef)
+    #PV.out_force_energy(fef)
 
 
 
