@@ -231,8 +231,9 @@ void Mesh::update_dual_mesh()
 
 /*! Once the mesh is read in, we need to set things like
  *  boundary flags.
+ *  \param flag if true order vertex star
 */ 
-void Mesh::postprocess()
+void Mesh::postprocess(bool flag)
 {
   m_size = m_vertices.size();
   m_nedge = m_edges.size();
@@ -263,8 +264,11 @@ void Mesh::postprocess()
     E.pair = Epair.id;
     Epair.pair = E.id;
   }
-  for (int v = 0; v < m_size; v++)
-    this->order_star(v);
+  if (flag)
+  {
+    for (int v = 0; v < m_size; v++)
+      this->order_star(v);
+  }
 }
 
 /*! Computes centre of a face. If the face is not triangle, compute geometric centre.
@@ -280,17 +284,11 @@ void Mesh::compute_centre(int f)
   bool geom = false;
   if (face.n_sides > 3)
     geom = true;
-  //else
-  //  for (int i = 0; i < face.n_sides; i++)
-  //    if (face.angles[i] < 0.0)  geom = true;   // angles holds cosines; negative cosine means angle > PI/2 ==> obtuse
+  
   if (geom) this->compute_geometric_centre(f);
   else this->compute_circumcentre(f);  
   
-  //this->compute_geometric_centre(f);
-  //if (!m_circumcenter && face.n_sides > 3)
-  //  this->compute_geometric_centre(f);
-  //else
-  //  this->compute_circumcentre(f); 
+   
 }
 
 /*! Computes cosines of interior angles at each vertex of the face. 
@@ -327,6 +325,7 @@ void Mesh::order_star(int v)
   Vertex& V = m_vertices[v];
   V.dual.clear();
   V.neigh.clear();
+  V.faces.clear();
   vector<int> edges;
   
   if (V.edges.size() > 0)
@@ -338,16 +337,16 @@ void Mesh::order_star(int v)
       int face = m_edges[edges[idx]].face;
       for (unsigned int e = 0; e < V.edges.size(); e++)
       {
-        Edge& Ej = m_edges[V.edges[e]];
-        if (m_edges[Ej.pair].face == face)
+        Edge& E = m_edges[V.edges[e]];
+        if (m_edges[E.pair].face == face)
         {
-          edges.push_back(V.edges[e]);
+          edges.push_back(E.id);
           break;
         }
       }
     }
     copy(edges.begin(),edges.end(),V.edges.begin());
-    // Here we handle edges along the hole.
+    // Here we handle duals, neighbours and faces 
     for (int e = 0; e < V.n_edges; e++)
     {
       Edge& E = m_edges[V.edges[e]];
@@ -355,36 +354,48 @@ void Mesh::order_star(int v)
       {
         V.dual.push_back(E.dual);
       }
-      else
+      V.neigh.push_back(E.to);
+      V.faces.push_back(E.face);
+    }
+    // Now make sure that the star is ordered counterclockwise
+    // We do that by computing cross product of the first two edge
+    // vectors and dot it with the vertex normal
+    int p = 0;
+    if (V.n_edges > 2)
+      for (int e = 0; e < V.n_edges; e++)
       {
-        int prev = (e == 0) ? V.n_edges - 1 : e-1;
-        int next = (e == V.n_edges - 1) ? 0 : e+1;
-        Edge& Ep = m_edges[m_edges[V.edges[prev]].pair];
-        Edge& En = m_edges[m_edges[V.edges[next]].pair];
-        if (m_faces[Ep.face].is_hole)
-        { 
-          V.dual.push_back(Ep.dual);
-          V.dual.push_back(E.dual);
-        }
-        else 
+        Edge& E = m_edges[V.edges[e]];
+        int n = (e == V.edges.size() - 1) ? 0 : e + 1;
+        Edge& En = m_edges[V.edges[n]];
+        if (!(E.boundary && En.boundary))
         {
-          V.dual.push_back(E.dual);
-          V.dual.push_back(En.dual);
+          p = e;
+          break; 
         }
       }
-      V.neigh.push_back(E.to);
+    Edge& E = m_edges[V.edges[p]];
+    int n = (p == V.edges.size() - 1) ? 0 : p + 1;
+    Edge& En = m_edges[V.edges[n]];
+    Vector3d r1 = m_vertices[E.to].r - V.r;
+    Vector3d r2 = m_vertices[En.to].r - V.r;
+    if (dot(cross(r1,r2),V.N) < 0.0)
+    {
+      reverse(V.dual.begin(),V.dual.end());
+      reverse(V.edges.begin(),V.edges.end());
+      reverse(V.neigh.begin(),V.neigh.end());
+      reverse(V.faces.begin(),V.faces.end());
     }
     // Now we make sure that the start around boundary vertex is
     // ordered such that first edge is a boundary edge.
     if (V.boundary)
     {
       int pos = 0;
-      for (int i = 0; i < V.n_edges; i++)
+      for (int f = 0; f < V.n_faces; f++)
       {
-        Edge& E = m_edges[V.edges[i]];
-        if (m_edges[E.pair].boundary)
+        Face& F = m_faces[V.faces[f]];
+        if (F.is_hole)
         {
-          pos = i;
+          pos = (f == V.n_faces-1) ? 0 : f + 1;
           break;
         }
       }
@@ -418,6 +429,30 @@ double Mesh::dual_area(int v)
   V.area = 0.0;
   if (!V.boundary)
   {
+    for (int f = 0; f < V.n_faces; f++)
+    {
+      int fn = (f == V.n_faces - 1) ? 0 : f + 1;
+      Face& F = m_faces[V.faces[f]];
+      Face& Fn = m_faces[V.faces[fn]];
+      V.area += dot(cross(F.rc,Fn.rc),V.N);
+    }
+  }
+  else
+  {
+    for (int f = 0; f < V.n_faces-2; f++)
+    {
+      Face& F = m_faces[V.faces[f]];
+      Face& Fn = m_faces[V.faces[f+1]];
+      V.area += dot(cross(F.rc-V.r,Fn.rc-V.r),V.N);
+      cout << F << endl;
+      cout << "area : " << this->face_area(F.id);
+      cout << Fn << endl;
+      cout << dot(cross(F.rc-V.r,Fn.rc-V.r),V.N) << endl;
+    }
+  }
+  /*
+  if (!V.boundary)
+  {
     for (unsigned int i = 0; i < V.dual.size(); i++)
     {
       int j = ( i == V.dual.size()-1) ? 0 : i + 1;
@@ -440,34 +475,18 @@ double Mesh::dual_area(int v)
         Vector3d rr = cross(V.r-face.rc,V.r-face_n.rc);
         V.area += fabs(dot(rr,V.N.unit()));
       }
-      /*
-      if (face.boundary && !face.obtuse)
-      {
-        for (int i = 0; i < face.n_sides; i++)
-          if (m_edges[m_edges[face.edges[i]].pair].boundary) 
-          {
-            Edge& E = m_edges[face.edges[i]];
-            Vector3d& rj = m_vertices[E.from].r;
-            Vector3d& rk = m_vertices[E.to].r;
-            Vector3d r = 0.5*(rj+rk);
-            Vector3d  rr = cross(V.r-r,V.r-face.rc);
-            V.area += fabs(dot(rr,V.N.unit()));
-            break;
-          }
-      }
-      */
     }
   }
-   
+  */ 
   V.area *= 0.5;
+
+  /*
   if (V.area < 0.0) 
   {
-    V.area = -V.area;
-    reverse(V.dual.begin(),V.dual.end());
-    reverse(V.edges.begin(),V.edges.end());
-    reverse(V.neigh.begin(),V.neigh.end());
+    cout << V << endl;
+    
   }
-  
+  */
   return V.area;
 }
 
@@ -1163,6 +1182,13 @@ double Mesh::face_area(int f)
   }
   
   face.area *= 0.5;
+  
+  if (std::isnan(face.area))
+  {
+    cout << m_vertices[face.vertices[0]] << endl;
+    cout << m_vertices[face.vertices[1]] << endl;
+    cout << m_vertices[face.vertices[2]] << endl;
+  }
   
   return face.area;
 }

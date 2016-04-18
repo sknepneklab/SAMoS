@@ -99,7 +99,7 @@ void NeighbourList::build_mesh()
     if (m_triangulation)
     {
       this->build_contacts();
-      this->build_faces();
+      this->build_faces(false);
       this->build_triangulation();
     }
     else
@@ -107,7 +107,7 @@ void NeighbourList::build_mesh()
       this->build_contacts();
   }
   if (m_build_faces)
-    this->build_faces();
+    this->build_faces(true);
 }
 
 // Private methods below
@@ -357,8 +357,9 @@ bool NeighbourList::contact_intersects(int i, int j)
 
 /*! Build faces using contact network 
  *  Assumes that contacts have been built. 
+ *  \param flag if true do the postprocessing of the mesh
 **/
-void NeighbourList::build_faces()
+void NeighbourList::build_faces(bool flag)
 {
   Mesh& mesh = m_system->get_mesh();
   mesh.reset();
@@ -375,8 +376,9 @@ void NeighbourList::build_faces()
   mesh.set_max_face_perim(m_max_perim);
   mesh.generate_faces();
   mesh.generate_dual_mesh();
-  mesh.postprocess();
-  m_system->update_mesh();
+  mesh.postprocess(flag);
+  if (flag)
+    m_system->update_mesh();
   
   /*
    bool removed_obtuse = false;
