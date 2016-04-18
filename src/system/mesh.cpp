@@ -331,6 +331,7 @@ void Mesh::order_star(int v)
   
   if (V.edges.size() > 0)
   {
+    cout << "before : " << V << endl;
     edges.push_back(V.edges[0]);
     while (edges.size() < V.edges.size())
     {
@@ -347,6 +348,7 @@ void Mesh::order_star(int v)
       }
     }
     copy(edges.begin(),edges.end(),V.edges.begin());
+    cout << "after : " << V << endl;
     // Here we handle edges along the hole.
     for (int e = 0; e < V.n_edges; e++)
     {
