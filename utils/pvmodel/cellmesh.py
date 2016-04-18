@@ -81,7 +81,7 @@ class PVmesh(object):
         self.mesh = None
 
         # openmesh doesn't store edge lengths?
-        self.tri_lprop, self.tri_lvecprop =  self._helengths(self.tri)
+        self.tri_lvecprop =  self._helengths(self.tri)
         print
         print 'trimesh'
         diagnose(self.tri)
@@ -97,7 +97,7 @@ class PVmesh(object):
         diagnose(self.mesh)
 
         print 'Calculating edge lengths for mesh'
-        self.mesh_lprop, self.mesh_lvecprop = self._helengths(self.mesh)
+        self.mesh_lvecprop = self._helengths(self.mesh)
 
         # Set face normal to e_z
         self.normal = np.array([0,0,1])
@@ -111,13 +111,10 @@ class PVmesh(object):
         # And also half edge vectors
 
         # phase out this property and keep vectors
-        lprop = HPropHandle()
-        tri.add_property(lprop, 'length_s')
 
         lvecprop = HPropHandle()
         tri.add_property(lvecprop, 'lvec')
 
-        #mesh.add_property(lprop, 'length')
         for eh in tri.edges():
             heh = tri.halfedge_handle(eh, 0)
             heho = tri.opposite_halfedge_handle(heh)
@@ -126,15 +123,11 @@ class PVmesh(object):
             npvt = omvec(tri.point(vt))
             npvf = omvec(tri.point(vf))
             vedge = npvt - npvf
-            ls = sum(vedge**2)
-
-            tri.set_property(lprop, heh, ls)
-            tri.set_property(lprop, heho, ls)
 
             tri.set_property(lvecprop, heh, vedge)
             tri.set_property(lvecprop, heho, -vedge)
             
-        return [lprop, lvecprop]
+        return lvecprop
        
 
     # How about some tools for dealing with openmesh objects and triangulation
@@ -173,9 +166,7 @@ class PVmesh(object):
     def _dual(self):
         print 'calculating the dual'
         self.mesh = PolyMesh()
-        lprop = HPropHandle()
-        check = self.tri.get_property_handle(lprop, 'length_s')
-        assert check, 'Something went wrong with the length property'
+
         lambda_prop = FPropHandle()
         self.tri.add_property(lambda_prop, 'lambda')
         self.lambda_prop = lambda_prop
@@ -195,7 +186,8 @@ class PVmesh(object):
             l_s = np.zeros(3)
             vhs = []
             for i, heh in enumerate(self.tri.fh(fh)):
-                l_s[i] = self.tri.property(lprop, heh)
+                lvec =self.tri.property(self.tri_lvecprop, heh)
+                l_s[i] = norm(lvec)
                 vtmp = self.tri.to_vertex_handle(heh)
                 vhs.append(vtmp)
                 
@@ -210,8 +202,8 @@ class PVmesh(object):
             llp = OrderedDict([(vhs[0].idx(),lli), (vhs[1].idx(),llj), (vhs[2].idx(),llk)])
             self.tri.set_property(lambda_prop, fh, llp)
 
-            norm = lli + llj + llk
-            cc = np.array(lli*vi + llj*vj + llk*vk)/norm
+            llnorm = lli + llj + llk
+            cc = np.array(lli*vi + llj*vj + llk*vk)/llnorm
             ccenters[j] = cc
         # Add cicumcenters to form a new mesh
         mverts = np.array(np.zeros(len(ccenters)),dtype='object')
@@ -254,20 +246,9 @@ class PVmesh(object):
                     vh = self.tri.vertex_handle(vhid)
                     hehn = self.b_nheh[i][j]
                     hehp = self.tri.prev_halfedge_handle(hehn)
-                    heho = self.tri.opposite_halfedge_handle(hehp)
-                    first_fhid = self.tri.face_handle(heho).idx()
-
                     # write custom function for iterating around a vertex starting from hehp
                     halfcell= self.iterate_boundary_vertex(self.tri, hehp)
-
-                    #halfcell = np.array([fh.idx() for fh in self.tri.vf(vh)])
-                    # re-ordering 
-                    #n = np.where(halfcell==first_fhid)[0][0]
-                    #halfcell = np.roll(halfcell, n)
-
                     self.halfcells[vhid] = halfcell
-        #print 'length of boundary'
-        #print len(self.boundaries[0])
                     
 
     def _set_face_properties(self):
@@ -372,8 +353,7 @@ class PVmesh(object):
         mesh = self.mesh
         tri = self.tri
 
-        tri_lprop = self.tri_lprop
-        tri_lvecprop = self.tri_lvecprop
+        lvecprop = self.tri_lvecprop
 
         # drmudrp[mesh_vhid, mesh_fhid, :]
         drmudrp = {}
@@ -392,8 +372,8 @@ class PVmesh(object):
             r_q = np.zeros((3,3))
             r_qvh= []
             for i, hehq in enumerate(self.tri.fh(tri_fh)):
-                lq[i] = tri.property(tri_lvecprop, hehq)
-                lqs[i] = tri.property(tri_lprop, hehq)
+                lq[i] = tri.property(lvecprop, hehq)
+                lqs = map(norm, lq)
                 vhi = tri.to_vertex_handle(hehq)
                 r_qvh.append(vhi.idx())
             r_qvh = np.roll(r_qvh, -1, axis=0)

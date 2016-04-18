@@ -64,14 +64,11 @@ def writemeshenergy(pv, outfile):
     energy = vtk.vtkDoubleArray()
     energy.SetNumberOfComponents(1)
     energy.SetName("energy")
-    enprop = VPropHandle()
     enprop = pv.enprop
 
-    #force = vtk.vtkDoubleArray()
-    #force.SetNumberOfComponents(3)
-    #force.SetName("force")
-    #fprop = pv.fprop
-
+    boundary = vtk.vtkDoubleArray()
+    boundary.SetNumberOfComponents(1)
+    boundary.SetName("boundary")
 
     for vh in mesh.vertices():
         pt =omvec(mesh.point(vh))
@@ -81,8 +78,8 @@ def writemeshenergy(pv, outfile):
     nmv = mesh.n_vertices()
     boundary_vmap  = {}
     i = 0 # the boundary vertice count
-    for boundary in pv.boundaries:
-        for vhid in boundary:
+    for bd in pv.boundaries:
+        for vhid in bd:
             boundary_vmap[vhid] = nmv + i
             pt = omvec(tri.point(tri.vertex_handle(vhid)))
             Points.InsertNextPoint(pt)
@@ -94,8 +91,8 @@ def writemeshenergy(pv, outfile):
     nfaces =0
     for vh in tri.vertices():
         vhids = []
-        boundary = tri.is_boundary(vh)
-        if not boundary:
+        is_boundary = tri.is_boundary(vh)
+        if not is_boundary:
             fh = mesh.face_handle(vh.idx())
             for meshvh in mesh.fv(fh):
                 # need to store all the relevant vertex ids
@@ -116,6 +113,9 @@ def writemeshenergy(pv, outfile):
         fen = tri.property(enprop, vh)
         energy.InsertNextValue(fen)
 
+        b_id = tri.property(pv.boundary_prop, vh)
+        boundary.InsertNextValue(b_id)
+
         #fov = tri.property(fprop, vh)
         #if fov is None:
             #fov = [0.,0.,0.]
@@ -130,7 +130,7 @@ def writemeshenergy(pv, outfile):
     polydata.SetPolys(Faces)
 
     polydata.GetCellData().AddArray(energy)
-    #polydata.GetCellData().AddArray(force)
+    polydata.GetCellData().AddArray(boundary)
 
     polydata.Modified()
     writer = vtk.vtkXMLPolyDataWriter()
@@ -171,6 +171,7 @@ def writetriforce(pv, outfile):
     idtriv = vtk.vtkDoubleArray()
     idtriv.SetNumberOfComponents(1)
     idtriv.SetName("id")
+
 
     for vh in pv.tri.vertices():
         pt =omvec(pv.tri.point(vh))
