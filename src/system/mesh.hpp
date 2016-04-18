@@ -166,7 +166,7 @@ public:
   }
   
   //! Post-processes the mesh
-  void postprocess();
+  void postprocess(bool);
   
   //! Compute face centre
   void compute_centre(int);
@@ -243,6 +243,9 @@ private:
   
   //! Compute face area
   double face_area(int);
+  
+  //! Order boundary star
+  void order_boundary_star(int);
   
 };
 

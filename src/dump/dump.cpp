@@ -907,6 +907,7 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkDoubleArray> force =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> dir =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> ndir =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> dual_area =  vtkSmartPointer<vtkDoubleArray>::New();
     
     ids->SetName("Id");
     ids->SetNumberOfComponents(1);
@@ -926,6 +927,8 @@ void Dump::dump_vtp(int step)
     dir->SetNumberOfComponents(3);
     ndir->SetName("NDirector");
     ndir->SetNumberOfComponents(3);
+    dual_area->SetName("DualArea");
+    dual_area->SetNumberOfComponents(1);
       
     for (int i = 0; i < N; i++)
     {
@@ -944,6 +947,8 @@ void Dump::dump_vtp(int step)
       force->InsertNextTuple(f);
       dir->InsertNextTuple(n);
       ndir->InsertNextTuple(nn);
+      Vertex& V = mesh.get_vertices()[i];
+      dual_area->InsertNextValue(V.area);
     }
     
     polydata->SetPoints(points);
@@ -957,6 +962,7 @@ void Dump::dump_vtp(int step)
     polydata->GetPointData()->AddArray(force);
     polydata->GetPointData()->AddArray(dir);
     polydata->GetPointData()->AddArray(ndir);
+    polydata->GetPointData()->AddArray(dual_area);
     
     if (m_system->num_bonds() > 0 && m_group == "all")
     {

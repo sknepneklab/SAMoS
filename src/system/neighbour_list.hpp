@@ -304,7 +304,7 @@ private:
   bool contact_intersects(int, int);
   
    //! Build faces
-  void build_faces();
+  void build_faces(bool);
  
   // Remove dangling edges
   void remove_dangling();

@@ -46,7 +46,8 @@ ostream& operator<<(ostream& out, const Vertex& v)
   << format("(x,y,z) : (%15.9e,%15.9e,%15.9e)\n") % v.r.x % v.r.y % v.r.z
   << format("area : %15.9e\n") % v.area
   << format("perimeter : %15.9e\n") % v.perim
-  << format("coordination : %d\n") % v.n_edges;
+  << format("coordination : %d\n") % v.n_edges
+  << format("(Nx,Ny,Nz) : (%15.9e,%15.9e,%15.9e)\n") % v.N.x % v.N.y % v.N.z;
   out << "neighbours : ";
   for (int i = 0; i < v.n_edges; i++)
     out << v.neigh[i] << " ";
