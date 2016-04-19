@@ -238,8 +238,10 @@ class PVmesh(object):
                 self.tri.set_property(self.boundary_prop, vh, 0)
 
         # construct the halfcells object which represents the boundary faces
+        # Add boundary triangulation points to the mesh
         triverts = np.array(np.zeros(len(self.halfcells)),dtype='object')
-        nv= 0
+        self.vh_mf = {}
+        self.btv_bmv = {}
         for i, boundary in enumerate(self.boundaries):
             for j, vhid in enumerate(boundary):
                 vh = self.tri.vertex_handle(vhid)
@@ -251,20 +253,13 @@ class PVmesh(object):
 
                 tript = omvec(self.tri.point(self.tri.vertex_handle(vhid)))
                 mvh = self.mesh.add_vertex(PolyMesh.Point(*tript))
-                #triverts[nv] = self.mesh.add_vertex(PolyMesh.Point(tript))
-                nv += 1
 
                 hcf = list(mverts[halfcell])
                 hcf.append(mvh)
                 mfh = self.mesh.add_face(hcf)
 
-                print
-                print mfh.idx()
-                print vhid
-
-
-
-        # Add the boundary triangulation points to the mesh
+                self.btv_bmv[vhid] = mvh.idx()
+                self.vh_mf[vhid] = mfh.idx()
 
                 
 
@@ -452,20 +447,27 @@ class PVmesh(object):
                 t3 = np.outer(lqrq, dLambdadrp[p])
                 drmudrp[vh.idx()][p] = (1/gamma**2) * (t1 + t2 - t3)
 
+        for boundary in self.boundaries:
+            for j, vhid in enumerate(boundary):
+                mvhid = self.btv_bmv[vhid]
+                drmudrp[mvhid] = {}
+                drmudrp[mvhid][vhid] = np.identity(3)
+
+
+
         # dAdrmu[fhid][vhid]  
         dAdrmu = {}
         dPdrmu = {}
         # todo vertices
         #for fh in mesh.faces():
-        for vh in tri.vertices():
+        for trivh in tri.vertices():
 
-            boundary= tri.is_boundary(vh)
-            trivh = vh.idx()
+            trivhid = trivh.idx()
 
-            dAdrmu[trivh] = {}
-            dPdrmu[trivh] = {}
+            dAdrmu[trivhid] = {}
+            dPdrmu[trivhid] = {}
 
-            fh = mesh.face_handle(vh.idx())
+            fh = mesh.face_handle(trivhid)
             loop = list(mesh.fv(fh))
             nl = len(loop)
             for i, vh in enumerate(loop):
@@ -479,14 +481,14 @@ class PVmesh(object):
                 vhminus = loop[npr]
 
                 vplus, vminus = omvec(mesh.point(vhplus)), omvec(mesh.point(vhminus))
-                dAdrmu[trivh][vhid] = np.cross(vplus, self.normal) - np.cross(vminus, self.normal)
+                dAdrmu[trivhid][vhid] = np.cross(vplus, self.normal) - np.cross(vminus, self.normal)
                 
                 #dPdrmu
                 # get lengths
                 vhpt = omvec(mesh.point(vh))
                 lvm = vhpt - vminus
                 lvp = vplus - vhpt
-                dPdrmu[trivh][vhid] = lvm/norm(lvm) - lvp/norm(lvp)
+                dPdrmu[trivhid][vhid] = lvm/norm(lvm) - lvp/norm(lvp)
 
 #            else:
                 #hc = list(self.halfcells[trivh])
@@ -518,17 +520,12 @@ class PVmesh(object):
 
         # deal with boundaries
         def loop(trivh):
-            boundary = tri.is_boundary(trivh)
-            print 'boundary', boundary
             trivhid = trivh.idx()
             vhs = []
-            if not boundary:
-                fh = mesh.face_handle(trivhid)
-                for vh in mesh.fv(fh):
-                    vhidx = vh.idx()
-                    vhs.append(vhidx)
-            else:
-                vhs = self.halfcells[trivhid]
+            fh = mesh.face_handle(trivhid)
+            for vh in mesh.fv(fh):
+                vhidx = vh.idx()
+                vhs.append(vhidx)
             return set(vhs)
         # Nearest Neighbour faces
         def nnfaces(trivh):
@@ -594,6 +591,8 @@ class PVmesh(object):
             area_nnsum = np.zeros(3)
             prim_nnsum = np.zeros(3)
             for vhnn, vidset in interloops[trivhid].items():
+                # tmp
+                continue
                 #print 'looping over %d vertices' % len(vidset)
                 nnvh = tri.vertex_handle(vhnn)
                 #nnvh = vhnn.idx()
@@ -609,8 +608,8 @@ class PVmesh(object):
                 asum = np.zeros(3)
                 psum = np.zeros(3)
 
+                print vidset
                 for mu in vidset:
-                    print vidset
                     dAdrmu[vhnn][mu]
                     ac = np.einsum('n,nm->m', dAdrmu[vhnn][mu], drmudrp[mu][fhidx])
                     pc = np.einsum('n,nm->m', dPdrmu[vhnn][mu], drmudrp[mu][fhidx])
@@ -738,7 +737,7 @@ if __name__=='__main__':
 
     # Dump the force and energy
     fef = 'force_energy.dat'
-    #PV.out_force_energy(fef)
+    PV.out_force_energy(fef)
 
 
 

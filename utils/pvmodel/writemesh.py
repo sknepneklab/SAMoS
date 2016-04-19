@@ -92,16 +92,12 @@ def writemeshenergy(pv, outfile):
     for vh in tri.vertices():
         vhids = []
         is_boundary = tri.is_boundary(vh)
-        if not is_boundary:
-            fh = mesh.face_handle(vh.idx())
-            for meshvh in mesh.fv(fh):
-                # need to store all the relevant vertex ids
-                vhids.append(meshvh.idx())
-        else:
-            # We append the vertex id that we are assigning to the edge vertex above
-            vhids = list(pv.halfcells[vh.idx()])
-            vhids.append( boundary_vmap[vh.idx()] )
-            #print vhids
+
+        fh = mesh.face_handle(vh.idx())
+        for meshvh in mesh.fv(fh):
+            # need to store all the relevant vertex ids
+            vhids.append(meshvh.idx())
+
         n = len(vhids)
         Polygon = vtk.vtkPolygon()
         Polygon.GetPointIds().SetNumberOfIds(n)
