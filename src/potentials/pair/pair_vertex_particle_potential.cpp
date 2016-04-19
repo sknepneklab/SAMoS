@@ -146,6 +146,14 @@ void PairVertexParticlePotential::compute(double dt)
         if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_2 = ((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i);
         if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_2 -= (((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i));
         perim_vec = perim_vec + cross_prod_2; 
+        if (vi.boundary)
+        {
+          if (e == 0 || (e == vi.n_edges - 2))
+          {
+            Vector3d r_nu_i_unit = r_nu_i.unit();
+            perim_vec = perim_vec + r_nu_i_unit*f_nu.get_jacobian(i) - r_nu_i_unit;
+          }
+        }
         if (m_compute_stress)
         {
           pi.s_xx += perim_term*cross_prod_2.x*r_nu_i.x;
@@ -267,7 +275,13 @@ void PairVertexParticlePotential::compute(double dt)
             if (!(f_nu_m.is_hole || f_nu.is_hole || f_nu_p.is_hole)) cross_prod_1 = cross(r_nu_p - r_nu_m, Nvec)*f_nu.get_jacobian(i);
             area_vec = area_vec + cross_prod_1; // cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
             if (vi.boundary && vj.boundary)
-               add_area_vec = add_area_vec + vi.get_angle_def(vj.id);
+            {
+               add_area_vec = add_area_vec + vj.get_angle_def(vi.id);
+               if (e == 0)
+                 area_vec = area_vec - (cross(vj.r,Nvec))*f_nu.get_jacobian(i);
+               else if (e == vj.n_edges - 2)
+                 area_vec = area_vec + (cross(vj.r,Nvec))*f_nu.get_jacobian(i);
+            }
             if (m_compute_stress)
             {
               pi.s_xx += area_term*cross_prod_1.x*r_nu_i.x;
@@ -286,6 +300,14 @@ void PairVertexParticlePotential::compute(double dt)
             if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_2 = ((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i);
             if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_2 -= ((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i);
             perim_vec = perim_vec + cross_prod_2; //((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit()).scaled(1.0/f_nu.n_sides);
+            if (vi.boundary && vj.boundary)
+            {
+              if (e == 0 || (e == vj.n_edges - 2))
+              {
+                Vector3d r_nu_j = r_nu - vj.r;
+                perim_vec = perim_vec + r_nu_j.unit()*f_nu.get_jacobian(i);
+              }
+            }
             if (m_compute_stress)
             {
               pi.s_xx += perim_term*cross_prod_2.x*r_nu_i.x;
@@ -347,7 +369,7 @@ void PairVertexParticlePotential::compute(double dt)
         pi.fz += area_fact*area_vec.z;
         if (vi.boundary)
         {
-          double add_area = -2.0*area_fact*pi.A0;
+          double add_area = -2.0*area_fact*pj.A0;
           pi.fx += add_area*add_area_vec.x;
           pi.fy += add_area*add_area_vec.y;
           pi.fz += add_area*add_area_vec.z;

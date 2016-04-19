@@ -436,52 +436,30 @@ double Mesh::dual_perimeter(int v)
   if (!V.attached) return 0.0;
   if (!V.ordered)
     throw runtime_error("Vertex star has to be ordered before dual premeter can be computed.");
-  //if (V.boundary) return 0.0;
   
-  V.perim  = 0.0;
+  V.perim = 0.0;
   if (!V.boundary)
   {
-    for (unsigned int i = 0; i < V.dual.size(); i++)
+    for (int f = 0; f < V.n_faces; f++)
     {
-      int j = ( i == V.dual.size()-1) ? 0 : i + 1;
-      //Vector3d& r1 = m_faces[m_edges[V.edges[i]].face].rc;
-      //Vector3d& r2 = m_faces[m_edges[V.edges[j]].face].rc;
-      Vector3d& r1 = m_dual[V.dual[i]];
-      Vector3d& r2 = m_dual[V.dual[j]];
-      if (!(V.boundary && j == 0))
-        V.perim += (r1-r2).len();
+      int fn = (f == V.n_faces - 1) ? 0 : f + 1;
+      Face& F = m_faces[V.faces[f]];
+      Face& Fn = m_faces[V.faces[fn]];
+      V.perim += (F.rc-Fn.rc).len();
     }
   }
   else
   {
-    for (int f = 0; f < V.n_faces; f++)
+    V.perim = (V.r-m_faces[V.faces[0]].rc).len();
+    for (int f = 0; f < V.n_faces-2; f++)
     {
-      Face& face = m_faces[V.faces[f]];
-      int fn = (f == V.n_faces-1) ? 0 : f + 1;
-      Face& face_n = m_faces[V.faces[fn]];
-      if (!(face.is_hole || face_n.is_hole))
-      {
-        Vector3d rr = face.rc-face_n.rc;
-        V.perim += rr.len();
-      }
-      /*
-      if (face.boundary && !face.obtuse)
-      {
-        for (int i = 0; i < face.n_sides; i++)
-          if (m_edges[m_edges[face.edges[i]].pair].boundary) 
-          {
-            Edge& E = m_edges[face.edges[i]];
-            Vector3d& rj = m_vertices[E.from].r;
-            Vector3d& rk = m_vertices[E.to].r;
-            Vector3d r = 0.5*(rj+rk);
-            Vector3d  rr = r-face.rc;
-            V.perim += rr.len();
-            break;
-          }
-      }
-      */
+      Face& F = m_faces[V.faces[f]];
+      Face& Fn = m_faces[V.faces[f+1]];
+      V.perim += (F.rc-Fn.rc).len();
     }
+    V.perim += (m_faces[V.faces[V.n_faces-2]].rc-V.r).len();
   }
+  
   return V.perim;
 }
 
@@ -894,7 +872,7 @@ double Mesh::angle_factor(int v)
   return (2.0*M_PI-angle)/(2.0*M_PI);
 }
 
-/*! Compute derivatives of the angle angle factor for boundary vertices.
+/*! Compute derivatives of the angle defict factor for boundary vertices.
  *  \param v index of the vertex
 */
 void Mesh::angle_factor_deriv(int v)
