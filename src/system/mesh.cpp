@@ -332,7 +332,6 @@ void Mesh::order_star(int v)
     V.attached = false;
   else
   {
-    cout << "before : " << V << endl;
     edges.push_back(V.edges[0]);
     while (edges.size() < V.edges.size())
     {

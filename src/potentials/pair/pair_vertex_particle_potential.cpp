@@ -120,6 +120,14 @@ void PairVertexParticlePotential::compute(double dt)
         Vector3d cross_prod_1(0.0,0.0,0.0);
         if (!(f_nu_m.is_hole || f_nu.is_hole || f_nu_p.is_hole)) cross_prod_1 = (cross(r_nu_p - r_nu_m, Nvec))*f_nu.get_jacobian(i);
         area_vec = area_vec + cross_prod_1;  
+        
+        if (vi.boundary)
+        {
+          if (e == 0)
+            area_vec = area_vec + cross(r_nu,Nvec) - (cross(vi.r,Nvec))*f_nu.get_jacobian(i);
+          else if (e == vi.n_edges - 2)
+            area_vec = area_vec - cross(r_nu,Nvec) + (cross(vi.r,Nvec))*f_nu.get_jacobian(i);
+        }
         if (m_compute_stress)
         {
           pi.s_xx = area_term*cross_prod_1.x*r_nu_i.x;
