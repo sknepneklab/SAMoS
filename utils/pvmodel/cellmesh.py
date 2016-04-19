@@ -183,7 +183,7 @@ class PVmesh(object):
             vhs = []
             for i, heh in enumerate(self.tri.fh(fh)):
                 lvec =self.tri.property(self.tri_lvecprop, heh)
-                l_s[i] = norm(lvec)
+                l_s[i] = norm(lvec)**2
                 vtmp = self.tri.to_vertex_handle(heh)
                 vhs.append(vtmp)
                 
@@ -279,14 +279,16 @@ class PVmesh(object):
             area = 0.
             prim = 0.
             ag = 1. # Angular defecit. Set it to one for internal vertices
-            boundary =tri.property(self.boundary_prop, vh)
-            if boundary is 0:
+            boundary = tri.is_boundary(vh)
+            if not boundary:
                 fh = mesh.face_handle(vh.idx())
                 for heh in mesh.fh(fh):
                     # mirror this with the boundary calculation and forget about lvecprop
                     rmu = omvec(mesh.point(mesh.from_vertex_handle(heh)))
                     rmup = omvec(mesh.point(mesh.to_vertex_handle(heh)))
                     area += np.dot(np.cross(rmu, rmup), self.normal)
+                    ap=  np.dot(np.cross(rmu, rmup), self.normal)
+                    #print ap
                     lvec = mesh.property(self.mesh_lvecprop, heh)
                     l = norm(lvec)
                     prim += l
@@ -404,7 +406,8 @@ class PVmesh(object):
             r_qvh= []
             for i, hehq in enumerate(self.tri.fh(tri_fh)):
                 lq[i] = tri.property(lvecprop, hehq)
-                lqs = map(norm, lq)
+                lqs[i] = norm(lq[i])**2
+
                 vhi = tri.to_vertex_handle(hehq)
                 r_qvh.append(vhi.idx())
             r_qvh = np.roll(r_qvh, -1, axis=0)
@@ -451,6 +454,7 @@ class PVmesh(object):
             for j, vhid in enumerate(boundary):
                 mvhid = self.btv_bmv[vhid]
                 drmudrp[mvhid] = {}
+                #print mvhid, vhid
                 drmudrp[mvhid][vhid] = np.identity(3)
 
 
@@ -482,6 +486,8 @@ class PVmesh(object):
 
                 vplus, vminus = omvec(mesh.point(vhplus)), omvec(mesh.point(vhminus))
                 dAdrmu[trivhid][vhid] = np.cross(vplus, self.normal) - np.cross(vminus, self.normal)
+                #print 'p, mu'
+                #print trivhid, vhid
                 
                 #dPdrmu
                 # get lengths
