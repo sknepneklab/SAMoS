@@ -328,7 +328,9 @@ void Mesh::order_star(int v)
   V.faces.clear();
   vector<int> edges;
   
-  if (V.edges.size() > 0)
+  if (V.edges.size() == 0)
+    V.attached = false;
+  else
   {
     edges.push_back(V.edges[0]);
     while (edges.size() < V.edges.size())
@@ -357,58 +359,25 @@ void Mesh::order_star(int v)
       V.neigh.push_back(E.to);
       V.faces.push_back(E.face);
     }
-    // Now make sure that the star is ordered counterclockwise
-    // We do that by computing cross product of the first two edge
-    // vectors and dot it with the vertex normal
-    int p = 0;
-    if (V.n_edges > 2)
-      for (int e = 0; e < V.n_edges; e++)
-      {
-        Edge& E = m_edges[V.edges[e]];
-        int n = (e == V.edges.size() - 1) ? 0 : e + 1;
-        Edge& En = m_edges[V.edges[n]];
-        if (!(E.boundary && En.boundary))
-        {
-          p = e;
-          break; 
-        }
-      }
-    Edge& E = m_edges[V.edges[p]];
-    int n = (p == V.edges.size() - 1) ? 0 : p + 1;
-    Edge& En = m_edges[V.edges[n]];
-    Vector3d r1 = m_vertices[E.to].r - V.r;
-    Vector3d r2 = m_vertices[En.to].r - V.r;
-    if (dot(cross(r1,r2),V.N) < 0.0)
+    // Vertex star is not ordered
+    V.ordered = true;
+    // Make sure that the star of boudaries is in proper order
+    if (V.boundary)
+      this->order_boundary_star(V.id);
+    // However, we still don't know if it is the right order
+    double A = this->dual_area(V.id);
+    if (A<0.0)
     {
+      V.area = -V.area;
       reverse(V.dual.begin(),V.dual.end());
       reverse(V.edges.begin(),V.edges.end());
       reverse(V.neigh.begin(),V.neigh.end());
-      reverse(V.faces.begin(),V.faces.end());
+      reverse(V.faces.begin(),V.faces.end()); 
     }
-    // Now we make sure that the start around boundary vertex is
-    // ordered such that first edge is a boundary edge.
+    // Correct boundaries
     if (V.boundary)
-    {
-      int pos = 0;
-      for (int f = 0; f < V.n_faces; f++)
-      {
-        Face& F = m_faces[V.faces[f]];
-        if (F.is_hole)
-        {
-          pos = (f == V.n_faces-1) ? 0 : f + 1;
-          break;
-        }
-      }
-      rotate(V.edges.begin(), V.edges.begin()+pos, V.edges.end());
-      rotate(V.dual.begin(), V.dual.begin()+pos, V.dual.end());
-      rotate(V.neigh.begin(), V.neigh.begin()+pos, V.neigh.end());
-      rotate(V.faces.begin(), V.faces.begin()+pos, V.faces.end());
-    }
+      this->order_boundary_star(V.id);
   }
-  else 
-    V.attached = false;
-    
-  V.ordered = true;
 }
 
 /*! Compute dual area by using expression 
@@ -439,44 +408,18 @@ double Mesh::dual_area(int v)
   }
   else
   {
+    V.area = dot(cross(V.r,m_faces[V.faces[0]].rc),V.N);
     for (int f = 0; f < V.n_faces-2; f++)
     {
       Face& F = m_faces[V.faces[f]];
       Face& Fn = m_faces[V.faces[f+1]];
-      V.area += cross(F.rc-V.r,Fn.rc-V.r).len();
+      V.area += dot(cross(F.rc,Fn.rc),V.N);
     }
+    V.area += dot(cross(m_faces[V.faces[V.n_faces-2]].rc,V.r),V.N);
   }
-  /*
-  if (!V.boundary)
-  {
-    for (unsigned int i = 0; i < V.dual.size(); i++)
-    {
-      int j = ( i == V.dual.size()-1) ? 0 : i + 1;
-      Vector3d& r1 = m_dual[V.dual[i]];
-      Vector3d& r2 = m_dual[V.dual[j]];
-            
-      Vector3d  rr = cross(r1,r2); 
-      V.area += dot(rr,V.N.unit());
-    }
-  }
-  else
-  {
-    for (int f = 0; f < V.n_faces; f++)
-    {
-      Face& face = m_faces[V.faces[f]];
-      int fn = (f == V.n_faces-1) ? 0 : f + 1;
-      Face& face_n = m_faces[V.faces[fn]];
-      if (!(face.is_hole || face_n.is_hole))
-      {
-        Vector3d rr = cross(V.r-face.rc,V.r-face_n.rc);
-        V.area += fabs(dot(rr,V.N.unit()));
-      }
-    }
-  }
-  */ 
+  
   V.area *= 0.5;
 
-  
   return V.area;
 }
 
@@ -868,24 +811,6 @@ void Mesh::update_face_properties()
           face.obtuse = true;
           break;
         }
-      /*
-      if (face.boundary && face.obtuse)
-      {
-        for (int e = 0; e < face.n_sides; e++) 
-        {
-          Edge& E = m_edges[face.edges[e]];
-          if (m_vertices[E.from].boundary && m_vertices[E.to].boundary)
-          {
-            Vector3d& rj = m_vertices[E.from].r;
-            Vector3d& rk = m_vertices[E.to].r;
-            face.rc = 0.5*(rj+rk);
-            m_dual[E.dual] = face.rc;
-            this->fc_jacobian(f);
-            break;
-          }
-        }
-      }
-      */
     }
   }
 }
@@ -1168,12 +1093,34 @@ double Mesh::face_area(int f)
   
   face.area *= 0.5;
   
-  if (std::isnan(face.area))
-  {
-    cout << m_vertices[face.vertices[0]] << endl;
-    cout << m_vertices[face.vertices[1]] << endl;
-    cout << m_vertices[face.vertices[2]] << endl;
-  }
-  
   return face.area;
+}
+
+/*! This is an auxiliary private member function that 
+ *  ensures that the boundary star is ordered such that
+ *  the "hole" face appears last in the list of all faces 
+ * belonging to the vertex.
+ * \param v vertex index
+*/
+void Mesh::order_boundary_star(int v)
+{
+  Vertex& V = m_vertices[v];
+  if (!V.boundary)
+    return;
+  
+  unsigned int pos = 0;
+  for (unsigned int f = 0; f < V.faces.size(); f++)
+  {
+    Face& face = m_faces[V.faces[f]];
+    if (face.is_hole)
+    {
+      pos = (f == V.faces.size()-1) ? 0 : f + 1;
+      break;
+    }
+  }
+  rotate(V.edges.begin(), V.edges.begin()+pos, V.edges.end());
+  rotate(V.dual.begin(), V.dual.begin()+pos, V.dual.end());
+  rotate(V.neigh.begin(), V.neigh.begin()+pos, V.neigh.end());
+  rotate(V.faces.begin(), V.faces.begin()+pos, V.faces.end());
+  
 }
