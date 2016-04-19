@@ -58,8 +58,6 @@ void IntegratorBrownian::integrate()
   double fr_x = 0.0, fr_y = 0.0, fr_z = 0.0;  // Random part of the force
   vector<int> particles = m_system->get_group(m_group_name)->get_particles();
   
-  cout << "Integrating! " << endl;
-  
   // reset forces and torques
   m_system->reset_forces();
   m_system->reset_torques();
