@@ -950,9 +950,12 @@ void Dump::dump_vtp(int step)
       force->InsertNextTuple(f);
       dir->InsertNextTuple(n);
       ndir->InsertNextTuple(nn);
-      Vertex& V = mesh.get_vertices()[i];
-      dual_area->InsertNextValue(V.area);
-      angle_def->InsertNextValue(mesh.angle_factor(V.id));
+      if (mesh.size() > 0)
+      {
+        Vertex& V = mesh.get_vertices()[i];
+        dual_area->InsertNextValue(V.area);
+        angle_def->InsertNextValue(mesh.angle_factor(V.id));
+      }
     }
     
     polydata->SetPoints(points);
@@ -966,9 +969,12 @@ void Dump::dump_vtp(int step)
     polydata->GetPointData()->AddArray(force);
     polydata->GetPointData()->AddArray(dir);
     polydata->GetPointData()->AddArray(ndir);
-    polydata->GetPointData()->AddArray(dual_area);
-    polydata->GetPointData()->AddArray(angle_def);
-    
+    if (mesh.size() > 0)
+    {
+      polydata->GetPointData()->AddArray(dual_area);
+      polydata->GetPointData()->AddArray(angle_def);
+    }
+        
     if (m_system->num_bonds() > 0 && m_group == "all")
     {
       vtkSmartPointer<vtkLine> line =  vtkSmartPointer<vtkLine>::New();
