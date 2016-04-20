@@ -908,6 +908,7 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkDoubleArray> dir =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> ndir =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> dual_area =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> angle_def =  vtkSmartPointer<vtkDoubleArray>::New();
     
     ids->SetName("Id");
     ids->SetNumberOfComponents(1);
@@ -929,6 +930,8 @@ void Dump::dump_vtp(int step)
     ndir->SetNumberOfComponents(3);
     dual_area->SetName("DualArea");
     dual_area->SetNumberOfComponents(1);
+    angle_def->SetName("DeficitAngle");
+    angle_def->SetNumberOfComponents(1);
       
     for (int i = 0; i < N; i++)
     {
@@ -949,6 +952,7 @@ void Dump::dump_vtp(int step)
       ndir->InsertNextTuple(nn);
       Vertex& V = mesh.get_vertices()[i];
       dual_area->InsertNextValue(V.area);
+      angle_def->InsertNextValue(mesh.angle_factor(V.id));
     }
     
     polydata->SetPoints(points);
@@ -963,6 +967,7 @@ void Dump::dump_vtp(int step)
     polydata->GetPointData()->AddArray(dir);
     polydata->GetPointData()->AddArray(ndir);
     polydata->GetPointData()->AddArray(dual_area);
+    polydata->GetPointData()->AddArray(angle_def);
     
     if (m_system->num_bonds() > 0 && m_group == "all")
     {

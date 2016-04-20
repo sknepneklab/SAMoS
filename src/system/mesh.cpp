@@ -856,6 +856,9 @@ double Mesh::angle_factor(int v)
   Vertex& Vi = m_vertices[v];
   if (!Vi.boundary)
     return 1.0;
+
+  if (Vi.n_faces < 3)
+    return 0.0;
  
   Face& f1 = m_faces[Vi.faces[0]];
   Face& fn = m_faces[Vi.faces[Vi.n_faces-2]];

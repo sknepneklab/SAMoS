@@ -221,7 +221,7 @@ void PairVertexParticlePotential::compute(double dt)
         pi.fy += add_area*ang_def.y;
         pi.fz += add_area*ang_def.z;
       }
-      // perimeter term
+      // perimeter term 
       double perim_fact = -alpha*perim_term;
       pi.fx += perim_fact*perim_vec.x;
       pi.fy += perim_fact*perim_vec.y;
@@ -254,7 +254,6 @@ void PairVertexParticlePotential::compute(double dt)
         Vector3d perim_vec(0.0,0.0,0.0);
         Vector3d con_vec(0.0,0.0,0.0);
         Vector3d Nvec = Vector3d(pj.Nx, pj.Ny, pj.Nz);
-        Vector3d add_area_vec(0.0,0.0,0.0);
         
         for (int e = 0; e < vj.n_edges; e++)
         {
@@ -276,7 +275,6 @@ void PairVertexParticlePotential::compute(double dt)
             area_vec = area_vec + cross_prod_1; // cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
             if (vi.boundary && vj.boundary)
             {
-               add_area_vec = add_area_vec + vj.get_angle_def(vi.id);
                if (e == 0)
                  area_vec = area_vec - (cross(vj.r,Nvec))*f_nu.get_jacobian(i);
                else if (e == vj.n_edges - 2)
@@ -367,12 +365,13 @@ void PairVertexParticlePotential::compute(double dt)
         pi.fx += area_fact*area_vec.x;
         pi.fy += area_fact*area_vec.y;
         pi.fz += area_fact*area_vec.z;
-        if (vi.boundary)
+        if (vi.boundary && vj.boundary)
         {
           double add_area = -2.0*area_fact*pj.A0;
-          pi.fx += add_area*add_area_vec.x;
-          pi.fy += add_area*add_area_vec.y;
-          pi.fz += add_area*add_area_vec.z;
+          Vector3d& ang_def = vj.get_angle_def(vi.id);
+          pi.fx += add_area*ang_def.x;
+          pi.fy += add_area*ang_def.y;
+          pi.fz += add_area*ang_def.z;
         }
         // perimeter term
         double perim_fact = -alpha*perim_term;
