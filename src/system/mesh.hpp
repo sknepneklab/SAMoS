@@ -63,6 +63,7 @@ using std::endl;
 using std::copy;
 using std::sort;
 using std::reverse;
+using std::rotate;
 using std::runtime_error;
 
 typedef pair<int,int> VertexPair;
@@ -165,7 +166,7 @@ public:
   }
   
   //! Post-processes the mesh
-  void postprocess();
+  void postprocess(bool);
   
   //! Compute face centre
   void compute_centre(int);
@@ -207,8 +208,11 @@ public:
     return m_vertices[v].boundary;
   }
   
-  //! Compute angle deficit at a boundary vertex
-  double angle_deficit(int);
+  //! Compute angle area scaling factor for boundary vertices
+  double angle_factor(int);
+  
+  //! Compute derivatives of the angle factor for boudnary vertices
+  void angle_factor_deriv(int);
     
 private:  
   
@@ -239,6 +243,9 @@ private:
   
   //! Compute face area
   double face_area(int);
+  
+  //! Order boundary star
+  void order_boundary_star(int);
   
 };
 

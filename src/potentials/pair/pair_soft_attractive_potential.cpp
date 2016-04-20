@@ -49,14 +49,17 @@ void PairSoftAttractivePotential::compute(double dt)
   double alpha_j = 1.0;  // phase in factor for particle j
   double alpha = 1.0; // phase in factor for pair interaction (see below)
   
-  if (m_system->compute_per_particle_energy())
-  {
-    for  (int i = 0; i < N; i++)
+  for  (int i = 0; i < N; i++)
     {
-      Particle& p = m_system->get_particle(i);
-      p.set_pot_energy("soft_attractive",0.0);
-    }
-  }
+	  Particle& p = m_system->get_particle(i);
+	  if (m_system->compute_per_particle_energy())
+	  {
+		  p.set_pot_energy("soft_attractive",0.0);
+	   }
+	  // currently just hacking (for consistency with Daniel's code): Coordination number is interaction number
+	  // Reset to 0 here and then recalculation in interaction below
+	  p.coordination=0;
+   }
   
   m_potential_energy = 0.0;
   for  (int i = 0; i < N; i++)
@@ -101,6 +104,8 @@ void PairSoftAttractivePotential::compute(double dt)
       double pot_eng = 0.0;
       if (r < r_f)
       {
+		pi.coordination+=1;
+		pj.coordination+=1;
         if (r <= r_turn)
         {
           diff = ai_p_aj - r;

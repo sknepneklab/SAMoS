@@ -46,7 +46,16 @@ static int check_side(Particle& pi, Particle& pj, Particle& pk)
   return (val < 0.0) ? -1 : 1;
 }
 
-
+/* Auxiliary function which checks if the projection onto the segment is within the segment
+*/
+static int check_projection(Particle& pi, Particle& pj, Particle& pk)
+{
+  double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
+  double p_dot_AB = (pk.x-pi.x)*dx+(pk.y-pi.y)*dy+(pk.z-pi.z)*dz;
+  double AB_2 = dx*dx + dy*dy + dz*dz;
+  double t = p_dot_AB/AB_2;
+  return (t >= 0.0 && t <= 1.0);
+}
 
 /*! Build neighbour list using N^2 algorithm 
 */
@@ -57,8 +66,8 @@ void NeighbourList::build()
   
  for (int i = 0; i < m_system->size(); i++)
  {
-   Particle& p = m_system->get_particle(i);
-   p.coordination = 0;
+   //Particle& p = m_system->get_particle(i);
+   //p.coordination = 0;
    m_list.push_back(vector<int>());
    if (m_build_contacts)
      m_contact_list.push_back(vector<int>());
@@ -90,7 +99,7 @@ void NeighbourList::build_mesh()
     if (m_triangulation)
     {
       this->build_contacts();
-      this->build_faces();
+      this->build_faces(false);
       this->build_triangulation();
     }
     else
@@ -98,7 +107,7 @@ void NeighbourList::build_mesh()
       this->build_contacts();
   }
   if (m_build_faces)
-    this->build_faces();
+    this->build_faces(true);
 }
 
 // Private methods below
@@ -198,8 +207,8 @@ void NeighbourList::build_cell()
             double r = pi.get_radius() + pj.get_radius();
             if (d2 < r*r)
             {
-              pi.coordination++;
-              pj.coordination++;
+             pi.coordination++;
+             pj.coordination++;
             }
           } 
         }
@@ -348,8 +357,9 @@ bool NeighbourList::contact_intersects(int i, int j)
 
 /*! Build faces using contact network 
  *  Assumes that contacts have been built. 
+ *  \param flag if true do the postprocessing of the mesh
 **/
-void NeighbourList::build_faces()
+void NeighbourList::build_faces(bool flag)
 {
   Mesh& mesh = m_system->get_mesh();
   mesh.reset();
@@ -366,8 +376,9 @@ void NeighbourList::build_faces()
   mesh.set_max_face_perim(m_max_perim);
   mesh.generate_faces();
   mesh.generate_dual_mesh();
-  mesh.postprocess();
-  m_system->update_mesh();
+  mesh.postprocess(flag);
+  if (flag)
+    m_system->update_mesh();
   
   /*
    bool removed_obtuse = false;
@@ -531,19 +542,20 @@ bool NeighbourList::same_side_line(Particle& pi, Particle& pj, vector<int>& neig
   {
     Particle& pk = m_system->get_particle(neigh[n]);
     if (pi.get_id() != pk.get_id() && pj.get_id() != pk.get_id())
-    {
-      if (side == 0)
-        side = check_side(pi,pj,pk);
-      else
+      if (check_projection(pi,pj,pk))
       {
-        if (side != check_side(pi,pj,pk))
+        if (side == 0)
+          side = check_side(pi,pj,pk);
+        else
         {
-          cout << pi.get_id() << " " <<  pj.get_id()  << " " << pk.get_id() << " " <<  side << "  " << check_side(pi,pj,pk) << endl;
-          same = false;
-          break;
+          if (side != check_side(pi,pj,pk))
+          {
+            //cout << pi.get_id() << " " <<  pj.get_id()  << " " << pk.get_id() << " " <<  side << "  " << check_side(pi,pj,pk) << endl;
+            same = false;
+            break;
+          }
         }
       }
-    }
   }
   return same;
 }

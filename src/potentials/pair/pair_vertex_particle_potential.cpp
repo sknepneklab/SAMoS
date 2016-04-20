@@ -85,7 +85,7 @@ void PairVertexParticlePotential::compute(double dt)
       alpha = m_val->get_val(static_cast<int>(pi.age/dt));
     // First handle the vertex itself
     //if (!vi.boundary && vi.attached)  // For direct intecations treat only non-boundary vertices
-    if (vi.attached && !vi.boundary)
+    if (vi.attached)
     {
       if (m_has_part_params) 
       {
@@ -95,7 +95,7 @@ void PairVertexParticlePotential::compute(double dt)
       //double dA = (vi.area - pi.A0);
       double dA = 0.0; 
       if (!vi.boundary) dA = (vi.area - pi.A0);
-      else dA = (vi.area - mesh.angle_deficit(i)*pi.A0);
+      else dA = (vi.area - mesh.angle_factor(i)*pi.A0);
       double area_term = 0.5*K*dA;
       double perim_term = gamma*vi.perim;
       pot_eng = 0.5*(K*dA*dA+gamma*vi.perim*vi.perim);
@@ -120,6 +120,14 @@ void PairVertexParticlePotential::compute(double dt)
         Vector3d cross_prod_1(0.0,0.0,0.0);
         if (!(f_nu_m.is_hole || f_nu.is_hole || f_nu_p.is_hole)) cross_prod_1 = (cross(r_nu_p - r_nu_m, Nvec))*f_nu.get_jacobian(i);
         area_vec = area_vec + cross_prod_1;  
+        
+        if (vi.boundary)
+        {
+          if (e == 0)
+            area_vec = area_vec + cross(r_nu,Nvec) - (cross(vi.r,Nvec))*f_nu.get_jacobian(i);
+          else if (e == vi.n_edges - 2)
+            area_vec = area_vec - cross(r_nu,Nvec) + (cross(vi.r,Nvec))*f_nu.get_jacobian(i);
+        }
         if (m_compute_stress)
         {
           pi.s_xx = area_term*cross_prod_1.x*r_nu_i.x;
@@ -138,6 +146,14 @@ void PairVertexParticlePotential::compute(double dt)
         if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_2 = ((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i);
         if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_2 -= (((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i));
         perim_vec = perim_vec + cross_prod_2; 
+        if (vi.boundary)
+        {
+          if (e == 0 || (e == vi.n_edges - 2))
+          {
+            Vector3d r_nu_i_unit = r_nu_i.unit();
+            perim_vec = perim_vec + r_nu_i_unit*f_nu.get_jacobian(i) - r_nu_i_unit;
+          }
+        }
         if (m_compute_stress)
         {
           pi.s_xx += perim_term*cross_prod_2.x*r_nu_i.x;
@@ -197,7 +213,15 @@ void PairVertexParticlePotential::compute(double dt)
       pi.fx += area_fact*area_vec.x;
       pi.fy += area_fact*area_vec.y;
       pi.fz += area_fact*area_vec.z;
-      // perimeter term
+      if (vi.boundary)
+      {
+        double add_area = -2.0*area_fact*pi.A0;
+        Vector3d& ang_def = vi.get_angle_def(vi.id);
+        pi.fx += add_area*ang_def.x;
+        pi.fy += add_area*ang_def.y;
+        pi.fz += add_area*ang_def.z;
+      }
+      // perimeter term 
       double perim_fact = -alpha*perim_term;
       pi.fx += perim_fact*perim_vec.x;
       pi.fy += perim_fact*perim_vec.y;
@@ -214,7 +238,7 @@ void PairVertexParticlePotential::compute(double dt)
     {
       Particle& pj = m_system->get_particle(vi.neigh[j]);
       Vertex& vj = mesh.get_vertices()[vi.neigh[j]];
-      if (!vj.boundary)  // For direct intecations treat only non-boundary vertices
+      //if (!vj.boundary)  // For direct intecations treat only non-boundary vertices
       {
         if (m_has_part_params) 
         {
@@ -223,14 +247,14 @@ void PairVertexParticlePotential::compute(double dt)
         }
         double dA = 0.0;
         if (!vj.boundary) dA = (vj.area - pj.A0);
-        else dA = (vj.area -  mesh.angle_deficit(vj.id)*pj.A0);
+        else dA = (vj.area -  mesh.angle_factor(vj.id)*pj.A0);
         double area_term = 0.5*K*dA;
         double perim_term = gamma*vj.perim;
         Vector3d area_vec(0.0,0.0,0.0);
         Vector3d perim_vec(0.0,0.0,0.0);
         Vector3d con_vec(0.0,0.0,0.0);
         Vector3d Nvec = Vector3d(pj.Nx, pj.Ny, pj.Nz);
-
+        
         for (int e = 0; e < vj.n_edges; e++)
         {
           Edge& E = mesh.get_edges()[vj.edges[e]];
@@ -249,6 +273,13 @@ void PairVertexParticlePotential::compute(double dt)
             Vector3d cross_prod_1(0.0,0.0,0.0);
             if (!(f_nu_m.is_hole || f_nu.is_hole || f_nu_p.is_hole)) cross_prod_1 = cross(r_nu_p - r_nu_m, Nvec)*f_nu.get_jacobian(i);
             area_vec = area_vec + cross_prod_1; // cross(r_nu_p - r_nu_m, Nvec).scaled(0.5/f_nu.n_sides);
+            if (vi.boundary && vj.boundary)
+            {
+               if (e == 0)
+                 area_vec = area_vec - (cross(vj.r,Nvec))*f_nu.get_jacobian(i);
+               else if (e == vj.n_edges - 2)
+                 area_vec = area_vec + (cross(vj.r,Nvec))*f_nu.get_jacobian(i);
+            }
             if (m_compute_stress)
             {
               pi.s_xx += area_term*cross_prod_1.x*r_nu_i.x;
@@ -267,6 +298,14 @@ void PairVertexParticlePotential::compute(double dt)
             if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_2 = ((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i);
             if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_2 -= ((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i);
             perim_vec = perim_vec + cross_prod_2; //((r_nu - r_nu_m).unit()-(r_nu_p - r_nu).unit()).scaled(1.0/f_nu.n_sides);
+            if (vi.boundary && vj.boundary)
+            {
+              if (e == 0 || (e == vj.n_edges - 2))
+              {
+                Vector3d r_nu_j = r_nu - vj.r;
+                perim_vec = perim_vec + r_nu_j.unit()*f_nu.get_jacobian(i);
+              }
+            }
             if (m_compute_stress)
             {
               pi.s_xx += perim_term*cross_prod_2.x*r_nu_i.x;
@@ -326,6 +365,14 @@ void PairVertexParticlePotential::compute(double dt)
         pi.fx += area_fact*area_vec.x;
         pi.fy += area_fact*area_vec.y;
         pi.fz += area_fact*area_vec.z;
+        if (vi.boundary && vj.boundary)
+        {
+          double add_area = -2.0*area_fact*pj.A0;
+          Vector3d& ang_def = vj.get_angle_def(vi.id);
+          pi.fx += add_area*ang_def.x;
+          pi.fy += add_area*ang_def.y;
+          pi.fz += add_area*ang_def.z;
+        }
         // perimeter term
         double perim_fact = -alpha*perim_term;
         pi.fx += perim_fact*perim_vec.x;
