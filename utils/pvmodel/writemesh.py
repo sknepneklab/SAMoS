@@ -168,19 +168,15 @@ def writetriforce(pv, outfile):
         pt =omvec(pv.tri.point(vh))
         Points.InsertNextPoint(pt)
         # hack to deal with boundaries
-        fov = [0., 0., 0.]
+        #fov = [0., 0., 0.]
         #fim = [0., 0., 0.]
         #fnn = [0., 0., 0.]
-        if not pv.tri.is_boundary(vh):
-            # get appropriate face
-            #fh = pv.mesh.face_handle(vh.idx())
-            fh = pv.mesh.face_handle(vh.idx())
-            fov = pv.tri.property(fprop, vh)
-            #fim = pv.mesh.property(pv.imfprop, fh)
-            #fnn = pv.mesh.property(pv.nnfprop, fh)
-        # tmp hack
-        if fov is None:
-            fov = np.zeros(3)
+
+        # get appropriate face
+        #fh = pv.mesh.face_handle(vh.idx())
+        fov = pv.tri.property(fprop, vh)
+        #fim = pv.mesh.property(pv.imfprop, fh)
+        #fnn = pv.mesh.property(pv.nnfprop, fh)
 
         force.InsertNextTuple3(*fov)
 

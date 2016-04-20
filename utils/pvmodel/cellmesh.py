@@ -1,12 +1,19 @@
 
 from openmesh import *
+import writemesh as wr
+
 
 import numpy as np
-from numpy.linalg import  norm
+from numpy.linalg import norm
+npI = np.identity(3)
+def rmmultiply(v, M):
+    return np.einsum('n,nm->m', v, M)
+
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 from scipy.spatial import Delaunay
 from read_data import ReadData
+
 
 from QET.qet import QET
 
@@ -571,14 +578,64 @@ class PVmesh(object):
                 interloops[vhidx][vhjdx] = intset
         #print interloops
 
-        #print drmudrp.keys()
-#        print 'drmudrp'
-        #for k, v in drmudrp.items():
-            #print 'mu', k
-            #print 'p', drmudrp[k].keys()
-        #print 
+        def setup_rmu(vhid):
+            hc = self.halfcells[vhid]
+            mu1, mun = hc[0], hc[-1] # mesh vertices
+            rmu1, rmun = idtopt(self.mesh, hc[0]), idtopt(mesh, hc[-1])
+            nrmu1, nrmun = norm(rmu1), norm(rmun)
+            ri = idtopt(self.tri, vhid)
+            r1, rn = rmu1 - ri, rmun -ri
+            agarg = np.dot(rmu1, rmun) / (nrmu1 *nrmun)
+            sgn = -1 if np.dot( np.cross(r1 , rn), self.normal) >= 0. else 1
+            pre_fac = 1/(2*pi) * 1/np.sqrt(1-agarg**2) 
+            return mu1, mun, rmu1, rmun, nrmu1, nrmun, r1, rn, pre_fac
 
-        
+        # dzetadr[boundary vertex][i, j, k vertex]
+        dzetadr = {}
+        for bd in self.boundaries:
+            nbd = len(bd)
+            for i, vhid in enumerate(bd):
+                dzetadr[vhid] = {}
+                #vh = tri.vertex_handle(vhid)
+                #ag = self.tri.property(self.btheta_prop, vh)
+                jm = (i-1) % nbd
+                jp = (i+1) % nbd
+                vhmid = bd[jm]
+                vhpid = bd[jp]
+                # Calculate dzetadr[i][i], setup
+                mu1, mun, rmu1, rmun, nrmu1, nrmun, r1, rn, pre_fac = setup_rmu(vhid)
+                # derivative 
+                d1 =1/( nrmu1 * nrmun)
+                d2 = np.dot(r1, rn) * d1**2
+
+                v1 = rmmultiply(rn, drmudrp[mu1][vhid] -npI) + rmmultiply(r1, drmudrp[mun][vhid] -npI)
+                v2a = nrmu1 * rmmultiply( (rn/nrmun), drmudrp[mun][vhid] - npI) 
+                v2b = nrmun*  rmmultiply( (r1/nrmu1), drmudrp[mu1][vhid] - npI)
+
+                deriv_X = d1 * v1 - d2 * ( v2a + v2b )
+                deriv_ag = pre_fac * deriv_X
+                dzetadr[vhid][vhid] = deriv_ag
+                #print deriv_ag
+
+                # Calculate dzetadr[i][j], dzetadr[i][k] 
+                # i,j
+                muj1, mujn, rmu1, rmun, nrmu1, nrmun, r1, rn, pre_fac = setup_rmu(vhmid)
+                assert mujn == mu1
+                deriv_X = ( rmmultiply( rmu1/(nrmu1 * nrmun), drmudrp[mu1][vhid] ) 
+                        - np.dot(rmu1,rmun)/(nrmu1 *nrmun)**2 * nrmu1
+                        * rmmultiply(rmun/nrmun, drmudrp[mu1][vhid]) )
+                        
+
+                dzetadr[vhid][vhmid] = pre_fac * deriv_X
+                # i, k
+                muk1, mukn, rmu1, rmun, nrmu1, nrmun, r1, rn, pre_fac = setup_rmu(vhpid)
+                assert muk1 == mun
+                deriv_X = ( rmmultiply( rmun/(nrmu1 * nrmun), drmudrp[mun][vhid])
+                        - np.dot(rmu1, rmun) / (nrmu1 * nrmun)**2 * nrmun 
+                        * rmmultiply(rmu1/nrmu1, drmudrp[mun][vhid]) )
+                dzetadr[vhid][vhpid] = pre_fac * deriv_X
+
+
         # It remains to do some complicated math over loops of nearest neighbours, etc..
         for trivh in tri.vertices():
             fh = self.mesh.face_handle(trivh.idx())
@@ -592,36 +649,34 @@ class PVmesh(object):
             prefarea = self.tri.property(self.prefareaprop, trivh)
             ag = self.tri.property(self.btheta_prop, trivh)
 
-            # tmp
             boundary = tri.is_boundary(trivh)
-            #if boundary:
-                #totalforce = np.zeros(3)
-                #tri.set_property(fprop, trivh, totalforce)
-                #continue
 
             # Immediate contribution
             farea_fac = -(kp/2.) * (area - ag *prefarea)  
-
             fprim_fac = -(gammap) * prim
             asum = np.zeros(3)
             psum = np.zeros(3)
             #print 'loop',loops[trivhid]
             #print 'p', trivhid
 
+            # dAdrp and dPdrp
             for mu in loops[trivhid]:
                 #print 'mu', mu
-                    
                 dAdrmu[trivhid][mu]
                 drmudrp[mu][fhidx]
-                
                 ac = np.einsum('n,nm->m', dAdrmu[trivhid][mu], drmudrp[mu][fhidx])
                 pc = np.einsum('n,nm->m', dPdrmu[trivhid][mu], drmudrp[mu][fhidx])
                 asum += ac
                 psum += pc
-
+               
             farea = farea_fac * asum
             fprim = fprim_fac * psum
-
+            # dzetadr
+            if boundary:
+                # the derivative of angle defecit contribution
+                zetat = dzetadr[trivhid][trivhid] * prefarea 
+                farea += farea_fac * zetat
+ 
             # And the nearest neighbours contribution
             # Can put these blocks together by adding full loops to interloops
             # In the mean time just duplicate the code.
@@ -638,8 +693,9 @@ class PVmesh(object):
                 area = tri.property(self.areaprop, nnvh)
                 prim = tri.property(self.primprop, nnvh)
                 prefarea = tri.property(self.prefareaprop, nnvh)
+                ag = self.tri.property(self.btheta_prop, nnvh)
 
-                farea_fac = -(kp/2.) * (area - prefarea)  
+                farea_fac = -(kp/2.) * (area - ag * prefarea)  
                 fprim_fac = -(gammap) * prim
                 asum = np.zeros(3)
                 psum = np.zeros(3)
@@ -651,12 +707,19 @@ class PVmesh(object):
                     #print vhnn, mu
                     dAdrmu[vhnn][mu]
                     #print vhnn, fhidx
+                    
                     ac = np.einsum('n,nm->m', dAdrmu[vhnn][mu], drmudrp[mu][fhidx])
                     pc = np.einsum('n,nm->m', dPdrmu[vhnn][mu], drmudrp[mu][fhidx])
                     asum += ac
                     psum += pc
                 area_nnsum += farea_fac * asum
                 prim_nnsum += fprim_fac * psum
+
+                nnboundary = tri.is_boundary(nnvh)
+                if boundary and nnboundary:
+                    # the angle defecit contribution
+                    zetat = dzetadr[trivhid][vhnn] * prefarea
+                    area_nnsum += farea_fac * zetat
 
             imforce = farea + fprim
             nnforce = area_nnsum + prim_nnsum
@@ -679,10 +742,9 @@ class PVmesh(object):
         outfe = OrderedDict()
         ids, energy, fx, fy = [], [], [], []
         for vh in self.tri.vertices():
-            if self.tri.is_boundary(vh) and self.boundary:
-                continue
+            #if self.tri.is_boundary(vh) and self.boundary:
+                #continue
             ids.append(vh.idx())
-            fh = self.mesh.face_handle(vh.idx())
             energy.append(self.tri.property(self.enprop, vh))
             fvh =  self.tri.property(self.fprop, vh)
             fxx, fyy, _ = fvh
@@ -695,7 +757,7 @@ class PVmesh(object):
 
         with open(outfile, 'w') as fo:
             print 'saving force and energy to ', fo.name
-            dump(outfe, fo)
+            wr.dump(outfe, fo)
 
 
     ''' This is really the constructor '''
@@ -760,20 +822,18 @@ if __name__=='__main__':
     PV.calculate_energy()
     PV.calculate_forces()
 
-    from writemesh import *
     import os.path as path
-
 
     outdir = args.dir
 
 
     mout = path.join(outdir, 'cellmesh.vtp')
     #print 'saving ', mout
-    writemeshenergy(PV, mout)
+    wr.writemeshenergy(PV, mout)
 
     tout = path.join(outdir, 'trimesh.vtp')
     #print 'saving ', tout
-    writetriforce(PV, tout)
+    wr.writetriforce(PV, tout)
 
     # Dump the force and energy
     fef = 'force_energy.dat'
