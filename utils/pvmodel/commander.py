@@ -13,6 +13,10 @@ if __name__=='__main__':
     epidat = '/home/dan/cells/run/rpatch/epithelial_equilini.dat'
 
     import argparse
+
+    from writemesh import *
+    import os.path as path
+
     parser = argparse.ArgumentParser()
  
     parser.add_argument("-i", "--input", type=str, default=epidat, help="Input dat file")
@@ -20,14 +24,14 @@ if __name__=='__main__':
     #parser.add_argument("-o", "--output", type=str, default=epidat, help="Input dat file")
 
     args = parser.parse_args()
-    epidat = args.input
+    inp_file = args.input
+    inp_dir, base_file = path.split(inp_file)
+    base_name, ext = path.splitext(base_file)
 
-
-    rdat = ReadData(epidat)
+    rdat = ReadData(inp_file)
     PV = PVmesh.datbuild(rdat)
 
     # Handle K, and Gamma
-    #nf = PV.mesh.n_faces()
     nf = PV.tri.n_vertices()
     # Could easily read these from a .conf file
     k = 1.
@@ -39,12 +43,7 @@ if __name__=='__main__':
     PV.calculate_energy()
     PV.calculate_forces()
 
-    from writemesh import *
-    import os.path as path
-
-
     outdir = args.dir
-
 
     mout = path.join(outdir, 'cellmesh.vtp')
     #print 'saving ', mout

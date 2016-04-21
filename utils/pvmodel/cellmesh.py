@@ -99,7 +99,6 @@ class PVmesh(object):
         diagnose(self.tri)
 
         self.boundary = True
-        # might have to switch from storing things on mesh faces to storing them on trimesh vertices. I.e. area perimeter
         # halfcells = {trimesh.idx() : [mesh vhids] } # should be correctly ordered
         self.halfcells = {}
 
@@ -398,8 +397,7 @@ class PVmesh(object):
         mesh = self.mesh
         tri = self.tri
 
-
-
+        # This will go when I am convinced it never fails
         for fh in tri.faces():
             mvh = mesh.vertex_handle(fh.idx())
             assert fh.idx() == mvh.idx()
@@ -415,25 +413,19 @@ class PVmesh(object):
 
         # drmudrp[mesh_vhid, mesh_fhid, :]
         drmudrp = {}
-
         for tri_fh in tri.faces():
             vh = mesh.vertex_handle(tri_fh.idx())
             #dlamqdrp {tri_vh.idx() : np(3,3) }
             dlamqdrp = {}
             drmudrp[vh.idx()] = {}
             # Get the corresponding face
-
-            assert vh.idx() == tri_fh.idx()
-
             lq = np.zeros((3,3))
             lqs = np.zeros(3)
             r_q = np.zeros((3,3))
             r_qvh= []
-
             for i, hehq in enumerate(self.tri.fh(tri_fh)):
                 lq[i] = tri.property(lvecprop, hehq)
                 lqs[i] = norm(lq[i])**2
-
                 vhi = tri.to_vertex_handle(hehq)
                 r_qvh.append(vhi.idx())
             
@@ -461,8 +453,6 @@ class PVmesh(object):
             dlamqdrp[k][1,:] = 2*(lis + lks -2*ljs)*rki - 2*ljs*rjk
             dlamqdrp[k][2,:] = 2*lks*(-rjk + rki)
 
-            #print dlamqdrp[i] + dlamqdrp[j] + dlamqdrp[k]
-
             dLambdadrp = {}
             for key, arr in dlamqdrp.items():
                 dLambdadrp[key] = np.sum(arr, axis=0)
@@ -477,14 +467,14 @@ class PVmesh(object):
                 t3 = np.outer(lqrq, dLambdadrp[p])
                 drmudrp[vh.idx()][p] = (1/gamma**2) * (t1 + t2 - t3)
 
+        # For calculating derivative of area for boundary cells 
         for boundary in self.boundaries:
             for j, vhid in enumerate(boundary):
                 mvhid = self.btv_bmv[vhid]
                 drmudrp[mvhid] = {}
-                #print mvhid, vhid
                 drmudrp[mvhid][vhid] = np.identity(3)
 
-
+        # Iterate through the mesh vertices for any cell (even boundary)
         def loop(trivh):
             trivhid = trivh.idx()
             boundary = tri.is_boundary(trivh)
@@ -493,21 +483,17 @@ class PVmesh(object):
                 fh = mesh.face_handle(trivhid)
             else:
                 fh = mesh.face_handle(self.vh_mf[trivhid])
-
             for vh in mesh.fv(fh):
                 vhidx = vh.idx()
                 vhs.append(vhidx)
             #print vhs
             return vhs
 
-
         # dAdrmu[fhid][vhid]  
+        # this should work for boundary cells as well
         dAdrmu = {}
         dPdrmu = {}
-        # todo vertices
-        #for fh in mesh.faces():
         for trivh in tri.vertices():
-
             trivhid = trivh.idx()
             dAdrmu[trivhid] = {}
             dPdrmu[trivhid] = {}
@@ -551,8 +537,6 @@ class PVmesh(object):
         # Could iterate over all the vertices and assign loops 
         # Put this in a separate loop for now since it is a bit special
 
-        # setup helper functions
-        # It's natural to use sets and the intersect() method for dealing with loops
         # Nearest Neighbour faces
         def nnfaces(trivh):
             fhs = []
@@ -568,6 +552,7 @@ class PVmesh(object):
             loops[vh.idx()] = loop(vh)
         # Calculate loop interesctions
         # {vhi:{vhj:set(v1_idx,v2_idx..)}}
+        # It's natural to use sets and the intersect() method for dealing with loops
         interloops = {}
         for vhi in tri.vertices():
             vhidx = vhi.idx()
@@ -576,8 +561,9 @@ class PVmesh(object):
                 vhjdx = vhj.idx()
                 intset = set(loops[vhidx]).intersection(set(loops[vhjdx]))
                 interloops[vhidx][vhjdx] = intset
-        #print interloops
 
+        # The duplicated code involved in determining the angle defecit derivative
+        #  for the primary and adjacent faces
         def setup_rmu(vhid):
             hc = self.halfcells[vhid]
             mu1, mun = hc[0], hc[-1] # mesh vertices
@@ -590,6 +576,7 @@ class PVmesh(object):
             pre_fac = 1/(2*pi) * 1/np.sqrt(1-agarg**2) 
             return mu1, mun, rmu1, rmun, nrmu1, nrmun, r1, rn, pre_fac
 
+        # Angle defecit derivative
         # dzetadr[boundary vertex][i, j, k vertex]
         dzetadr = {}
         for bd in self.boundaries:
@@ -615,7 +602,6 @@ class PVmesh(object):
                 deriv_X = d1 * v1 - d2 * ( v2a + v2b )
                 deriv_ag = pre_fac * deriv_X
                 dzetadr[vhid][vhid] = deriv_ag
-                #print deriv_ag
 
                 # Calculate dzetadr[i][j], dzetadr[i][k] 
                 # i,j
@@ -625,7 +611,6 @@ class PVmesh(object):
                         - np.dot(rmu1,rmun)/(nrmu1 *nrmun)**2 * nrmu1
                         * rmmultiply(rmun/nrmun, drmudrp[mu1][vhid]) )
                         
-
                 dzetadr[vhid][vhmid] = pre_fac * deriv_X
                 # i, k
                 muk1, mukn, rmu1, rmun, nrmu1, nrmun, r1, rn, pre_fac = setup_rmu(vhpid)
@@ -634,7 +619,6 @@ class PVmesh(object):
                         - np.dot(rmu1, rmun) / (nrmu1 * nrmun)**2 * nrmun 
                         * rmmultiply(rmu1/nrmu1, drmudrp[mun][vhid]) )
                 dzetadr[vhid][vhpid] = pre_fac * deriv_X
-
 
         # It remains to do some complicated math over loops of nearest neighbours, etc..
         for trivh in tri.vertices():
@@ -678,15 +662,12 @@ class PVmesh(object):
                 farea += farea_fac * zetat
  
             # And the nearest neighbours contribution
-            # Can put these blocks together by adding full loops to interloops
-            # In the mean time just duplicate the code.
+            # Some duplicated code
             area_nnsum = np.zeros(3)
             prim_nnsum = np.zeros(3)
             for vhnn, vidset in interloops[trivhid].items():
-                
                 #print 'looping over %d vertices' % len(vidset)
                 nnvh = tri.vertex_handle(vhnn)
-                #nnvh = vhnn.idx()
 
                 kp = tri.property(self.kprop, nnvh)
                 gammap = tri.property(self.gammaprop, nnvh)
@@ -700,14 +681,8 @@ class PVmesh(object):
                 asum = np.zeros(3)
                 psum = np.zeros(3)
 
-                #print 'p', vhnn
-                #print vidset
                 for mu in vidset:
-                    #print 'p', 'mu'
-                    #print vhnn, mu
                     dAdrmu[vhnn][mu]
-                    #print vhnn, fhidx
-                    
                     ac = np.einsum('n,nm->m', dAdrmu[vhnn][mu], drmudrp[mu][fhidx])
                     pc = np.einsum('n,nm->m', dPdrmu[vhnn][mu], drmudrp[mu][fhidx])
                     asum += ac
@@ -723,21 +698,12 @@ class PVmesh(object):
 
             imforce = farea + fprim
             nnforce = area_nnsum + prim_nnsum
-
             totalforce = imforce + nnforce
 
             tri.set_property(fprop, trivh, totalforce)
-            #mesh.set_property(self.imfprop, fh, imforce)
-            #mesh.set_property(self.nnfprop, fh, nnforce)
-
-            # we got all the way to a value but now we need to go back and
-            # fix up the r_q, lambda_q etc..
-
-            # we can try visualising the dual, etc.
 
     def out_force_energy(self, outfile):
-        # use OrderedDict
-        # Still aren't explicitely handling the particle ids as we should be
+        # Still aren't explicitely handling the particle ids as we should be (?)
 
         outfe = OrderedDict()
         ids, energy, fx, fy = [], [], [], []
@@ -758,7 +724,6 @@ class PVmesh(object):
         with open(outfile, 'w') as fo:
             print 'saving force and energy to ', fo.name
             wr.dump(outfe, fo)
-
 
     ''' This is really the constructor '''
     @classmethod
@@ -789,7 +754,6 @@ class PVmesh(object):
         # We cheekily add this to the initialisation to avoid recovering it later
         PV.prefareaprop = prefareaprop
         return PV
-
 
 if __name__=='__main__':
 
