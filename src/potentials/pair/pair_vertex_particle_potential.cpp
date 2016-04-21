@@ -85,7 +85,7 @@ void PairVertexParticlePotential::compute(double dt)
       alpha = m_val->get_val(static_cast<int>(pi.age/dt));
     // First handle the vertex itself
     //if (!vi.boundary && vi.attached)  // For direct intecations treat only non-boundary vertices
-    if (vi.attached)
+    if (vi.attached && (m_include_boundary || !vi.boundary))
     {
       if (m_has_part_params) 
       {
@@ -238,7 +238,7 @@ void PairVertexParticlePotential::compute(double dt)
     {
       Particle& pj = m_system->get_particle(vi.neigh[j]);
       Vertex& vj = mesh.get_vertices()[vi.neigh[j]];
-      //if (!vj.boundary)  // For direct intecations treat only non-boundary vertices
+      if (m_include_boundary || !vj.boundary)  // For direct intecations treat only non-boundary vertices
       {
         if (m_has_part_params) 
         {
