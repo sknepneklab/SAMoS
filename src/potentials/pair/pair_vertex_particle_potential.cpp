@@ -366,7 +366,6 @@ void PairVertexParticlePotential::compute(double dt)
         pi.fx += area_fact*area_vec.x;
         pi.fy += area_fact*area_vec.y;
         pi.fz += area_fact*area_vec.z;
-        //if (vi.boundary && vj.boundary)
         if (vj.boundary)
         {
           double add_area = -2.0*area_fact*pj.A0;

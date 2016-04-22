@@ -918,6 +918,7 @@ void Mesh::angle_factor_deriv(int v)
   double fact = 0.0;
   if (fabs(r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)) < 1.0)
     fact = sign/(2.0*M_PI)*1.0/sqrt(1.0 - r_nu_1_ri_dot_r_nu_n_ri*r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2));               
+ 
                  
   V.angle_def.push_back(fact*d_ri);
   V.angle_def.push_back(fact*d_rj);
