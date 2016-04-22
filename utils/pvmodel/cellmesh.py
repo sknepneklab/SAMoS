@@ -570,13 +570,13 @@ class PVmesh(object):
             hc = self.halfcells[vhid]
             mu1, mun = hc[0], hc[-1] # mesh vertices
             rmu1, rmun = idtopt(self.mesh, hc[0]), idtopt(mesh, hc[-1])
-            nrmu1, nrmun = norm(rmu1), norm(rmun)
             ri = idtopt(self.tri, vhid)
             r1, rn = rmu1 - ri, rmun -ri
-            agarg = np.dot(rmu1, rmun) / (nrmu1 *nrmun)
+            nr1, nrn = norm(r1), norm(rn)
+            agarg = np.dot(r1, rn) / (nr1 *nrn)
             sgn = -1 if np.dot( np.cross(r1 , rn), self.normal) >= 0. else 1
-            pre_fac = 1/(2*pi) * 1/np.sqrt(1-agarg**2) 
-            return mu1, mun, rmu1, rmun, nrmu1, nrmun, r1, rn, pre_fac
+            pre_fac = sgn *  1/(2*pi) * 1/np.sqrt(1-agarg**2) 
+            return mu1, mun, rmu1, rmun, nr1, nrn, r1, rn, pre_fac
 
         # Angle defecit derivative
         # dzetadr[boundary vertex][i, j, k vertex]
@@ -594,18 +594,18 @@ class PVmesh(object):
                 vhpid = bd[jp]
 
                 # Calculate dzetadr[i][i], setup
-                mu1, mun, rmu1, rmun, nrmu1, nrmun, r1, rn, pre_fac = setup_rmu(vhid)
+                mu1, mun, rmu1, rmun, nr1, nrn, r1, rn, pre_fac = setup_rmu(vhid)
                 # derivative 
-                d1 =1/( nrmu1 * nrmun)
+                d1 =1/( nr1 * nrn)
                 d2 = np.dot(r1, rn) * d1**2
 
                 v1 = rmmultiply(rn, drmudrp[mu1][vhid] -npI) + rmmultiply(r1, drmudrp[mun][vhid] -npI)
-                v2a = nrmu1 * rmmultiply( (rn/nrmun), drmudrp[mun][vhid] - npI) 
-                v2b = nrmun*  rmmultiply( (r1/nrmu1), drmudrp[mu1][vhid] - npI)
+                v2a = nr1 * rmmultiply( (rn/nrn), drmudrp[mun][vhid] - npI) 
+                v2b = nrn*  rmmultiply( (r1/nr1), drmudrp[mu1][vhid] - npI)
 
                 deriv_X = d1 * v1 - d2 * ( v2a + v2b )
 
-                #print vhid, deriv_X
+                print vhid, deriv_X
 
                 deriv_ag = pre_fac * deriv_X
                 dzetadr[vhid][vhid] = deriv_ag
@@ -614,19 +614,19 @@ class PVmesh(object):
 
                 # Calculate dzetadr[i][j], dzetadr[i][k] 
                 # i,j
-                muj1, mujn, rmu1, rmun, nrmu1, nrmun, r1, rn, pre_fac = setup_rmu(vhmid)
+                muj1, mujn, rmu1, rmun, nr1, nrn, r1, rn, pre_fac = setup_rmu(vhmid)
                 assert mujn == mu1
-                deriv_X = ( rmmultiply( rmu1/(nrmu1 * nrmun), drmudrp[mu1][vhid] ) 
-                        - np.dot(rmu1,rmun)/(nrmu1 *nrmun)**2 * nrmu1
-                        * rmmultiply(rmun/nrmun, drmudrp[mu1][vhid]) )
+                deriv_X = ( rmmultiply( r1/(nr1 * nrn), drmudrp[mu1][vhid] ) 
+                        - np.dot(r1,rn)/(nr1 *nrn)**2 * nr1
+                        * rmmultiply(rn/nrn, drmudrp[mu1][vhid]) )
                         
                 dzetadr[vhid][vhmid] = pre_fac * deriv_X
                 # i, k
-                muk1, mukn, rmu1, rmun, nrmu1, nrmun, r1, rn, pre_fac = setup_rmu(vhpid)
+                muk1, mukn, rmu1, rmun, nr1, nrn, r1, rn, pre_fac = setup_rmu(vhpid)
                 assert muk1 == mun
-                deriv_X = ( rmmultiply( rmun/(nrmu1 * nrmun), drmudrp[mun][vhid])
-                        - np.dot(rmu1, rmun) / (nrmu1 * nrmun)**2 * nrmun 
-                        * rmmultiply(rmu1/nrmu1, drmudrp[mun][vhid]) )
+                deriv_X = ( rmmultiply( rn/(nr1 * nrn), drmudrp[mun][vhid])
+                        - np.dot(r1, rn) / (nr1 * nrn)**2 * nrn 
+                        * rmmultiply(r1/nr1, drmudrp[mun][vhid]) )
                 dzetadr[vhid][vhpid] = pre_fac * deriv_X
 
         # It remains to do some complicated math over loops of nearest neighbours, etc..
