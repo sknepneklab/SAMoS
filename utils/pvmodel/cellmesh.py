@@ -330,6 +330,7 @@ class PVmesh(object):
                 sg = np.dot( np.cross(r_mu_1_p , r_mu_n_p), self.normal) >= 0
                 ag = dtheta if sg else 2*pi - dtheta
                 ag /= 2*pi
+                #print vh.idx(), ag
 
             self.tri.set_property(self.btheta_prop, vh, ag)
             #print 'setting angular defecit of', ag
@@ -512,7 +513,8 @@ class PVmesh(object):
                 vhminus = mesh.vertex_handle(lp[npr])
 
                 vplus, vminus = omvec(mesh.point(vhplus)), omvec(mesh.point(vhminus))
-                dAdrmu[trivhid][vhid] = np.cross(vplus, self.normal) - np.cross(vminus, self.normal)
+                dAdrmu[trivhid][vhid] = 1/2. * ( np.cross(vplus, self.normal) 
+                        - np.cross(vminus, self.normal) )
                 #print 'p, mu'
                 #print trivhid, vhid
                 
@@ -587,8 +589,10 @@ class PVmesh(object):
                 #ag = self.tri.property(self.btheta_prop, vh)
                 jm = (i-1) % nbd
                 jp = (i+1) % nbd
+
                 vhmid = bd[jm]
                 vhpid = bd[jp]
+
                 # Calculate dzetadr[i][i], setup
                 mu1, mun, rmu1, rmun, nrmu1, nrmun, r1, rn, pre_fac = setup_rmu(vhid)
                 # derivative 
@@ -600,8 +604,13 @@ class PVmesh(object):
                 v2b = nrmun*  rmmultiply( (r1/nrmu1), drmudrp[mu1][vhid] - npI)
 
                 deriv_X = d1 * v1 - d2 * ( v2a + v2b )
+
+                #print vhid, deriv_X
+
                 deriv_ag = pre_fac * deriv_X
                 dzetadr[vhid][vhid] = deriv_ag
+
+                #print vhid, dzetadr[vhid][vhid]
 
                 # Calculate dzetadr[i][j], dzetadr[i][k] 
                 # i,j
@@ -636,7 +645,7 @@ class PVmesh(object):
             boundary = tri.is_boundary(trivh)
 
             # Immediate contribution
-            farea_fac = -(kp/2.) * (area - ag *prefarea)  
+            farea_fac = -(kp) * (area - ag *prefarea)  
             fprim_fac = -(gammap) * prim
             asum = np.zeros(3)
             psum = np.zeros(3)
@@ -676,7 +685,7 @@ class PVmesh(object):
                 prefarea = tri.property(self.prefareaprop, nnvh)
                 ag = self.tri.property(self.btheta_prop, nnvh)
 
-                farea_fac = -(kp/2.) * (area - ag * prefarea)  
+                farea_fac = -(kp) * (area - ag * prefarea)  
                 fprim_fac = -(gammap) * prim
                 asum = np.zeros(3)
                 psum = np.zeros(3)
