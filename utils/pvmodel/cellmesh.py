@@ -490,6 +490,34 @@ class PVmesh(object):
             #print vhs
             return vhs
 
+
+        # Nearest Neighbour faces
+        # ( by vertex )
+        def nnfaces(trivh):
+            fhs = []
+            for heh in tri.voh(trivh):
+                vh = tri.to_vertex_handle(heh)
+                fhs.append(vh)
+            return fhs
+
+        # Calculate loops 
+        # loops {fid:set(vhids)}
+        loops = {}
+        for vh in tri.vertices():
+            loops[vh.idx()] = loop(vh)
+        # Calculate loop interesctions
+        # {vhi:{vhj:set(v1_idx,v2_idx..)}}
+        # It's natural to use sets and the intersect() method for dealing with loops
+        interloops = {}
+        for vhi in tri.vertices():
+            vhidx = vhi.idx()
+            interloops[vhidx] = {}
+            for vhj in nnfaces(vhi):
+                vhjdx = vhj.idx()
+                intset = set(loops[vhidx]).intersection(set(loops[vhjdx]))
+                interloops[vhidx][vhjdx] = intset
+
+
         # dAdrmu[fhid][vhid]  
         # this should work for boundary cells as well
         dAdrmu = {}
@@ -539,31 +567,6 @@ class PVmesh(object):
         # Could iterate over all the vertices and assign loops 
         # Put this in a separate loop for now since it is a bit special
 
-        # Nearest Neighbour faces
-        def nnfaces(trivh):
-            fhs = []
-            for heh in tri.voh(trivh):
-                vh = tri.to_vertex_handle(heh)
-                fhs.append(vh)
-            return fhs
-
-        # Calculate loops 
-        # loops {fid:set(vhids)}
-        loops = {}
-        for vh in tri.vertices():
-            loops[vh.idx()] = loop(vh)
-        # Calculate loop interesctions
-        # {vhi:{vhj:set(v1_idx,v2_idx..)}}
-        # It's natural to use sets and the intersect() method for dealing with loops
-        interloops = {}
-        for vhi in tri.vertices():
-            vhidx = vhi.idx()
-            interloops[vhidx] = {}
-            for vhj in nnfaces(vhi):
-                vhjdx = vhj.idx()
-                intset = set(loops[vhidx]).intersection(set(loops[vhjdx]))
-                interloops[vhidx][vhjdx] = intset
-
         # The duplicated code involved in determining the angle defecit derivative
         #  for the primary and adjacent faces
         def setup_rmu(vhid):
@@ -585,7 +588,7 @@ class PVmesh(object):
             nbd = len(bd)
             for i, vhid in enumerate(bd):
                 dzetadr[vhid] = {}
-                #vh = tri.vertex_handle(vhid)
+                vh = tri.vertex_handle(vhid)
                 #ag = self.tri.property(self.btheta_prop, vh)
                 jm = (i-1) % nbd
                 jp = (i+1) % nbd
@@ -605,29 +608,60 @@ class PVmesh(object):
 
                 deriv_X = d1 * v1 - d2 * ( v2a + v2b )
 
-                print vhid, deriv_X
+                #print vhid, deriv_X
 
                 deriv_ag = pre_fac * deriv_X
                 dzetadr[vhid][vhid] = deriv_ag
 
-                #print vhid, dzetadr[vhid][vhid]
+                # i, j where j is over nearest neighbours
+                fh = mesh.face_handle(vhid)
+                lp = nnfaces(vh)
+                nl = len(lp)
+                for j, nnvh in enumerate(lp):
+                    nnvhid = nnvh.idx()
+                    #print interloops[vhid][nnvhid]
+                    cell_verts = set([mu1, mun]).intersection(interloops[vhid][nnvhid])
+                    if bool(cell_verts) is False:
+                        # This is the case where an adjacent cell shares no boundary vertices
+                        #print 'found that cell %d does not share either of the extreme vertices of %d' % (nnvhid, vhid)
+                        continue
+                    deriv_X = np.zeros(3)
+                    if nnvhid not in dzetadr:
+                        dzetadr[nnvhid] = {}
+
+                    #if len(cell_verts) >1:
+                        #print vhid, nnvhid
+                        #print cell_verts
+
+                    for mu in cell_verts:
+                        assert (mu == mu1) or (mu == mun)
+                        rmu, rother = [r1, rn] if mu == mu1 else [rn, r1]
+                        nrmu = norm(rmu); nrother = norm(rother)
+                        dzX = ( rmmultiply( rother/(nr1 * nrn), drmudrp[mu][nnvhid])
+                                - np.dot(r1,rn)/(nr1 * nrn)**2 * nrother
+                                * rmmultiply( rmu/nrmu, drmudrp[mu][nnvhid] ) )
+                        deriv_X += dzX
+
+                    dzetadr[vhid][nnvhid] = pre_fac * deriv_X
+                    #print vhid, nnvhid, dzetadr[vhid][nnvhid]
+                    #print nnvhid, vhid
 
                 # Calculate dzetadr[i][j], dzetadr[i][k] 
                 # i,j
-                muj1, mujn, rmu1, rmun, nr1, nrn, r1, rn, pre_fac = setup_rmu(vhmid)
-                assert mujn == mu1
-                deriv_X = ( rmmultiply( r1/(nr1 * nrn), drmudrp[mu1][vhid] ) 
-                        - np.dot(r1,rn)/(nr1 *nrn)**2 * nr1
-                        * rmmultiply(rn/nrn, drmudrp[mu1][vhid]) )
+
+                #muj1, mujn, rmu1, rmun, nr1, nrn, r1, rn, pre_fac = setup_rmu(vhmid)
+                #assert mujn == mu1
+                #deriv_X = ( rmmultiply( r1/(nr1 * nrn), drmudrp[mu1][vhid] ) 
+                        #- np.dot(r1,rn)/(nr1 *nrn)**2 * nr1
+                        #* rmmultiply(rn/nrn, drmudrp[mu1][vhid]) )
                         
-                dzetadr[vhid][vhmid] = pre_fac * deriv_X
-                # i, k
-                muk1, mukn, rmu1, rmun, nr1, nrn, r1, rn, pre_fac = setup_rmu(vhpid)
-                assert muk1 == mun
-                deriv_X = ( rmmultiply( rn/(nr1 * nrn), drmudrp[mun][vhid])
-                        - np.dot(r1, rn) / (nr1 * nrn)**2 * nrn 
-                        * rmmultiply(r1/nr1, drmudrp[mun][vhid]) )
-                dzetadr[vhid][vhpid] = pre_fac * deriv_X
+                #dzetadr[vhid][vhmid] = pre_fac * deriv_X
+                ## i, k
+                #muk1, mukn, rmu1, rmun, nr1, nrn, r1, rn, pre_fac = setup_rmu(vhpid)
+                #assert muk1 == mun
+                #deriv_X = ( rmmultiply( rn/(nr1 * nrn), drmudrp[mun][vhid])
+                        #- np.dot(r1, rn) / (nr1 * nrn)**2 * nrn 
+                        #* rmmultiply(r1/nr1, drmudrp[mun][vhid]) )
 
         # It remains to do some complicated math over loops of nearest neighbours, etc..
         for trivh in tri.vertices():
@@ -649,8 +683,6 @@ class PVmesh(object):
             fprim_fac = -(gammap) * prim
             asum = np.zeros(3)
             psum = np.zeros(3)
-            #print 'loop',loops[trivhid]
-            #print 'p', trivhid
 
             # dAdrp and dPdrp
             for mu in loops[trivhid]:
@@ -668,12 +700,13 @@ class PVmesh(object):
             if boundary:
                 # the derivative of angle defecit contribution
                 zetat = dzetadr[trivhid][trivhid] * prefarea 
-                farea += farea_fac * zetat
+                farea -= farea_fac * zetat
  
             # And the nearest neighbours contribution
             # Some duplicated code
             area_nnsum = np.zeros(3)
             prim_nnsum = np.zeros(3)
+            nv = 0
             for vhnn, vidset in interloops[trivhid].items():
                 #print 'looping over %d vertices' % len(vidset)
                 nnvh = tri.vertex_handle(vhnn)
@@ -700,10 +733,13 @@ class PVmesh(object):
                 prim_nnsum += fprim_fac * psum
 
                 nnboundary = tri.is_boundary(nnvh)
-                if boundary and nnboundary:
-                    # the angle defecit contribution
-                    zetat = dzetadr[trivhid][vhnn] * prefarea
-                    area_nnsum += farea_fac * zetat
+                if nnboundary:
+                    #print dzetadr[trivhid].keys()
+                    vht = trivhid in dzetadr[vhnn]
+                    if vht:
+                        # the angle defecit contribution
+                        zetat = dzetadr[vhnn][trivhid] * prefarea
+                        area_nnsum -= farea_fac * zetat
 
             imforce = farea + fprim
             nnforce = area_nnsum + prim_nnsum
