@@ -160,10 +160,6 @@ void Mesh::generate_faces()
 /*! Genererate position of the dual vertices */
 void Mesh::generate_dual_mesh()
 {
-  m_dual.clear();
-  m_ndual = 0;
-  for (int v = 0; v < m_size; v++)
-    m_vertices[v].dual.clear();
   for (int f = 0; f < m_nface; f++)
   {
     Face& face = m_faces[f];
@@ -171,31 +167,8 @@ void Mesh::generate_dual_mesh()
     {
       this->compute_angles(f);
       this->compute_centre(f);
-      m_dual.push_back(make_pair(face.id,face.rc));
-      for (int e = 0; e < face.n_sides; e++)
-      {
-        Edge& E = m_edges[face.edges[e]];
-        E.dual = m_ndual;
-      }
-      m_ndual++;
     }
-    else
-    {
-      for (int e = 0; e < face.n_sides; e++)
-      {
-        Edge& E = m_edges[face.edges[e]];
-        //Vector3d rc = m_faces[m_edges[E.pair].face].rc;
-        Vector3d r = m_vertices[E.to].r - m_vertices[E.from].r;
-        Vector3d rn = m_vertices[E.from].r + r.scaled(0.5);//mirror(m_vertices[E.from].r,r,rc);
-        m_dual.push_back(make_pair(face.id,rn));
-        m_vertices[E.from].dual.push_back(m_ndual);
-        m_vertices[E.to].dual.push_back(m_ndual);
-        E.dual = m_ndual;
-        m_ndual++;
-      }
-    }
-  }
-  m_ndual = m_dual.size();    
+  }    
 }
 
 /*! Update position of the dual vertices as well as the cell centre Jacobian */
@@ -208,19 +181,7 @@ void Mesh::update_dual_mesh()
     if (!face.is_hole)
     {
       this->compute_angles(f);
-      this->compute_centre(f);
-      m_dual[i++].second = face.rc;
-    }
-    else
-    {
-      for (int e = 0; e < face.n_sides; e++)
-      {
-        Edge& E = m_edges[face.edges[e]];
-        //Vector3d rc = m_faces[m_edges[E.pair].face].rc;
-        Vector3d r = m_vertices[E.to].r - m_vertices[E.from].r;
-        Vector3d rn = m_vertices[E.from].r + r.scaled(0.5); //mirror(m_vertices[E.from].r,r,rc);
-        m_dual[i++].second = rn;
-      }
+      this->compute_centre(f);     
     }
     this->fc_jacobian(f);
   }   
@@ -1128,14 +1089,6 @@ void Mesh::remove_edge_pair(int e)
       else if (face.edges[ee] > e2) face.edges[ee] -= 2;
   }
   
-  // Relabel dual info
-  int pos = 0;
-  for (unsigned int d = 0; d < m_dual.size(); d++)
-  {
-    if (m_dual[d].first == f) pos = d;
-    if (m_dual[d].first > f) m_dual[d].first--;
-  }
-  m_dual.erase(m_dual.begin()+pos);
   
   // Order affected vertices
   for (unsigned int v = 0; v < affected_vertices.size(); v++)

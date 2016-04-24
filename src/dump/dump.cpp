@@ -1061,7 +1061,6 @@ void Dump::dump_vtp(int step)
   else
   {
     vector<Vertex>& vertices = mesh.get_vertices();
-    vector<pair<int,Vector3d> >& dual = mesh.get_dual();
     vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
     vtkSmartPointer<vtkIntArray> ids =  vtkSmartPointer<vtkIntArray>::New();
     vtkSmartPointer<vtkDoubleArray> areas =  vtkSmartPointer<vtkDoubleArray>::New();
@@ -1076,10 +1075,14 @@ void Dump::dump_vtp(int step)
     pressure->SetName("Pressure");
     pressure->SetNumberOfComponents(1);
     
-    for (unsigned int i = 0; i < dual.size(); i++)
+    for (unsigned int i = 0; i < mesh.get_faces().size(); i++)
     {
-      points->InsertNextPoint (dual[i].second.x, dual[i].second.y, dual[i].second.z);      
-      ids->InsertNextValue(i);
+      Face& ff = mesh.get_faces()[i];
+      if (!ff.is_hole)
+      {
+        points->InsertNextPoint (ff.rc.x, ff.rc.y, ff.rc.z);      
+        ids->InsertNextValue(i);
+      }
     }
     polydata->SetPoints(points);
     polydata->GetPointData()->AddArray(ids);
@@ -1090,9 +1093,9 @@ void Dump::dump_vtp(int step)
         Vertex& V = vertices[i];
         if (!V.boundary || (V.boundary && m_dual_boundary))
         {
-          face->GetPointIds()->SetNumberOfIds(V.dual.size());
-          for (unsigned int d = 0; d < V.dual.size(); d++)
-            face->GetPointIds()->SetId(d, V.dual[d]);
+          face->GetPointIds()->SetNumberOfIds(V.n_faces);
+          for (unsigned int d = 0; d < V.n_faces; d++)
+            face->GetPointIds()->SetId(d, V.faces[d]);
           faces->InsertNextCell(face);
           areas->InsertNextValue(vertices[i].area);
           Particle& p = m_system->get_particle(i);
