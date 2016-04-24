@@ -75,7 +75,7 @@ class Mesh
 {
 public:
   //! Construct a Mesh object
-  Mesh() : m_size(0), m_nedge(0), m_nface(0), m_ndual(0), m_is_triangulation(true), m_max_face_perim(20.0), m_circumcenter(true) {   }
+  Mesh() : m_size(0), m_nedge(0), m_nface(0), m_ndual(0), m_is_triangulation(true), m_max_face_perim(20.0), m_circumcenter(true), m_lambda(0.32) {   }
   
   //! Get mesh size
   int size() { return m_size; }
@@ -117,6 +117,10 @@ public:
   //! Sets the circumcenter flag
   //! \param val value of the circumcenter flag
   void set_circumcenter(bool val) { m_circumcenter = val; }
+  
+  //! Set value of the boundary edge paramter lambda
+  //! \param lambda new value of lambda
+  void set_lambda(double lambda) { m_lambda = lambda; }
   
   //! Add a vertex
   //! \param p particle
@@ -199,7 +203,7 @@ public:
   void update_face_properties();
   
   //! Remove obtuse boundary faces
-  bool remove_obtuse_boundary();
+  void remove_obtuse_boundary();
   
   //! Return true if the vertex is a boundary vertex
   //! \param v index of the vertex
@@ -213,7 +217,7 @@ public:
   
   //! Compute derivatives of the angle factor for boudnary vertices
   void angle_factor_deriv(int);
-    
+     
 private:  
   
   int m_size;    //!< Mesh size
@@ -223,6 +227,7 @@ private:
   bool m_is_triangulation;    //!< If true, all faces are triangles (allows more assumptions)
   double m_max_face_perim;    //!< If face perimeter is greater than this value, reject face and treat it as a hole.
   bool m_circumcenter;        //!< If true, compute face circumcenters. Otherwise compute geometric centre. 
+  double m_lambda;            //!< This parameter determines which boundary edges will be removed
     
   vector<Vertex> m_vertices;           //!< Contains all vertices
   vector<Edge> m_edges;                //!< Contains all edge
@@ -231,6 +236,7 @@ private:
   map<pair<int,int>, int> m_edge_face; //!< Relates pairs of faces to edges
   vector<Vector3d> m_dual;             //!< Coordinates of the dual mesh
   vector<pair<int,int> > m_boundary;   //!< List of vertex pair that are on the boundary
+  vector<int> m_boundary_edges;        //!< List of all edges that are at the boundary
   
   //! Compute face circumcentre
   void compute_circumcentre(int);
@@ -246,6 +252,30 @@ private:
   
   //! Order boundary star
   void order_boundary_star(int);
+  
+  
+  //! Functor used to compare lengths of two edges
+  struct CompareEdges
+  {
+    CompareEdges(const Mesh& mesh) : m_mesh(mesh) { }
+    bool operator()(const int e1, const int e2)
+    {
+      const Edge& E1 = m_mesh.m_edges[e1];
+      const Edge& E2 = m_mesh.m_edges[e2];
+      
+      const Vertex& V1 = m_mesh.m_vertices[E1.from];
+      const Vertex& V2 = m_mesh.m_vertices[E1.to];
+      
+      const Vertex& V3 = m_mesh.m_vertices[E2.from];
+      const Vertex& V4 = m_mesh.m_vertices[E2.to];
+      
+      double r12 = (V1.r - V2.r).len();
+      double r34 = (V3.r - V4.r).len();
+      
+      return (r12 > r34);
+    }
+    const Mesh& m_mesh;
+  };
   
 };
 

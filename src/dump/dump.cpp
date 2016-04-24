@@ -1002,10 +1002,13 @@ void Dump::dump_vtp(int step)
       vtkSmartPointer<vtkLine> edge =  vtkSmartPointer<vtkLine>::New();
       vtkSmartPointer<vtkDoubleArray> lens =  vtkSmartPointer<vtkDoubleArray>::New();
       vtkSmartPointer<vtkDoubleArray> boundary =  vtkSmartPointer<vtkDoubleArray>::New();
+      vtkSmartPointer<vtkIntArray> boundary_edges =  vtkSmartPointer<vtkIntArray>::New();
       lens->SetName("Length");
       lens->SetNumberOfComponents(1);
       boundary->SetName("Boundary");
       boundary->SetNumberOfComponents(1);
+      boundary_edges->SetName("Boundary");
+      boundary_edges->SetNumberOfComponents(1);
       // Edited for this to be backwards for better paraview plotting
       for (int i = 0; i < mesh.size(); i++)
       {
@@ -1031,12 +1034,17 @@ void Dump::dump_vtp(int step)
           double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
           m_system->apply_periodic(dx,dy,dz);
           lens->InsertNextValue(sqrt(dx*dx + dy*dy + dz*dz));
+          if (ee.boundary || mesh.get_edges()[ee.pair].boundary)
+            boundary_edges->InsertNextValue(1);
+          else
+            boundary_edges->InsertNextValue(0);
           visited_edges.push_back(make_pair(ee.from,ee.to));
           visited_edges.push_back(make_pair(ee.to,ee.from));
         }
       }
       polydata->SetLines(lines);
       polydata->GetCellData()->AddArray(lens);
+      polydata->GetCellData()->AddArray(boundary_edges);
       
       vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
       for (int f = 0; f < mesh.nfaces(); f++)

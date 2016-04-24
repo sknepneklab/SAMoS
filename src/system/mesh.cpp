@@ -239,6 +239,7 @@ void Mesh::postprocess(bool flag)
   m_nedge = m_edges.size();
   m_nface = m_faces.size();
   m_boundary.clear();
+  m_boundary_edges.clear();
   //for (int i = 0; i < m_size; i++)
   //  if (m_vertices[i].edges.size() == 0) m_vertices[i].boundary = true;
   for (int f = 0; f < m_nface; f++)
@@ -254,6 +255,7 @@ void Mesh::postprocess(bool flag)
         E.boundary = true;
         m_boundary.push_back(make_pair(E.from,E.to));
         m_boundary.push_back(make_pair(E.to,E.from));
+        m_boundary_edges.push_back(E.id);
       }
     }
   }
@@ -797,53 +799,36 @@ void Mesh::update_face_properties()
  *  remove the edge boundary edge. This leaves the face 
  *  information invalid. All faces need to be rebuilt.
 */
-bool Mesh::remove_obtuse_boundary()
+void Mesh::remove_obtuse_boundary()
 {
   bool removed = false;
   
-  double average_area = 0.0;
-  for (int f = 0; f < m_nface; f++)
-    average_area += this->face_area(f); 
-  
-  average_area /= m_nface;
-  
-  for (int f = 0; f < m_nface; f++)
+  double min_l = 1e10, max_l = 0.0;
+  for (int e = 0; e < m_nedge; e++)
   {
-    Face& face = m_faces[f];
-    //cout << "average area : " << average_area << endl;
-    //cout << face << endl;
-    //if (face.boundary && face.obtuse && face.area < 0.1*average_area)
-    //if (face.boundary && face.obtuse)
-    if (face.boundary && face.obtuse && face.area < 0.1*average_area)
+    Edge& E = m_edges[e];
+    double edge_len = (m_vertices[E.from].r-m_vertices[E.to].r).len();
+    if (edge_len < min_l) min_l = edge_len;
+    if (edge_len > max_l) max_l = edge_len;
+  }
+  
+  double l_max = m_lambda*(max_l - min_l) + min_l;   // remove all boundary edges longer that this
+  
+  bool done = false;
+  while (!done)
+  {
+    done = true;
+    sort(m_boundary_edges.begin(), m_boundary_edges.end(), CompareEdges(*this));
+    vector<int>::iterator it_e = m_boundary_edges.begin();
+    Edge& E = m_edges[*it_e];
+    double edge_len = (m_vertices[E.from].r-m_vertices[E.to].r).len();
+    if (edge_len > l_max)
     {
-      //cout << "TO REMOVE " << endl << face << endl;
-      for (int e = 0; e < face.n_sides; e++)
-      {
-        if (m_edges[m_edges[face.edges[e]].pair].boundary) 
-        {
-          this->remove_edge_pair(face.edges[e]);
-          removed = true;
-          break;
-        }
-      }
-      if (removed)
-        for (int v = 0; v < face.n_sides; v++)
-          m_vertices[face.vertices[v]].boundary = true;   // upon removal all vertices are boundary
-    }
-   }
-   
-   if (removed)
-   {
-     m_nface = 0;
-     m_faces.clear();
-     for (int e = 0; e < m_nedge; e++)
-     {
-        m_edges[e].visited = false;
-        m_edges[e].boundary = false;
-     }
-   }
-   
-   return removed;
+      this->remove_edge_pair(E.id);
+      done = false;
+      m_boundary_edges.erase(m_boundary_edges.begin());
+    }  
+  }
 }
 
 /*! Find the factor to scale the native area with for the boundary vertices.
@@ -994,6 +979,24 @@ void Mesh::remove_edge_pair(int e)
 {
   Edge& E = m_edges[e];
   Edge& Ep = m_edges[E.pair];
+  vector<int> affected_vertices;   // Vertices that are affected by the removal and need reordering
+ 
+  // We can only remove boundary edge pairs
+  if (!(E.boundary || Ep.boundary))
+    return;
+    
+  // Get the face to be removed
+  Face& face = (Ep.boundary) ? m_faces[E.face] : m_faces[Ep.face];
+  // And its pair
+  Face& face_pair = (Ep.boundary) ? m_faces[Ep.face] : m_faces[E.face];
+  
+  // Check is the face is regular (at least one of its vertices are internal)
+  bool non_regular = true;
+  for (int v = 0; v < face.n_sides; v++)
+    non_regular = non_regular && m_vertices[face.vertices[v]].boundary;
+  
+  if (non_regular)
+    return;
   
   Vertex& V1 = m_vertices[E.from];
   Vertex& V2 = m_vertices[Ep.from];
@@ -1004,6 +1007,9 @@ void Mesh::remove_edge_pair(int e)
   V1.remove_edge(E.id);
   V2.remove_edge(Ep.id);
   
+  V1.remove_face(face.id);
+  V2.remove_face(face.id);
+  
   map<pair<int,int>, int>::iterator it = m_edge_map.find(make_pair(V1.id,V2.id));
   if (it != m_edge_map.end())
      m_edge_map.erase(it);
@@ -1011,9 +1017,39 @@ void Mesh::remove_edge_pair(int e)
   it = m_edge_map.find(make_pair(V2.id,V1.id));
   if (it != m_edge_map.end())
      m_edge_map.erase(it);
-     
+  
+  // Update edges and vertices for the face to be removed
+  for (int v = 0; v < face.n_sides; v++)
+  {
+    Vertex& VV = m_vertices[face.vertices[v]];
+    if (VV.id != V1.id && VV.id != V2.id)
+    {
+      VV.remove_face(face.id);
+      VV.add_face(face_pair.id);
+      face_pair.add_vertex(VV.id);
+      VV.boundary = true;
+    }
+    affected_vertices.push_back(VV.id);
+  }
+    
+  for (int e = 0; e < face.n_sides; e++)
+  {
+    Edge& EE = m_edges[face.edges[e]];
+    if (EE.id != E.id && EE.id != Ep.id)
+    {
+      EE.face = face_pair.id;
+      EE.boundary = true;
+      face_pair.add_edge(EE.id);
+      m_boundary_edges.push_back(EE.id);
+    }
+  }
+  
+  // Identify edge ids to be removed     
   int e1 = (E.id < Ep.id) ? E.id : Ep.id;
   int e2 = (e1 == E.id) ? Ep.id : E.id;
+  
+  // Identify face id to be removed
+  int f = face.id;
   
   // Remove first edge
   vector<Edge>::iterator it_e = find(m_edges.begin(), m_edges.end(), e1);
@@ -1023,37 +1059,73 @@ void Mesh::remove_edge_pair(int e)
   it_e = find(m_edges.begin(), m_edges.end(), e2);
   if (it_e != m_edges.end()) m_edges.erase(it_e);
   
-  // Relabel edges
+  // Update total number of edges
   m_nedge = m_edges.size();
+  
+  // Remove face
+  vector<Face>::iterator it_f = find(m_faces.begin(), m_faces.end(), f); 
+  if (it_f != m_faces.end())  m_faces.erase(it_f);
+  
+  // Update total number of faces
+  m_nface = m_faces.size();
+  
+  // Relabel edges
   for (int ee = 0; ee < m_nedge; ee++)
   {
-    m_edges[ee].id = ee;
+    if (m_edges[ee].id > e1 && m_edges[ee].id < e2) m_edges[ee].id--;
+    else if (m_edges[ee].id > e2) m_edges[ee].id -= 2;
     if (m_edges[ee].pair > e1 && m_edges[ee].pair < e2) m_edges[ee].pair -= 1;
     else if (m_edges[ee].pair > e2) m_edges[ee].pair -= 2;
+    if (m_edges[ee].next > e1 && m_edges[ee].next < e2) m_edges[ee].next--;
+    else if (m_edges[ee].next > e2) m_edges[ee].next -= 2;
+    if (m_edges[ee].face > f) m_edges[ee].face--;
   }
   
-  // Relabel vertex edge info
+  // Relabel boundary edges
+  for (unsigned int ee = 0; ee < m_boundary_edges.size(); ee++)
+  {
+    if (m_boundary_edges[ee] > e1 && m_boundary_edges[ee] < e2) m_boundary_edges[ee] -= 1;
+    else if (m_boundary_edges[ee] > e2) m_boundary_edges[ee] -= 2;
+  }
+  
+  
+  // Relabel vertex edge and face info
   for (int i = 0; i < m_size; i++)
   {
      Vertex& V = m_vertices[i];
      for (int ee = 0; ee < V.n_edges; ee++)
-        if (V.edges[ee] > e1 && V.edges[ee] < e2) V.edges[ee] -= 1;
-        else if (V.edges[ee] > e2) V.edges[ee] -= 2;
+     {
+        if (V.edges[ee] > e1 && V.edges[ee] < e2) 
+          V.edges[ee] -= 1;
+        else if (V.edges[ee] > e2)
+          V.edges[ee] -= 2;
+     }
+     for (int ff = 0; ff < V.n_faces; ff++)
+        if (V.faces[ff] > f) 
+          V.faces[ff]--;
   }
   
   // Relabel edge_map info
   for (it = m_edge_map.begin(); it != m_edge_map.end(); it++)
+  {
     if ((*it).second > e1 && (*it).second < e2) (*it).second -= 1;
     else if ((*it).second > e2) (*it).second -= 2;
+  }
   
   // Relabel face edge info
-  for (int f = 0; f < m_nface; f++)
+  for (int ff = 0; ff < m_nface; ff++)
   {
-    Face& face = m_faces[f];
+    Face& face = m_faces[ff];
+    face.id = ff;
     for (int ee = 0; ee < face.n_sides; ee++)
       if (face.edges[ee] > e1 && face.edges[ee] < e2) face.edges[ee] -= 1;
       else if (face.edges[ee] > e2) face.edges[ee] -= 2;
   }
+  
+  // Order affected vertices
+  for (unsigned int v = 0; v < affected_vertices.size(); v++)
+    this->order_star(affected_vertices[v]);
+  
 }
 
 /*! Compute ares of a face.
@@ -1106,3 +1178,4 @@ void Mesh::order_boundary_star(int v)
   rotate(V.faces.begin(), V.faces.begin()+pos, V.faces.end());
   
 }
+

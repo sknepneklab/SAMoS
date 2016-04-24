@@ -211,6 +211,18 @@ public:
       m_msg->write_config("nlist.circumcenter","false");
       m_circumcenter = false;
     }
+    if (param.find("lambda") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Neighbour list. Mesh boudnary paremeter lambda set to default value 0.32.");
+      m_msg->write_config("nlist.lambda","0.32");
+      m_lambda = 0.32;
+    }
+    else    
+    {
+      m_msg->msg(Messenger::INFO,"Neighbour list. Mesh boudnary paremeter lambda set to "+param["lambda"]+".");
+      m_msg->write_config("nlist.lambda",param["lambda"]);
+      m_lambda = lexical_cast<double>(param["lambda"]);
+    }
     this->build();
   }
   
@@ -290,6 +302,7 @@ private:
   double m_contact_dist;           //!< Distance over which to assume particles to be in contact 
   double m_max_perim;              //!< Maximum value of the perimeter beyond which face becomes a hole.
   double m_max_edge_len;           //!< Maximum value of the edge beyond which we drop it (for triangulations)
+  double m_lambda;                 //!< Boundary edge paramter for meshes
   bool m_circumcenter;             //!< If true, use cell circumcenters when computing duals. 
   vector<vector<int> >  m_contact_list;    //!< Holds the contact list for each particle
     
