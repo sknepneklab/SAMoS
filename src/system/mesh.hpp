@@ -96,7 +96,7 @@ public:
   vector<Face>& get_faces() { return m_faces; }
   
   //! Get list of all duals
-  vector<Vector3d>& get_dual() { return m_dual; }
+  vector<pair<int,Vector3d> >& get_dual() { return m_dual; }
   
   //! Get edge-face data structure
   map<pair<int,int>, int>& get_edge_face() { return m_edge_face; }
@@ -234,7 +234,7 @@ private:
   vector<Face> m_faces;                //!< Contains all faces
   map<pair<int,int>, int> m_edge_map;  //!< Relates vertex indices to edge ids
   map<pair<int,int>, int> m_edge_face; //!< Relates pairs of faces to edges
-  vector<Vector3d> m_dual;             //!< Coordinates of the dual mesh
+  vector<pair<int,Vector3d> > m_dual;             //!< Coordinates of the dual mesh
   vector<pair<int,int> > m_boundary;   //!< List of vertex pair that are on the boundary
   vector<int> m_boundary_edges;        //!< List of all edges that are at the boundary
   

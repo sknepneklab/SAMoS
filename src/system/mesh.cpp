@@ -171,7 +171,7 @@ void Mesh::generate_dual_mesh()
     {
       this->compute_angles(f);
       this->compute_centre(f);
-      m_dual.push_back(face.rc);
+      m_dual.push_back(make_pair(face.id,face.rc));
       for (int e = 0; e < face.n_sides; e++)
       {
         Edge& E = m_edges[face.edges[e]];
@@ -187,7 +187,7 @@ void Mesh::generate_dual_mesh()
         //Vector3d rc = m_faces[m_edges[E.pair].face].rc;
         Vector3d r = m_vertices[E.to].r - m_vertices[E.from].r;
         Vector3d rn = m_vertices[E.from].r + r.scaled(0.5);//mirror(m_vertices[E.from].r,r,rc);
-        m_dual.push_back(rn);
+        m_dual.push_back(make_pair(face.id,rn));
         m_vertices[E.from].dual.push_back(m_ndual);
         m_vertices[E.to].dual.push_back(m_ndual);
         E.dual = m_ndual;
@@ -209,7 +209,7 @@ void Mesh::update_dual_mesh()
     {
       this->compute_angles(f);
       this->compute_centre(f);
-      m_dual[i++] = face.rc;
+      m_dual[i++].second = face.rc;
     }
     else
     {
@@ -219,7 +219,7 @@ void Mesh::update_dual_mesh()
         //Vector3d rc = m_faces[m_edges[E.pair].face].rc;
         Vector3d r = m_vertices[E.to].r - m_vertices[E.from].r;
         Vector3d rn = m_vertices[E.from].r + r.scaled(0.5); //mirror(m_vertices[E.from].r,r,rc);
-        m_dual[i++] = rn;
+        m_dual[i++].second = rn;
       }
     }
     this->fc_jacobian(f);
@@ -393,7 +393,10 @@ void Mesh::order_star(int v)
 double Mesh::dual_area(int v)
 {
   if (!m_vertices[v].ordered)
+  {
+    cout << m_vertices[v] << endl;
     throw runtime_error("Vertex star has to be ordered before dual area can be computed.");
+  }
   Vertex& V = m_vertices[v];
   if (!V.attached) return 0.0;
     
@@ -844,6 +847,9 @@ double Mesh::angle_factor(int v)
 
   if (Vi.n_faces < 3)
     return 0.0;
+    
+  if (!Vi.attached)
+    return 0.0;
  
   Face& f1 = m_faces[Vi.faces[0]];
   Face& fn = m_faces[Vi.faces[Vi.n_faces-2]];
@@ -1121,6 +1127,15 @@ void Mesh::remove_edge_pair(int e)
       if (face.edges[ee] > e1 && face.edges[ee] < e2) face.edges[ee] -= 1;
       else if (face.edges[ee] > e2) face.edges[ee] -= 2;
   }
+  
+  // Relabel dual info
+  int pos = 0;
+  for (unsigned int d = 0; d < m_dual.size(); d++)
+  {
+    if (m_dual[d].first == f) pos = d;
+    if (m_dual[d].first > f) m_dual[d].first--;
+  }
+  m_dual.erase(m_dual.begin()+pos);
   
   // Order affected vertices
   for (unsigned int v = 0; v < affected_vertices.size(); v++)

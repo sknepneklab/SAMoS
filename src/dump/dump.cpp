@@ -1061,7 +1061,7 @@ void Dump::dump_vtp(int step)
   else
   {
     vector<Vertex>& vertices = mesh.get_vertices();
-    vector<Vector3d>& dual = mesh.get_dual();
+    vector<pair<int,Vector3d> >& dual = mesh.get_dual();
     vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
     vtkSmartPointer<vtkIntArray> ids =  vtkSmartPointer<vtkIntArray>::New();
     vtkSmartPointer<vtkDoubleArray> areas =  vtkSmartPointer<vtkDoubleArray>::New();
@@ -1078,7 +1078,7 @@ void Dump::dump_vtp(int step)
     
     for (unsigned int i = 0; i < dual.size(); i++)
     {
-      points->InsertNextPoint (dual[i].x, dual[i].y, dual[i].z);      
+      points->InsertNextPoint (dual[i].second.x, dual[i].second.y, dual[i].second.z);      
       ids->InsertNextValue(i);
     }
     polydata->SetPoints(points);
