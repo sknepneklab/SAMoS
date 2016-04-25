@@ -250,9 +250,9 @@ private:
   
   
   //! Functor used to compare lengths of two edges
-  struct CompareEdges
+  struct CompareEdgeLens
   {
-    CompareEdges(const Mesh& mesh) : m_mesh(mesh) { }
+    CompareEdgeLens(const Mesh& mesh) : m_mesh(mesh) { }
     bool operator()(const int e1, const int e2)
     {
       const Edge& E1 = m_mesh.m_edges[e1];
@@ -268,6 +268,26 @@ private:
       double r34 = (V3.r - V4.r).len();
       
       return (r12 > r34);
+    }
+    const Mesh& m_mesh;
+  };
+  
+  //! Functor used to compare radii of circumscribed circles
+  struct CompareRadii
+  {
+    CompareRadii(const Mesh& mesh) : m_mesh(mesh) { }
+    bool operator()(const int e1, const int e2)
+    {
+      const Edge& E1 = m_mesh.m_edges[e1];
+      const Edge& E2 = m_mesh.m_edges[e2];
+      
+      const Face& f1 = m_mesh.m_faces[E1.pair];
+      const Face& f2 = m_mesh.m_faces[E2.pair];
+      
+      double r1 = (m_mesh.m_vertices[f1.vertices[0]].r-f1.rc).len();
+      double r2 = (m_mesh.m_vertices[f2.vertices[0]].r-f2.rc).len();
+        
+      return (r1 > r2);
     }
     const Mesh& m_mesh;
   };

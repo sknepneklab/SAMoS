@@ -768,21 +768,32 @@ void Mesh::remove_obtuse_boundary()
   bool removed = false;
   
   double min_l = 1e10, max_l = 0.0;
+  double avg_circle_radius = 0.0;
+  int cnt = 0;
   for (int e = 0; e < m_nedge; e++)
   {
     Edge& E = m_edges[e];
     double edge_len = (m_vertices[E.from].r-m_vertices[E.to].r).len();
     if (edge_len < min_l) min_l = edge_len;
     if (edge_len > max_l) max_l = edge_len;
+    Face& face = m_faces[E.face];
+    if (!face.is_hole && !m_edges[E.pair].boundary)
+    {
+      this->compute_circumcentre(face.id);
+      avg_circle_radius += (m_vertices[face.vertices[0]].r-face.rc).len();
+      cnt++;
+    }
   }
+  avg_circle_radius /= static_cast<double>(cnt);
   
   double l_max = m_lambda*(max_l - min_l) + min_l;   // remove all boundary edges longer that this
   
   bool done = false;
+  // First get rid of too long edges
   while (!done)
   {
     done = true;
-    sort(m_boundary_edges.begin(), m_boundary_edges.end(), CompareEdges(*this));
+    sort(m_boundary_edges.begin(), m_boundary_edges.end(), CompareEdgeLens(*this));
     vector<int>::iterator it_e = m_boundary_edges.begin();
     Edge& E = m_edges[*it_e];
     double edge_len = (m_vertices[E.from].r-m_vertices[E.to].r).len();
@@ -793,6 +804,29 @@ void Mesh::remove_obtuse_boundary()
       m_boundary_edges.erase(m_boundary_edges.begin());
     }  
   }
+  // Now get rid of too large circles
+  /*
+  done = false;
+  while (!done)
+  {
+    done = true;
+    sort(m_boundary_edges.begin(), m_boundary_edges.end(), CompareRadii(*this));
+    vector<int>::iterator it_e = m_boundary_edges.begin();
+    Edge& E = m_edges[*it_e];
+    cout << E << endl;
+    Face& face = m_faces[m_edges[E.pair].face];
+    cout << face << endl;
+    double circle_radius = (m_vertices[face.vertices[0]].r-face.rc).len();
+    if (circle_radius > 10.0*avg_circle_radius)
+    {
+      cout << "circle_radius : " << circle_radius << " ratio : " << circle_radius/avg_circle_radius << endl;
+      this->remove_edge_pair(E.id);
+      done = false;
+      m_boundary_edges.erase(m_boundary_edges.begin());
+    }  
+  }
+  */
+  
 }
 
 /*! Find the factor to scale the native area with for the boundary vertices.
