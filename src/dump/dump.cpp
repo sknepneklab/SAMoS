@@ -1094,7 +1094,7 @@ void Dump::dump_vtp(int step)
         if (!V.boundary || (V.boundary && m_dual_boundary))
         {
           face->GetPointIds()->SetNumberOfIds(V.n_faces);
-          for (unsigned int d = 0; d < V.n_faces; d++)
+          for (int d = 0; d < V.n_faces; d++)
             face->GetPointIds()->SetId(d, V.faces[d]);
           faces->InsertNextCell(face);
           areas->InsertNextValue(vertices[i].area);

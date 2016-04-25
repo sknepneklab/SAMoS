@@ -174,7 +174,6 @@ void Mesh::generate_dual_mesh()
 /*! Update position of the dual vertices as well as the cell centre Jacobian */
 void Mesh::update_dual_mesh()
 {
-  int i = 0;
   for (int f = 0; f < m_nface; f++)
   {
     Face& face = m_faces[f];
@@ -765,8 +764,6 @@ void Mesh::update_face_properties()
 */
 void Mesh::remove_obtuse_boundary()
 {
-  bool removed = false;
-  
   double min_l = 1e10, max_l = 0.0;
   double avg_circle_radius = 0.0;
   int cnt = 0;
@@ -873,9 +870,6 @@ void Mesh::angle_factor_deriv(int v)
   if (f1.n_sides != 3 || fn.n_sides != 3)
     return;
   
-  Vertex& Vj = m_vertices[m_edges[V.edges[0]].to];
-  Vertex& Vk = m_vertices[m_edges[V.edges[V.n_edges-1]].to];
-  
   Vector3d  r_nu_1_ri = f1.rc - V.r;
   Vector3d  r_nu_n_ri = fn.rc - V.r;
   
@@ -887,24 +881,40 @@ void Mesh::angle_factor_deriv(int v)
   double len_r_nu_n_ri_2 = len_r_nu_n_ri*len_r_nu_n_ri;
   double r_nu_1_ri_dot_r_nu_n_ri = dot(r_nu_1_ri,r_nu_n_ri);
   
+  // We first handle vertex itself
   Vector3d d_ri = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_n_ri*f1.get_jacobian(V.id)-r_nu_n_ri + r_nu_1_ri*fn.get_jacobian(V.id) - r_nu_1_ri)
                   -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_1_ri*(r_nu_n_ri.unit())*fn.get_jacobian(V.id) - len_r_nu_1_ri*r_nu_n_ri.unit()
                                                                               + len_r_nu_n_ri*(r_nu_1_ri.unit())*f1.get_jacobian(V.id) - len_r_nu_n_ri*r_nu_1_ri.unit());
-  Vector3d d_rj = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_n_ri*f1.get_jacobian(Vj.id))
-                 -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_n_ri*(r_nu_1_ri.unit())*f1.get_jacobian(Vj.id));
-
-  Vector3d d_rk = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_1_ri*fn.get_jacobian(Vk.id))
-                 -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_1_ri*(r_nu_n_ri.unit())*fn.get_jacobian(Vk.id));
- 
+  
   double fact = 0.0;
-  if (fabs(r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)) < 1.0)
+  if (fabs(r_nu_1_ri_dot_r_nu_n_ri*r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)) < 1.0)
     fact = sign/(2.0*M_PI)*1.0/sqrt(1.0 - r_nu_1_ri_dot_r_nu_n_ri*r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2));               
- 
-                 
+  
+  
   V.angle_def.push_back(fact*d_ri);
-  V.angle_def.push_back(fact*d_rj);
-  V.angle_def.push_back(fact*d_rk);  
-    
+                  
+  // Now we handle all neighbours
+  for (int e = 0; e < V.n_edges; e++)
+    V.angle_def.push_back(Vector3d(0.0,0.0,0.0));
+  
+  for (int e = 0; e < V.n_edges; e++)
+  {
+    if (e <= 1)
+    {
+      Vertex& Vj = m_vertices[m_edges[V.edges[e]].to];
+      Vector3d d_rj = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_n_ri*f1.get_jacobian(Vj.id))
+                 -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_n_ri*(r_nu_1_ri.unit())*f1.get_jacobian(Vj.id));
+      V.angle_def[e+1] = V.angle_def[e+1] + fact*d_rj;
+    }
+    if (e >= V.n_edges-2)
+    {
+      Vertex& Vk = m_vertices[m_edges[V.edges[e]].to];
+      Vector3d d_rk = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_1_ri*fn.get_jacobian(Vk.id))
+                 -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_1_ri*(r_nu_n_ri.unit())*fn.get_jacobian(Vk.id));
+      V.angle_def[e+1] = V.angle_def[e+1] + fact*d_rk;
+    }
+  }
+  
 }
 
 

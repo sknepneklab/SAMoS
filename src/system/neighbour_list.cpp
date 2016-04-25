@@ -406,10 +406,6 @@ void NeighbourList::build_faces(bool flag)
 */
 bool NeighbourList::build_triangulation()
 {
-  
-  // Here we start building 
-  Mesh& mesh = m_system->get_mesh();
-  //vector<pair<int,int> >& boundary = mesh.get_boundary();
   vector< pair<Point,unsigned> > points;
   int N = m_system->size();
   for (int i = 0; i < N; i++)
@@ -432,47 +428,9 @@ bool NeighbourList::build_triangulation()
     int i = face->vertex(0)->info();
     int j = face->vertex(1)->info();
     int k = face->vertex(2)->info();
-    //cout << i << " " << j << " " << k << endl;
     Particle& pi = m_system->get_particle(i);
     Particle& pj = m_system->get_particle(j);
     Particle& pk = m_system->get_particle(k);
-    /*
-    bool add_ij = true;
-    if (mesh.is_boundary_vertex(i) && mesh.is_boundary_vertex(j) && find(boundary.begin(),boundary.end(),make_pair(i,j)) == boundary.end())
-    {
-      add_ij = false;
-      // make sure that we don't have a stuation where the edge is actually legitmate
-      vector<int>& neigh_i = this->get_neighbours(i);
-      vector<int>& neigh_j = this->get_neighbours(j);
-      add_ij = !(this->same_side_line(pi,pj,neigh_i));
-      if (!add_ij)
-        add_ij = !(this->same_side_line(pi,pj,neigh_j));
-    }
-  
-    bool add_jk = true;
-    if (mesh.is_boundary_vertex(j) && mesh.is_boundary_vertex(k) && find(boundary.begin(),boundary.end(),make_pair(j,k)) == boundary.end())
-    {
-      add_jk = false;
-      // make sure that we don't have a stuation where the edge is actually legitmate
-      vector<int>& neigh_j = this->get_neighbours(j);
-      vector<int>& neigh_k = this->get_neighbours(k);
-      add_jk = !(this->same_side_line(pj,pk,neigh_j));
-      if (!add_jk)
-        add_jk = !(this->same_side_line(pj,pk,neigh_k));
-    }
-    
-    bool add_ki = true;
-    if (mesh.is_boundary_vertex(k) && mesh.is_boundary_vertex(i) && find(boundary.begin(),boundary.end(),make_pair(k,i)) == boundary.end())
-    {
-      add_ki = false;
-      // make sure that we don't have a stuation where the edge is actually legitmate
-      vector<int>& neigh_k = this->get_neighbours(k);
-      vector<int>& neigh_i = this->get_neighbours(i);
-      add_ki = !(this->same_side_line(pk,pi,neigh_k));
-      if (!add_ki)
-        add_ki = !(this->same_side_line(pk,pi,neigh_i));
-    }
-    */
     double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
     m_system->apply_periodic(dx,dy,dz);
     if (std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
