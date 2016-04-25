@@ -814,7 +814,7 @@ void Mesh::remove_obtuse_boundary()
     Edge& E = m_edges[*it_e];
     Face& face = m_faces[m_edges[E.pair].face];
     double circle_radius = (m_vertices[face.vertices[0]].r-face.rc).len();
-    if (circle_radius > 1.5*avg_circle_radius)
+    if (circle_radius > m_circle_param*avg_circle_radius)
     {
       this->remove_edge_pair(E.id);
       done = false;

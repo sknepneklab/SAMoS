@@ -373,6 +373,7 @@ void NeighbourList::build_faces(bool flag)
   }
   
   mesh.set_lambda(m_lambda);
+  mesh.set_circle_param(m_circle_param);
   mesh.set_circumcenter(m_circumcenter);
   mesh.set_max_face_perim(m_max_perim);
   mesh.generate_faces();
