@@ -223,7 +223,6 @@ class PVmesh(object):
                 is_new = True not in map(lambda boundary: vh.idx() in boundary, self.boundaries)
                 if is_new:
                     bval += 1
-                    print 'new boundary'
                     self.boundaries.append([])
                     self.b_nheh.append([])
                     for heh in self.iterable_boundary(self.tri, vh):
@@ -299,7 +298,6 @@ class PVmesh(object):
                     rmup = omvec(mesh.point(mesh.to_vertex_handle(heh)))
                     area += np.dot(np.cross(rmu, rmup), self.normal)
                     ap=  np.dot(np.cross(rmu, rmup), self.normal)
-                    #print ap
                     lvec = mesh.property(self.mesh_lvecprop, heh)
                     l = norm(lvec)
                     prim += l
@@ -330,7 +328,6 @@ class PVmesh(object):
                 sg = np.dot( np.cross(r_mu_1_p , r_mu_n_p), self.normal) >= 0
                 ag = dtheta if sg else 2*pi - dtheta
                 ag /= 2*pi
-                #print vh.idx(), ag
 
             self.tri.set_property(self.btheta_prop, vh, ag)
             #print 'setting angular defecit of', ag
@@ -487,7 +484,6 @@ class PVmesh(object):
             for vh in mesh.fv(fh):
                 vhidx = vh.idx()
                 vhs.append(vhidx)
-            #print vhs
             return vhs
 
 
@@ -543,8 +539,6 @@ class PVmesh(object):
                 vplus, vminus = omvec(mesh.point(vhplus)), omvec(mesh.point(vhminus))
                 dAdrmu[trivhid][vhid] = 1/2. * ( np.cross(vplus, self.normal) 
                         - np.cross(vminus, self.normal) )
-                #print 'p, mu'
-                #print trivhid, vhid
                 
                 #dPdrmu
                 # get lengths
@@ -557,15 +551,6 @@ class PVmesh(object):
         fprop = VPropHandle()
         tri.add_property(fprop, 'force')
         self.fprop = fprop
-
-        #self.imfprop = FPropHandle()
-        #mesh.add_property(self.imfprop, 'imforce')
-
-        #self.nnfprop = FPropHandle()
-        #mesh.add_property(self.nnfprop, 'nnforce')
-
-        # Could iterate over all the vertices and assign loops 
-        # Put this in a separate loop for now since it is a bit special
 
         # The duplicated code involved in determining the angle defecit derivative
         #  for the primary and adjacent faces
@@ -595,7 +580,6 @@ class PVmesh(object):
 
                 vhmid = bd[jm]
                 vhpid = bd[jp]
-
                 # Calculate dzetadr[i][i], setup
                 mu1, mun, rmu1, rmun, nr1, nrn, r1, rn, pre_fac = setup_rmu(vhid)
                 # derivative 
@@ -608,8 +592,6 @@ class PVmesh(object):
 
                 deriv_X = d1 * v1 - d2 * ( v2a + v2b )
 
-                #print vhid, deriv_X
-
                 deriv_ag = pre_fac * deriv_X
                 dzetadr[vhid][vhid] = deriv_ag
 
@@ -619,7 +601,6 @@ class PVmesh(object):
                 nl = len(lp)
                 for j, nnvh in enumerate(lp):
                     nnvhid = nnvh.idx()
-                    #print interloops[vhid][nnvhid]
                     cell_verts = set([mu1, mun]).intersection(interloops[vhid][nnvhid])
                     if bool(cell_verts) is False:
                         # This is the case where an adjacent cell shares no boundary vertices
@@ -629,9 +610,8 @@ class PVmesh(object):
                     if nnvhid not in dzetadr:
                         dzetadr[nnvhid] = {}
 
+                    # This is the case where a cell touches both of the extreme vertices of the boundary cell
                     #if len(cell_verts) >1:
-                        #print vhid, nnvhid
-                        #print cell_verts
 
                     for mu in cell_verts:
                         assert (mu == mu1) or (mu == mun)
@@ -643,26 +623,7 @@ class PVmesh(object):
                         deriv_X += dzX
 
                     dzetadr[vhid][nnvhid] = pre_fac * deriv_X
-                    #print vhid, nnvhid, dzetadr[vhid][nnvhid]
-                    #print nnvhid, vhid
-
-                # Calculate dzetadr[i][j], dzetadr[i][k] 
-                # i,j
-
-                #muj1, mujn, rmu1, rmun, nr1, nrn, r1, rn, pre_fac = setup_rmu(vhmid)
-                #assert mujn == mu1
-                #deriv_X = ( rmmultiply( r1/(nr1 * nrn), drmudrp[mu1][vhid] ) 
-                        #- np.dot(r1,rn)/(nr1 *nrn)**2 * nr1
-                        #* rmmultiply(rn/nrn, drmudrp[mu1][vhid]) )
-                        
-                #dzetadr[vhid][vhmid] = pre_fac * deriv_X
-                ## i, k
-                #muk1, mukn, rmu1, rmun, nr1, nrn, r1, rn, pre_fac = setup_rmu(vhpid)
-                #assert muk1 == mun
-                #deriv_X = ( rmmultiply( rn/(nr1 * nrn), drmudrp[mun][vhid])
-                        #- np.dot(r1, rn) / (nr1 * nrn)**2 * nrn 
-                        #* rmmultiply(r1/nr1, drmudrp[mun][vhid]) )
-
+                    
         # It remains to do some complicated math over loops of nearest neighbours, etc..
         for trivh in tri.vertices():
             fh = self.mesh.face_handle(trivh.idx())
@@ -686,7 +647,6 @@ class PVmesh(object):
 
             # dAdrp and dPdrp
             for mu in loops[trivhid]:
-                #print 'mu', mu
                 dAdrmu[trivhid][mu]
                 drmudrp[mu][fhidx]
                 ac = np.einsum('n,nm->m', dAdrmu[trivhid][mu], drmudrp[mu][fhidx])
@@ -708,7 +668,6 @@ class PVmesh(object):
             prim_nnsum = np.zeros(3)
             nv = 0
             for vhnn, vidset in interloops[trivhid].items():
-                #print 'looping over %d vertices' % len(vidset)
                 nnvh = tri.vertex_handle(vhnn)
 
                 kp = tri.property(self.kprop, nnvh)
@@ -734,7 +693,6 @@ class PVmesh(object):
 
                 nnboundary = tri.is_boundary(nnvh)
                 if nnboundary:
-                    #print dzetadr[trivhid].keys()
                     vht = trivhid in dzetadr[vhnn]
                     if vht:
                         # the angle defecit contribution
