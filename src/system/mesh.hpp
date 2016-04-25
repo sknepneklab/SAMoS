@@ -281,8 +281,8 @@ private:
       const Edge& E1 = m_mesh.m_edges[e1];
       const Edge& E2 = m_mesh.m_edges[e2];
       
-      const Face& f1 = m_mesh.m_faces[E1.pair];
-      const Face& f2 = m_mesh.m_faces[E2.pair];
+      const Face& f1 = m_mesh.m_faces[m_mesh.m_edges[E1.pair].face];
+      const Face& f2 = m_mesh.m_faces[m_mesh.m_edges[E2.pair].face];
       
       double r1 = (m_mesh.m_vertices[f1.vertices[0]].r-f1.rc).len();
       double r2 = (m_mesh.m_vertices[f2.vertices[0]].r-f2.rc).len();

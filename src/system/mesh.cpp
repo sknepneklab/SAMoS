@@ -805,7 +805,6 @@ void Mesh::remove_obtuse_boundary()
     }  
   }
   // Now get rid of too large circles
-  /*
   done = false;
   while (!done)
   {
@@ -813,19 +812,15 @@ void Mesh::remove_obtuse_boundary()
     sort(m_boundary_edges.begin(), m_boundary_edges.end(), CompareRadii(*this));
     vector<int>::iterator it_e = m_boundary_edges.begin();
     Edge& E = m_edges[*it_e];
-    cout << E << endl;
     Face& face = m_faces[m_edges[E.pair].face];
-    cout << face << endl;
     double circle_radius = (m_vertices[face.vertices[0]].r-face.rc).len();
-    if (circle_radius > 10.0*avg_circle_radius)
+    if (circle_radius > 1.5*avg_circle_radius)
     {
-      cout << "circle_radius : " << circle_radius << " ratio : " << circle_radius/avg_circle_radius << endl;
       this->remove_edge_pair(E.id);
       done = false;
       m_boundary_edges.erase(m_boundary_edges.begin());
     }  
   }
-  */
   
 }
 
