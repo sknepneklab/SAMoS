@@ -666,7 +666,6 @@ class PVmesh(object):
             # Some duplicated code
             area_nnsum = np.zeros(3)
             prim_nnsum = np.zeros(3)
-            nv = 0
             for vhnn, vidset in interloops[trivhid].items():
                 nnvh = tri.vertex_handle(vhnn)
 
@@ -759,6 +758,8 @@ class PVmesh(object):
         return PV
 
 if __name__=='__main__':
+
+    sys.exit('Use commander.py')
 
     epidat = '/home/dan/cells/run/rpatch/epithelial_equilini.dat'
 
