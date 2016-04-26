@@ -1085,8 +1085,7 @@ void Dump::dump_vtp(int step)
       {
         points->InsertNextPoint (ff.rc.x, ff.rc.y, ff.rc.z);      
         ids->InsertNextValue(i);
-        double rad = (mesh.get_vertices()[ff.vertices[0]].r - ff.rc).len();
-        radius_circ->InsertNextValue(rad);
+        radius_circ->InsertNextValue(mesh.circum_radius(ff.id));
       }
     }
     polydata->SetPoints(points);

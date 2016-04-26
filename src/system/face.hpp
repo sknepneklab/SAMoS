@@ -65,7 +65,18 @@ struct Face
 {
   //! Construct a Face object
   //! \param id face id
-  Face(int id) : id(id), n_sides(0), edge_face(false), ordered(false), type(1), is_hole(false), boundary(false), obtuse(false), area(0.0), rc(0,0,0) {   }
+  Face(int id) : id(id), 
+                 n_sides(0),
+                 edge_face(false),
+                 ordered(false),
+                 type(1), 
+                 is_hole(false), 
+                 boundary(false), 
+                 obtuse(false),
+                 area(0.0),
+                 radius(0.0),
+                 rc(0,0,0)
+                 {   }
   
   ~Face()
   {
@@ -153,6 +164,7 @@ struct Face
   bool boundary;               //!< Face is boundary is one of its edges is boundary
   bool obtuse;                 //!< Face is obtuse if one of its angles is larger than pi/2
   double area;                 //!< Area of the face
+  double radius;               //!< Radius of the circumscribed circle
   
   Vector3d rc;                 //!< Coordiantes of geometric centre of the face
   

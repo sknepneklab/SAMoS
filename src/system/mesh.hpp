@@ -226,6 +226,9 @@ public:
   
   //! Compute derivatives of the angle factor for boudnary vertices
   void angle_factor_deriv(int);
+  
+  //! Compute radius of a circumscribed circle
+  double circum_radius(int);
      
 private:  
   

@@ -777,7 +777,7 @@ void Mesh::remove_obtuse_boundary()
     if (!face.is_hole && !m_edges[E.pair].boundary)
     {
       this->compute_circumcentre(face.id);
-      avg_circle_radius += (m_vertices[face.vertices[0]].r-face.rc).len();
+      avg_circle_radius += this->circum_radius(face.id);
       cnt++;
     }
   }
@@ -810,8 +810,7 @@ void Mesh::remove_obtuse_boundary()
     vector<int>::iterator it_e = m_boundary_edges.begin();
     Edge& E = m_edges[*it_e];
     Face& face = m_faces[m_edges[E.pair].face];
-    double circle_radius = (m_vertices[face.vertices[0]].r-face.rc).len();
-    if (circle_radius > m_circle_param*avg_circle_radius)
+    if (face.radius > m_circle_param*avg_circle_radius)
     {
       this->remove_edge_pair(E.id);
       done = false;
@@ -917,6 +916,21 @@ void Mesh::angle_factor_deriv(int v)
   
 }
 
+/*! Compute radius of a circumscribed circle 
+ *  \param f face id
+*/
+double Mesh::circum_radius(int f)
+{
+  Face& face = m_faces[f];
+  
+  if (face.n_sides > 3)
+    face.radius = 0.0;
+  else
+  {
+    face.radius = (m_vertices[face.vertices[0]].r-face.rc).len();
+  }
+  return face.radius;
+}
 
 // Private members
 
@@ -1185,4 +1199,6 @@ void Mesh::order_boundary_star(int v)
   rotate(V.faces.begin(), V.faces.begin()+pos, V.faces.end());
   
 }
+
+
 
