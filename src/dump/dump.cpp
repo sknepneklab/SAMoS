@@ -1066,6 +1066,7 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkDoubleArray> areas =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> perims =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> pressure =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> radius_circ =  vtkSmartPointer<vtkDoubleArray>::New();
     ids->SetName("Id");
     areas->SetNumberOfComponents(1);
     areas->SetName("Area");
@@ -1074,6 +1075,8 @@ void Dump::dump_vtp(int step)
     perims->SetNumberOfComponents(1);
     pressure->SetName("Pressure");
     pressure->SetNumberOfComponents(1);
+    radius_circ->SetName("RadiusOfCircum");
+    radius_circ->SetNumberOfComponents(1);
     
     for (unsigned int i = 0; i < mesh.get_faces().size(); i++)
     {
@@ -1082,10 +1085,13 @@ void Dump::dump_vtp(int step)
       {
         points->InsertNextPoint (ff.rc.x, ff.rc.y, ff.rc.z);      
         ids->InsertNextValue(i);
+        double rad = (mesh.get_vertices()[ff.vertices[0]].r - ff.rc).len();
+        radius_circ->InsertNextValue(rad);
       }
     }
     polydata->SetPoints(points);
     polydata->GetPointData()->AddArray(ids);
+    polydata->GetPointData()->AddArray(radius_circ);
     
     for (unsigned int i = 0; i < vertices.size(); i++)
       if (vertices[i].attached)
