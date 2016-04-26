@@ -1035,9 +1035,9 @@ void Dump::dump_vtp(int step)
           m_system->apply_periodic(dx,dy,dz);
           lens->InsertNextValue(sqrt(dx*dx + dy*dy + dz*dz));
           if (ee.boundary || mesh.get_edges()[ee.pair].boundary)
-            boundary_edges->InsertNextValue(1);
-          else
             boundary_edges->InsertNextValue(0);
+          else
+            boundary_edges->InsertNextValue(2);
           visited_edges.push_back(make_pair(ee.from,ee.to));
           visited_edges.push_back(make_pair(ee.to,ee.from));
         }

@@ -751,7 +751,7 @@ void Mesh::update_face_properties()
           break;
         }
       for (int i = 0; i < face.n_sides; i++)
-        if (!m_vertices[face.vertices[i]].boundary && face.get_angle(face.vertices[i]) < 0.0)
+        if (face.get_angle(face.vertices[i]) < 0.0)
         {
           face.obtuse = true;
           break;
@@ -793,6 +793,7 @@ void Mesh::remove_obtuse_boundary()
       m_boundary_edges.erase(m_boundary_edges.begin());
     }  
   }
+  this->update_face_properties();
   // Now get rid of too large circles
   double avg_circle_radius = 0.0;
   int cnt = 0;  
@@ -818,6 +819,7 @@ void Mesh::remove_obtuse_boundary()
     assert(E.boundary);
     Face& face = m_faces[m_edges[E.pair].face];
     assert(!face.is_hole);
+    this->circum_radius(face.id);
     if (face.radius > m_circle_param*avg_circle_radius)
     {
       this->remove_edge_pair(E.id);
@@ -1012,6 +1014,7 @@ void Mesh::remove_edge_pair(int e)
   // We can only remove boundary edge pairs
   if (!(E.boundary || Ep.boundary))
     return;
+ 
     
   // Get the face to be removed
   Face& face = (Ep.boundary) ? m_faces[E.face] : m_faces[Ep.face];
