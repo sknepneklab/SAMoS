@@ -299,7 +299,7 @@ void PairVertexParticlePotential::compute(double dt)
             if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_2 = ((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i);
             if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_2 -= ((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i);
             perim_vec = perim_vec + cross_prod_2; 
-            if (vi.boundary && vj.boundary)
+            if (vj.boundary)
             {
               if (e == 0 || (e == vj.n_edges - 2))
               {
