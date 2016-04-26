@@ -44,6 +44,7 @@
 #include <string>
 #include <algorithm>
 #include <stdexcept>
+#include <cassert>
 
 #include <boost/format.hpp>
 
@@ -133,6 +134,7 @@ struct Face
   //! \param v vertex index
   double get_angle(int v)
   {
+     assert(n_sides == 3);
      for(int i = 0; i < n_sides; i++)
        if (vertices[i] == v)
          return angles[i];
@@ -143,6 +145,7 @@ struct Face
   //! \param v id of the vertex
   Matrix3d& get_jacobian(int v)
   {
+    assert(n_sides == 3);
     for (unsigned int i = 0; i < vertices.size(); i++)
       if (vertices[i] == v) return drcdr[i];
     throw runtime_error("Error in Jacobian. Vertex does not belong to the face.");
