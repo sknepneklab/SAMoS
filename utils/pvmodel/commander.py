@@ -10,7 +10,7 @@ import sys
 
 if __name__=='__main__':
 
-    epidat = '/home/dan/cells/run/rpatch/epithelial_equilini.dat'
+    epidat = '/home/dan/cells/run/soft_rpatch/epithelial_equilini.dat'
 
     import argparse
 
@@ -55,7 +55,8 @@ if __name__=='__main__':
 
     # Dump the force and energy
     fef = 'force_energy.dat'
-    PV.out_force_energy(fef)
+    fefo = path.join(outdir, fef)
+    PV.out_force_energy(fefo)
 
 
 
