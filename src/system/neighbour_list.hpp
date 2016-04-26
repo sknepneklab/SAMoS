@@ -112,6 +112,8 @@ public:
                                                                                                  m_contact_dist(0.0),
                                                                                                  m_max_perim(20.0),
                                                                                                  m_max_edge_len(7.0),
+                                                                                                 m_lambda(0.32),
+                                                                                                 m_circle_param(1.5),
                                                                                                  m_circumcenter(true)
   {
     m_msg->write_config("nlist.cut",lexical_cast<string>(m_cut));
@@ -211,6 +213,28 @@ public:
       m_msg->write_config("nlist.circumcenter","false");
       m_circumcenter = false;
     }
+    if (param.find("lambda") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Neighbour list. Mesh boudnary paremeter lambda set to default value "+lexical_cast<string>(m_lambda)+".");
+      m_msg->write_config("nlist.lambda",lexical_cast<string>(m_lambda));
+    }
+    else    
+    {
+      m_msg->msg(Messenger::INFO,"Neighbour list. Mesh boudnary paremeter lambda set to "+param["lambda"]+".");
+      m_msg->write_config("nlist.lambda",param["lambda"]);
+      m_lambda = lexical_cast<double>(param["lambda"]);
+    }
+    if (param.find("radius_factor") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Neighbour list. Mesh boundary circumcenter set to default value of "+lexical_cast<string>(m_circle_param)+".");
+      m_msg->write_config("nlist.circle_radius_factor",lexical_cast<string>(m_circle_param));
+    }
+    else    
+    {
+      m_msg->msg(Messenger::INFO,"Neighbour list. Mesh boundary circumcenter set to "+param["radius_factor"]+".");
+      m_msg->write_config("nlist.circle_radius_factor",param["lambda"]);
+      m_circle_param = lexical_cast<double>(param["radius_factor"]);
+    }
     this->build();
   }
   
@@ -290,6 +314,8 @@ private:
   double m_contact_dist;           //!< Distance over which to assume particles to be in contact 
   double m_max_perim;              //!< Maximum value of the perimeter beyond which face becomes a hole.
   double m_max_edge_len;           //!< Maximum value of the edge beyond which we drop it (for triangulations)
+  double m_lambda;                 //!< Boundary edge paramter for meshes
+  double m_circle_param;           //!< Remove boundary edges with circumscribed circles this much larger than the average radius
   bool m_circumcenter;             //!< If true, use cell circumcenters when computing duals. 
   vector<vector<int> >  m_contact_list;    //!< Holds the contact list for each particle
     

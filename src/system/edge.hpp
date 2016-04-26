@@ -71,7 +71,8 @@ struct Edge
     return to;
   }
   
-  //! Compare if the id of the vertex is equal to an integer value
+  //! Compare if the id of the edge is equal to an integer value
+  //! \val edge index
   bool operator==(int val)
   {
      return (id == val);

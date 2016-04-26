@@ -950,9 +950,12 @@ void Dump::dump_vtp(int step)
       force->InsertNextTuple(f);
       dir->InsertNextTuple(n);
       ndir->InsertNextTuple(nn);
-      Vertex& V = mesh.get_vertices()[i];
-      dual_area->InsertNextValue(V.area);
-      angle_def->InsertNextValue(mesh.angle_factor(V.id));
+      if (mesh.size() > 0)
+      {
+        Vertex& V = mesh.get_vertices()[i];
+        dual_area->InsertNextValue(V.area);
+        angle_def->InsertNextValue(mesh.angle_factor(V.id));
+      }
     }
     
     polydata->SetPoints(points);
@@ -966,9 +969,12 @@ void Dump::dump_vtp(int step)
     polydata->GetPointData()->AddArray(force);
     polydata->GetPointData()->AddArray(dir);
     polydata->GetPointData()->AddArray(ndir);
-    polydata->GetPointData()->AddArray(dual_area);
-    polydata->GetPointData()->AddArray(angle_def);
-    
+    if (mesh.size() > 0)
+    {
+      polydata->GetPointData()->AddArray(dual_area);
+      polydata->GetPointData()->AddArray(angle_def);
+    }
+        
     if (m_system->num_bonds() > 0 && m_group == "all")
     {
       vtkSmartPointer<vtkLine> line =  vtkSmartPointer<vtkLine>::New();
@@ -996,10 +1002,13 @@ void Dump::dump_vtp(int step)
       vtkSmartPointer<vtkLine> edge =  vtkSmartPointer<vtkLine>::New();
       vtkSmartPointer<vtkDoubleArray> lens =  vtkSmartPointer<vtkDoubleArray>::New();
       vtkSmartPointer<vtkDoubleArray> boundary =  vtkSmartPointer<vtkDoubleArray>::New();
+      vtkSmartPointer<vtkIntArray> boundary_edges =  vtkSmartPointer<vtkIntArray>::New();
       lens->SetName("Length");
       lens->SetNumberOfComponents(1);
       boundary->SetName("Boundary");
       boundary->SetNumberOfComponents(1);
+      boundary_edges->SetName("Boundary");
+      boundary_edges->SetNumberOfComponents(1);
       // Edited for this to be backwards for better paraview plotting
       for (int i = 0; i < mesh.size(); i++)
       {
@@ -1025,12 +1034,17 @@ void Dump::dump_vtp(int step)
           double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
           m_system->apply_periodic(dx,dy,dz);
           lens->InsertNextValue(sqrt(dx*dx + dy*dy + dz*dz));
+          if (ee.boundary || mesh.get_edges()[ee.pair].boundary)
+            boundary_edges->InsertNextValue(1);
+          else
+            boundary_edges->InsertNextValue(0);
           visited_edges.push_back(make_pair(ee.from,ee.to));
           visited_edges.push_back(make_pair(ee.to,ee.from));
         }
       }
       polydata->SetLines(lines);
       polydata->GetCellData()->AddArray(lens);
+      polydata->GetCellData()->AddArray(boundary_edges);
       
       vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
       for (int f = 0; f < mesh.nfaces(); f++)
@@ -1047,12 +1061,12 @@ void Dump::dump_vtp(int step)
   else
   {
     vector<Vertex>& vertices = mesh.get_vertices();
-    vector<Vector3d>& dual = mesh.get_dual();
     vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
     vtkSmartPointer<vtkIntArray> ids =  vtkSmartPointer<vtkIntArray>::New();
     vtkSmartPointer<vtkDoubleArray> areas =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> perims =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> pressure =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> radius_circ =  vtkSmartPointer<vtkDoubleArray>::New();
     ids->SetName("Id");
     areas->SetNumberOfComponents(1);
     areas->SetName("Area");
@@ -1061,14 +1075,23 @@ void Dump::dump_vtp(int step)
     perims->SetNumberOfComponents(1);
     pressure->SetName("Pressure");
     pressure->SetNumberOfComponents(1);
+    radius_circ->SetName("RadiusOfCircum");
+    radius_circ->SetNumberOfComponents(1);
     
-    for (unsigned int i = 0; i < dual.size(); i++)
+    for (unsigned int i = 0; i < mesh.get_faces().size(); i++)
     {
-      points->InsertNextPoint (dual[i].x, dual[i].y, dual[i].z);      
-      ids->InsertNextValue(i);
+      Face& ff = mesh.get_faces()[i];
+      if (!ff.is_hole)
+      {
+        points->InsertNextPoint (ff.rc.x, ff.rc.y, ff.rc.z);      
+        ids->InsertNextValue(i);
+        double rad = (mesh.get_vertices()[ff.vertices[0]].r - ff.rc).len();
+        radius_circ->InsertNextValue(rad);
+      }
     }
     polydata->SetPoints(points);
     polydata->GetPointData()->AddArray(ids);
+    polydata->GetPointData()->AddArray(radius_circ);
     
     for (unsigned int i = 0; i < vertices.size(); i++)
       if (vertices[i].attached)
@@ -1076,9 +1099,9 @@ void Dump::dump_vtp(int step)
         Vertex& V = vertices[i];
         if (!V.boundary || (V.boundary && m_dual_boundary))
         {
-          face->GetPointIds()->SetNumberOfIds(V.dual.size());
-          for (unsigned int d = 0; d < V.dual.size(); d++)
-            face->GetPointIds()->SetId(d, V.dual[d]);
+          face->GetPointIds()->SetNumberOfIds(V.n_faces);
+          for (int d = 0; d < V.n_faces; d++)
+            face->GetPointIds()->SetId(d, V.faces[d]);
           faces->InsertNextCell(face);
           areas->InsertNextValue(vertices[i].area);
           Particle& p = m_system->get_particle(i);

@@ -98,8 +98,8 @@ void NeighbourList::build_mesh()
 #ifdef HAS_CGAL
     if (m_triangulation)
     {
-      this->build_contacts();
-      this->build_faces(false);
+      //this->build_contacts();
+      //this->build_faces(false);
       this->build_triangulation();
     }
     else
@@ -372,13 +372,15 @@ void NeighbourList::build_faces(bool flag)
       mesh.add_edge(i,m_contact_list[i][j]);
   }
   
+  mesh.set_lambda(m_lambda);
+  mesh.set_circle_param(m_circle_param);
   mesh.set_circumcenter(m_circumcenter);
   mesh.set_max_face_perim(m_max_perim);
   mesh.generate_faces();
   mesh.generate_dual_mesh();
   mesh.postprocess(flag);
-  if (flag)
-    m_system->update_mesh();
+  mesh.remove_obtuse_boundary();
+  m_system->update_mesh();
   
   /*
    bool removed_obtuse = false;
@@ -404,15 +406,6 @@ void NeighbourList::build_faces(bool flag)
 */
 bool NeighbourList::build_triangulation()
 {
-  // Wipe out the contact list we created with contacts 
-  // It was there only temporarily to help us find boundaries
-  m_contact_list.clear();
-  for (int i = 0; i < m_system->size(); i++)
-      m_contact_list.push_back(vector<int>());
-  
-  // Here we start rebuilding 
-  Mesh& mesh = m_system->get_mesh();
-  vector<pair<int,int> >& boundary = mesh.get_boundary();
   vector< pair<Point,unsigned> > points;
   int N = m_system->size();
   for (int i = 0; i < N; i++)
@@ -435,72 +428,33 @@ bool NeighbourList::build_triangulation()
     int i = face->vertex(0)->info();
     int j = face->vertex(1)->info();
     int k = face->vertex(2)->info();
-    //cout << i << " " << j << " " << k << endl;
     Particle& pi = m_system->get_particle(i);
     Particle& pj = m_system->get_particle(j);
     Particle& pk = m_system->get_particle(k);
-    bool add_ij = true;
-    if (mesh.is_boundary_vertex(i) && mesh.is_boundary_vertex(j) && find(boundary.begin(),boundary.end(),make_pair(i,j)) == boundary.end())
-    {
-      add_ij = false;
-      // make sure that we don't have a stuation where the edge is actually legitmate
-      vector<int>& neigh_i = this->get_neighbours(i);
-      vector<int>& neigh_j = this->get_neighbours(j);
-      add_ij = !(this->same_side_line(pi,pj,neigh_i));
-      if (!add_ij)
-        add_ij = !(this->same_side_line(pi,pj,neigh_j));
-    }
-  
-    bool add_jk = true;
-    if (mesh.is_boundary_vertex(j) && mesh.is_boundary_vertex(k) && find(boundary.begin(),boundary.end(),make_pair(j,k)) == boundary.end())
-    {
-      add_jk = false;
-      // make sure that we don't have a stuation where the edge is actually legitmate
-      vector<int>& neigh_j = this->get_neighbours(j);
-      vector<int>& neigh_k = this->get_neighbours(k);
-      add_jk = !(this->same_side_line(pj,pk,neigh_j));
-      if (!add_jk)
-        add_jk = !(this->same_side_line(pj,pk,neigh_k));
-    }
-    
-    bool add_ki = true;
-    if (mesh.is_boundary_vertex(k) && mesh.is_boundary_vertex(i) && find(boundary.begin(),boundary.end(),make_pair(k,i)) == boundary.end())
-    {
-      add_ki = false;
-      // make sure that we don't have a stuation where the edge is actually legitmate
-      vector<int>& neigh_k = this->get_neighbours(k);
-      vector<int>& neigh_i = this->get_neighbours(i);
-      add_ki = !(this->same_side_line(pk,pi,neigh_k));
-      if (!add_ki)
-        add_ki = !(this->same_side_line(pk,pi,neigh_i));
-    }
-    
     double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
     m_system->apply_periodic(dx,dy,dz);
-    if (add_ij && std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
+    if (std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
     {
       if (find(m_contact_list[i].begin(),m_contact_list[i].end(),j) == m_contact_list[i].end()) m_contact_list[i].push_back(j);
       if (find(m_contact_list[j].begin(),m_contact_list[j].end(),i) == m_contact_list[j].end()) m_contact_list[j].push_back(i);
     }
     dx = pj.x - pk.x, dy = pj.y - pk.y, dz = pj.z - pk.z;
     m_system->apply_periodic(dx,dy,dz);
-    if (add_jk && std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
+    if (std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
     {
       if (find(m_contact_list[j].begin(),m_contact_list[j].end(),k) == m_contact_list[j].end()) m_contact_list[j].push_back(k);
       if (find(m_contact_list[k].begin(),m_contact_list[k].end(),j) == m_contact_list[k].end()) m_contact_list[k].push_back(j);
     }
     dx = pk.x - pi.x, dy = pk.y - pi.y, dz = pk.z - pi.z;
     m_system->apply_periodic(dx,dy,dz);
-    if (add_ki && std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
+    if (std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
     {
       if (find(m_contact_list[k].begin(),m_contact_list[k].end(),i) == m_contact_list[k].end()) m_contact_list[k].push_back(i);
       if (find(m_contact_list[i].begin(),m_contact_list[i].end(),k) == m_contact_list[i].end()) m_contact_list[i].push_back(k);
     }
   }
   
- 
   this->remove_dangling();
-  
   
   return true;
   

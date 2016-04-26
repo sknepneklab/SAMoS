@@ -137,6 +137,13 @@ struct Face
     throw runtime_error("Error in Jacobian. Vertex does not belong to the face.");
   }
   
+  //! Compare if the id of the face is equal to an integer value
+  //! \param val face index
+  bool operator==(int val)
+  {
+     return (id == val);
+  }
+  
   int id;                      //!< Face id
   int n_sides;                 //!< Number of sides
   bool edge_face;              //!< Face is an edge face if all its edges are at the boundary
