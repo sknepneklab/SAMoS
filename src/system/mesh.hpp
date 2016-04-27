@@ -68,6 +68,15 @@ using std::runtime_error;
 
 typedef pair<int,int> VertexPair;
 
+//!< Data structure that holds data for ploting poygons
+typedef struct
+{
+  vector<Vector3d> points;
+  vector<vector<int> > sides;
+  vector<double> area;
+  vector<double> perim;
+} PlotArea;
+
 /*! Mesh class handles basic manipuations with mesesh
  *
  */
@@ -229,6 +238,9 @@ public:
   
   //! Compute radius of a circumscribed circle
   double circum_radius(int);
+  
+  //! Compute data for ploting polyons
+  PlotArea& plot_area(bool);
      
 private:  
   
@@ -248,6 +260,8 @@ private:
   map<pair<int,int>, int> m_edge_face; //!< Relates pairs of faces to edges
   vector<pair<int,int> > m_boundary;   //!< List of vertex pair that are on the boundary
   vector<int> m_boundary_edges;        //!< List of all edges that are at the boundary
+  vector<int> m_obtuse_boundary;       //!< List of all boundary edges that have obtuse angle opposite to them  
+  PlotArea m_plot_area;                //!< Used to preapre polygonal data for plotting
   
   //! Compute face circumcentre
   void compute_circumcentre(int);

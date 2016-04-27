@@ -47,11 +47,13 @@
 #include <cassert>
 
 #include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "vector3d.hpp"
 #include "matrix3d.hpp"
 
 using boost::format;
+using boost::lexical_cast;
 using std::ostream;
 using std::string;
 using std::vector;
@@ -148,7 +150,7 @@ struct Face
     assert(n_sides == 3);
     for (unsigned int i = 0; i < vertices.size(); i++)
       if (vertices[i] == v) return drcdr[i];
-    throw runtime_error("Error in Jacobian. Vertex does not belong to the face.");
+    throw runtime_error("Error in Jacobian. Vertex "+lexical_cast<string>(v)+" does not belong to the face.");
   }
   
   //! Compare if the id of the face is equal to an integer value

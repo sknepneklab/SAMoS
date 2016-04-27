@@ -1055,64 +1055,44 @@ void Dump::dump_vtp(int step)
           face->GetPointIds()->SetId(fi, ff.vertices[fi]);
         faces->InsertNextCell(face);
       }
-      //polydata->SetPolys(faces);
     }
   }
   else
   {
-    vector<Vertex>& vertices = mesh.get_vertices();
     vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
     vtkSmartPointer<vtkIntArray> ids =  vtkSmartPointer<vtkIntArray>::New();
     vtkSmartPointer<vtkDoubleArray> areas =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> perims =  vtkSmartPointer<vtkDoubleArray>::New();
-    vtkSmartPointer<vtkDoubleArray> pressure =  vtkSmartPointer<vtkDoubleArray>::New();
-    vtkSmartPointer<vtkDoubleArray> radius_circ =  vtkSmartPointer<vtkDoubleArray>::New();
     ids->SetName("Id");
     areas->SetNumberOfComponents(1);
     areas->SetName("Area");
     areas->SetNumberOfComponents(1);
     perims->SetName("Perimeter");
     perims->SetNumberOfComponents(1);
-    pressure->SetName("Pressure");
-    pressure->SetNumberOfComponents(1);
-    radius_circ->SetName("RadiusOfCircum");
-    radius_circ->SetNumberOfComponents(1);
     
-    for (unsigned int i = 0; i < mesh.get_faces().size(); i++)
+    PlotArea& pa = mesh.plot_area(m_dual_boundary);
+    for (unsigned int f = 0; f < pa.points.size(); f++)
     {
-      Face& ff = mesh.get_faces()[i];
-      if (!ff.is_hole)
-      {
-        points->InsertNextPoint (ff.rc.x, ff.rc.y, ff.rc.z);      
-        ids->InsertNextValue(i);
-        radius_circ->InsertNextValue(mesh.circum_radius(ff.id));
-      }
+      points->InsertNextPoint(pa.points[f].x, pa.points[f].y, pa.points[f].z);
+      ids->InsertNextValue(f);
     }
     polydata->SetPoints(points);
     polydata->GetPointData()->AddArray(ids);
-    polydata->GetPointData()->AddArray(radius_circ);
+
+    for (unsigned int f = 0; f < pa.sides.size(); f++)
+    {
+      face->GetPointIds()->SetNumberOfIds(pa.sides[f].size());
+      for (unsigned int d = 0; d < pa.sides[f].size(); d++)
+        face->GetPointIds()->SetId(d, pa.sides[f][d]);
+      faces->InsertNextCell(face);
+      areas->InsertNextValue(pa.area[f]);
+      perims->InsertNextValue(pa.perim[f]);
+    }
     
-    for (unsigned int i = 0; i < vertices.size(); i++)
-      if (vertices[i].attached)
-      {
-        Vertex& V = vertices[i];
-        if (!V.boundary || (V.boundary && m_dual_boundary))
-        {
-          face->GetPointIds()->SetNumberOfIds(V.n_faces);
-          for (int d = 0; d < V.n_faces; d++)
-            face->GetPointIds()->SetId(d, V.faces[d]);
-          faces->InsertNextCell(face);
-          areas->InsertNextValue(vertices[i].area);
-          Particle& p = m_system->get_particle(i);
-          perims->InsertNextValue(vertices[i].perim);
-          pressure->InsertNextValue(p.s_xx + p.s_yy + p.s_zz);
-        }
-      }
     polydata->SetPolys(faces);
     polydata->GetCellData()->AddArray(ids);
     polydata->GetCellData()->AddArray(areas);
     polydata->GetCellData()->AddArray(perims);
-    polydata->GetCellData()->AddArray(pressure);
   }
   
   // Write the file

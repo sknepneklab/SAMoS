@@ -134,17 +134,9 @@ void Mesh::generate_faces()
         if (vn == seed) m_edges[prev_edge].next = E.id;   // original edge is the "next" edge for last edge in the loop 
       }      
     }
-    double perim = 0.0;
-    for (unsigned int f = 0; f < face.vertices.size(); f++)
-    {
-      int f_n = ( f == face.vertices.size() - 1) ? 0 : f + 1;
-      Vector3d r1 = m_vertices[face.vertices[f]].r;
-      Vector3d r2 = m_vertices[face.vertices[f_n]].r;
-      perim += (r1-r2).len();
-    }
     if (face.vertices.size() > 0)
     {
-      if (perim >= m_max_face_perim) face.is_hole = true;
+      if (face.vertices.size() > 3) face.is_hole = true;
       m_faces.push_back(face);
       for (unsigned int f = 0; f < face.vertices.size(); f++)
         m_vertices[face.vertices[f]].add_face(m_nface);
@@ -561,16 +553,6 @@ void Mesh::edge_flip(int e)
   
   // Make sure that the vertex stars are all properly ordered
   
-//   cout << "########## after ##########" << endl;
-//   cout << "------ F -------" << endl;
-//   cout << F << endl;
-//   cout << "------ Fp -------" << endl;
-//   cout << Fp << endl;
-//   
-//   cout << "------------- V1 ----------------" << endl;
-//   cout << V1 << endl;
-  
-  
   this->order_star(V1.id);
   this->order_star(V2.id);
   this->order_star(V3.id);
@@ -581,12 +563,6 @@ void Mesh::edge_flip(int e)
   this->dual_area(V2.id);   this->dual_perimeter(V2.id);
   this->dual_area(V3.id);   this->dual_perimeter(V3.id);
   this->dual_area(V4.id);   this->dual_perimeter(V4.id);
-  
-//   cout << "########## after ##########" << endl;
-//   cout << "------ F -------" << endl;
-//   cout << F << endl;
-//   cout << "------ Fp -------" << endl;
-//   cout << Fp << endl;
     
 }
 
@@ -737,6 +713,7 @@ void Mesh::fc_jacobian(int f)
 **/
 void Mesh::update_face_properties()
 {
+  m_obtuse_boundary.clear();
   for (int f = 0; f < m_nface; f++)
   {
     Face& face = m_faces[f];
@@ -751,11 +728,15 @@ void Mesh::update_face_properties()
           break;
         }
       for (int i = 0; i < face.n_sides; i++)
-        if (face.get_angle(face.vertices[i]) < 0.0)
+      {
+        Edge& E = m_edges[face.edges[i]];
+        if (m_edges[E.pair].boundary && face.get_angle(this->opposite_vertex(E.id)) < 0.0)
         {
           face.obtuse = true;
+          m_obtuse_boundary.push_back(E.pair);
           break;
         }
+      }
     }
   }
 }
@@ -766,68 +747,12 @@ void Mesh::update_face_properties()
 */
 void Mesh::remove_obtuse_boundary()
 {
-  double min_l = 1e10, max_l = 0.0;
-  for (int e = 0; e < m_nedge; e++)
-  {
-    Edge& E = m_edges[e];
-    double edge_len = (m_vertices[E.from].r-m_vertices[E.to].r).len();
-    if (edge_len < min_l) min_l = edge_len;
-    if (edge_len > max_l) max_l = edge_len;
-  }
-  
-  double l_max = m_lambda*(max_l - min_l) + min_l;   // remove all boundary edges longer that this
-  
-  bool done = false;
-  // First get rid of too long edges
-  while (!done)
-  {
-    done = true;
-    sort(m_boundary_edges.begin(), m_boundary_edges.end(), CompareEdgeLens(*this));
-    vector<int>::iterator it_e = m_boundary_edges.begin();
-    Edge& E = m_edges[*it_e];
-    double edge_len = (m_vertices[E.from].r-m_vertices[E.to].r).len();
-    if (edge_len > l_max)
-    {
-      this->remove_edge_pair(E.id);
-      done = false;
-      m_boundary_edges.erase(m_boundary_edges.begin());
-    }  
-  }
   this->update_face_properties();
-  // Now get rid of too large circles
-  double avg_circle_radius = 0.0;
-  int cnt = 0;  
-  for (int e = 0; e < m_nedge; e++)
+  while (m_obtuse_boundary.size() > 0)
   {
-    Edge& E = m_edges[e];
-    Face& face = m_faces[E.face];
-    if (!face.is_hole && !m_edges[E.pair].boundary)
-    {
-      this->compute_circumcentre(face.id);
-      avg_circle_radius += this->circum_radius(face.id);
-      cnt++;
-    }
+    this->remove_edge_pair(*(m_obtuse_boundary.begin()));
+    this->update_face_properties();
   }
-  avg_circle_radius /= static_cast<double>(cnt);
-  done = false;
-  while (!done)
-  {
-    done = true;
-    sort(m_boundary_edges.begin(), m_boundary_edges.end(), CompareRadii(*this));
-    vector<int>::iterator it_e = m_boundary_edges.begin();
-    Edge& E = m_edges[*it_e];
-    assert(E.boundary);
-    Face& face = m_faces[m_edges[E.pair].face];
-    assert(!face.is_hole);
-    this->circum_radius(face.id);
-    if (face.radius > m_circle_param*avg_circle_radius)
-    {
-      this->remove_edge_pair(E.id);
-      done = false;
-      m_boundary_edges.erase(m_boundary_edges.begin());
-    }  
-  }
-  
 }
 
 /*! Find the factor to scale the native area with for the boundary vertices.
@@ -942,6 +867,79 @@ double Mesh::circum_radius(int f)
   return face.radius;
 }
 
+/*! This member fucntion is used to produce data 
+ *  for plottin polygons into a VTK file.
+ *  \param boundary if true, include boundary vertices as well
+*/
+PlotArea& Mesh::plot_area(bool boundary)
+{
+  m_plot_area.points.clear();
+  m_plot_area.sides.clear();
+  m_plot_area.area.clear();
+  m_plot_area.perim.clear();
+  map<int,int> bnd_vert;
+  map<int,int> face_idx;
+  vector<int> added_faces;
+  int idx = 0;
+  for (int v = 0; v < m_size; v++)
+  {
+    Vertex& V = m_vertices[v];
+    if (V.attached)
+      if (V.boundary && boundary)
+      {
+        bnd_vert[V.id] = idx++;
+        m_plot_area.points.push_back(V.r);
+      }
+  }
+  
+  idx = m_plot_area.points.size();
+  for (int v = 0; v < m_size; v++)
+  {
+    Vertex& V = m_vertices[v];
+    if (V.attached)
+      for (int f = 0; f < V.n_faces; f++)
+      {
+        Face& face = m_faces[V.faces[f]];
+        if (!face.is_hole)
+          if (find(added_faces.begin(),added_faces.end(),face.id) == added_faces.end())
+          {
+            m_plot_area.points.push_back(face.rc);
+            added_faces.push_back(face.id);
+            face_idx[face.id] = idx++;
+          }
+      }
+  }
+  
+  for (int v = 0; v < m_size; v++)
+  {
+    Vertex& V = m_vertices[v];
+    if (V.attached)
+    {
+      if (!V.boundary)
+      {
+        vector<int> sides;
+        for (int f = 0; f < V.n_faces; f++)
+          sides.push_back(face_idx[V.faces[f]]);
+        m_plot_area.sides.push_back(sides);
+        m_plot_area.area.push_back(this->dual_area(V.id));
+        m_plot_area.perim.push_back(this->dual_perimeter(V.id));
+      }
+      if (V.boundary && boundary)
+      {
+        vector<int> sides;
+        sides.push_back(bnd_vert[V.id]);
+        for (int f = 0; f < V.n_faces-1; f++)
+          sides.push_back(face_idx[V.faces[f]]);
+        m_plot_area.sides.push_back(sides);
+        m_plot_area.area.push_back(this->dual_area(V.id));
+        m_plot_area.perim.push_back(this->dual_perimeter(V.id));
+      }
+    }
+  }
+  
+  return m_plot_area;
+}
+
 // Private members
 
 /*! Computes circumcenter of a face (assumes that face is a triangle).
@@ -1020,16 +1018,9 @@ void Mesh::remove_edge_pair(int e)
   // And its pair
   Face& face_pair = m_faces[E.face];
   
-  if (face.is_hole)
-  {
-    face.is_hole = false;
-    for (int e = 0; e < face.n_sides; e++)
-      m_edges[face.edges[e]].boundary = false;
-  }
-  
-  //assert(!face.is_hole);
-  //assert(face_pair.is_hole);
-  //assert(face.n_sides == 3);
+  assert(!face.is_hole);
+  assert(face_pair.is_hole);
+  assert(face.n_sides == 3);
   
   // Check is the face is regular (at least one of its vertices are internal)
   bool non_regular = true;
