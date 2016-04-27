@@ -45,6 +45,8 @@ class Writer:
 		# Data which goes into file: positions, directors, velocities
 		# radii
 		r = conf.radius
+		# types
+		tp = conf.ptype
 		# positions
 		x = conf.rval[:,0]
 		y = conf.rval[:,1]
@@ -64,6 +66,10 @@ class Writer:
 		Radii = vtk.vtkDoubleArray()
 		Radii.SetNumberOfComponents(1)
 		Radii.SetName('Radius')
+		
+		Type = vtk.vtkDoubleArray()
+		Type.SetNumberOfComponents(1)
+		Type.SetName('Type')
 
 		Velocities = vtk.vtkDoubleArray()
 		Velocities.SetNumberOfComponents(3)
@@ -79,9 +85,10 @@ class Writer:
 			NDirectors.SetName("NDirectors")
 		
 		# Adding the data to the vtk structures
-		for (xx,yy,zz,rr) in zip(x,y,z,r):
+		for (xx,yy,zz,rr,tt) in zip(x,y,z,r,tp):
 			Points.InsertNextPoint(xx,yy,zz)
 			Radii.InsertNextValue(rr)
+			Type.InsertNextValue(tt)
 		for (vvx,vvy,vvz) in zip(vx,vy,vz):
 			Velocities.InsertNextTuple3(vvx,vvy,vvz)
 		for (nnx,nny,nnz) in zip(nx,ny,nz):	
