@@ -733,7 +733,8 @@ void Mesh::update_face_properties()
         if (m_edges[E.pair].boundary && face.get_angle(this->opposite_vertex(E.id)) < 0.0)
         {
           face.obtuse = true;
-          m_obtuse_boundary.push_back(E.pair);
+          if (!E.attempted_removal)
+            m_obtuse_boundary.push_back(E.pair);
           break;
         }
       }
@@ -747,6 +748,8 @@ void Mesh::update_face_properties()
 */
 void Mesh::remove_obtuse_boundary()
 {
+  for (int e = 0; e < m_nedge; e++)
+    m_edges[e].attempted_removal = false;
   this->update_face_properties();
   while (m_obtuse_boundary.size() > 0)
   {
@@ -1009,6 +1012,8 @@ void Mesh::remove_edge_pair(int e)
   Edge& Ep = m_edges[E.pair];
   vector<int> affected_vertices;   // Vertices that are affected by the removal and need reordering
  
+  E.attempted_removal = true;
+  Ep.attempted_removal = true;
   // We can only remove boundary edge pairs
   if (!E.boundary)
     return;

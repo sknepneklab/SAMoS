@@ -57,7 +57,17 @@ struct Edge
   //! \param id edge id
   //! \param i id of 1st vertex
   //! \param j id of 2nd vertex
-  Edge(int id, int i, int j) : id(id), from(i), to(j), next(-1), face(NO_FACE), visited(false), pair(-1), boundary(false), dual(-1)  {   }
+  Edge(int id, int i, int j) : id(id), 
+                               from(i), 
+                               to(j),
+                               next(-1), 
+                               face(NO_FACE), 
+                               visited(false), 
+                               pair(-1), 
+                               boundary(false), 
+                               dual(-1),
+                               attempted_removal(false)
+                               {   }
   
   //! Check if vertex belongs to the edge
   //! \param v vertex id
@@ -88,6 +98,7 @@ struct Edge
   int pair;                     //!< Id of the other half of the half-edge pair
   bool boundary;                //!< Edge is boundary if its face is a hole
   int dual;                     //!< Id of the dual vertex (-1 if none)
+  bool attempted_removal;       //!< If true, edge removal has been attempted
     
 };
 
