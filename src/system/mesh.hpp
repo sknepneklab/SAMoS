@@ -68,6 +68,15 @@ using std::runtime_error;
 
 typedef pair<int,int> VertexPair;
 
+//!< Data structure that holds data for ploting poygons
+typedef struct
+{
+  vector<Vector3d> points;
+  vector<vector<int> > sides;
+  vector<double> area;
+  vector<double> perim;
+} PlotArea;
+
 /*! Mesh class handles basic manipuations with mesesh
  *
  */
@@ -75,7 +84,15 @@ class Mesh
 {
 public:
   //! Construct a Mesh object
-  Mesh() : m_size(0), m_nedge(0), m_nface(0), m_ndual(0), m_is_triangulation(true), m_max_face_perim(20.0), m_circumcenter(true) {   }
+  Mesh() : m_size(0), 
+           m_nedge(0), 
+           m_nface(0), 
+           m_is_triangulation(true), 
+           m_max_face_perim(20.0),
+           m_circumcenter(true), 
+           m_lambda(0.32), 
+           m_circle_param(1.5)
+  {   }
   
   //! Get mesh size
   int size() { return m_size; }
@@ -94,9 +111,6 @@ public:
   
   //! Get list of faces
   vector<Face>& get_faces() { return m_faces; }
-  
-  //! Get list of all duals
-  vector<Vector3d>& get_dual() { return m_dual; }
   
   //! Get edge-face data structure
   map<pair<int,int>, int>& get_edge_face() { return m_edge_face; }
@@ -117,6 +131,14 @@ public:
   //! Sets the circumcenter flag
   //! \param val value of the circumcenter flag
   void set_circumcenter(bool val) { m_circumcenter = val; }
+  
+  //! Set value of the boundary edge paramter lambda
+  //! \param lambda new value of lambda
+  void set_lambda(double lambda) { m_lambda = lambda; }
+  
+  //! Set value of the boundary edge circumceter size paramter 
+  //! \param factor new value of m_circle_param
+  void set_circle_param(double factor) { m_circle_param = factor; }
   
   //! Add a vertex
   //! \param p particle
@@ -166,7 +188,7 @@ public:
   }
   
   //! Post-processes the mesh
-  void postprocess();
+  void postprocess(bool);
   
   //! Compute face centre
   void compute_centre(int);
@@ -199,7 +221,7 @@ public:
   void update_face_properties();
   
   //! Remove obtuse boundary faces
-  bool remove_obtuse_boundary();
+  void remove_obtuse_boundary();
   
   //! Return true if the vertex is a boundary vertex
   //! \param v index of the vertex
@@ -213,24 +235,33 @@ public:
   
   //! Compute derivatives of the angle factor for boudnary vertices
   void angle_factor_deriv(int);
-    
+  
+  //! Compute radius of a circumscribed circle
+  double circum_radius(int);
+  
+  //! Compute data for ploting polyons
+  PlotArea& plot_area(bool);
+     
 private:  
   
   int m_size;    //!< Mesh size
   int m_nedge;   //!< Number of edges
   int m_nface;   //!< Number of faces
-  int m_ndual;   //!< Number of vertices in dual
   bool m_is_triangulation;    //!< If true, all faces are triangles (allows more assumptions)
   double m_max_face_perim;    //!< If face perimeter is greater than this value, reject face and treat it as a hole.
   bool m_circumcenter;        //!< If true, compute face circumcenters. Otherwise compute geometric centre. 
+  double m_lambda;            //!< This parameter determines which boundary edges will be removed
+  double m_circle_param;      //!< Remove boundary edges with circumscribed circles this much larger than the average radius
     
   vector<Vertex> m_vertices;           //!< Contains all vertices
   vector<Edge> m_edges;                //!< Contains all edge
   vector<Face> m_faces;                //!< Contains all faces
   map<pair<int,int>, int> m_edge_map;  //!< Relates vertex indices to edge ids
   map<pair<int,int>, int> m_edge_face; //!< Relates pairs of faces to edges
-  vector<Vector3d> m_dual;             //!< Coordinates of the dual mesh
   vector<pair<int,int> > m_boundary;   //!< List of vertex pair that are on the boundary
+  vector<int> m_boundary_edges;        //!< List of all edges that are at the boundary
+  vector<int> m_obtuse_boundary;       //!< List of all boundary edges that have obtuse angle opposite to them  
+  PlotArea m_plot_area;                //!< Used to preapre polygonal data for plotting
   
   //! Compute face circumcentre
   void compute_circumcentre(int);
@@ -243,6 +274,53 @@ private:
   
   //! Compute face area
   double face_area(int);
+  
+  //! Order boundary star
+  void order_boundary_star(int);
+  
+  
+  //! Functor used to compare lengths of two edges
+  struct CompareEdgeLens
+  {
+    CompareEdgeLens(const Mesh& mesh) : m_mesh(mesh) { }
+    bool operator()(const int e1, const int e2)
+    {
+      const Edge& E1 = m_mesh.m_edges[e1];
+      const Edge& E2 = m_mesh.m_edges[e2];
+      
+      const Vertex& V1 = m_mesh.m_vertices[E1.from];
+      const Vertex& V2 = m_mesh.m_vertices[E1.to];
+      
+      const Vertex& V3 = m_mesh.m_vertices[E2.from];
+      const Vertex& V4 = m_mesh.m_vertices[E2.to];
+      
+      double r12 = (V1.r - V2.r).len();
+      double r34 = (V3.r - V4.r).len();
+      
+      return (r12 > r34);
+    }
+    const Mesh& m_mesh;
+  };
+  
+  //! Functor used to compare radii of circumscribed circles
+  struct CompareRadii
+  {
+    CompareRadii(const Mesh& mesh) : m_mesh(mesh) { }
+    bool operator()(const int e1, const int e2)
+    {
+      const Edge& E1 = m_mesh.m_edges[e1];
+      const Edge& E2 = m_mesh.m_edges[e2];
+      
+      const Face& f1 = m_mesh.m_faces[m_mesh.m_edges[E1.pair].face];
+      const Face& f2 = m_mesh.m_faces[m_mesh.m_edges[E2.pair].face];
+      
+      double r1 = (m_mesh.m_vertices[f1.vertices[0]].r-f1.rc).len();
+      double r2 = (m_mesh.m_vertices[f2.vertices[0]].r-f2.rc).len();
+        
+      return (r1 > r2);
+    }
+    const Mesh& m_mesh;
+  };
   
 };
 

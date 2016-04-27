@@ -96,9 +96,13 @@ void IntegratorActomyo::integrate()
         double dot = pj.fx*tx + pj.fy*ty + pj.fz*tz; // Check the dot product between force on myosin and tangent on actin
         if (dot > 0.0) // If it is positive, add force to the actin bead in the direction of the tangent vector
         {
-          p.fx += m_f_active*tx;
-          p.fy += m_f_active*ty;
-          p.fz += m_f_active*tz;
+          p.fx += 0.5*m_f_active*tx;
+          p.fy += 0.5*m_f_active*ty;
+          p.fz += 0.5*m_f_active*tz;
+          // Also update the myosin bead
+          pj.fx -= 0.5*m_f_active*tx;
+          pj.fy -= 0.5*m_f_active*ty;
+          pj.fz -= 0.5*m_f_active*tz;
         }
       }      
     }

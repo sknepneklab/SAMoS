@@ -178,9 +178,14 @@ struct Vertex
   //! Get the corresponding angle deficit derivative
   Vector3d& get_angle_def(int v)
   {
-    if (v == id) return angle_def[0];  // note that vertices in the boundary star are ordered in a way to allow this assumption on indices
-    else if (v == neigh[0]) return angle_def[1];
-    else return angle_def[2]; 
+    if (v == id) return angle_def[0];  
+    else
+    {
+      for (int n = 0; n < n_edges; n++)
+        if (v == neigh[n])
+          return angle_def[n+1];
+    }
+    throw runtime_error("Vertex angle derivative mismatch.");
   }
    
   int id;                      //!< Vertex id
