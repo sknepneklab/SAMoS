@@ -713,6 +713,11 @@ void Mesh::fc_jacobian(int f)
 **/
 void Mesh::update_face_properties()
 {
+  for (unsigned int e = 0; e < m_boundary_edges.size(); e++)
+  {
+    Edge& E = m_edges[m_boundary_edges[e]];
+    if (m_vertices[E.from].n_faces < 3) m_vertices[E.from].attached = false;
+  }
   m_obtuse_boundary.clear();
   for (int f = 0; f < m_nface; f++)
   {

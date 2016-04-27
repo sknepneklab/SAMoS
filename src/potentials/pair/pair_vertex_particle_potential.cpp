@@ -237,7 +237,7 @@ void PairVertexParticlePotential::compute(double dt)
     {
       Particle& pj = m_system->get_particle(vi.neigh[j]);
       Vertex& vj = mesh.get_vertices()[vi.neigh[j]];
-      if (m_include_boundary || !vj.boundary)  
+      if (vj.attached && (m_include_boundary || !vj.boundary))  
       {
         if (m_has_part_params) 
         {

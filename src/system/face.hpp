@@ -150,7 +150,7 @@ struct Face
     assert(n_sides == 3);
     for (unsigned int i = 0; i < vertices.size(); i++)
       if (vertices[i] == v) return drcdr[i];
-    throw runtime_error("Error in Jacobian. Vertex "+lexical_cast<string>(v)+" does not belong to the face.");
+    throw runtime_error("Error in Jacobian. Vertex "+lexical_cast<string>(v)+" does not belong to face "+lexical_cast<string>(id)+".");
   }
   
   //! Compare if the id of the face is equal to an integer value
