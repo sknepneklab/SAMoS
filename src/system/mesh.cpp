@@ -1012,18 +1012,24 @@ void Mesh::remove_edge_pair(int e)
   vector<int> affected_vertices;   // Vertices that are affected by the removal and need reordering
  
   // We can only remove boundary edge pairs
-  if (!(E.boundary || Ep.boundary))
+  if (!E.boundary)
     return;
- 
-    
+   
   // Get the face to be removed
-  Face& face = (Ep.boundary) ? m_faces[E.face] : m_faces[Ep.face];
+  Face& face = m_faces[Ep.face];
   // And its pair
-  Face& face_pair = (Ep.boundary) ? m_faces[Ep.face] : m_faces[E.face];
+  Face& face_pair = m_faces[E.face];
   
-  assert(!face.is_hole);
-  assert(face_pair.is_hole);
-  assert(face.n_sides == 3);
+  if (face.is_hole)
+  {
+    face.is_hole = false;
+    for (int e = 0; e < face.n_sides; e++)
+      m_edges[face.edges[e]].boundary = false;
+  }
+  
+  //assert(!face.is_hole);
+  //assert(face_pair.is_hole);
+  //assert(face.n_sides == 3);
   
   // Check is the face is regular (at least one of its vertices are internal)
   bool non_regular = true;
