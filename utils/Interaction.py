@@ -35,13 +35,14 @@ import numpy as np
 # radii (and positions)? Alternatively, pass it just the unchanging particle labels
 class Interaction:
 
-	def __init__(self,param,radius,debug=False):
+	def __init__(self,param,radius,ignore=False,debug=False):
 		self.param=param
 		self.radius=radius
 		self.sigma= np.mean(self.radius)
+		self.ignore=ignore
 		self.debug=debug
 		# First step: unpack parameters to find out what kind of types we have, and what kind of potentials
-		if self.param.ntypes==1:
+		if ((self.param.ntypes==1) or (self.ignore==True)):
 			if self.param.potential=='soft':
 				self.k=self.param.pot_params['k']
 				self.dmax=2*self.sigma
@@ -86,7 +87,7 @@ class Interaction:
 		
 	# also is -gradient potential	
 	def getForce(self,i,neighbours,drvec,dr):
-		if self.param.ntypes==1:
+		if ((self.param.ntypes==1) or (self.ignore==True)):
 			if self.param.potential=='soft':	
 				diff=self.radius[i]+self.radius[neighbours]-dr
 				fact = 0.5*self.k*diff
@@ -135,7 +136,7 @@ class Interaction:
 	  
 	def getEnergy(self,i,neighbours,drvec,dr):
 		# Note: There is a 0.5 before the energy return statements because as written, every contact is counted twice in the calculation
-		if self.param.ntypes==1:
+		if ((self.param.ntypes==1) or (self.ignore==True)):
 			if self.param.potential=='soft':	
 				diff=self.radius[i]+self.radius[neighbours]-dr
 				fact = 0.5*self.k*diff
@@ -173,7 +174,7 @@ class Interaction:
 			print "Warning! Multiple types of particles interacting have not yet been implemented! Returning zero energy"
 	  
 	def getStiffness(self,i,neighbours,drvec,dr):
-		if self.param.ntypes==1:
+		if ((self.param.ntypes==1) or (self.ignore==True)):
 			if self.param.potential=='soft':
 				return self.k*np.ones((len(neighbours),))
 			elif self.param.potential=='soft_attractive':

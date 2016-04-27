@@ -85,7 +85,8 @@ if args.getStatsBasic:
 u=0
 for f in files:
 	print f
-	conf = Configuration(params,f)
+	# Ignore here is to simply calculate interactions of multiple types of particles (they have the same potential)
+	conf = Configuration(params,f,True)
 	if args.contractile:
 		writeme = Writer(args.nematic,args.alpha)
 	else:

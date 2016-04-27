@@ -120,6 +120,7 @@ class Writer:
 		if self.connected:
 			polydata.SetLines(Lines)
 		polydata.GetPointData().AddArray(Radii)
+		polydata.GetPointData().AddArray(Type)
 		polydata.GetPointData().AddArray(Velocities)
 		polydata.GetPointData().AddArray(Directors)
 		if self.nematic:
