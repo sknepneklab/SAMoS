@@ -1,6 +1,7 @@
 
 from openmesh import *
 import writemesh as wr
+import ioutils as io
 
 
 import numpy as np
@@ -23,69 +24,16 @@ import sys
 
 # debugging 
 
-def dirk(A):
-    print A
-    print dir(A)
-    sys.exit()
-def shiv(al):
-    for a in al:
-        print a
-        print eval(a)
-
-
-#np.set_printoptions(threshold=np.nan)
-
-import contextlib
-import cStringIO
-@contextlib.contextmanager
-def nostdout():
-    save_stdout = sys.stdout
-    sys.stdout = cStringIO.StringIO()
-    yield
-    sys.stdout = save_stdout
-
-# want to print a vector object
-def dumpvec(vec):
-    print omvec(vec)
+from ioutils import *
 
 def diagnose(mesh):
     print 'nedges', mesh.n_edges()
     print 'nvertices', mesh.n_vertices()
     print 'nfaces', mesh.n_faces()
 
-def scatter(mesh, mesh2):
-    arrl = []
-    for vh in mesh.vertices():
-        arrl.append(omvec(mesh.point(vh)))
-    npts = np.column_stack(arrl)
-    x = npts[:][0]
-    y = npts[:][1]
-    plt.scatter(x, y, color='red')
-
-    mesh = mesh2
-    arrl = []
-    for vh in mesh.vertices():
-        arrl.append(omvec(mesh.point(vh)))
-    npts = np.column_stack(arrl)
-    x = npts[:][0]
-    y = npts[:][1]
-    plt.scatter(x, y, color='blue')
-
-    plt.show()
-
-
 # Start of feature code
-
-# openmesh has a vector object
-# too lazy to use this to convert to numpy arrays
-# fixed to three dimensions...
-def omvec(vec):
-    return np.array([vec[0], vec[1], vec[2]])
-
-def idtopt(mesh, rmuid):
-    return omvec(mesh.point(mesh.vertex_handle(rmuid)))
-
 class PVmesh(object):
+
     def __init__(self, tri):
 
         self.tri = tri
@@ -116,6 +64,8 @@ class PVmesh(object):
 
         print 'Calculating Area and perimeter'
         self._set_face_properties()
+
+        self.s_stress = 1
         
     def _helengths(self, tri):
         # store half edge vectors as half edge property
@@ -348,7 +298,6 @@ class PVmesh(object):
         self.tri.add_property(kprop, 'K')
         gammaprop = VPropHandle()
         self.tri.add_property(gammaprop, 'Gamma')
-        #for fh in mesh.faces():
         for i, (ki, gi) in enumerate(zip(K, Gamma)):
             vh = self.tri.vertex_handle(i)
             self.tri.set_property(kprop, vh, ki)
@@ -390,25 +339,12 @@ class PVmesh(object):
         self.enprop = enprop
 
     def calculate_forces(self):
-        # Maybe start by calculating d[lambda_i]/d[r_p] for {i,j,k} on each face p
         # Convenience
         mesh = self.mesh
         tri = self.tri
-
-        # This will go when I am convinced it never fails
-        for fh in tri.faces():
-            mvh = mesh.vertex_handle(fh.idx())
-            assert fh.idx() == mvh.idx()
-        for vh in tri.vertices():
-            mfh = mesh.face_handle(vh.idx())
-            assert vh.idx() == mfh.idx()
-        for mfh in mesh.faces():
-            vh = tri.vertex_handle(mfh.idx())
-            assert mfh.idx() == vh.idx()
-
-
         lvecprop = self.tri_lvecprop
 
+        # Maybe start by calculating d[lambda_i]/d[r_p] for {i,j,k} on each face p
         # drmudrp[mesh_vhid, mesh_fhid, :]
         drmudrp = {}
         for tri_fh in tri.faces():
@@ -585,13 +521,10 @@ class PVmesh(object):
                 # derivative 
                 d1 =1/( nr1 * nrn)
                 d2 = np.dot(r1, rn) * d1**2
-
                 v1 = rmmultiply(rn, drmudrp[mu1][vhid] -npI) + rmmultiply(r1, drmudrp[mun][vhid] -npI)
                 v2a = nr1 * rmmultiply( (rn/nrn), drmudrp[mun][vhid] - npI) 
                 v2b = nrn*  rmmultiply( (r1/nr1), drmudrp[mu1][vhid] - npI)
-
                 deriv_X = d1 * v1 - d2 * ( v2a + v2b )
-
                 deriv_ag = pre_fac * deriv_X
                 dzetadr[vhid][vhid] = deriv_ag
 
@@ -604,14 +537,10 @@ class PVmesh(object):
                     cell_verts = set([mu1, mun]).intersection(interloops[vhid][nnvhid])
                     if bool(cell_verts) is False:
                         # This is the case where an adjacent cell shares no boundary vertices
-                        #print 'found that cell %d does not share either of the extreme vertices of %d' % (nnvhid, vhid)
                         continue
                     deriv_X = np.zeros(3)
                     if nnvhid not in dzetadr:
                         dzetadr[nnvhid] = {}
-
-                    # This is the case where a cell touches both of the extreme vertices of the boundary cell
-                    #if len(cell_verts) >1:
 
                     for mu in cell_verts:
                         assert (mu == mu1) or (mu == mun)
@@ -625,6 +554,9 @@ class PVmesh(object):
                     dzetadr[vhid][nnvhid] = pre_fac * deriv_X
                     
         # It remains to do some complicated math over loops of nearest neighbours, etc..
+        # We also want to calculate stress now
+        # {vhid: s_arr}
+        self.stress = {}
         for trivh in tri.vertices():
             fh = self.mesh.face_handle(trivh.idx())
             trivhid = trivh.idx()
@@ -704,6 +636,19 @@ class PVmesh(object):
 
             tri.set_property(fprop, trivh, totalforce)
 
+    def calculate_stress(self):
+        # Stress will be a 2d numpy array
+        # to draw ellipses we calculate principle stress vectors
+        # perhaps its time to leave openmesh properties behind. 
+        #They were just clutter anyway
+
+        for vh in self.tri.vertices():
+            vhid = vh.idx()
+            rpos = omvec(self.tri.point(vh))
+            force = self.tri.property(self.fprop, vh)
+            s_arr = np.outer(force, rpos)
+            self.stress[vhid] = s_arr
+
     def out_force_energy(self, outfile):
         # Still aren't explicitely handling the particle ids as we should be (?)
 
@@ -725,7 +670,7 @@ class PVmesh(object):
 
         with open(outfile, 'w') as fo:
             print 'saving force and energy to ', fo.name
-            wr.dump(outfe, fo)
+            io.dump(outfe, fo)
 
     ''' This is really the constructor '''
     @classmethod
@@ -759,11 +704,15 @@ class PVmesh(object):
 
 if __name__=='__main__':
 
-    sys.exit('Use commander.py')
+    print '-----------------------'
+    print 'If you just want to run the analysis then use commander.py'
+    print '-----------------------'
 
-    epidat = '/home/dan/cells/run/rpatch/epithelial_equilini.dat'
+    epidat = '/home/dan/cells/run/soft_rpatch/epithelial_equilini.dat'
 
     import argparse
+    import os.path as path
+
     parser = argparse.ArgumentParser()
  
     parser.add_argument("-i", "--input", type=str, default=epidat, help="Input dat file")
@@ -789,19 +738,19 @@ if __name__=='__main__':
 
     PV.calculate_energy()
     PV.calculate_forces()
-
-    import os.path as path
+    #PV.calculate_stress()
 
     outdir = args.dir
 
 
     mout = path.join(outdir, 'cellmesh.vtp')
-    #print 'saving ', mout
     wr.writemeshenergy(PV, mout)
 
     tout = path.join(outdir, 'trimesh.vtp')
-    #print 'saving ', tout
     wr.writetriforce(PV, tout)
+
+    sout = path.join(outdir, 'stresses.vtp')
+    wr.write_stress_ellipses(PV, sout)
 
     # Dump the force and energy
     fef = 'force_energy.dat'

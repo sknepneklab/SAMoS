@@ -2,14 +2,29 @@
 import sys
 from openmesh import *
 
+
 import numpy as np
 import vtk
 
 from collections import OrderedDict
 
-# copied from cellmesh.py
-def omvec(vec):
-    return np.array([vec[0], vec[1], vec[2]])
+from ioutils import omvec, idtopt
+
+# Generic parts
+
+def vtk_write(polydata, outfile):
+    writer = vtk.vtkXMLPolyDataWriter()
+    if vtk.VTK_MAJOR_VERSION <= 5:
+        writer.SetInput(polydata)
+    else:
+        writer.SetInputData(polydata)
+
+    print 'saving ', outfile 
+
+    writer.SetFileName(outfile)
+    writer.SetDataModeToAscii()
+    writer.Write()
+
 
 # take an openmesh object and write it as .vtk with faces
 def writemesh(mesh, outfile):
@@ -141,7 +156,7 @@ def writemeshenergy(pv, outfile):
 # take an openmesh object and write it as .vtk with faces
 def writetriforce(pv, outfile):
 
-    mesh = pv.tri
+    tri = pv.tri
 
     Points = vtk.vtkPoints()
     Faces = vtk.vtkCellArray()
@@ -151,14 +166,6 @@ def writetriforce(pv, outfile):
     force.SetName("force")
     fprop = pv.fprop
 
-    imforce = vtk.vtkDoubleArray()
-    imforce.SetNumberOfComponents(3)
-    imforce.SetName("imforce")
-
-    nnforce = vtk.vtkDoubleArray()
-    nnforce.SetNumberOfComponents(3)
-    nnforce.SetName("nnforce")
-
     idtriv = vtk.vtkDoubleArray()
     idtriv.SetNumberOfComponents(1)
     idtriv.SetName("id")
@@ -167,26 +174,14 @@ def writetriforce(pv, outfile):
     for vh in pv.tri.vertices():
         pt =omvec(pv.tri.point(vh))
         Points.InsertNextPoint(pt)
-        # hack to deal with boundaries
-        #fov = [0., 0., 0.]
-        #fim = [0., 0., 0.]
-        #fnn = [0., 0., 0.]
-
-        # get appropriate face
-        #fh = pv.mesh.face_handle(vh.idx())
         fov = pv.tri.property(fprop, vh)
-        #fim = pv.mesh.property(pv.imfprop, fh)
-        #fnn = pv.mesh.property(pv.nnfprop, fh)
 
         force.InsertNextTuple3(*fov)
-
-        #imforce.InsertNextTuple3(*fim)
-        #nnforce.InsertNextTuple3(*fnn)
         idtriv.InsertNextValue(vh.idx())
 
-    for fh in mesh.faces():
+    for fh in tri.faces():
         vhids = []
-        for vh in mesh.fv(fh):
+        for vh in tri.fv(fh):
             # need to store all the relevant vertex ids
             vhids.append(vh.idx())
         n = len(vhids)
@@ -202,54 +197,101 @@ def writetriforce(pv, outfile):
     polydata.SetPolys(Faces)
 
     polydata.GetPointData().AddArray(force)
-    #polydata.GetPointData().AddArray(imforce)
-    #polydata.GetPointData().AddArray(nnforce)
     polydata.GetPointData().AddArray(idtriv)
 
     polydata.Modified()
-    writer = vtk.vtkXMLPolyDataWriter()
-    if vtk.VTK_MAJOR_VERSION <= 5:
-        writer.SetInput(polydata)
-    else:
-        writer.SetInputData(polydata)
+
+    vtk_write(polydata, outfile)
 
 
-    print 'saving ', outfile 
+def rotation_2d(theta):
+    c, s = np.cos(theta), np.sin(theta)
+    R = np.matrix('{} {}; {} {}'.format(c, -s, s, c))
+    return R
 
-    writer.SetFileName(outfile)
-    writer.SetDataModeToAscii()
-    writer.Write()
+def add_ellipse(Points, evals, shift, R, res):
+    x, y = shift
+    a, b = evals
+    thetas = np.linspace(0, 2*np.pi, res, True)
+    for i, th in enumerate(thetas):
+        rot = np.einsum('mn,n->m',  R, np.array([a * cos(th), b * sin(th) ]))
+        xe, xy = rot
+        Points.InsertPoint(i, xe + x, xy + y, 0.)
+        print 'inserting point', xe + x, xy + y, 0.
+        
+ 
+from numpy.linalg import eig
+import ioutils as io
+def write_stress_ellipses(pv, outfile, res=10):
+    alpha = 1. # scaling factor
 
+    Points = vtk.vtkPoints()
 
-### These are general methods copied from my command.py module
+    e_x = np.array([1., 0., 0.])
+    io.stddict(pv.stress)
 
-#print square data to file, first column is int and rest are floats.
-def dump(dd, fo, htag='#'):
-    nc = len(dd.keys())
-    fo.write(''.join([htag+' ', '%s\t'*nc, '\n']) % tuple(dd.keys()))
-    ddv = dd.values()
-    nr = len(ddv[0]) # assumption
-    outstr = '%d\t' + '%f\t'*(nc-1) + '\n' # assumption
-    for i in range(nr):
-        tup = tuple([ddvi[i] for ddvi in ddv])
-        fo.write(outstr % tup)
+    # calculate principle stresses
+    evalues, evectors = eig(pv.stress.values())
+    for vh in pv.tri.vertices():
+        vhid = vh.idx()
+        pt = io.idtopt(pv.tri, vhid)
+        # cut down to two dimensions 
+        shift =  pt[:2]
+        print evalues
+        evals =  evalues[vhid][:2]
+        ea, eb, _ = evectors[vhid]
+        theta = np.arccos(np.dot(e_x, ea))
+        R = rotation_2d(theta)
+        add_ellipse(Points, evals, shift, R, res)
 
-def datdump(dd, fo):
-    htag = 'keys:'
-    dump(dd, fo, htag=htag)
+        polyline = vtk.vtkPolyLine()
+        polyline.GetPointIds().SetNumberOfIds(res)
+        ptstart = vhid*res
+        for j in range(ptstart, ptstart + res):
+            polyline.GetPointIds().SetId(vhid, j)
 
-def readdump(fo):
-    headers = fo.next()[1:].split()
-    dd = {}
-    for h in headers:
-        dd[h] = []
-    for line in fo:
-        for i, dat in enumerate(line.split()):
-            ev = float
-            if i is 0:
-                ev = int
-            dd[headers[i]].append( ev(dat) )
-    return dd
+        ells = vtk.vtkCellArray()
+        ells.InsertNextCell(polyline)
+        break
+
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(Points)
     
+    polydata.SetLines(ells)
+    polydata.Modified()
 
+    vtk_write(polydata, 'test_ellipse.vtp')
+
+
+
+from math import cos, sin
+def write_test_ellipse(res=50):
+
+    Points = vtk.vtkPoints()
+    a = 1
+    b = 2
+
+    thetas = np.linspace(0, 2*np.pi, res, True)
+    for i, th in enumerate(thetas):
+        Points.InsertPoint(i, a*cos(th)+ 0,b*sin(th)+ 0, 0)
+        
+    aPolyLine = vtk.vtkPolyLine()
+    aPolyLine.GetPointIds().SetNumberOfIds(res)
+    for j in range(res):
+        aPolyLine.GetPointIds().SetId(j, j)
+
+    ells = vtk.vtkCellArray()
+    ells.InsertNextCell(aPolyLine)
+
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(Points)
+    
+    polydata.SetLines(ells)
+    polydata.Modified()
+
+    vtk_write(polydata, 'test_ellipse.vtk')
+
+if __name__=='__main__':
+    #write_test_ellipse()
+    pass
 

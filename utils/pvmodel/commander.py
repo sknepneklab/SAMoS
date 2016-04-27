@@ -34,14 +34,15 @@ if __name__=='__main__':
     # Handle K, and Gamma
     nf = PV.tri.n_vertices()
     # Could easily read these from a .conf file
-    k = 0.
-    gamma = 1.
+    k = 1.
+    gamma = 0.
     K = np.full(nf, k)
     Gamma = np.full(nf, gamma)
     PV.set_constants(K, Gamma)
 
     PV.calculate_energy()
     PV.calculate_forces()
+    PV.calculate_stress()
 
     outdir = args.dir
 
