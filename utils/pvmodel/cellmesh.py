@@ -521,12 +521,17 @@ class PVmesh(object):
                 # derivative 
                 d1 =1/( nr1 * nrn)
                 d2 = np.dot(r1, rn) * d1**2
-                v1 = rmmultiply(rn, drmudrp[mu1][vhid] -npI) + rmmultiply(r1, drmudrp[mun][vhid] -npI)
+                v1a = rmmultiply(rn, drmudrp[mu1][vhid] -npI) 
+                v1b = rmmultiply(r1, drmudrp[mun][vhid] -npI)
                 v2a = nr1 * rmmultiply( (rn/nrn), drmudrp[mun][vhid] - npI) 
                 v2b = nrn*  rmmultiply( (r1/nr1), drmudrp[mu1][vhid] - npI)
-                deriv_X = d1 * v1 - d2 * ( v2a + v2b )
-                deriv_ag = pre_fac * deriv_X
-                dzetadr[vhid][vhid] = deriv_ag
+                #deriv_X = d1 * v1 - d2 * ( v2a + v2b )
+                #deriv_ag = pre_fac * deriv_X
+                #dzetadr[vhid][vhid] = deriv_ag
+
+                dzetadr[vhid][vhid] = {}
+                dzetadr[vhid][vhid][mu1] = pre_fac * (d1 * v1a - d2 * v2a)
+                dzetadr[vhid][vhid][mun] = pre_fac * (d1 * v1b - d2 * v2b)
 
                 # i, j where j is over nearest neighbours
                 fh = mesh.face_handle(vhid)
@@ -539,9 +544,7 @@ class PVmesh(object):
                         # This is the case where an adjacent cell shares no boundary vertices
                         continue
                     deriv_X = np.zeros(3)
-                    if nnvhid not in dzetadr:
-                        dzetadr[nnvhid] = {}
-
+                    dzetadr[vhid][nnvhid] = {}
                     for mu in cell_verts:
                         assert (mu == mu1) or (mu == mun)
                         rmu, rother = [r1, rn] if mu == mu1 else [rn, r1]
@@ -549,9 +552,12 @@ class PVmesh(object):
                         dzX = ( rmmultiply( rother/(nr1 * nrn), drmudrp[mu][nnvhid])
                                 - np.dot(r1,rn)/(nr1 * nrn)**2 * nrother
                                 * rmmultiply( rmu/nrmu, drmudrp[mu][nnvhid] ) )
-                        deriv_X += dzX
+                        deriv_X = dzX
 
-                    dzetadr[vhid][nnvhid] = pre_fac * deriv_X
+                        #assert mu not in dzetadr[vhid][nnvhid] # should be unique set of keys
+                        #print 'assigning', vhid, nnvhid, mu
+                        dzetadr[vhid][nnvhid][mu] = pre_fac * deriv_X
+                    #dzetadr[vhid][nnvhid] = pre_fac * deriv_X
                     
         # It remains to do some complicated math over loops of nearest neighbours, etc..
         # We also want to calculate stress now
@@ -581,23 +587,30 @@ class PVmesh(object):
             for mu in loops[trivhid]:
                 dAdrmu[trivhid][mu]
                 drmudrp[mu][fhidx]
-                ac = np.einsum('n,nm->m', dAdrmu[trivhid][mu], drmudrp[mu][fhidx])
-                pc = np.einsum('n,nm->m', dPdrmu[trivhid][mu], drmudrp[mu][fhidx])
+                # check trivhid == fhidx
+                assert trivhid == fhidx
+                ac = rmmultiply(dAdrmu[trivhid][mu], drmudrp[mu][fhidx])
+                pc = rmmultiply(dPdrmu[trivhid][mu], drmudrp[mu][fhidx])
                 asum += ac
                 psum += pc
+                if boundary: # angle defecit contribution
+                    if mu in dzetadr[trivhid][trivhid]:
+                        zetat = dzetadr[trivhid][trivhid][mu] * prefarea
+                        asum -= zetat
                
             farea = farea_fac * asum
             fprim = fprim_fac * psum
-            # dzetadr
-            if boundary:
-                # the derivative of angle defecit contribution
-                zetat = dzetadr[trivhid][trivhid] * prefarea 
-                farea -= farea_fac * zetat
+#            # dzetadr
+            #if boundary:
+                ## the derivative of angle defecit contribution
+                #zetat = dzetadr[trivhid][trivhid] * prefarea 
+                #farea -= farea_fac * zetat
  
             # And the nearest neighbours contribution
             # Some duplicated code
             area_nnsum = np.zeros(3)
             prim_nnsum = np.zeros(3)
+            print '-- on vertex ', trivhid
             for vhnn, vidset in interloops[trivhid].items():
                 nnvh = tri.vertex_handle(vhnn)
 
@@ -613,22 +626,23 @@ class PVmesh(object):
                 asum = np.zeros(3)
                 psum = np.zeros(3)
 
+                nnboundary = tri.is_boundary(nnvh)
                 for mu in vidset:
                     dAdrmu[vhnn][mu]
                     ac = np.einsum('n,nm->m', dAdrmu[vhnn][mu], drmudrp[mu][fhidx])
                     pc = np.einsum('n,nm->m', dPdrmu[vhnn][mu], drmudrp[mu][fhidx])
                     asum += ac
                     psum += pc
+                    if nnboundary:
+                        vht = mu in dzetadr[vhnn][trivhid]
+                        #print vht 
+                        if vht:
+                            # the angle defecit contribution
+                            zetat = dzetadr[vhnn][trivhid][mu] * prefarea
+                            asum -= zetat
+
                 area_nnsum += farea_fac * asum
                 prim_nnsum += fprim_fac * psum
-
-                nnboundary = tri.is_boundary(nnvh)
-                if nnboundary:
-                    vht = trivhid in dzetadr[vhnn]
-                    if vht:
-                        # the angle defecit contribution
-                        zetat = dzetadr[vhnn][trivhid] * prefarea
-                        area_nnsum -= farea_fac * zetat
 
             imforce = farea + fprim
             nnforce = area_nnsum + prim_nnsum
