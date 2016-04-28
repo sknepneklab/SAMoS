@@ -78,6 +78,12 @@ public:
     return Vector3d(x - v.x, y - v.y, z - v.z);
   }
   
+  //! Subtract two vectors (constant version)
+  Vector3d operator-(const Vector3d& v) const
+  {
+    return Vector3d(x - v.x, y - v.y, z - v.z);
+  }
+  
   //! Negate a vector
   Vector3d operator-()
   {

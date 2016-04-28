@@ -67,7 +67,7 @@ public:
   //! \param nlist Pointer to the global neighbour list
   //! \param val Value control object (for phasing in)
   //! \param param Contains information about all parameters (k)
-  PairVertexParticlePotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param), m_has_part_params(false)
+  PairVertexParticlePotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param), m_has_part_params(false), m_include_boundary(true)
   {
     int ntypes = m_system->get_ntypes();
     if (param.find("K") == param.end())
@@ -129,6 +129,18 @@ public:
       m_mesh_update_steps = lexical_cast<int>(param["mesh_update_steps"]);
     }
     m_msg->write_config("potential.pair.vertex_particle.mesh_update_steps",lexical_cast<string>(m_mesh_update_steps));
+    
+    if (param.find("exclude_boundary") != param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Vertex-particle pair potential does NOT include additional terms arrising at the boundary.");
+      m_include_boundary = false;
+      m_msg->write_config("potential.pair.vertex_particle.include_boundary","false");
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Vertex-particle pair potential includes additional terms arrising at the boundary.");
+      m_msg->write_config("potential.pair.vertex_particle.include_boundary","true");
+    }
     
     m_particle_params = new VertexParticleParameters[ntypes];
     for (int i = 0; i < ntypes; i++)
@@ -256,6 +268,7 @@ private:
   double m_lambda;                  //!< cell contact stiffness
   bool m_has_part_params;           //!< true if type specific particle parameters are given
   int m_mesh_update_steps;          //!< number of time steps between mesh (tessalation) recalculation
+  bool m_include_boundary;          //!< if true, include boudary terms in force calculation
   VertexParticleParameters*  m_particle_params;   //!< type specific particle parameters 
   VertexParticleParameters** m_pair_params;       //!< type specific pair parameters 
      

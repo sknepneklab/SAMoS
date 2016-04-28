@@ -907,6 +907,8 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkDoubleArray> force =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> dir =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> ndir =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> dual_area =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> angle_def =  vtkSmartPointer<vtkDoubleArray>::New();
     
     ids->SetName("Id");
     ids->SetNumberOfComponents(1);
@@ -926,6 +928,10 @@ void Dump::dump_vtp(int step)
     dir->SetNumberOfComponents(3);
     ndir->SetName("NDirector");
     ndir->SetNumberOfComponents(3);
+    dual_area->SetName("DualArea");
+    dual_area->SetNumberOfComponents(1);
+    angle_def->SetName("DeficitAngle");
+    angle_def->SetNumberOfComponents(1);
       
     for (int i = 0; i < N; i++)
     {
@@ -944,6 +950,12 @@ void Dump::dump_vtp(int step)
       force->InsertNextTuple(f);
       dir->InsertNextTuple(n);
       ndir->InsertNextTuple(nn);
+      if (mesh.size() > 0)
+      {
+        Vertex& V = mesh.get_vertices()[i];
+        dual_area->InsertNextValue(V.area);
+        angle_def->InsertNextValue(mesh.angle_factor(V.id));
+      }
     }
     
     polydata->SetPoints(points);
@@ -957,7 +969,12 @@ void Dump::dump_vtp(int step)
     polydata->GetPointData()->AddArray(force);
     polydata->GetPointData()->AddArray(dir);
     polydata->GetPointData()->AddArray(ndir);
-    
+    if (mesh.size() > 0)
+    {
+      polydata->GetPointData()->AddArray(dual_area);
+      polydata->GetPointData()->AddArray(angle_def);
+    }
+        
     if (m_system->num_bonds() > 0 && m_group == "all")
     {
       vtkSmartPointer<vtkLine> line =  vtkSmartPointer<vtkLine>::New();
@@ -985,10 +1002,13 @@ void Dump::dump_vtp(int step)
       vtkSmartPointer<vtkLine> edge =  vtkSmartPointer<vtkLine>::New();
       vtkSmartPointer<vtkDoubleArray> lens =  vtkSmartPointer<vtkDoubleArray>::New();
       vtkSmartPointer<vtkDoubleArray> boundary =  vtkSmartPointer<vtkDoubleArray>::New();
+      vtkSmartPointer<vtkIntArray> boundary_edges =  vtkSmartPointer<vtkIntArray>::New();
       lens->SetName("Length");
       lens->SetNumberOfComponents(1);
       boundary->SetName("Boundary");
       boundary->SetNumberOfComponents(1);
+      boundary_edges->SetName("Boundary");
+      boundary_edges->SetNumberOfComponents(1);
       // Edited for this to be backwards for better paraview plotting
       for (int i = 0; i < mesh.size(); i++)
       {
@@ -1014,12 +1034,17 @@ void Dump::dump_vtp(int step)
           double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
           m_system->apply_periodic(dx,dy,dz);
           lens->InsertNextValue(sqrt(dx*dx + dy*dy + dz*dz));
+          if (ee.boundary || mesh.get_edges()[ee.pair].boundary)
+            boundary_edges->InsertNextValue(0);
+          else
+            boundary_edges->InsertNextValue(2);
           visited_edges.push_back(make_pair(ee.from,ee.to));
           visited_edges.push_back(make_pair(ee.to,ee.from));
         }
       }
       polydata->SetLines(lines);
       polydata->GetCellData()->AddArray(lens);
+      polydata->GetCellData()->AddArray(boundary_edges);
       
       vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
       for (int f = 0; f < mesh.nfaces(); f++)
@@ -1030,56 +1055,44 @@ void Dump::dump_vtp(int step)
           face->GetPointIds()->SetId(fi, ff.vertices[fi]);
         faces->InsertNextCell(face);
       }
-      //polydata->SetPolys(faces);
     }
   }
   else
   {
-    vector<Vertex>& vertices = mesh.get_vertices();
-    vector<Vector3d>& dual = mesh.get_dual();
     vtkSmartPointer<vtkPolygon> face =  vtkSmartPointer<vtkPolygon>::New();
     vtkSmartPointer<vtkIntArray> ids =  vtkSmartPointer<vtkIntArray>::New();
     vtkSmartPointer<vtkDoubleArray> areas =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> perims =  vtkSmartPointer<vtkDoubleArray>::New();
-    vtkSmartPointer<vtkDoubleArray> pressure =  vtkSmartPointer<vtkDoubleArray>::New();
     ids->SetName("Id");
     areas->SetNumberOfComponents(1);
     areas->SetName("Area");
     areas->SetNumberOfComponents(1);
     perims->SetName("Perimeter");
     perims->SetNumberOfComponents(1);
-    pressure->SetName("Pressure");
-    pressure->SetNumberOfComponents(1);
     
-    for (unsigned int i = 0; i < dual.size(); i++)
+    PlotArea& pa = mesh.plot_area(m_dual_boundary);
+    for (unsigned int f = 0; f < pa.points.size(); f++)
     {
-      points->InsertNextPoint (dual[i].x, dual[i].y, dual[i].z);      
-      ids->InsertNextValue(i);
+      points->InsertNextPoint(pa.points[f].x, pa.points[f].y, pa.points[f].z);
+      ids->InsertNextValue(f);
     }
     polydata->SetPoints(points);
     polydata->GetPointData()->AddArray(ids);
+
+    for (unsigned int f = 0; f < pa.sides.size(); f++)
+    {
+      face->GetPointIds()->SetNumberOfIds(pa.sides[f].size());
+      for (unsigned int d = 0; d < pa.sides[f].size(); d++)
+        face->GetPointIds()->SetId(d, pa.sides[f][d]);
+      faces->InsertNextCell(face);
+      areas->InsertNextValue(pa.area[f]);
+      perims->InsertNextValue(pa.perim[f]);
+    }
     
-    for (unsigned int i = 0; i < vertices.size(); i++)
-      if (vertices[i].attached)
-      {
-        Vertex& V = vertices[i];
-        if (!V.boundary || (V.boundary && m_dual_boundary))
-        {
-          face->GetPointIds()->SetNumberOfIds(V.dual.size());
-          for (unsigned int d = 0; d < V.dual.size(); d++)
-            face->GetPointIds()->SetId(d, V.dual[d]);
-          faces->InsertNextCell(face);
-          areas->InsertNextValue(vertices[i].area);
-          Particle& p = m_system->get_particle(i);
-          perims->InsertNextValue(vertices[i].perim);
-          pressure->InsertNextValue(p.s_xx + p.s_yy + p.s_zz);
-        }
-      }
     polydata->SetPolys(faces);
     polydata->GetCellData()->AddArray(ids);
     polydata->GetCellData()->AddArray(areas);
     polydata->GetCellData()->AddArray(perims);
-    polydata->GetCellData()->AddArray(pressure);
   }
   
   // Write the file

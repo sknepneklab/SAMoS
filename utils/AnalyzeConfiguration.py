@@ -85,7 +85,8 @@ if args.getStatsBasic:
 u=0
 for f in files:
 	print f
-	conf = Configuration(params,f)
+	# Ignore here is to simply calculate interactions of multiple types of particles (they have the same potential)
+	conf = Configuration(params,f,True)
 	if args.contractile:
 		writeme = Writer(args.nematic,args.alpha)
 	else:
@@ -143,22 +144,23 @@ for f in files:
 				writeme.writePatches(tess,outpatches,True)
 	
 	u+=1
-try:
-	data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params,'population':params.population,'pop_params':params.pop_params}
-except:
-	data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params}
-if args.writeD:
-	dataD={'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out,'numdefects_v':numdefects_v_out}
-	data.update(dataD)
-if args.getStatsBasic:
-	dataS={'vel2av':vel2av,'phival':phival,'ndensity':ndensity,'pressure':pressure,'fmoment':fmoment,'energy':energy,'energytot':energytot,'zav':zav}
-	data.update(dataS)
-if args.writeD:	
-	outpickle=args.directory+'defect_data.p'
-	
-else:
-	outpickle=args.directory+'configuration_data.p'
-print outpickle
-pickle.dump(data,open(outpickle,'wb'))
+#This is so that visualisation only doesn't overwrite previously analyzed data
+if ((args.writeD) or (args.getStatsBasic)):
+	try:
+		data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params,'population':params.population,'pop_params':params.pop_params}
+	except:
+		data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params}
+	if args.writeD:
+		dataD={'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out,'numdefects_v':numdefects_v_out}
+		data.update(dataD)
+	if args.getStatsBasic:
+		dataS={'vel2av':vel2av,'phival':phival,'ndensity':ndensity,'pressure':pressure,'fmoment':fmoment,'energy':energy,'energytot':energytot,'zav':zav}
+		data.update(dataS)
+	if args.writeD:	
+		outpickle=args.directory+'defect_data.p'
+	else:
+		outpickle=args.directory+'configuration_data.p'
+	print outpickle
+	pickle.dump(data,open(outpickle,'wb'))
 	
 	
