@@ -56,7 +56,7 @@ class Defects:
     # MISSING: getting the symmetry type directly from the parameter list, not as an input parameter
     # MISSING: an intelligent storage method for batch defects. Use same as cluster storage for friction project. 
     # However: necessites switch to binary pickle files, not text files for output
-	def getDefects(self,symtype): 
+	def getDefects(self,symtype,useVfield=True): 
 		# Generalized algorithm for defects of any type
 		# Count the defect charge. Times two, to use integers and easier if statements
 		# Need to reinitialize defects in case multiple trackings are done on the same system
@@ -77,11 +77,11 @@ class Defects:
 		for u in range(len(self.LoopList)):
 			thisLoop=self.LoopList[u]
 			if symtype=='oldnematic':
-				ndefect,vdefect=self.getDefectsGoldenfeld(thisLoop)
+				ndefect,vdefect=self.getDefectsGoldenfeld(thisLoop,useVfield)
 			elif symtype=='polar':
-				ndefect,vdefect=self.getDefectsPolar(thisLoop)
+				ndefect,vdefect=self.getDefectsPolar(thisLoop,useVfield)
 			elif symtype=='nematic':
-				ndefect,vdefect=self.getDefectsNematic(thisLoop)
+				ndefect,vdefect=self.getDefectsNematic(thisLoop,useVfield)
 			else:
 				ndefect=0.0
 				vdefect=0.0
@@ -105,35 +105,37 @@ class Defects:
 				# Coordinates of the defect
 				#self.defects_n[self.numdefect_n,1:]=radius*rmhat
 				self.numdefect_n+=1
-			if abs(vdefect)>0:
-				print "Found Defect in velocity field!"
-				print vdefect
-				char_v+=vdefect
-				# Construct the geometric centre of the defect
-				r0s=self.conf.rval[thisLoop]
-				if self.conf.geom.periodic:
-					r0s[1:,:]=self.conf.geom.ApplyPeriodic12(r0s[0,:],r0s[1:,:])+r0s[0,:]
-				rmval=np.mean(r0s,axis=0)
-				if self.conf.geom.manifold=='sphere':
-					rabs=np.sqrt(rmval[0]**2+rmval[1]**2+rmval[2]**2)
-					rmval=rmval/rabs*self.conf.geom.R
-				# Charge of the defect
-				defbit=[vdefect]
-				defbit.extend(list(rmval))
-				self.defects_v.append(defbit)
-				# self.defects_v[self.numdefect_v,0]=vdefect
-				# Coordinates of the defect
-				# self.defects_v[self.numdefect_v,1:]=radius*rmhat
-				self.numdefect_v+=1
+			if useVfield:
+				if abs(vdefect)>0:
+					print "Found Defect in velocity field!"
+					print vdefect
+					char_v+=vdefect
+					# Construct the geometric centre of the defect
+					r0s=self.conf.rval[thisLoop]
+					if self.conf.geom.periodic:
+						r0s[1:,:]=self.conf.geom.ApplyPeriodic12(r0s[0,:],r0s[1:,:])+r0s[0,:]
+					rmval=np.mean(r0s,axis=0)
+					if self.conf.geom.manifold=='sphere':
+						rabs=np.sqrt(rmval[0]**2+rmval[1]**2+rmval[2]**2)
+						rmval=rmval/rabs*self.conf.geom.R
+					# Charge of the defect
+					defbit=[vdefect]
+					defbit.extend(list(rmval))
+					self.defects_v.append(defbit)
+					# self.defects_v[self.numdefect_v,0]=vdefect
+					# Coordinates of the defect
+					# self.defects_v[self.numdefect_v,1:]=radius*rmhat
+					self.numdefect_v+=1
 
 		#print defects
 		print 'Number of orientation field defects: ' + str(self.numdefect_n)
-		print 'Number of velocity field defects: ' + str(self.numdefect_v)
 		print 'Total charge of orientation field defects: ' + str(char_n)
-		print 'Total charge of velocity field defects: ' + str(char_v)
+		if useVfield:
+			print 'Number of velocity field defects: ' + str(self.numdefect_v)
+			print 'Total charge of velocity field defects: ' + str(char_v)
 		return self.defects_n, self.defects_v,self.numdefect_n,self.numdefect_v
         
-	def getDefectsNematic(self,thisLoop): 
+	def getDefectsNematic(self,thisLoop,useVfield): 
 		# Generalized algorithm for defects of any type
 		# Count the defect charge. Times two, to use integers and easier if statements
 		# nval
@@ -155,25 +157,28 @@ class Defects:
 			t0=t
 		# the stupid loops are the wrong way round ...
 		ndefect=-0.5*int(round(thetatot/(np.pi)))
-		thetatot=0
-		t0=thisLoop[-1]
-		for t in thisLoop[0:len(thisLoop)]:
-			ctheta=np.dot(self.conf.vhat[t0,:],self.conf.vhat[t,:])
-			stheta=np.dot(self.normal[t,:],np.cross(self.conf.vhat[t0,:],self.conf.vhat[t,:]))
-			if abs(stheta)>1:
-				stheta=np.sign(stheta)
-			if np.isnan(stheta):
-				stheta=0
-			if np.isnan(ctheta):
-				ctheta=1
-			theta=np.arcsin(stheta*np.sign(ctheta))
-			thetatot+=theta
-			t0=t
-		vdefect=-0.5*int(round(thetatot/(np.pi)))
+		if useVfield:
+			thetatot=0
+			t0=thisLoop[-1]
+			for t in thisLoop[0:len(thisLoop)]:
+				ctheta=np.dot(self.conf.vhat[t0,:],self.conf.vhat[t,:])
+				stheta=np.dot(self.normal[t,:],np.cross(self.conf.vhat[t0,:],self.conf.vhat[t,:]))
+				if abs(stheta)>1:
+					stheta=np.sign(stheta)
+				if np.isnan(stheta):
+					stheta=0
+				if np.isnan(ctheta):
+					ctheta=1
+				theta=np.arcsin(stheta*np.sign(ctheta))
+				thetatot+=theta
+				t0=t
+			vdefect=-0.5*int(round(thetatot/(np.pi)))
+		else:
+			vdefect=0.0
 		return ndefect,vdefect
 			
             
-	def getDefectsGoldenfeld(self,thisLoop): 
+	def getDefectsGoldenfeld(self,thisLoop,useVfield): 
 		# Should already be ordered counterclockwise
 		# Following a version of the Goldenfeld algorithm, with nx,ny,nz as is playing the role of the order parameter. The sphere is in cartesian space
 		# The old nematic algorithm, based on the hemispheres            
@@ -191,23 +196,26 @@ class Defects:
 			ndefect=0.5
 		else:
 			ndefect=0.0
-		# The normalized velocity vector vhat
-		ctheta=1
-		coord=[]
-		coord.append(vhat[thisLoop[0],:])
-		for t in range(1,len(thisLoop)):
-			ctheta=np.dot(self.conf.vhat[thisLoop[t],:],np.sign(ctheta)*self.conf.vhat[thisLoop[t-1],:])
-			# Nematic: append the order parameter, rotated through the *smaller* angle
-			coord.append(np.sign(ctheta)*self.conf.vhat[thisLoop[t],:])
-			# Find out if the last point and the starting point are in the same hemisphere. 
-		cdefect=np.dot(coord[t],coord[0])
-		if cdefect<0:
-			vdefect=0.5
+		if useVfield:
+			# The normalized velocity vector vhat
+			ctheta=1
+			coord=[]
+			coord.append(vhat[thisLoop[0],:])
+			for t in range(1,len(thisLoop)):
+				ctheta=np.dot(self.conf.vhat[thisLoop[t],:],np.sign(ctheta)*self.conf.vhat[thisLoop[t-1],:])
+				# Nematic: append the order parameter, rotated through the *smaller* angle
+				coord.append(np.sign(ctheta)*self.conf.vhat[thisLoop[t],:])
+				# Find out if the last point and the starting point are in the same hemisphere. 
+			cdefect=np.dot(coord[t],coord[0])
+			if cdefect<0:
+				vdefect=0.5
+			else:
+				vdefect=0.0
 		else:
 			vdefect=0.0
 		return ndefect,vdefect
        
-	def getDefectsPolar(self,thisLoop):
+	def getDefectsPolar(self,thisLoop,useVfield):
 		# Generalized algorithm for defects of any type
 		# Count the defect charge. 
 		# Should already be ordered counterclockwise
@@ -223,25 +231,28 @@ class Defects:
 		# Classify according to defects
 		# For a polar one, we can only have integer defects
 		ndefect=int(round(thetatot/(2*np.pi)))
-		# vhat
-		thetatot=0
-		t0=thisLoop[-1]
-		for t in thisLoop[0:len(thisLoop)]:
-			ctheta=np.dot(self.conf.vhat[t,:],self.conf.vhat[t0,:])    
-			stheta=np.dot(self.normal[t,:],np.cross(self.conf.vhat[t,:],self.conf.vhat[t0,:]))
-			theta=np.arccos(ctheta)*np.sign(stheta)
-			thetatot+=theta
-			t0=t
-			#if ctheta<0:
-				#print "candidate: t t0 ctheta stheta theta thetatot"
-				#print t, t0, ctheta, stheta, theta, thetatot
-				#printnow=True
-		# Classify according to defects
-		# For a polar one, we can only have integer defects
-		vdefect=int(round(thetatot/(2*np.pi)))
-		#if printnow:
-			#print thetatot
-			#print thisLoop
+		if useVfield:
+			# vhat
+			thetatot=0
+			t0=thisLoop[-1]
+			for t in thisLoop[0:len(thisLoop)]:
+				ctheta=np.dot(self.conf.vhat[t,:],self.conf.vhat[t0,:])    
+				stheta=np.dot(self.normal[t,:],np.cross(self.conf.vhat[t,:],self.conf.vhat[t0,:]))
+				theta=np.arccos(ctheta)*np.sign(stheta)
+				thetatot+=theta
+				t0=t
+				#if ctheta<0:
+					#print "candidate: t t0 ctheta stheta theta thetatot"
+					#print t, t0, ctheta, stheta, theta, thetatot
+					#printnow=True
+			# Classify according to defects
+			# For a polar one, we can only have integer defects
+			vdefect=int(round(thetatot/(2*np.pi)))
+			#if printnow:
+				#print thetatot
+				#print thisLoop
+		else:
+			vdefect=0.0
 		return ndefect,vdefect            
 
 	def PlotDefects(self):

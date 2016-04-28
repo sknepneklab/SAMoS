@@ -118,8 +118,9 @@ for f in files:
 			outdefects = args.output + '/frame%06d_defects.vtp' % u # + str(u) + '_defects.vtp'	
 			print outdefects
 			defects = Defects(tess,conf)
+			# Look for nematic defects in the director field, but do not look for velocity defects (since it's a mess)
 			if args.nematic:
-				defects_n, defects_v,numdefect_n,numdefect_v=defects.getDefects('nematic')
+				defects_n, defects_v,numdefect_n,numdefect_v=defects.getDefects('nematic',False)
 			else:
 				defects_n, defects_v,numdefect_n,numdefect_v=defects.getDefects('polar')
 			print "found defects"
