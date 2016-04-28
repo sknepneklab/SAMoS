@@ -1063,21 +1063,26 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkIntArray> ids =  vtkSmartPointer<vtkIntArray>::New();
     vtkSmartPointer<vtkDoubleArray> areas =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> perims =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> circum_radius =  vtkSmartPointer<vtkDoubleArray>::New();
     ids->SetName("Id");
     areas->SetNumberOfComponents(1);
     areas->SetName("Area");
     areas->SetNumberOfComponents(1);
     perims->SetName("Perimeter");
     perims->SetNumberOfComponents(1);
+    circum_radius->SetName("CircumRadius");
+    circum_radius->SetNumberOfComponents(1);
     
     PlotArea& pa = mesh.plot_area(m_dual_boundary);
     for (unsigned int f = 0; f < pa.points.size(); f++)
     {
       points->InsertNextPoint(pa.points[f].x, pa.points[f].y, pa.points[f].z);
+      circum_radius->InsertNextValue(pa.circum_radius[f]);
       ids->InsertNextValue(f);
     }
     polydata->SetPoints(points);
     polydata->GetPointData()->AddArray(ids);
+    polydata->GetPointData()->AddArray(circum_radius);
 
     for (unsigned int f = 0; f < pa.sides.size(); f++)
     {

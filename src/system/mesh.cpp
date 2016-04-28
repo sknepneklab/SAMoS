@@ -713,6 +713,7 @@ void Mesh::fc_jacobian(int f)
 **/
 void Mesh::update_face_properties()
 {
+  /*
   for (unsigned int e = 0; e < m_boundary_edges.size(); e++)
   {
     Edge& E = m_edges[m_boundary_edges[e]];
@@ -728,7 +729,7 @@ void Mesh::update_face_properties()
     {
       for (int i = 0; i < face.n_sides; i++)
         if (m_edges[m_edges[face.edges[i]].pair].boundary) // Face is at the boundary if the pair of one of its half-edges is a boundary edge
-        { 
+        {
           face.boundary = true;
           break;
         }
@@ -745,6 +746,23 @@ void Mesh::update_face_properties()
       }
     }
   }
+  */
+  m_obtuse_boundary.clear();
+  for (unsigned int e = 0; e < m_boundary_edges.size(); e++)
+  {
+    Edge& E = m_edges[m_boundary_edges[e]];
+    Edge& Ep = m_edges[E.pair];
+    if (m_vertices[E.from].n_faces < 3) m_vertices[E.from].attached = false;
+    Face& face = m_faces[Ep.face];
+    face.boundary = true;
+    if (face.get_angle(this->opposite_vertex(Ep.id)) < 0.0)
+    {
+      face.obtuse = true;
+      if (!E.attempted_removal)
+        m_obtuse_boundary.push_back(E.id);
+    }
+  }
+  
 }
 
 /*! Loop over all boundary faces. If the face is obtuse,
@@ -885,6 +903,7 @@ PlotArea& Mesh::plot_area(bool boundary)
   m_plot_area.sides.clear();
   m_plot_area.area.clear();
   m_plot_area.perim.clear();
+  m_plot_area.circum_radius.clear();
   map<int,int> bnd_vert;
   map<int,int> face_idx;
   vector<int> added_faces;
@@ -897,6 +916,7 @@ PlotArea& Mesh::plot_area(bool boundary)
       {
         bnd_vert[V.id] = idx++;
         m_plot_area.points.push_back(V.r);
+        m_plot_area.circum_radius.push_back(0.0);
       }
   }
   
@@ -912,6 +932,7 @@ PlotArea& Mesh::plot_area(bool boundary)
           if (find(added_faces.begin(),added_faces.end(),face.id) == added_faces.end())
           {
             m_plot_area.points.push_back(face.rc);
+            m_plot_area.circum_radius.push_back(this->circum_radius(face.id));
             added_faces.push_back(face.id);
             face_idx[face.id] = idx++;
           }
@@ -1060,6 +1081,9 @@ void Mesh::remove_edge_pair(int e)
   if (it != m_edge_map.end())
      m_edge_map.erase(it);
   
+  // Remove edge from the list of boundary edges
+  m_boundary_edges.erase(find(m_boundary_edges.begin(),m_boundary_edges.end(),E.id));
+  
   // Update edges and vertices for the face to be removed
   for (int v = 0; v < face.n_sides; v++)
   {
@@ -1073,11 +1097,11 @@ void Mesh::remove_edge_pair(int e)
     }
     affected_vertices.push_back(VV.id);
   }
-    
+  
   for (int e = 0; e < face.n_sides; e++)
   {
     Edge& EE = m_edges[face.edges[e]];
-    if (EE.id != E.id && EE.id != Ep.id)
+    if (EE.id != Ep.id)
     {
       EE.face = face_pair.id;
       EE.boundary = true;

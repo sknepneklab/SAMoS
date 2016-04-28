@@ -75,6 +75,7 @@ typedef struct
   vector<vector<int> > sides;
   vector<double> area;
   vector<double> perim;
+  vector<double> circum_radius;
 } PlotArea;
 
 /*! Mesh class handles basic manipuations with mesesh
