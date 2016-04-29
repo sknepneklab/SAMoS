@@ -1013,7 +1013,7 @@ void Dump::dump_vtp(int step)
       for (int i = 0; i < mesh.size(); i++)
       {
         Vertex& vert = mesh.get_vertices()[i];
-        if (vert.boundary)
+        if (vert.boundary && vert.attached)
           boundary->InsertNextValue(0);
         else if (!vert.attached)
           boundary->InsertNextValue(1);

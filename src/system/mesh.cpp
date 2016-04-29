@@ -440,7 +440,7 @@ int Mesh::opposite_vertex(int e)
         return f.vertices[i];
     cout << edge << endl;
     cout << f << endl;
-    throw runtime_error("Vertex opposite to an edge: Mesh is not consistent. There is likely a bug in how edges and faces are updated.");
+    throw runtime_error("Vertex opposite to an edge: Mesh is not consistent. Paramters are likley wrong and there are overlapping vertices causing face construction to fail.");
   }
   return -1;  // If edge is boundary, return -1.
 }
@@ -753,6 +753,7 @@ void Mesh::update_face_properties()
     Edge& E = m_edges[m_boundary_edges[e]];
     Edge& Ep = m_edges[E.pair];
     if (m_vertices[E.from].n_faces < 3) m_vertices[E.from].attached = false;
+    else m_vertices[E.from].attached = true;
     Face& face = m_faces[Ep.face];
     face.boundary = true;
     if (face.get_angle(this->opposite_vertex(Ep.id)) < 0.0)
