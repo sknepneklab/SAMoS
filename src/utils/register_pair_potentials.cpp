@@ -62,4 +62,6 @@ void register_pair_potentials(PairPotentialMap& pair_potentials)
   pair_potentials["vp"] = boost::factory<PairVertexParticlePotentialPtr>();
   // Register line tension pair potential for tissues with the pair potentials class factory
   pair_potentials["line_tension"] = boost::factory<PairLineTensionPotentialPtr>();
+  // Register boundary bending pair potential for tissues with the pair potentials class factory
+  pair_potentials["boundary_bending"] = boost::factory<PairBoundaryBendingPotentialPtr>();
 }
