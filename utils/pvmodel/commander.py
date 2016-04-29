@@ -42,7 +42,6 @@ if __name__=='__main__':
 
     PV.calculate_energy()
     PV.calculate_forces()
-    PV.calculate_stress()
 
     outdir = args.dir
 

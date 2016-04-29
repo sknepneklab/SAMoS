@@ -8,8 +8,12 @@ import vtk
 
 from collections import OrderedDict
 
+from numpy.linalg import eig, norm
+import ioutils as io
 from ioutils import omvec, idtopt
 
+
+from math import cos, sin
 # Generic parts
 
 def vtk_write(polydata, outfile):
@@ -151,7 +155,13 @@ def writemeshenergy(pv, outfile):
     writer.SetDataModeToAscii()
     writer.Write()
 
-
+def get_internal_stress(pv):
+    stress = OrderedDict()
+    for vh in pv.tri.vertices():
+        boundary = pv.tri.is_boundary(vh)
+        if not boundary:
+            stress[vh.idx()] = pv.stress[vh.idx()]
+    return stress
 
 # take an openmesh object and write it as .vtk with faces
 def writetriforce(pv, outfile):
@@ -161,23 +171,48 @@ def writetriforce(pv, outfile):
     Points = vtk.vtkPoints()
     Faces = vtk.vtkCellArray()
 
+    idtriv = vtk.vtkDoubleArray()
+    idtriv.SetNumberOfComponents(1)
+    idtriv.SetName("id")
+
     force = vtk.vtkDoubleArray()
     force.SetNumberOfComponents(3)
     force.SetName("force")
     fprop = pv.fprop
 
-    idtriv = vtk.vtkDoubleArray()
-    idtriv.SetNumberOfComponents(1)
-    idtriv.SetName("id")
+    stress_1 = vtk.vtkDoubleArray()
+    stress_1.SetNumberOfComponents(3)
+    stress_1.SetName("stress_1")
 
+    stress_2 = vtk.vtkDoubleArray()
+    stress_2.SetNumberOfComponents(3)
+    stress_2.SetName("stress_2")
 
+    # Stress calculation fails for boundaries
+    # Stress at boundaries is not symmetric
+    stress = get_internal_stress(pv)
+    evalues, evectors = eig(stress.values())
+    #io.stddict(pv.stress)
+    #print evalues
+    #print 
+    #print evectors
+    
     for vh in pv.tri.vertices():
+        vhid = vh.idx()
         pt =omvec(pv.tri.point(vh))
         Points.InsertNextPoint(pt)
         fov = pv.tri.property(fprop, vh)
 
-        force.InsertNextTuple3(*fov)
         idtriv.InsertNextValue(vh.idx())
+        force.InsertNextTuple3(*fov)
+        if not pv.tri.is_boundary(vh):
+            s_1 = evalues[vhid][0] * evectors[vhid][0]
+            s_2 = evalues[vhid][1] * evectors[vhid][1]
+            stress_1.InsertNextTuple3(*s_1)
+            stress_2.InsertNextTuple3(*s_2)
+        else:
+            stress_1.InsertNextTuple3(*np.zeros(3))
+            stress_2.InsertNextTuple3(*np.zeros(3))
 
     for fh in tri.faces():
         vhids = []
@@ -191,16 +226,16 @@ def writetriforce(pv, outfile):
             Polygon.GetPointIds().SetId(i, vhid)
         Faces.InsertNextCell(Polygon)
 
-
     polydata = vtk.vtkPolyData()
     polydata.SetPoints(Points)
     polydata.SetPolys(Faces)
 
-    polydata.GetPointData().AddArray(force)
     polydata.GetPointData().AddArray(idtriv)
+    polydata.GetPointData().AddArray(force)
+    polydata.GetPointData().AddArray(stress_1)
+    polydata.GetPointData().AddArray(stress_2)
 
     polydata.Modified()
-
     vtk_write(polydata, outfile)
 
 
@@ -212,47 +247,53 @@ def rotation_2d(theta):
 def add_ellipse(Points, evals, shift, R, res):
     x, y = shift
     a, b = evals
+    a, b = abs(a), abs(b)
     thetas = np.linspace(0, 2*np.pi, res, True)
     for i, th in enumerate(thetas):
-        rot = np.einsum('mn,n->m',  R, np.array([a * cos(th), b * sin(th) ]))
-        xe, xy = rot
-        Points.InsertPoint(i, xe + x, xy + y, 0.)
-        print 'inserting point', xe + x, xy + y, 0.
-        
+        xy_i = np.array([a * cos(th), b * sin(th) ])
+        xy_i = np.einsum('mn,n->m',  R, xy_i)
+        xe, xy = xy_i
+        Points.InsertNextPoint(xe + x, xy + y, 0.)
+        #print 'inserting point', xe + x, xy + y, 0.
  
-from numpy.linalg import eig
-import ioutils as io
-def write_stress_ellipses(pv, outfile, res=10):
+def write_stress_ellipses(pv, outfile, res=20):
     alpha = 1. # scaling factor
 
     Points = vtk.vtkPoints()
 
     e_x = np.array([1., 0., 0.])
-    io.stddict(pv.stress)
 
     # calculate principle stresses
-    evalues, evectors = eig(pv.stress.values())
-    for vh in pv.tri.vertices():
+    stress = get_internal_stress(pv)
+    evalues, evectors = eig(stress.values())
+    ells = vtk.vtkCellArray()
+    for vhid, _  in enumerate(evalues):
+        vh = pv.tri.vertex_handle(vhid)
+
         vhid = vh.idx()
         pt = io.idtopt(pv.tri, vhid)
         # cut down to two dimensions 
         shift =  pt[:2]
-        print evalues
         evals =  evalues[vhid][:2]
+        a, b, = evals
         ea, eb, _ = evectors[vhid]
-        theta = np.arccos(np.dot(e_x, ea))
-        R = rotation_2d(theta)
+        theta = np.arccos(np.dot(e_x, ea)) 
+        sg = 1. if np.dot(np.cross(e_x, ea),pv.normal) > 0 else -1.
+        print sg
+        R = rotation_2d(sg * theta)  
         add_ellipse(Points, evals, shift, R, res)
 
         polyline = vtk.vtkPolyLine()
         polyline.GetPointIds().SetNumberOfIds(res)
         ptstart = vhid*res
-        for j in range(ptstart, ptstart + res):
-            polyline.GetPointIds().SetId(vhid, j)
+        for j, ptj in enumerate(range(ptstart, ptstart + res)):
+            #print 'setting ids', vhid, j
+            #print j, ptj
+            polyline.GetPointIds().SetId(j, ptj)
 
-        ells = vtk.vtkCellArray()
         ells.InsertNextCell(polyline)
-        break
+        #print vhid
+        #break
 
     polydata = vtk.vtkPolyData()
     polydata.SetPoints(Points)
@@ -260,11 +301,8 @@ def write_stress_ellipses(pv, outfile, res=10):
     polydata.SetLines(ells)
     polydata.Modified()
 
-    vtk_write(polydata, 'test_ellipse.vtp')
+    vtk_write(polydata, outfile)
 
-
-
-from math import cos, sin
 def write_test_ellipse(res=50):
 
     Points = vtk.vtkPoints()

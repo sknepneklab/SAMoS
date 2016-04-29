@@ -167,6 +167,8 @@ class PVmesh(object):
         for j, cc in enumerate(ccenters):
             mverts[j] = self.mesh.add_vertex(PolyMesh.Point(*cc))
         # Add faces
+        self.n_tri_internal = 0
+        self.n_tri_boundary = 0
         bval = 0
         for vh in self.tri.vertices():
             if self.tri.is_boundary(vh):
@@ -179,6 +181,7 @@ class PVmesh(object):
                         self.boundaries[-1].append( self.tri.from_vertex_handle(heh).idx() )
                         self.b_nheh[-1].append(heh)
                 self.tri.set_property(self.boundary_prop, vh, bval)
+                self.n_tri_boundary += 1
             else: # Internal vertex
                 # construct the face by stepping around the halfedges
                 heh = self.tri.halfedge_handle(vh)
@@ -196,6 +199,7 @@ class PVmesh(object):
                 vhs = list(mverts[fhs])
                 mfh = self.mesh.add_face(vhs)
                 self.tri.set_property(self.boundary_prop, vh, 0)
+                self.n_tri_internal += 1
 
         # construct the halfcells object which represents the boundary faces
         # Add boundary triangulation points to the mesh
@@ -539,12 +543,12 @@ class PVmesh(object):
                 nl = len(lp)
                 for j, nnvh in enumerate(lp):
                     nnvhid = nnvh.idx()
+                    dzetadr[vhid][nnvhid] = {}
                     cell_verts = set([mu1, mun]).intersection(interloops[vhid][nnvhid])
                     if bool(cell_verts) is False:
                         # This is the case where an adjacent cell shares no boundary vertices
                         continue
                     deriv_X = np.zeros(3)
-                    dzetadr[vhid][nnvhid] = {}
                     for mu in cell_verts:
                         assert (mu == mu1) or (mu == mun)
                         rmu, rother = [r1, rn] if mu == mu1 else [rn, r1]
@@ -562,7 +566,10 @@ class PVmesh(object):
         # It remains to do some complicated math over loops of nearest neighbours, etc..
         # We also want to calculate stress now
         # {vhid: s_arr}
-        self.stress = {}
+        a_stress = OrderedDict()
+        p_stress = OrderedDict()
+        self.stress = stress = OrderedDict()
+        
         for trivh in tri.vertices():
             fh = self.mesh.face_handle(trivh.idx())
             trivhid = trivh.idx()
@@ -575,6 +582,10 @@ class PVmesh(object):
             prefarea = self.tri.property(self.prefareaprop, trivh)
             ag = self.tri.property(self.btheta_prop, trivh)
 
+            trivhpt = omvec(self.tri.point(trivh))
+            stress[trivhid] = np.zeros((3,3))
+            a_stress[trivhid] = np.zeros((3,3))
+            p_stress[trivhid] = np.zeros((3,3))
             boundary = tri.is_boundary(trivh)
 
             # Immediate contribution
@@ -585,32 +596,36 @@ class PVmesh(object):
 
             # dAdrp and dPdrp
             for mu in loops[trivhid]:
-                dAdrmu[trivhid][mu]
-                drmudrp[mu][fhidx]
-                # check trivhid == fhidx
-                assert trivhid == fhidx
+                r_mu_vh = idtopt(mesh, mu) - trivhpt # precalculate these
                 ac = rmmultiply(dAdrmu[trivhid][mu], drmudrp[mu][fhidx])
                 pc = rmmultiply(dPdrmu[trivhid][mu], drmudrp[mu][fhidx])
-                asum += ac
-                psum += pc
                 if boundary: # angle defecit contribution
                     if mu in dzetadr[trivhid][trivhid]:
                         zetat = dzetadr[trivhid][trivhid][mu] * prefarea
-                        asum -= zetat
-               
+                        ac -= zetat
+
+                #if not boundary:
+                #print trivhid, mu
+                #print  farea_fac * np.outer(ac, r_mu_vh)
+                a_stress[trivhid] += farea_fac * np.outer(ac, r_mu_vh)
+                #print a_stress[trivhid]
+                #print 
+                p_stress[trivhid] += fprim_fac * np.outer(pc, r_mu_vh)
+
+                asum += ac
+                psum += pc
+
+            #if not boundary:
+                #print 
+                #print a_stress[trivhid]
+
             farea = farea_fac * asum
             fprim = fprim_fac * psum
-#            # dzetadr
-            #if boundary:
-                ## the derivative of angle defecit contribution
-                #zetat = dzetadr[trivhid][trivhid] * prefarea 
-                #farea -= farea_fac * zetat
  
             # And the nearest neighbours contribution
             # Some duplicated code
             area_nnsum = np.zeros(3)
             prim_nnsum = np.zeros(3)
-            print '-- on vertex ', trivhid
             for vhnn, vidset in interloops[trivhid].items():
                 nnvh = tri.vertex_handle(vhnn)
 
@@ -628,18 +643,19 @@ class PVmesh(object):
 
                 nnboundary = tri.is_boundary(nnvh)
                 for mu in vidset:
-                    dAdrmu[vhnn][mu]
+                    r_mu_vh = idtopt(mesh, mu) - trivhpt
                     ac = np.einsum('n,nm->m', dAdrmu[vhnn][mu], drmudrp[mu][fhidx])
                     pc = np.einsum('n,nm->m', dPdrmu[vhnn][mu], drmudrp[mu][fhidx])
-                    asum += ac
-                    psum += pc
                     if nnboundary:
                         vht = mu in dzetadr[vhnn][trivhid]
-                        #print vht 
                         if vht:
                             # the angle defecit contribution
                             zetat = dzetadr[vhnn][trivhid][mu] * prefarea
-                            asum -= zetat
+                            ac -= zetat
+                    asum += ac
+                    psum += pc
+                    a_stress[trivhid] += farea_fac  * np.outer(ac, r_mu_vh)
+                    p_stress[trivhid] += fprim_fac * np.outer(pc, r_mu_vh)
 
                 area_nnsum += farea_fac * asum
                 prim_nnsum += fprim_fac * psum
@@ -647,21 +663,11 @@ class PVmesh(object):
             imforce = farea + fprim
             nnforce = area_nnsum + prim_nnsum
             totalforce = imforce + nnforce
-
             tri.set_property(fprop, trivh, totalforce)
 
-    def calculate_stress(self):
-        # Stress will be a 2d numpy array
-        # to draw ellipses we calculate principle stress vectors
-        # perhaps its time to leave openmesh properties behind. 
-        #They were just clutter anyway
+            stress[trivhid] = a_stress[trivhid] + p_stress[trivhid]
 
-        for vh in self.tri.vertices():
-            vhid = vh.idx()
-            rpos = omvec(self.tri.point(vh))
-            force = self.tri.property(self.fprop, vh)
-            s_arr = np.outer(force, rpos)
-            self.stress[vhid] = s_arr
+
 
     def out_force_energy(self, outfile):
         # Still aren't explicitely handling the particle ids as we should be (?)
@@ -767,7 +773,7 @@ if __name__=='__main__':
     wr.write_stress_ellipses(PV, sout)
 
     # Dump the force and energy
-    fef = 'force_energy.dat'
+    fef = path.join(outdir, 'force_energy.dat')
     PV.out_force_energy(fef)
 
 
