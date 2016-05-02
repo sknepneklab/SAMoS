@@ -304,11 +304,12 @@ class PVmesh(object):
     def _construct_cl_dict(self, L):
         # create a dictionary for the L property 
         # this code sets values for every edge however boundary->boundary edges do not correspond to a cell edge
+        mesh =self.mesh
         cl_dict = {}
-        for eh in self.tri.edges():
-            heh = self.tri.halfedge_handle(eh, 0)
-            vhi = self.tri.to_vertex_handle(heh)
-            vhj = self.tri.from_vertex_handle(heh)
+        for eh in self.mesh.edges():
+            heh = self.mesh.halfedge_handle(eh, 0)
+            vhi = self.mesh.to_vertex_handle(heh)
+            vhj = self.mesh.from_vertex_handle(heh)
             vhidx = vhi.idx(); vhjdx = vhj.idx()
             cl_dict[(vhidx, vhjdx)] = L 
             cl_dict[(vhjdx, vhidx)] = L 
@@ -322,23 +323,40 @@ class PVmesh(object):
         self.tri.add_property(gammaprop, 'Gamma')
         # Need to start thinking in terms of edges for the contact length property
         clprop = EPropHandle()
-        self.tri.add_property(clprop, 'Contact Length')
+        self.mesh.add_property(clprop, 'Contact Length')
 
         for i, (ki, gi) in enumerate(zip(K, Gamma)):
             vh = self.tri.vertex_handle(i)
             self.tri.set_property(kprop, vh, ki)
             self.tri.set_property(gammaprop, vh, gi)
         # Edges are defined between faces so need to give a dictionary of constants for generality
-        for eh in self.tri.edges():
-            heh = self.tri.halfedge_handle(eh, 0)
-            vhi =  self.tri.to_vertex_handle(heh)
-            vhj = self.tri.from_vertex_handle(heh)
+        for eh in self.mesh.edges():
+            heh = self.mesh.halfedge_handle(eh, 0)
+            vhi =  self.mesh.to_vertex_handle(heh)
+            vhj = self.mesh.from_vertex_handle(heh)
             vhidx = vhi.idx(); vhjdx = vhj.idx()
-            self.tri.set_property(clprop, eh, cl_dict[(vhidx, vhjdx)])
+            self.mesh.set_property(clprop, eh, cl_dict[(vhidx, vhjdx)])
 
         self.kprop = kprop
         self.gammaprop = gammaprop
         self.clprop = clprop
+
+
+    # Iterate through the mesh vertices for any cell (even boundary)
+    def loop(self, trivh):
+        tri = self.tri; mesh = self.mesh
+        trivhid = trivh.idx()
+        boundary = tri.is_boundary(trivh)
+        vhs = []
+        if not boundary:
+            fh = mesh.face_handle(trivhid)
+        else:
+            fh = mesh.face_handle(self.vh_mf[trivhid])
+        for vh in mesh.fv(fh):
+            vhidx = vh.idx()
+            vhs.append(vhidx)
+        return vhs
+
 
     def calculate_energy(self):
         # And attach values as a property to the faces of the mesh (inner vertices of triangulation)
@@ -353,7 +371,6 @@ class PVmesh(object):
         print 'calculating energies for each face'
         tenergy = 0
         for vh in tri.vertices():
-
             prefarea = tri.property( self.prefareaprop, vh )
             ag = tri.property( self.btheta_prop,vh)
             area = self.tri.property(self.areaprop, vh)
@@ -363,7 +380,24 @@ class PVmesh(object):
             gamma = tri.property(self.gammaprop, vh)
             perim = tri.property(self.primprop, vh)
             fprim = gamma/2 * perim**2
-            fen = farea + fprim
+
+
+             #do we need the energy of each cell independently?
+            e_cl = 0.
+
+            # Add internal idx to vh_mf to avoid this check
+            m_face_id = self.vh_mf[vh.idx()] if tri.is_boundary(vh) else vh.idx()  
+            m_face = mesh.face_handle(m_face_id) 
+            for heh in mesh.fh(m_face):
+                #print m_face.idx(), 
+                #print mesh.is_boundary(m_face)
+                li = norm(mesh.property(self.mesh_lvecprop, heh))
+                eh= mesh.edge_handle(heh)
+                cl= mesh.property(self.clprop, eh)
+                e_cl += 1/2. * cl * li
+
+            #print e_cl
+            fen = farea + fprim + e_cl
             tri.set_property(enprop, vh, fen)
             tenergy += fen
         print 'total energy of mesh', 
@@ -441,20 +475,7 @@ class PVmesh(object):
                 drmudrp[mvhid] = {}
                 drmudrp[mvhid][vhid] = np.identity(3)
 
-        # Iterate through the mesh vertices for any cell (even boundary)
-        def loop(trivh):
-            trivhid = trivh.idx()
-            boundary = tri.is_boundary(trivh)
-            vhs = []
-            if not boundary:
-                fh = mesh.face_handle(trivhid)
-            else:
-                fh = mesh.face_handle(self.vh_mf[trivhid])
-            for vh in mesh.fv(fh):
-                vhidx = vh.idx()
-                vhs.append(vhidx)
-            return vhs
-
+        loop = self.loop
 
         # Nearest Neighbour faces
         # ( by vertex )
@@ -782,10 +803,11 @@ if __name__=='__main__':
     # Could easily read these from a .conf file
     k = 1.
     gamma = 0.
+    L = 0.
     K = np.full(nf, k)
     Gamma = np.full(nf, gamma)
 
-    cl = pv._construct_cl_dict(0.)
+    cl = pv._construct_cl_dict(L)
     pv.set_constants(K, Gamma, cl)
 
     pv.calculate_energy()
