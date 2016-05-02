@@ -191,6 +191,16 @@ void PairVertexParticlePotential::compute(double dt)
         Vector3d cross_prod_4(0.0,0.0,0.0);
         if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_4 = lambda*(((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i));
         con_vec = con_vec - cross_prod_4; 
+        if (vi.boundary)
+        {
+          if (e == 0 || (e == vi.n_edges - 2))
+          {
+            if (m_has_pair_params)
+              lambda = m_pair_params[vi.type - 1][vi.type - 1].lambda;
+            Vector3d r_nu_i_unit = r_nu_i.unit();
+            con_vec = con_vec + lambda*(r_nu_i_unit*f_nu.get_jacobian(i) - r_nu_i_unit);
+          }
+        }
         if (m_compute_stress)
         { 
           pi.s_xx -= cross_prod_4.x*r_nu_i.x;
@@ -322,7 +332,7 @@ void PairVertexParticlePotential::compute(double dt)
               pi.s_zz += perim_term*cross_prod_2.z*r_nu_i.z;
             }
             if (m_has_pair_params)
-              lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[E.to].type - 1].lambda;
+              lambda = m_pair_params[vj.type - 1][mesh.get_vertices()[E.to].type - 1].lambda;
             Vector3d cross_prod_3(0.0,0.0,0.0);
             if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_3 = lambda*(((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i));
             con_vec = con_vec + cross_prod_3; 
@@ -341,10 +351,20 @@ void PairVertexParticlePotential::compute(double dt)
               pi.s_zz += cross_prod_3.z*r_nu_i.z;
             }
             if (m_has_pair_params)
-              lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[Ep.to].type - 1].lambda;
+              lambda = m_pair_params[vj.type - 1][mesh.get_vertices()[Ep.to].type - 1].lambda;
             Vector3d cross_prod_4(0.0,0.0,0.0);
             if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_4 = lambda*(((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i));
             con_vec = con_vec - cross_prod_4; 
+            if (vj.boundary)
+            {
+              if (e == 0 || (e == vj.n_edges - 2))
+              {
+                if (m_has_pair_params)
+                  lambda = m_pair_params[vj.type - 1][vj.type - 1].lambda;
+                Vector3d r_nu_j = r_nu - vj.r;
+                con_vec = con_vec + lambda*(r_nu_j.unit()*f_nu.get_jacobian(i));
+              }
+            }
             if (m_compute_stress)
             {
               pi.s_xx -= cross_prod_4.x*r_nu_i.x;

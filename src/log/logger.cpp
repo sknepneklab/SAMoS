@@ -67,6 +67,7 @@ Logger::Logger(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr ali
   m_logger["ljrod_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"ljrod"));
   m_logger["vp_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"vp"));
   m_logger["line_tension_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"line_tension")); 
+  m_logger["boundary_bending_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"boundary_bending")); 
   m_logger["coulomb_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"coulomb"));
   m_logger["polar_align"] = boost::make_shared<LogPairAlign>(LogPairAlign(sys, msg, pot, align,"polar")); 
   m_logger["nematic_align"] = boost::make_shared<LogPairAlign>(LogPairAlign(sys, msg, pot, align,"nematic")); 
