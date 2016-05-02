@@ -27,13 +27,39 @@ try:
 	import matplotlib.pyplot as plt
 	from mpl_toolkits.mplot3d import Axes3D
 	HAS_MATPLOTLIB=True
+	
+	import matplotlib
+	matplotlib.rcParams['text.usetex'] = 'false'
+	matplotlib.rcParams['lines.linewidth'] = 2
+	matplotlib.rcParams['axes.linewidth'] = 2
+	matplotlib.rcParams['xtick.major.size'] = 8
+	matplotlib.rcParams['ytick.major.size'] = 8
+	matplotlib.rcParams['font.size']=16.0
+	matplotlib.rcParams['legend.fontsize']=14.0
+
+	cdict = {'red':   [(0.0,  0.0, 0.5),
+					  (0.35,  1.0, 0.75),
+					  (0.45,  0.75, 0.0),
+					  (1.0,  0.0, 0.0)],
+
+			'green': [(0.0,  0.0, 0.0),
+					  (0.35,  0.0, 0.5),
+					  (0.5, 1.0, 1.0),
+					  (0.8,  0.5, 0.0),
+					  (1.0,  0.0, 0.0)],
+
+			'blue':  [(0.0,  0.0, 0.0),
+					  (0.5,  0.0, 0.0),
+					  (0.7, 0.5, 1.0),
+					  (1.0,  0.25, 0.0)]}
 except:
 	HAS_MATPLOTLIB=False
 	pass
 
 class SimRun:
-	def __init__(self,directory,conffile,inputfile,radiusfile,skip,debug=False):
+	def __init__(self,directory,conffile,inputfile,radiusfile,skip,tracer=False,debug=False):
 		self.debug=debug
+		self.tracer=tracer
 		self.param = Param(directory+conffile)
 		files = sorted(glob(directory + self.param.dumpname+'*.dat'))[skip:]
 		if len(files) == 0:
@@ -82,6 +108,13 @@ class SimRun:
 			x= np.array(data.data[data.keys['x']])
 			self.N=len(x)
 			print "Constant number of " + str(self.N) + " particles!"
+		if tracer:
+			data = ReadData(files[0])
+			tp=np.array(data.data[data.keys['type']])
+			tracers = [index for index,value in enumerate(tp) if value==2]
+			print tracers
+			self.Ntracer=len(tracers)
+			print "Tracking " + str(self.Ntracer) + " tracer particles!"
 		# Produce empty arrays for initialization
 		self.rval=np.zeros((self.Nsnap,self.N,3))
 		self.vval=np.zeros((self.Nsnap,self.N,3))
@@ -91,6 +124,10 @@ class SimRun:
 			self.flag=np.zeros((self.Nsnap,self.N))
 			if not self.monodisperse:
 				 self.radius=np.zeros((self.Nsnap,self.N))
+		if tracer:
+			self.tracers=np.zeros((self.Nsnap,self.Ntracer))
+			self.rtracers=np.zeros((self.Nsnap,self.Ntracer,3))
+			self.vtracers=np.zeros((self.Nsnap,self.Ntracer,3))
 		u=0
 		for f in files:
 			print "Processing file : ", f
@@ -105,7 +142,11 @@ class SimRun:
 					self.flag[u,:self.Nval[u]]=fl
 				else:
 					self.flag[u,:]=fl
-				
+			if data.keys.has_key('type'):
+				tp = data.data[data.keys['type']]
+				if tracer:
+					tracers = [index for index,value in enumerate(tp) if value==2]
+					self.tracers[u,:]=tracers
 			if data.keys.has_key('radius'):
 				rad=data.data[data.keys['radius']]
 				if self.Nvariable:
@@ -123,6 +164,11 @@ class SimRun:
 			if self.Nvariable:
 				self.rval[u,:self.Nval[u],:]=rval_u
 				self.vval[u,:self.Nval[u],:]=vval_u
+				if tracer:
+					#self.rtracers[u,:]=self.rval[u,self.tracers[u,:]]
+					#self.vtracers[u,:]=self.rval[u,self.tracers[u,:]]
+					self.rtracers[u,:,:]=self.rval[u,tracers,:]
+					self.vtracers[u,:,:]=self.rval[u,tracers,:]
 			else:
 				self.rval[u,:,:]=rval_u
 				self.vval[u,:,:]=vval_u
@@ -145,18 +191,32 @@ class SimRun:
 		
 	def getMSD(self):
 		self.msd=np.empty((self.Nsnap,))
+		# in case of tracers, simply use the tracer rval isolated above
 		for u in range(self.Nsnap):
 			smax=self.Nsnap-u
-			#self.geom.periodic=True
-			if self.geom.periodic:
-				self.msd[u]=np.sum(np.sum(np.sum((self.geom.ApplyPeriodic33(self.rval[:smax,:,:],self.rval[u:,:,:]))**2,axis=2),axis=1),axis=0)/(self.N*smax)
+			if self.Nvariable:
+				if self.tracer:
+					if self.geom.periodic:
+						self.msd[u]=np.sum(np.sum(np.sum((self.geom.ApplyPeriodic33(self.rtracers[:smax,:,:],self.rtracers[u:,:,:]))**2,axis=2),axis=1),axis=0)/(self.Ntracer*smax)
+					else:
+						self.msd[u]=np.sum(np.sum(np.sum((self.rtracers[u:,:,:]-self.rtracers[:smax,:,:])**2,axis=2),axis=1),axis=0)/(self.Ntracer*smax)
+				else:
+					print "Sorry: MSD for dividing particles is ambiguous and currently not implemented!"
 			else:
-				self.msd[u]=np.sum(np.sum(np.sum((self.rval[u:,:,:]-self.rval[:smax,:,:])**2,axis=2),axis=1),axis=0)/(self.N*smax)
+				if self.geom.periodic:
+					self.msd[u]=np.sum(np.sum(np.sum((self.geom.ApplyPeriodic33(self.rval[:smax,:,:],self.rval[u:,:,:]))**2,axis=2),axis=1),axis=0)/(self.N*smax)
+				else:
+					self.msd[u]=np.sum(np.sum(np.sum((self.rval[u:,:,:]-self.rval[:smax,:,:])**2,axis=2),axis=1),axis=0)/(self.N*smax)
+		xval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
 		if self.debug:
 			fig=plt.figure()
-			xval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
-			plt.loglog(xval,self.msd,'.-')
+			plt.loglog(xval,self.msd,'r.-',lw=2)
+			plt.loglog(xval,self.msd[1]/(1.0*xval[1])*xval,'-',lw=2,color=[0.5,0.5,0.5])
+			plt.xlabel('time')
+			plt.ylabel('MSD')
+			
 			plt.show()
+		return xval, self.msd
 			
 	def getVelcorr(self,dx):
 		# start with the isotropic one - since there is no obvious polar region
