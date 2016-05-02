@@ -138,6 +138,7 @@ class PVmesh(object):
 
         # Trimesh vertice ids and mesh faces ids naturally match up
         ccenters = np.zeros((self.tri.n_faces(),3))
+        cradius = np.zeros(self.tri.n_faces())
         for j, fh in enumerate(self.tri.faces()):
             # Calculate circumcentres of mesh
             l_s = np.zeros(3)
@@ -162,10 +163,16 @@ class PVmesh(object):
             llnorm = lli + llj + llk
             cc = np.array(lli*vi + llj*vj + llk*vk)/llnorm
             ccenters[j] = cc
+            cradius[j] = norm(cc- vi)
+        self.cradius = cradius # for visualisation
         # Add cicumcenters to form a new mesh
+        tri_prop= VPropHandle()
+        self.mesh.add_property(tri_prop, 'tri')
+        self.tri_prop = tri_prop
         mverts = np.array(np.zeros(len(ccenters)),dtype='object')
         for j, cc in enumerate(ccenters):
             mverts[j] = self.mesh.add_vertex(PolyMesh.Point(*cc))
+            self.mesh.set_property(tri_prop, mverts[j], 0)
         # Add faces
         self.n_tri_internal = 0
         self.n_tri_boundary = 0
@@ -217,6 +224,7 @@ class PVmesh(object):
 
                 tript = omvec(self.tri.point(self.tri.vertex_handle(vhid)))
                 mvh = self.mesh.add_vertex(PolyMesh.Point(*tript))
+                self.mesh.set_property(tri_prop, mvh, 1)
 
                 hcf = list(mverts[halfcell])
                 hcf.append(mvh)
@@ -293,23 +301,44 @@ class PVmesh(object):
         self.areaprop = areaprop
         self.primprop = primprop
 
-    def set_constants(self, K, Gamma):
-        # Putting aside the contact constants for now
+    def _construct_cl_dict(self, L):
+        # create a dictionary for the L property 
+        # this code sets values for every edge however boundary->boundary edges do not correspond to a cell edge
+        cl_dict = {}
+        for eh in self.tri.edges():
+            heh = self.tri.halfedge_handle(eh, 0)
+            vhi = self.tri.to_vertex_handle(heh)
+            vhj = self.tri.from_vertex_handle(heh)
+            vhidx = vhi.idx(); vhjdx = vhj.idx()
+            cl_dict[(vhidx, vhjdx)] = L 
+            cl_dict[(vhjdx, vhidx)] = L 
+        return cl_dict
+
+    def set_constants(self, K, Gamma, cl_dict):
         # Constants for Area and Perimeter should be in .dat file? Let them be set manually.
-        # We shall use properties of the mesh again to keep everything consistent
-        mesh = self.mesh
         kprop = VPropHandle()
         self.tri.add_property(kprop, 'K')
         gammaprop = VPropHandle()
         self.tri.add_property(gammaprop, 'Gamma')
+        # Need to start thinking in terms of edges for the contact length property
+        clprop = EPropHandle()
+        self.tri.add_property(clprop, 'Contact Length')
+
         for i, (ki, gi) in enumerate(zip(K, Gamma)):
             vh = self.tri.vertex_handle(i)
             self.tri.set_property(kprop, vh, ki)
             self.tri.set_property(gammaprop, vh, gi)
+        # Edges are defined between faces so need to give a dictionary of constants for generality
+        for eh in self.tri.edges():
+            heh = self.tri.halfedge_handle(eh, 0)
+            vhi =  self.tri.to_vertex_handle(heh)
+            vhj = self.tri.from_vertex_handle(heh)
+            vhidx = vhi.idx(); vhjdx = vhj.idx()
+            self.tri.set_property(clprop, eh, cl_dict[(vhidx, vhjdx)])
 
         self.kprop = kprop
         self.gammaprop = gammaprop
-
+        self.clprop = clprop
 
     def calculate_energy(self):
         # And attach values as a property to the faces of the mesh (inner vertices of triangulation)
@@ -429,6 +458,7 @@ class PVmesh(object):
 
         # Nearest Neighbour faces
         # ( by vertex )
+
         def nnfaces(trivh):
             fhs = []
             for heh in tri.voh(trivh):
@@ -744,37 +774,38 @@ if __name__=='__main__':
 
 
     rdat = ReadData(epidat)
-    PV = PVmesh.datbuild(rdat)
+    pv = PVmesh.datbuild(rdat)
 
     # Handle K, and Gamma
-    #nf = PV.mesh.n_faces()
-    nf = PV.tri.n_vertices()
+    #nf = pv.mesh.n_faces()
+    nf = pv.tri.n_vertices()
     # Could easily read these from a .conf file
     k = 1.
     gamma = 0.
     K = np.full(nf, k)
     Gamma = np.full(nf, gamma)
-    PV.set_constants(K, Gamma)
 
-    PV.calculate_energy()
-    PV.calculate_forces()
-    #PV.calculate_stress()
+    cl = pv._construct_cl_dict(0.)
+    pv.set_constants(K, Gamma, cl)
+
+    pv.calculate_energy()
+    pv.calculate_forces()
 
     outdir = args.dir
 
 
     mout = path.join(outdir, 'cellmesh.vtp')
-    wr.writemeshenergy(PV, mout)
+    wr.writemeshenergy(pv, mout)
 
     tout = path.join(outdir, 'trimesh.vtp')
-    wr.writetriforce(PV, tout)
+    wr.writetriforce(pv, tout)
 
     sout = path.join(outdir, 'stresses.vtp')
-    wr.write_stress_ellipses(PV, sout)
+    wr.write_stress_ellipses(pv, sout)
 
     # Dump the force and energy
     fef = path.join(outdir, 'force_energy.dat')
-    PV.out_force_energy(fef)
+    pv.out_force_energy(fef)
 
 
 

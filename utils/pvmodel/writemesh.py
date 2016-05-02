@@ -89,22 +89,28 @@ def writemeshenergy(pv, outfile):
     boundary.SetNumberOfComponents(1)
     boundary.SetName("boundary")
 
-    for vh in mesh.vertices():
+    cradius = vtk.vtkDoubleArray()
+    cradius.SetNumberOfComponents(1)
+    cradius.SetName("cradius")
+
+    for i, vh in enumerate(mesh.vertices()):
         pt =omvec(mesh.point(vh))
         Points.InsertNextPoint(pt)
+        is_tri = pv.mesh.property(pv.tri_prop, vh)
+        crnv = 0. if is_tri else pv.cradius[i] 
+        cradius.InsertNextValue(crnv)
 
-    # throw the edge vertices on the end
-    nmv = mesh.n_vertices()
-    boundary_vmap  = {}
-    i = 0 # the boundary vertice count
-    for bd in pv.boundaries:
-        for vhid in bd:
-            boundary_vmap[vhid] = nmv + i
-            pt = omvec(tri.point(tri.vertex_handle(vhid)))
-            Points.InsertNextPoint(pt)
-            i += 1
-
-    #print Points.GetNumberOfPoints()
+    ## throw the edge vertices on the end
+    #nmv = mesh.n_vertices()
+    #boundary_vmap  = {}
+    #i = 0 # the boundary vertice count
+    #for bd in pv.boundaries:
+        #for vhid in bd:
+            #boundary_vmap[vhid] = nmv + i
+            #pt = omvec(tri.point(tri.vertex_handle(vhid)))
+            #Points.InsertNextPoint(pt)
+            #cradius.InsertNextValue(0.)
+            #i += 1
 
     # Can actually add the boundary polygons here and show them 
     nfaces =0
@@ -133,14 +139,13 @@ def writemeshenergy(pv, outfile):
 
     print 'added faces', nfaces
 
-
-
     polydata = vtk.vtkPolyData()
     polydata.SetPoints(Points)
     polydata.SetPolys(Faces)
 
     polydata.GetCellData().AddArray(energy)
     polydata.GetCellData().AddArray(boundary)
+    polydata.GetPointData().AddArray(cradius)
 
     polydata.Modified()
     writer = vtk.vtkXMLPolyDataWriter()
@@ -279,7 +284,6 @@ def write_stress_ellipses(pv, outfile, res=20):
         ea, eb, _ = evectors[vhid]
         theta = np.arccos(np.dot(e_x, ea)) 
         sg = 1. if np.dot(np.cross(e_x, ea),pv.normal) > 0 else -1.
-        print sg
         R = rotation_2d(sg * theta)  
         add_ellipse(Points, evals, shift, R, res)
 
