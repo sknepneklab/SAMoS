@@ -343,19 +343,25 @@ class PVmesh(object):
 
 
     # Iterate through the mesh vertices for any cell (even boundary)
-    def loop(self, trivh):
+    def loop(self, trivh, halfedges=False):
         tri = self.tri; mesh = self.mesh
         trivhid = trivh.idx()
         boundary = tri.is_boundary(trivh)
         vhs = []
+        hehs = []
         if not boundary:
             fh = mesh.face_handle(trivhid)
         else:
             fh = mesh.face_handle(self.vh_mf[trivhid])
-        for vh in mesh.fv(fh):
-            vhidx = vh.idx()
-            vhs.append(vhidx)
-        return vhs
+
+        for mheh in mesh.fh(fh):
+            vh = mesh.from_vertex_handle(mheh)
+            vhs.append(vh.idx())
+            hehs.append(mheh.idx())
+        if halfedges:
+            return vhs, hehs
+        else:
+            return vhs
 
 
     def calculate_energy(self):
@@ -382,9 +388,8 @@ class PVmesh(object):
             fprim = gamma/2 * perim**2
 
 
-             #do we need the energy of each cell independently?
+            #do we need the energy of each cell independently?
             e_cl = 0.
-
             # Add internal idx to vh_mf to avoid this check
             m_face_id = self.vh_mf[vh.idx()] if tri.is_boundary(vh) else vh.idx()  
             m_face = mesh.face_handle(m_face_id) 
@@ -394,7 +399,8 @@ class PVmesh(object):
                 li = norm(mesh.property(self.mesh_lvecprop, heh))
                 eh= mesh.edge_handle(heh)
                 cl= mesh.property(self.clprop, eh)
-                e_cl += 1/2. * cl * li
+                # IMPORTANT, we made a choice in handling the extra boundary edges here, don't forget!
+                e_cl += 1/2. * cl * li 
 
             #print e_cl
             fen = farea + fprim + e_cl
@@ -475,6 +481,7 @@ class PVmesh(object):
                 drmudrp[mvhid] = {}
                 drmudrp[mvhid][vhid] = np.identity(3)
 
+        #alias
         loop = self.loop
 
         # Nearest Neighbour faces
@@ -509,13 +516,16 @@ class PVmesh(object):
         # this should work for boundary cells as well
         dAdrmu = {}
         dPdrmu = {}
+        dLdrmu =  {}
         for trivh in tri.vertices():
             trivhid = trivh.idx()
             dAdrmu[trivhid] = {}
             dPdrmu[trivhid] = {}
+            dLdrmu[trivhid] = {}
 
-            fh = mesh.face_handle(trivhid)
-            lp = loop(trivh)
+            # These are the vertices of the loop
+            # how about the halfedges
+            lp, hp = loop(trivh, halfedges=True)
             nl = len(lp)
             for i, vhid in enumerate(lp):
                 vh = mesh.vertex_handle(vhid)
@@ -530,7 +540,6 @@ class PVmesh(object):
                 vplus, vminus = omvec(mesh.point(vhplus)), omvec(mesh.point(vhminus))
                 dAdrmu[trivhid][vhid] = 1/2. * ( np.cross(vplus, self.normal) 
                         - np.cross(vminus, self.normal) )
-                
                 #dPdrmu
                 # get lengths
                 vhpt = omvec(mesh.point(vh))
@@ -538,6 +547,20 @@ class PVmesh(object):
                 lvp = vplus - vhpt
                 dPdrmu[trivhid][vhid] = lvm/norm(lvm) - lvp/norm(lvp)
 
+                #dLdrmu
+                # for this mesh vertex what are the surrounding points in cell (mesh face) trivh 
+
+                mhehid = hp[i] # outgoing halfedge
+                mheh = mesh.halfedge_handle(mhehid)
+                mhehm = mesh.prev_halfedge_handle(mheh)
+                lv = mesh.property(self.mesh_lvecprop, mheh)
+                lmv = mesh.property(self.mesh_lvecprop, mhehm)
+                lv = lv/norm(lv); lmv = lmv/norm(lmv)
+
+                cl = mesh.property(self.clprop, mesh.edge_handle(mheh))
+                clm = mesh.property(self.clprop, mesh.edge_handle(mhehm))
+                # 1/2. factor here becuase each edge is iterated over twice in summing the forces
+                dLdrmu[trivhid][vhid] = 1/2. * ( clm * lmv - cl * lv )
 
         fprop = VPropHandle()
         tri.add_property(fprop, 'force')
@@ -589,7 +612,6 @@ class PVmesh(object):
                 dzetadr[vhid][vhid][mun] = pre_fac * (d1 * v1b - d2 * v2b)
 
                 # i, j where j is over nearest neighbours
-                fh = mesh.face_handle(vhid)
                 lp = nnfaces(vh)
                 nl = len(lp)
                 for j, nnvh in enumerate(lp):
@@ -619,6 +641,7 @@ class PVmesh(object):
         # {vhid: s_arr}
         a_stress = OrderedDict()
         p_stress = OrderedDict()
+        l_stress = OrderedDict()
         self.stress = stress = OrderedDict()
         
         for trivh in tri.vertices():
@@ -637,6 +660,7 @@ class PVmesh(object):
             stress[trivhid] = np.zeros((3,3))
             a_stress[trivhid] = np.zeros((3,3))
             p_stress[trivhid] = np.zeros((3,3))
+            l_stress[trivhid] = np.zeros((3,3))
             boundary = tri.is_boundary(trivh)
 
             # Immediate contribution
@@ -644,39 +668,36 @@ class PVmesh(object):
             fprim_fac = -(gammap) * prim
             asum = np.zeros(3)
             psum = np.zeros(3)
+            lsum = np.zeros(3)
 
             # dAdrp and dPdrp
             for mu in loops[trivhid]:
                 r_mu_vh = idtopt(mesh, mu) - trivhpt # precalculate these
                 ac = rmmultiply(dAdrmu[trivhid][mu], drmudrp[mu][fhidx])
                 pc = rmmultiply(dPdrmu[trivhid][mu], drmudrp[mu][fhidx])
+                lc = rmmultiply(dLdrmu[trivhid][mu], drmudrp[mu][fhidx])
                 if boundary: # angle defecit contribution
                     if mu in dzetadr[trivhid][trivhid]:
                         zetat = dzetadr[trivhid][trivhid][mu] * prefarea
                         ac -= zetat
 
-                #if not boundary:
-                #print trivhid, mu
-                #print  farea_fac * np.outer(ac, r_mu_vh)
                 a_stress[trivhid] += farea_fac * np.outer(ac, r_mu_vh)
-                #print a_stress[trivhid]
-                #print 
                 p_stress[trivhid] += fprim_fac * np.outer(pc, r_mu_vh)
-
+                l_stress[trivhid] += -1 * np.outer(lc, r_mu_vh)
                 asum += ac
                 psum += pc
-
-            #if not boundary:
-                #print 
-                #print a_stress[trivhid]
+                lsum += lc
 
             farea = farea_fac * asum
             fprim = fprim_fac * psum
- 
+            # no extra factor
+            flc = -1 * lsum
+
             # And the nearest neighbours contribution
             # Some duplicated code
             area_nnsum = np.zeros(3)
             prim_nnsum = np.zeros(3)
+            lc_nnsum = np.zeros(3)
             for vhnn, vidset in interloops[trivhid].items():
                 nnvh = tri.vertex_handle(vhnn)
 
@@ -691,12 +712,14 @@ class PVmesh(object):
                 fprim_fac = -(gammap) * prim
                 asum = np.zeros(3)
                 psum = np.zeros(3)
+                lsum = np.zeros(3)
 
                 nnboundary = tri.is_boundary(nnvh)
                 for mu in vidset:
                     r_mu_vh = idtopt(mesh, mu) - trivhpt
                     ac = np.einsum('n,nm->m', dAdrmu[vhnn][mu], drmudrp[mu][fhidx])
                     pc = np.einsum('n,nm->m', dPdrmu[vhnn][mu], drmudrp[mu][fhidx])
+                    lc = np.einsum('n,nm->m', dLdrmu[vhnn][mu], drmudrp[mu][fhidx])
                     if nnboundary:
                         vht = mu in dzetadr[vhnn][trivhid]
                         if vht:
@@ -705,14 +728,17 @@ class PVmesh(object):
                             ac -= zetat
                     asum += ac
                     psum += pc
+                    lsum += lc
                     a_stress[trivhid] += farea_fac  * np.outer(ac, r_mu_vh)
                     p_stress[trivhid] += fprim_fac * np.outer(pc, r_mu_vh)
+                    l_stress[trivhid] += -1 * np.outer(lc, r_mu_vh)
 
                 area_nnsum += farea_fac * asum
                 prim_nnsum += fprim_fac * psum
+                lc_nnsum += -1 * lsum
 
-            imforce = farea + fprim
-            nnforce = area_nnsum + prim_nnsum
+            imforce = farea + fprim + flc
+            nnforce = area_nnsum + prim_nnsum + lc_nnsum
             totalforce = imforce + nnforce
             tri.set_property(fprop, trivh, totalforce)
 
