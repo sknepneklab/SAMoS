@@ -134,17 +134,9 @@ void Mesh::generate_faces()
         if (vn == seed) m_edges[prev_edge].next = E.id;   // original edge is the "next" edge for last edge in the loop 
       }      
     }
-    double perim = 0.0;
-    for (unsigned int f = 0; f < face.vertices.size(); f++)
-    {
-      int f_n = ( f == face.vertices.size() - 1) ? 0 : f + 1;
-      Vector3d r1 = m_vertices[face.vertices[f]].r;
-      Vector3d r2 = m_vertices[face.vertices[f_n]].r;
-      perim += (r1-r2).len();
-    }
     if (face.vertices.size() > 0)
     {
-      if (perim >= m_max_face_perim) face.is_hole = true;
+      if (face.vertices.size() > 3) face.is_hole = true;
       m_faces.push_back(face);
       for (unsigned int f = 0; f < face.vertices.size(); f++)
         m_vertices[face.vertices[f]].add_face(m_nface);
@@ -352,14 +344,16 @@ void Mesh::order_star(int v)
 */
 double Mesh::dual_area(int v)
 {
-  if (!m_vertices[v].ordered)
-  {
-    cout << m_vertices[v] << endl;
-    throw runtime_error("Vertex star has to be ordered before dual area can be computed.");
-  }
+
   Vertex& V = m_vertices[v];
   if (!V.attached) return 0.0;
-    
+
+  if (!V.ordered)
+  {
+    cout << V << endl;
+    throw runtime_error("Vertex star has to be ordered before dual area can be computed.");
+  }
+  
   V.area = 0.0;
   if (!V.boundary)
   {
@@ -446,7 +440,7 @@ int Mesh::opposite_vertex(int e)
         return f.vertices[i];
     cout << edge << endl;
     cout << f << endl;
-    throw runtime_error("Vertex opposite to an edge: Mesh is not consistent. There is likely a bug in how edges and faces are updated.");
+    throw runtime_error("Vertex opposite to an edge: Mesh is not consistent. Paramters are likley wrong and there are overlapping vertices causing face construction to fail.");
   }
   return -1;  // If edge is boundary, return -1.
 }
@@ -559,16 +553,6 @@ void Mesh::edge_flip(int e)
   
   // Make sure that the vertex stars are all properly ordered
   
-//   cout << "########## after ##########" << endl;
-//   cout << "------ F -------" << endl;
-//   cout << F << endl;
-//   cout << "------ Fp -------" << endl;
-//   cout << Fp << endl;
-//   
-//   cout << "------------- V1 ----------------" << endl;
-//   cout << V1 << endl;
-  
-  
   this->order_star(V1.id);
   this->order_star(V2.id);
   this->order_star(V3.id);
@@ -579,12 +563,6 @@ void Mesh::edge_flip(int e)
   this->dual_area(V2.id);   this->dual_perimeter(V2.id);
   this->dual_area(V3.id);   this->dual_perimeter(V3.id);
   this->dual_area(V4.id);   this->dual_perimeter(V4.id);
-  
-//   cout << "########## after ##########" << endl;
-//   cout << "------ F -------" << endl;
-//   cout << F << endl;
-//   cout << "------ Fp -------" << endl;
-//   cout << Fp << endl;
     
 }
 
@@ -735,6 +713,13 @@ void Mesh::fc_jacobian(int f)
 **/
 void Mesh::update_face_properties()
 {
+  /*
+  for (unsigned int e = 0; e < m_boundary_edges.size(); e++)
+  {
+    Edge& E = m_edges[m_boundary_edges[e]];
+    if (m_vertices[E.from].n_faces < 3) m_vertices[E.from].attached = false;
+  }
+  m_obtuse_boundary.clear();
   for (int f = 0; f < m_nface; f++)
   {
     Face& face = m_faces[f];
@@ -744,18 +729,41 @@ void Mesh::update_face_properties()
     {
       for (int i = 0; i < face.n_sides; i++)
         if (m_edges[m_edges[face.edges[i]].pair].boundary) // Face is at the boundary if the pair of one of its half-edges is a boundary edge
-        { 
+        {
           face.boundary = true;
           break;
         }
       for (int i = 0; i < face.n_sides; i++)
-        if (!m_vertices[face.vertices[i]].boundary && face.get_angle(face.vertices[i]) < 0.0)
+      {
+        Edge& E = m_edges[face.edges[i]];
+        if (m_edges[E.pair].boundary && face.get_angle(this->opposite_vertex(E.id)) < 0.0)
         {
           face.obtuse = true;
+          if (!E.attempted_removal)
+            m_obtuse_boundary.push_back(E.pair);
           break;
         }
+      }
     }
   }
+  */
+  m_obtuse_boundary.clear();
+  for (unsigned int e = 0; e < m_boundary_edges.size(); e++)
+  {
+    Edge& E = m_edges[m_boundary_edges[e]];
+    Edge& Ep = m_edges[E.pair];
+    if (m_vertices[E.from].n_faces < 3) m_vertices[E.from].attached = false;
+    else m_vertices[E.from].attached = true;
+    Face& face = m_faces[Ep.face];
+    face.boundary = true;
+    if (face.get_angle(this->opposite_vertex(Ep.id)) < 0.0)
+    {
+      face.obtuse = true;
+      if (!E.attempted_removal)
+        m_obtuse_boundary.push_back(E.id);
+    }
+  }
+  
 }
 
 /*! Loop over all boundary faces. If the face is obtuse,
@@ -764,61 +772,14 @@ void Mesh::update_face_properties()
 */
 void Mesh::remove_obtuse_boundary()
 {
-  double min_l = 1e10, max_l = 0.0;
-  double avg_circle_radius = 0.0;
-  int cnt = 0;
   for (int e = 0; e < m_nedge; e++)
+    m_edges[e].attempted_removal = false;
+  this->update_face_properties();
+  while (m_obtuse_boundary.size() > 0)
   {
-    Edge& E = m_edges[e];
-    double edge_len = (m_vertices[E.from].r-m_vertices[E.to].r).len();
-    if (edge_len < min_l) min_l = edge_len;
-    if (edge_len > max_l) max_l = edge_len;
-    Face& face = m_faces[E.face];
-    if (!face.is_hole && !m_edges[E.pair].boundary)
-    {
-      this->compute_circumcentre(face.id);
-      avg_circle_radius += (m_vertices[face.vertices[0]].r-face.rc).len();
-      cnt++;
-    }
+    this->remove_edge_pair(*(m_obtuse_boundary.begin()));
+    this->update_face_properties();
   }
-  avg_circle_radius /= static_cast<double>(cnt);
-  
-  double l_max = m_lambda*(max_l - min_l) + min_l;   // remove all boundary edges longer that this
-  
-  bool done = false;
-  // First get rid of too long edges
-  while (!done)
-  {
-    done = true;
-    sort(m_boundary_edges.begin(), m_boundary_edges.end(), CompareEdgeLens(*this));
-    vector<int>::iterator it_e = m_boundary_edges.begin();
-    Edge& E = m_edges[*it_e];
-    double edge_len = (m_vertices[E.from].r-m_vertices[E.to].r).len();
-    if (edge_len > l_max)
-    {
-      this->remove_edge_pair(E.id);
-      done = false;
-      m_boundary_edges.erase(m_boundary_edges.begin());
-    }  
-  }
-  // Now get rid of too large circles
-  done = false;
-  while (!done)
-  {
-    done = true;
-    sort(m_boundary_edges.begin(), m_boundary_edges.end(), CompareRadii(*this));
-    vector<int>::iterator it_e = m_boundary_edges.begin();
-    Edge& E = m_edges[*it_e];
-    Face& face = m_faces[m_edges[E.pair].face];
-    double circle_radius = (m_vertices[face.vertices[0]].r-face.rc).len();
-    if (circle_radius > m_circle_param*avg_circle_radius)
-    {
-      this->remove_edge_pair(E.id);
-      done = false;
-      m_boundary_edges.erase(m_boundary_edges.begin());
-    }  
-  }
-  
 }
 
 /*! Find the factor to scale the native area with for the boundary vertices.
@@ -917,6 +878,97 @@ void Mesh::angle_factor_deriv(int v)
   
 }
 
+/*! Compute radius of a circumscribed circle 
+ *  \param f face id
+*/
+double Mesh::circum_radius(int f)
+{
+  Face& face = m_faces[f];
+  
+  if (face.n_sides > 3)
+    face.radius = 0.0;
+  else
+  {
+    face.radius = (m_vertices[face.vertices[0]].r-face.rc).len();
+  }
+  return face.radius;
+}
+
+/*! This member fucntion is used to produce data 
+ *  for plottin polygons into a VTK file.
+ *  \param boundary if true, include boundary vertices as well
+*/
+PlotArea& Mesh::plot_area(bool boundary)
+{
+  m_plot_area.points.clear();
+  m_plot_area.sides.clear();
+  m_plot_area.area.clear();
+  m_plot_area.perim.clear();
+  m_plot_area.circum_radius.clear();
+  map<int,int> bnd_vert;
+  map<int,int> face_idx;
+  vector<int> added_faces;
+  int idx = 0;
+  for (int v = 0; v < m_size; v++)
+  {
+    Vertex& V = m_vertices[v];
+    if (V.attached)
+      if (V.boundary && boundary)
+      {
+        bnd_vert[V.id] = idx++;
+        m_plot_area.points.push_back(V.r);
+        m_plot_area.circum_radius.push_back(0.0);
+      }
+  }
+  
+  idx = m_plot_area.points.size();
+  for (int v = 0; v < m_size; v++)
+  {
+    Vertex& V = m_vertices[v];
+    if (V.attached)
+      for (int f = 0; f < V.n_faces; f++)
+      {
+        Face& face = m_faces[V.faces[f]];
+        if (!face.is_hole)
+          if (find(added_faces.begin(),added_faces.end(),face.id) == added_faces.end())
+          {
+            m_plot_area.points.push_back(face.rc);
+            m_plot_area.circum_radius.push_back(this->circum_radius(face.id));
+            added_faces.push_back(face.id);
+            face_idx[face.id] = idx++;
+          }
+      }
+  }
+  
+  for (int v = 0; v < m_size; v++)
+  {
+    Vertex& V = m_vertices[v];
+    if (V.attached)
+    {
+      if (!V.boundary)
+      {
+        vector<int> sides;
+        for (int f = 0; f < V.n_faces; f++)
+          sides.push_back(face_idx[V.faces[f]]);
+        m_plot_area.sides.push_back(sides);
+        m_plot_area.area.push_back(this->dual_area(V.id));
+        m_plot_area.perim.push_back(this->dual_perimeter(V.id));
+      }
+      if (V.boundary && boundary)
+      {
+        vector<int> sides;
+        sides.push_back(bnd_vert[V.id]);
+        for (int f = 0; f < V.n_faces-1; f++)
+          sides.push_back(face_idx[V.faces[f]]);
+        m_plot_area.sides.push_back(sides);
+        m_plot_area.area.push_back(this->dual_area(V.id));
+        m_plot_area.perim.push_back(this->dual_perimeter(V.id));
+      }
+    }
+  }
+  
+  return m_plot_area;
+}
 
 // Private members
 
@@ -987,14 +1039,20 @@ void Mesh::remove_edge_pair(int e)
   Edge& Ep = m_edges[E.pair];
   vector<int> affected_vertices;   // Vertices that are affected by the removal and need reordering
  
+  E.attempted_removal = true;
+  Ep.attempted_removal = true;
   // We can only remove boundary edge pairs
-  if (!(E.boundary || Ep.boundary))
+  if (!E.boundary)
     return;
-    
+   
   // Get the face to be removed
-  Face& face = (Ep.boundary) ? m_faces[E.face] : m_faces[Ep.face];
+  Face& face = m_faces[Ep.face];
   // And its pair
-  Face& face_pair = (Ep.boundary) ? m_faces[Ep.face] : m_faces[E.face];
+  Face& face_pair = m_faces[E.face];
+  
+  assert(!face.is_hole);
+  assert(face_pair.is_hole);
+  assert(face.n_sides == 3);
   
   // Check is the face is regular (at least one of its vertices are internal)
   bool non_regular = true;
@@ -1024,6 +1082,9 @@ void Mesh::remove_edge_pair(int e)
   if (it != m_edge_map.end())
      m_edge_map.erase(it);
   
+  // Remove edge from the list of boundary edges
+  m_boundary_edges.erase(find(m_boundary_edges.begin(),m_boundary_edges.end(),E.id));
+  
   // Update edges and vertices for the face to be removed
   for (int v = 0; v < face.n_sides; v++)
   {
@@ -1037,11 +1098,11 @@ void Mesh::remove_edge_pair(int e)
     }
     affected_vertices.push_back(VV.id);
   }
-    
+  
   for (int e = 0; e < face.n_sides; e++)
   {
     Edge& EE = m_edges[face.edges[e]];
-    if (EE.id != E.id && EE.id != Ep.id)
+    if (EE.id != Ep.id)
     {
       EE.face = face_pair.id;
       EE.boundary = true;
@@ -1059,20 +1120,25 @@ void Mesh::remove_edge_pair(int e)
   
   // Remove first edge
   vector<Edge>::iterator it_e = find(m_edges.begin(), m_edges.end(), e1);
-  if (it_e != m_edges.end()) m_edges.erase(it_e);
+  assert(it_e != m_edges.end());
+  m_edges.erase(it_e);
   
   // Remove second edge
   it_e = find(m_edges.begin(), m_edges.end(), e2);
-  if (it_e != m_edges.end()) m_edges.erase(it_e);
+  assert(it_e != m_edges.end());
+  m_edges.erase(it_e);
   
   // Update total number of edges
+  assert(m_nedge == static_cast<int>(m_edges.size()) + 2);
   m_nedge = m_edges.size();
   
   // Remove face
   vector<Face>::iterator it_f = find(m_faces.begin(), m_faces.end(), f); 
-  if (it_f != m_faces.end())  m_faces.erase(it_f);
+  assert(it_f != m_faces.end());
+  m_faces.erase(it_f);
   
   // Update total number of faces
+  assert(m_nface == static_cast<int>(m_faces.size()) + 1);
   m_nface = m_faces.size();
   
   // Relabel edges
@@ -1098,17 +1164,18 @@ void Mesh::remove_edge_pair(int e)
   // Relabel vertex edge and face info
   for (int i = 0; i < m_size; i++)
   {
-     Vertex& V = m_vertices[i];
-     for (int ee = 0; ee < V.n_edges; ee++)
-     {
-        if (V.edges[ee] > e1 && V.edges[ee] < e2) 
-          V.edges[ee] -= 1;
-        else if (V.edges[ee] > e2)
-          V.edges[ee] -= 2;
-     }
-     for (int ff = 0; ff < V.n_faces; ff++)
-        if (V.faces[ff] > f) 
-          V.faces[ff]--;
+    Vertex& V = m_vertices[i];
+    assert(V.n_edges == V.n_faces);
+    for (int ee = 0; ee < V.n_edges; ee++)
+    {
+      if (V.edges[ee] > e1 && V.edges[ee] < e2) 
+        V.edges[ee] -= 1;
+      else if (V.edges[ee] > e2)
+        V.edges[ee] -= 2;
+    }
+    for (int ff = 0; ff < V.n_faces; ff++)
+      if (V.faces[ff] > f) 
+        V.faces[ff]--;
   }
   
   // Relabel edge_map info
@@ -1185,4 +1252,6 @@ void Mesh::order_boundary_star(int v)
   rotate(V.faces.begin(), V.faces.begin()+pos, V.faces.end());
   
 }
+
+
 

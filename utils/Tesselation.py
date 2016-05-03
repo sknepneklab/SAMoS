@@ -53,18 +53,21 @@ class Tesselation:
 		count=0
 		# Identify all neighbours and add them to a list. Keep i->j and j->i separate
 		# The label is in neighList, the particle numbers are in Ival and Jval
+		# Take these straight from the interaction now
+		dmax=self.conf.inter.dmax
+		mult=mult0*self.conf.inter.mult
 		#if self.conf.monodisperse:
-		if self.conf.param.potential=='soft':
-			dmax=2*self.conf.sigma
-			mult0=1.0*mult0
-			print dmax
-		elif self.conf.param.potential=='morse':
-			re=self.conf.param.pot_params['re']
-			dmax=2*self.conf.sigma
-			mult0=re*mult0
-		else:
-			dmax=2*self.conf.sigma
-			print "Warning: unimplemented potential, defaulting to maximum contact distance 2 if not otherwise specified"
+		#if self.conf.param.potential=='soft':
+			#dmax=2*self.conf.inter.sigma
+			#mult0=1.0*mult0
+			#print dmax
+		#elif self.conf.param.potential=='morse':
+			#re=self.conf.param.pot_params['re']
+			#dmax=2*self.conf.iner.sigma
+			#mult0=re*mult0
+		#else:
+			#dmax=2*self.conf.sigma
+			#print "Warning: unimplemented potential, defaulting to maximum contact distance 2 if not otherwise specified"
 		print "Max distance: "+ str(dmax)	
 		print "Initial multiplier " + str(mult0)
 		for i in range(len(self.rval)):

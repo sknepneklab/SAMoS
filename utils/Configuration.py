@@ -44,7 +44,7 @@ except:
 	pass
 
 class Configuration:
-	def __init__(self,param,filename,debug=False):
+	def __init__(self,param,filename,ignore=False,debug=False):
 		self.param=param
 		# Read the local data
 		geometries={'sphere':GeometrySphere,'plane':GeometryPeriodicPlane,'none':Geometry,'tube':GeometryTube,'peanut':GeometryPeanut,'hourglass':GeometryHourglass}
@@ -79,7 +79,7 @@ class Configuration:
 		self.geom=geometries[param.constraint](param)
 		print self.geom
 		# Create the Interaction class
-		self.inter=Interaction(self.param,self.radius)
+		self.inter=Interaction(self.param,self.radius,ignore)
 		
 		if self.geom.periodic:
 			# Apply periodic geomtry conditions just in case (there seem to be some rounding errors floating around)

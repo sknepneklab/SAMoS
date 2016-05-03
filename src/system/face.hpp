@@ -44,13 +44,16 @@
 #include <string>
 #include <algorithm>
 #include <stdexcept>
+#include <cassert>
 
 #include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "vector3d.hpp"
 #include "matrix3d.hpp"
 
 using boost::format;
+using boost::lexical_cast;
 using std::ostream;
 using std::string;
 using std::vector;
@@ -65,7 +68,18 @@ struct Face
 {
   //! Construct a Face object
   //! \param id face id
-  Face(int id) : id(id), n_sides(0), edge_face(false), ordered(false), type(1), is_hole(false), boundary(false), obtuse(false), area(0.0), rc(0,0,0) {   }
+  Face(int id) : id(id), 
+                 n_sides(0),
+                 edge_face(false),
+                 ordered(false),
+                 type(1), 
+                 is_hole(false), 
+                 boundary(false), 
+                 obtuse(false),
+                 area(0.0),
+                 radius(0.0),
+                 rc(0,0,0)
+                 {   }
   
   ~Face()
   {
@@ -122,6 +136,7 @@ struct Face
   //! \param v vertex index
   double get_angle(int v)
   {
+     assert(n_sides == 3);
      for(int i = 0; i < n_sides; i++)
        if (vertices[i] == v)
          return angles[i];
@@ -132,9 +147,10 @@ struct Face
   //! \param v id of the vertex
   Matrix3d& get_jacobian(int v)
   {
+    assert(n_sides == 3);
     for (unsigned int i = 0; i < vertices.size(); i++)
       if (vertices[i] == v) return drcdr[i];
-    throw runtime_error("Error in Jacobian. Vertex does not belong to the face.");
+    throw runtime_error("Error in Jacobian. Vertex "+lexical_cast<string>(v)+" does not belong to face "+lexical_cast<string>(id)+".");
   }
   
   //! Compare if the id of the face is equal to an integer value
@@ -153,6 +169,7 @@ struct Face
   bool boundary;               //!< Face is boundary is one of its edges is boundary
   bool obtuse;                 //!< Face is obtuse if one of its angles is larger than pi/2
   double area;                 //!< Area of the face
+  double radius;               //!< Radius of the circumscribed circle
   
   Vector3d rc;                 //!< Coordiantes of geometric centre of the face
   
