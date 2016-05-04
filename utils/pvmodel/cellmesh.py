@@ -31,10 +31,14 @@ def diagnose(mesh):
     print 'nvertices', mesh.n_vertices()
     print 'nfaces', mesh.n_faces()
 
+debug = False
+
 # Start of feature code
 class PVmesh(object):
 
     def __init__(self, tri):
+
+        self.debug = False
 
         self.tri = tri
         # the edge mesh (dual mesh)
@@ -42,27 +46,29 @@ class PVmesh(object):
 
         # openmesh doesn't store edge lengths?
         self.tri_lvecprop =  self._helengths(self.tri)
-        print
-        print 'trimesh'
-        diagnose(self.tri)
+        if self.debug:
+            print
+            print 'trimesh'
+            diagnose(self.tri)
 
         self.boundary = True
         # halfcells = {trimesh.idx() : [mesh vhids] } # should be correctly ordered
         self.halfcells = {}
 
         self._dual()
-        print 
-        print 'mesh'
-        diagnose(self.mesh)
+        if self.debug:
+            print 
+            print 'mesh'
+            diagnose(self.mesh)
 
-        print 'Calculating edge lengths for mesh'
+        if self.debug: print 'Calculating edge lengths for mesh'
         self.mesh_lvecprop = self._helengths(self.mesh)
 
         # Set face normal to e_z
         self.normal = np.array([0,0,1])
         #scatter(self.mesh, self.tri)
 
-        print 'Calculating Area and perimeter'
+        if self.debug: print 'Calculating Area and perimeter'
         self._set_face_properties()
 
         self.s_stress = 1
@@ -100,15 +106,17 @@ class PVmesh(object):
             if is_boundary_he(mesh, heh):
                 #print 'found boundary edge for vhid', vh.idx()
                 start_he = heh
+                break
         assert start_he is not None
-        he_i = start_he
-        def iterable(he_i, start_he, mesh):
+        #print 'starting iteration on', start_he.idx()
+        def iterable(start_he, mesh):
+            he_i = start_he
             while True:
                 yield he_i
                 he_i = mesh.next_halfedge_handle(he_i)
-                if he_i.idx() is start_he.idx():
+                if he_i.idx() == start_he.idx():
                     raise StopIteration
-        return iterable(he_i, start_he, mesh)
+        return iterable(start_he, mesh)
 
     def iterate_boundary_vertex(self, tri, hehp):
         assert tri.is_boundary(hehp)
@@ -122,7 +130,6 @@ class PVmesh(object):
         return facels
 
     def _dual(self):
-        print 'calculating the dual'
         self.mesh = PolyMesh()
 
         lambda_prop = FPropHandle()
@@ -185,6 +192,10 @@ class PVmesh(object):
                     self.boundaries.append([])
                     self.b_nheh.append([])
                     for heh in self.iterable_boundary(self.tri, vh):
+
+                        #print 'looping along boundary', heh.idx()
+
+                        #print 'adding' , self.tri.from_vertex_handle(heh).idx() 
                         self.boundaries[-1].append( self.tri.from_vertex_handle(heh).idx() )
                         self.b_nheh[-1].append(heh)
                 self.tri.set_property(self.boundary_prop, vh, bval)
@@ -374,7 +385,6 @@ class PVmesh(object):
         tri.add_property(enprop, 'energy')
 
         # Iterate over faces
-        print 'calculating energies for each face'
         tenergy = 0
         for vh in tri.vertices():
             prefarea = tri.property( self.prefareaprop, vh )
@@ -476,9 +486,14 @@ class PVmesh(object):
 
         # For calculating derivative of area for boundary cells 
         for boundary in self.boundaries:
+            print boundary
             for j, vhid in enumerate(boundary):
                 mvhid = self.btv_bmv[vhid]
                 drmudrp[mvhid] = {}
+
+                #print 'extra drmudrp', mvhid, vhid
+                #if mvhid == 2122 or vhid == 1015:
+                    #print 'extra drmudrp', mvhid, vhid
                 drmudrp[mvhid][vhid] = np.identity(3)
 
         #alias
@@ -499,6 +514,7 @@ class PVmesh(object):
         loops = {}
         for vh in tri.vertices():
             loops[vh.idx()] = loop(vh)
+        #io.stddict(loops)
         # Calculate loop interesctions
         # {vhi:{vhj:set(v1_idx,v2_idx..)}}
         # It's natural to use sets and the intersect() method for dealing with loops
@@ -631,8 +647,6 @@ class PVmesh(object):
                                 * rmmultiply( rmu/nrmu, drmudrp[mu][nnvhid] ) )
                         deriv_X = dzX
 
-                        #assert mu not in dzetadr[vhid][nnvhid] # should be unique set of keys
-                        #print 'assigning', vhid, nnvhid, mu
                         dzetadr[vhid][nnvhid][mu] = pre_fac * deriv_X
                     #dzetadr[vhid][nnvhid] = pre_fac * deriv_X
                     
@@ -673,9 +687,13 @@ class PVmesh(object):
             # dAdrp and dPdrp
             for mu in loops[trivhid]:
                 r_mu_vh = idtopt(mesh, mu) - trivhpt # precalculate these
-                ac = rmmultiply(dAdrmu[trivhid][mu], drmudrp[mu][fhidx])
-                pc = rmmultiply(dPdrmu[trivhid][mu], drmudrp[mu][fhidx])
-                lc = rmmultiply(dLdrmu[trivhid][mu], drmudrp[mu][fhidx])
+                if trivhid == 1015: print trivhid, mu, fhidx
+
+                dAdrmu[trivhid][mu]
+                drmudrp[mu][trivhid]
+                ac = rmmultiply(dAdrmu[trivhid][mu], drmudrp[mu][trivhid])
+                pc = rmmultiply(dPdrmu[trivhid][mu], drmudrp[mu][trivhid])
+                lc = rmmultiply(dLdrmu[trivhid][mu], drmudrp[mu][trivhid])
                 if boundary: # angle defecit contribution
                     if mu in dzetadr[trivhid][trivhid]:
                         zetat = dzetadr[trivhid][trivhid][mu] * prefarea
@@ -717,9 +735,9 @@ class PVmesh(object):
                 nnboundary = tri.is_boundary(nnvh)
                 for mu in vidset:
                     r_mu_vh = idtopt(mesh, mu) - trivhpt
-                    ac = np.einsum('n,nm->m', dAdrmu[vhnn][mu], drmudrp[mu][fhidx])
-                    pc = np.einsum('n,nm->m', dPdrmu[vhnn][mu], drmudrp[mu][fhidx])
-                    lc = np.einsum('n,nm->m', dLdrmu[vhnn][mu], drmudrp[mu][fhidx])
+                    ac = np.einsum('n,nm->m', dAdrmu[vhnn][mu], drmudrp[mu][trivhid])
+                    pc = np.einsum('n,nm->m', dPdrmu[vhnn][mu], drmudrp[mu][trivhid])
+                    lc = np.einsum('n,nm->m', dLdrmu[vhnn][mu], drmudrp[mu][trivhid])
                     if nnboundary:
                         vht = mu in dzetadr[vhnn][trivhid]
                         if vht:
@@ -779,9 +797,10 @@ class PVmesh(object):
         area = np.array(rdat.data[keys['area']])
         #rvals = np.column_stack([x, y, z])
         rvals = np.column_stack([x, y, z])
-        print 'number of cells', rvals.shape[0]
         dd = Delaunay(rvals[:,:2], qhull_options='')
-        print 'number of points in trimesh', dd.points.shape[0]
+        if debug:
+            print 'number of cells', rvals.shape[0]
+            print 'number of points in trimesh', dd.points.shape[0]
 
         tri = TriMesh()
         prefareaprop = VPropHandle()
