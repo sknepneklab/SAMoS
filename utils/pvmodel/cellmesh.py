@@ -15,9 +15,6 @@ from collections import OrderedDict
 from scipy.spatial import Delaunay
 from read_data import ReadData
 
-
-from QET.qet import QET
-
 from math import pi 
 
 import sys
@@ -34,6 +31,57 @@ def diagnose(mesh):
 debug = False
 
 # Start of feature code
+
+# define a method for finding all the intersections of bonds with a circle
+def bond_intersection(x_c, wl, bond, x_a):
+    # x_c circle centre
+    # wl circle radius
+    # bond is the vector from particle x_a to particle x_b
+    # x_a is the position of particle a, 
+    # x_a is going to be the second vertex in the bond pairs
+
+    x_b = bond + x_a # just give the points, not the bonds, todo
+    nca = norm(x_c - x_a)
+    ncb = norm(x_c - x_b)
+    if nca < wl and ncb < wl:
+        return norm(bond)
+
+    def line(m):
+        return m*bond + x_a
+    # using formula for quadratic ax^2 + bx + c = 0
+    a = np.dot(bond, bond)
+    b = 2 * np.dot(bond, x_a-x_c)
+    c = np.dot(x_c,x_c) + np.dot(x_a,x_a) -2*np.dot(x_c,x_a) - wl**2
+    disc = b**2 - 4 * a * c
+    if disc <= 0:
+        return None 
+    else:
+        bondl = None
+        sdisc = np.sqrt(disc)
+        m_plus = (-b + sdisc)/(2*a)
+        m_minus = (-b - sdisc)/(2*a)
+        # worry about the exactly which of these should be >,< and >=,<=
+        if nca < wl and ncb >= wl:
+            # m_plus and m_minus should be one positive one negative in these two cases
+            m = m_plus if m_plus > 0 else m_minus
+            y= line(m)
+            bondl = norm(y - x_a)
+        elif ncb < wl and nca >= wl:
+            m_plus = abs(m_plus); m_minus = abs(m_minus)
+            m = m_plus if m_plus < m_minus else m_minus
+            y = line(m)
+            bondl = norm(y - x_b)
+        elif nca >= wl and ncb >= wl:
+            y_m = line(m_minus)
+            y_p = line(m_plus)
+            bondl = norm(y_p - y_m)
+            
+        if bondl is None:
+            sys.exit('failed to determine bond intersection')
+        return bondl
+
+
+# The main object for operating on the cell mesh.
 class PVmesh(object):
 
     def __init__(self, tri):
@@ -71,7 +119,20 @@ class PVmesh(object):
         if self.debug: print 'Calculating Area and perimeter'
         self._set_face_properties()
 
-        self.s_stress = 1
+        self.forces = False
+        self.is_stress_setup = False
+        self.stress = None
+
+        # Use these through out the code in the future instead of idotpt(mesh, v_handle)
+        # So 0 corresponds to the triangulation and 1 corresponts to the vertex mesh
+        self.meshes = {}
+        self.meshes[0] = self.tri
+        self.meshes[1] = self.mesh
+        self.tript = self._pythonise(self.tri)
+        self.meshpt = self._pythonise(self.mesh)
+        self.ptmesh = {}
+        self.ptmesh[0] = self.tript
+        self.ptmesh[1] = self.meshpt
         
     def _helengths(self, tri):
         # store half edge vectors as half edge property
@@ -87,13 +148,11 @@ class PVmesh(object):
             npvt = omvec(tri.point(vt))
             npvf = omvec(tri.point(vf))
             vedge = npvt - npvf
-
             tri.set_property(lvecprop, heh, vedge)
             tri.set_property(lvecprop, heho, -vedge)
             
         return lvecprop
        
-
     # How about some tools for dealing with openmesh objects and triangulation
     def iterable_boundary(self, mesh, vh):
         vhidstart = vh.idx()
@@ -243,8 +302,6 @@ class PVmesh(object):
 
                 self.btv_bmv[vhid] = mvh.idx()
                 self.vh_mf[vhid] = mfh.idx()
-
-                
 
     def _set_face_properties(self):
         # organise the properties we will use
@@ -656,7 +713,7 @@ class PVmesh(object):
         a_stress = OrderedDict()
         p_stress = OrderedDict()
         l_stress = OrderedDict()
-        self.stress = stress = OrderedDict()
+        stress = OrderedDict()
         
         for trivh in tri.vertices():
             fh = self.mesh.face_handle(trivh.idx())
@@ -762,7 +819,213 @@ class PVmesh(object):
 
             stress[trivhid] = a_stress[trivhid] + p_stress[trivhid]
 
+        self.n_stress = stress
+        self.forces = True
 
+    def _pythonise(self, mesh):
+        meshpt = {}
+        for vh in mesh.vertices():
+            meshpt[vh.idx()] = omvec(mesh.point(vh))
+        return meshpt
+
+    def _construct_bonds(self):
+        tript = self.tript; meshpt = self.meshpt
+        bonds = {}
+        self.bonds = bonds
+        for vhi in self.tri.vertices():
+            i = vhi.idx()
+            for vhnu in self.loop(vhi):
+                nu = vhnu
+                bonds[frozenset([(0,i),(1,nu)])] = tript[i] - meshpt[nu]
+        for eh in self.mesh.edges():
+            heh = self.mesh.halfedge_handle(eh, 0)
+            nu = self.mesh.to_vertex_handle(heh).idx()
+            mu = self.mesh.from_vertex_handle(heh).idx()
+            r_nu_mu = meshpt[nu] - meshpt[mu]
+            bonds[frozenset([(1,nu),(1,mu)])] = r_nu_mu
+
+    def _calculate_dEdlength(self):
+        # because we split the bonds into separate dictionaries
+        # we need to do the same here.
+        tri = self.tri; mesh = self.mesh
+        tript = self.tript; meshpt = self.meshpt
+        bonds = self.bonds
+
+        # in order to manage cell areas lets create a little mesh for each cell
+        cell_polygon ={}
+        polygon_l = {}
+        polygon_s = {}
+        for vhi in tri.vertices():
+            p = vhi.idx()
+            ipt = tript[p]
+            pts = []
+            # we assume this loop orders the points counter-clockwise as they should be
+            loop = self.loop(vhi)
+            for vhnu in loop:
+                nupt = meshpt[vhnu]
+                pts.append(nupt)
+            nupts = np.vstack(pts)
+
+            polygon = TriMesh()
+            # map the new single cell mesh vertices back onto our meshes
+            # we have to keep track of which mesh our ids belong to 
+            # {new_mesh_id: ('t', old_mesh_id)
+            pullback = {} 
+            lnupts = len(nupts)
+            mverts = np.array(np.zeros(lnupts+1),dtype='object')
+            mv = polygon.add_vertex(TriMesh.Point(*ipt))
+            mverts[0] = mv
+            pullback[mv.idx()] = (0, p)
+
+            for i, (vhnu, v) in enumerate(zip(loop, nupts)):
+                mv = polygon.add_vertex(TriMesh.Point(*v))
+                mverts[i+1] = mv
+                pullback[mv.idx()] = (1, vhnu)
+            simplices = np.zeros((lnupts, 3),dtype=int)
+            for i, (nu, mu) in enumerate(zip(mverts[1:], np.roll(mverts[1:], -1, axis=0))):
+                simplices[i,0] = 0
+                simplices[i,1] = nu.idx()
+                simplices[i,2] = mu.idx()
+            for f in simplices:
+                polygon.add_face(list(mverts[f]))
+            # semi perimeters and lengths should be precalculated
+            polygon_l[p] = {}
+            for eh in polygon.edges():
+                heh = polygon.halfedge_handle(eh, 0)
+                av= polygon.from_vertex_handle(heh)
+                bv= polygon.to_vertex_handle(heh)
+
+                a = norm(omvec(polygon.point(av) -polygon.point(bv)))
+                polygon_l[p][frozenset([av.idx(),bv.idx()])] = \
+                    norm(omvec(polygon.point(av) -polygon.point(bv)))
+            polygon_s[p]= {}
+            for fh in polygon.faces():
+                s = 0.
+                for heh in polygon.fh(fh):
+                    av= polygon.from_vertex_handle(heh)
+                    bv= polygon.to_vertex_handle(heh)
+                    s += polygon_l[p][frozenset([av.idx(),bv.idx()])]
+                polygon_s[p][fh.idx()] = s/2.
+            cell_polygon[p] = (polygon, pullback)
+
+
+        dEdbond = {}
+        for vhi in tri.vertices():
+            i = vhi.idx()
+
+            kp = tri.property(self.kprop, vhi)
+            gammap = tri.property(self.gammaprop, vhi)
+            area = tri.property(self.areaprop, vhi)
+            prim = tri.property(self.primprop, vhi)
+            prefarea = self.tri.property(self.prefareaprop, vhi)
+            
+            pre = kp*(area - prefarea)
+            # pick out triangles
+            polygon, pullback = cell_polygon[i]
+            for eh in polygon.edges():
+                heh = polygon.halfedge_handle(eh,0)
+                heho = polygon.halfedge_handle(eh,1)
+                av = polygon.from_vertex_handle(heh)
+                bv = polygon.to_vertex_handle(heh)
+                avid = av.idx(); bvid = bv.idx()
+                m_avid = pullback[avid]; m_bvid = pullback[bvid]
+                #avidk = (0, m_avid) if avid == 0 else (1, m_avid)
+                #bvidk = (1, m_bvid) if bvid == 0 else (1, m_bvid)
+                avidk = m_avid; bvidk = m_bvid
+                bondk = frozenset([avidk, bvidk])
+
+                # add contributions from two faces if they exist
+                f0= polygon.face_handle(heh)
+                f1 = polygon.face_handle(heho)
+                dAdbond = 0.
+                for f in [f0, f1]:
+                    fid = f.idx()
+                    if fid == -1:
+                        continue #no face here
+                    dsemi = polygon_s[i][fid]
+                    s = np.sqrt(dsemi)
+                    preA = 1/(2. * s)
+                    vhs = [fv.idx() for fv in polygon.fv(f)]
+
+                    bond_pairs = map(frozenset, zip(vhs, np.roll(vhs, -1)))
+                    lls = [polygon_l[i][bp] for bp in bond_pairs]
+                    # derivative with respect to the length dl
+                    dl = bond_pairs.index(frozenset([avid,bvid]))
+                    a, b, c = np.roll(lls, -dl)
+                    #assert a == norm(omvec(polygon.point(av) - polygon.point(bv)))
+
+                    sa = s - a; sb = s - b; sc = s - c
+                    dDdbond = 1/2. *  ( a*a*sb*sc + s*sa*sc + s*sa*sb )
+                    dAdbond += preA * dDdbond
+
+                if bondk not in dEdbond:
+                    dEdbond[bondk] = 0.
+                dEdbond[bondk] += pre * dAdbond
+        self.dEdbond = dEdbond
+
+    def _stress_setup(self):
+        self._construct_bonds()
+        self._calculate_dEdlength()
+        self.lmax = max(map(norm, self.bonds.values()))
+        self.is_stress_setup = True
+
+    def calculate_stress(self, x_c, wl):
+        # wl is the smoothing length
+        # x_c the point about which we calculate stress
+
+        # perhaps we should construct python dictionaries for retrieving mesh points and lengths
+        mesh = self.mesh; tri = self.tri
+        tript, meshpt= self.tript, self.meshpt
+        # lets map all the bonds
+        if not self.is_stress_setup:
+            self._stress_setup()
+        bonds = self.bonds 
+        # worth finding the maximum length 
+        lmax = self.lmax
+
+        # Need to cut out all the bonds which are too far away to be worth checking. Efficiently.
+        stress = np.zeros((3,3))
+        dEdbond = self.dEdbond
+        for bondk in bonds.keys(): 
+            # The 't' type of bond identifies ibonds and nubonds
+            (ta, a), (tb, b) = bondk
+            pta = self.ptmesh[ta][a]
+            ptb = self.ptmesh[tb][b]
+            if norm(pta - x_c) > lmax and norm(ptb - x_c) > lmax:
+                continue
+            else:
+                #bondv = ibonds[bond] if t == 0 else nubonds[bond]
+                bondv = pta-ptb
+                bondl = bond_intersection(x_c, wl, bondv, ptb)
+                if bondl is not None:
+                    # Non-zero stress contribution
+
+                    # Because we havent carefully considered boundaries bondl and likewise bondv
+                    # hack this, Todo
+                    #if bondl == 0. or norm(bondv) == 0.: continue
+                    if norm(bondv) == 0.:
+                        continue
+                        print bondk
+
+                    bondv_hat = bondv/norm(bondv)
+                    stress += dEdbond[bondk] * bondl * np.outer(bondv_hat, bondv)
+                    #print dEdbond[bondk]
+                    #print stress
+        stress /= -1./(pi * wl**2)
+        pressure = np.trace(stress)
+        return stress
+        #print stress
+    def stress_on_centres(self, wl):
+
+        stress = {} # wipe out previous stress in force calculation if it exists
+        for vhi in self.tri.vertices():
+            i = vhi.idx()
+            if i % 10 == 0:
+                print 'Made it to vertex', i
+            ipt = self.tript[i]
+            stress[i] = self.calculate_stress(ipt, wl)
+            #print stress[i][:2,:2]
+        self.stress= stress
 
     def out_force_energy(self, outfile):
         # Still aren't explicitely handling the particle ids as we should be (?)
@@ -821,7 +1084,7 @@ class PVmesh(object):
 if __name__=='__main__':
 
     print '-----------------------'
-    print 'If you just want to run the analysis then use commander.py'
+    print 'If you just want to run the analysis then use analyse_cells.py'
     print '-----------------------'
 
     epidat = '/home/dan/cells/run/soft_rpatch/epithelial_equilini.dat'
@@ -856,23 +1119,31 @@ if __name__=='__main__':
     pv.set_constants(K, Gamma, cl)
 
     pv.calculate_energy()
-    pv.calculate_forces()
+    #pv.calculate_forces()
+    #pv.calculate_stress(np.zeros(3), 1.)
+    pv._stress_setup()
+    pv.stress_on_centres(1.)
 
     outdir = args.dir
 
+    if pv.forces:
+        mout = path.join(outdir, 'cellmesh.vtp')
+        wr.writemeshenergy(pv, mout)
 
-    mout = path.join(outdir, 'cellmesh.vtp')
-    wr.writemeshenergy(pv, mout)
+        tout = path.join(outdir, 'trimesh.vtp')
+        wr.writetriforce(pv, tout)
 
-    tout = path.join(outdir, 'trimesh.vtp')
-    wr.writetriforce(pv, tout)
+    if pv.stress:
+        sout = path.join(outdir, 'hardy_stress.vtp')
+        wr.write_stress_ellipses(pv, sout)
 
-    sout = path.join(outdir, 'stresses.vtp')
-    wr.write_stress_ellipses(pv, sout)
+
+    #sout = path.join(outdir, 'stresses.vtp')
+    #wr.write_stress_ellipses(pv, sout)
 
     # Dump the force and energy
-    fef = path.join(outdir, 'force_energy.dat')
-    pv.out_force_energy(fef)
+    #fef = path.join(outdir, 'force_energy.dat')
+    #pv.out_force_energy(fef)
 
 
 

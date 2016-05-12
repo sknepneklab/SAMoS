@@ -160,16 +160,16 @@ def writemeshenergy(pv, outfile):
     writer.SetDataModeToAscii()
     writer.Write()
 
-def get_internal_stress(pv):
+def get_internal_stress(pv, pvstress):
     stress = OrderedDict()
     for vh in pv.tri.vertices():
         boundary = pv.tri.is_boundary(vh)
         if not boundary:
-            stress[vh.idx()] = pv.stress[vh.idx()]
+            stress[vh.idx()] = pvstress[vh.idx()]
     return stress
 
 # take an openmesh object and write it as .vtk with faces
-def writetriforce(pv, outfile):
+def writetriforce(pv, outfile, stress=True):
 
     tri = pv.tri
 
@@ -195,8 +195,9 @@ def writetriforce(pv, outfile):
 
     # Stress calculation fails for boundaries
     # Stress at boundaries is not symmetric
-    stress = get_internal_stress(pv)
-    evalues, evectors = eig(stress.values())
+    if stress:
+        stress = get_internal_stress(pv, pv.n_stress)
+        evalues, evectors = eig(stress.values())
     #io.stddict(pv.stress)
     #print evalues
     #print 
@@ -210,14 +211,15 @@ def writetriforce(pv, outfile):
 
         idtriv.InsertNextValue(vh.idx())
         force.InsertNextTuple3(*fov)
-        if not pv.tri.is_boundary(vh):
-            s_1 = evalues[vhid][0] * evectors[vhid][0]
-            s_2 = evalues[vhid][1] * evectors[vhid][1]
-            stress_1.InsertNextTuple3(*s_1)
-            stress_2.InsertNextTuple3(*s_2)
-        else:
-            stress_1.InsertNextTuple3(*np.zeros(3))
-            stress_2.InsertNextTuple3(*np.zeros(3))
+        if stress:
+            if not pv.tri.is_boundary(vh):
+                s_1 = evalues[vhid][0] * evectors[vhid][0]
+                s_2 = evalues[vhid][1] * evectors[vhid][1]
+                stress_1.InsertNextTuple3(*s_1)
+                stress_2.InsertNextTuple3(*s_2)
+            else:
+                stress_1.InsertNextTuple3(*np.zeros(3))
+                stress_2.InsertNextTuple3(*np.zeros(3))
 
     for fh in tri.faces():
         vhids = []
@@ -237,8 +239,9 @@ def writetriforce(pv, outfile):
 
     polydata.GetPointData().AddArray(idtriv)
     polydata.GetPointData().AddArray(force)
-    polydata.GetPointData().AddArray(stress_1)
-    polydata.GetPointData().AddArray(stress_2)
+    if stress:
+        polydata.GetPointData().AddArray(stress_1)
+        polydata.GetPointData().AddArray(stress_2)
 
     polydata.Modified()
     vtk_write(polydata, outfile)
@@ -261,7 +264,7 @@ def add_ellipse(Points, evals, shift, R, res):
         Points.InsertNextPoint(xe + x, xy + y, 0.)
         #print 'inserting point', xe + x, xy + y, 0.
  
-def write_stress_ellipses(pv, outfile, res=20):
+def write_stress_ellipses(pv, outfile, pvstress, res=20):
     alpha = 1. # scaling factor
 
     Points = vtk.vtkPoints()
@@ -269,8 +272,14 @@ def write_stress_ellipses(pv, outfile, res=20):
     e_x = np.array([1., 0., 0.])
 
     # calculate principle stresses
-    stress = get_internal_stress(pv)
+    stress = get_internal_stress(pv, pvstress)
     evalues, evectors = eig(stress.values())
+
+    #maxe1 =max(map(abs, list(evalues[:][0])))
+    #maxe2 =max(map(abs, list(evalues[:][1])))
+    #normf = maxe1
+    normf= 1.
+
     ells = vtk.vtkCellArray()
     for vhid, _  in enumerate(evalues):
         vh = pv.tri.vertex_handle(vhid)
@@ -280,24 +289,21 @@ def write_stress_ellipses(pv, outfile, res=20):
         # cut down to two dimensions 
         shift =  pt[:2]
         evals =  evalues[vhid][:2]
-        a, b, = evals
+        av, bv, = evals
+        a, b = av/normf, bv/normf
         ea, eb, _ = evectors[vhid]
         theta = np.arccos(np.dot(e_x, ea)) 
         sg = 1. if np.dot(np.cross(e_x, ea),pv.normal) > 0 else -1.
         R = rotation_2d(sg * theta)  
-        add_ellipse(Points, evals, shift, R, res)
+        add_ellipse(Points, (a,b), shift, R, res)
 
         polyline = vtk.vtkPolyLine()
         polyline.GetPointIds().SetNumberOfIds(res)
         ptstart = vhid*res
         for j, ptj in enumerate(range(ptstart, ptstart + res)):
-            #print 'setting ids', vhid, j
-            #print j, ptj
             polyline.GetPointIds().SetId(j, ptj)
 
         ells.InsertNextCell(polyline)
-        #print vhid
-        #break
 
     polydata = vtk.vtkPolyData()
     polydata.SetPoints(Points)

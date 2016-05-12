@@ -14,12 +14,12 @@ if __name__=='__main__':
 
     import argparse
 
-    from writemesh import *
+    import writemesh as wr
     import os.path as path
 
     parser = argparse.ArgumentParser()
  
-    parser.add_argument("-i", "--input", type=str, default=epidat, help="Input dat file")
+    parser.add_argument("-i", "--input", type=str, default='cell*.dat', help="Input dat file")
     parser.add_argument("-d", "--dir", type=str, default='/home/dan/tmp/', help="Output directory")
     #parser.add_argument("-o", "--output", type=str, default=epidat, help="Input dat file")
     args = parser.parse_args()
@@ -58,24 +58,31 @@ if __name__=='__main__':
         pv.set_constants(K, Gamma, cl)
 
         pv.calculate_energy()
-        print 'Calculating forces and stresses'
-        pv.calculate_forces()
+        #pv.calculate_forces()
+
+        wl = 1.
+        pv._stress_setup()
+        pv.stress_on_centres(wl)
 
         outdir = args.dir
 
-        cell_outname = 'cell_dual_' + outnum+ '.vtp'
-        mout = path.join(outdir, cell_outname)
-        writemeshenergy(pv, mout)
+        if pv.forces:
+            cell_outname = 'cell_dual_' + outnum+ '.vtp'
+            mout = path.join(outdir, cell_outname)
+            wr.writemeshenergy(pv, mout)
 
-        tri_outname = 'cell_' + outnum + '.vtp'
-        tout = path.join(outdir, tri_outname)
-        writetriforce(pv, tout)
+            tri_outname = 'cell_' + outnum + '.vtp'
+            tout = path.join(outdir, tri_outname)
+            wr.writetriforce(pv, tout)
+            
+            naive_stress = 'naive_stress_' + outnum + '.vtp'
+            sout = path.join(outdir, naive_stress)
+            wr.write_stress_ellipses(pv, sout, pv.n_stress)
 
-
-        # Dump the force and energy
-        #fef = 'force_energy.dat'
-        #fefo = path.join(outdir, fef)
-        #pv.out_force_energy(fefo)
-
+        if pv.stress:
+            stress_outname = 'hardy_stress_' + outnum + '.vtp'
+            sout = path.join(outdir, stress_outname)
+            wr.write_stress_ellipses(pv, sout, pv.stress)
+            #stddict(pv.stress)
 
 

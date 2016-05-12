@@ -9,8 +9,6 @@ import sys
 
 from collections import OrderedDict
 
-
-
 # Triangulation needs positions and associated areas 
 def makeout(rvals, parea):
     outd = OrderedDict()
@@ -52,7 +50,6 @@ def single(nsides,prefarea=5., origin=[0.,0.,0.]):
     return outd
 single.defaults = [6]
 single.call = ['single( nsides )']
-
 
 
 if __name__=='__main__':
