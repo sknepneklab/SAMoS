@@ -2,7 +2,7 @@
 from openmesh import *
 import writemesh as wr
 import ioutils as io
-
+from ioutils import omvec, idtopt
 
 import numpy as np
 from numpy.linalg import norm
@@ -16,17 +16,25 @@ from scipy.spatial import Delaunay
 from read_data import ReadData
 
 from math import pi 
-
 import sys
+
+# Samos
+from CellList2D import CellList2D
 
 # debugging 
 
-from ioutils import *
 
 def diagnose(mesh):
     print 'nedges', mesh.n_edges()
     print 'nvertices', mesh.n_vertices()
     print 'nfaces', mesh.n_faces()
+
+from matplotlib import pyplot as plt
+def scat(xyz):
+    #xyz = np.array([self.meshpt[a] for a in list(self.bulk_edge)])
+    plt.scatter(xyz[:,0],xyz[:,1])
+    plt.show()
+
 
 debug = False
 
@@ -114,7 +122,6 @@ class PVmesh(object):
 
         # Set face normal to e_z
         self.normal = np.array([0,0,1])
-        #scatter(self.mesh, self.tri)
 
         if self.debug: print 'Calculating Area and perimeter'
         self._set_face_properties()
@@ -128,6 +135,7 @@ class PVmesh(object):
         self.meshes = {}
         self.meshes[0] = self.tri
         self.meshes[1] = self.mesh
+        # perhaps we should construct python dictionaries for retrieving mesh points and lengths
         self.tript = self._pythonise(self.tri)
         self.meshpt = self._pythonise(self.mesh)
         self.ptmesh = {}
@@ -177,6 +185,19 @@ class PVmesh(object):
                     raise StopIteration
         return iterable(start_he, mesh)
 
+    def get_mesh_boundary(self, mesh):
+        for vhi in mesh.vertices():
+            if mesh.is_boundary(vhi):
+                break
+        itb = self.iterable_boundary(mesh, vhi)
+        bverts = [mesh.to_vertex_handle(heh).idx() for heh in list(itb)]
+        return bverts
+    
+    def get_mesh_bulk(self, mesh):
+        bverts = self.get_mesh_boundary(mesh)
+        vall= [vhi.idx() for vhi in mesh.vertices()]
+        return list(set(vall) - set(bverts))
+
     def iterate_boundary_vertex(self, tri, hehp):
         assert tri.is_boundary(hehp)
         facels = []
@@ -188,6 +209,7 @@ class PVmesh(object):
             hehp = tri.prev_halfedge_handle(heho)
         return facels
 
+    
     def _dual(self):
         self.mesh = PolyMesh()
 
@@ -251,9 +273,7 @@ class PVmesh(object):
                     self.boundaries.append([])
                     self.b_nheh.append([])
                     for heh in self.iterable_boundary(self.tri, vh):
-
                         #print 'looping along boundary', heh.idx()
-
                         #print 'adding' , self.tri.from_vertex_handle(heh).idx() 
                         self.boundaries[-1].append( self.tri.from_vertex_handle(heh).idx() )
                         self.b_nheh[-1].append(heh)
@@ -278,9 +298,18 @@ class PVmesh(object):
                 self.tri.set_property(self.boundary_prop, vh, 0)
                 self.n_tri_internal += 1
 
+        # maintain a list of the mesh vertex ids which make up the edge of the internal cells
+        self.bulk_edge = set()
+        for bv in self.mesh.vertices():
+            if self.mesh.is_boundary(bv):
+                break
+        for heh in self.iterable_boundary(self.mesh, bv):
+            nuid= self.mesh.to_vertex_handle(heh).idx()
+            #assert self.mesh.is_boundary(self.mesh.vertex_handle(nuid))
+            self.bulk_edge.add(nuid)
+
         # construct the halfcells object which represents the boundary faces
         # Add boundary triangulation points to the mesh
-        triverts = np.array(np.zeros(len(self.halfcells)),dtype='object')
         self.vh_mf = {}
         self.btv_bmv = {}
         for i, boundary in enumerate(self.boundaries):
@@ -836,13 +865,21 @@ class PVmesh(object):
             i = vhi.idx()
             for vhnu in self.loop(vhi):
                 nu = vhnu
-                bonds[frozenset([(0,i),(1,nu)])] = tript[i] - meshpt[nu]
+                r = tript[i] - meshpt[nu]
+                #norm(r)
+                #if norm(r) >10.:
+                    #print 'here'
+                    #print tript[i], meshpt[nu]
+                    #sys.exit()
+                bonds[frozenset([(0,i),(1,nu)])] = r
         for eh in self.mesh.edges():
             heh = self.mesh.halfedge_handle(eh, 0)
             nu = self.mesh.to_vertex_handle(heh).idx()
             mu = self.mesh.from_vertex_handle(heh).idx()
             r_nu_mu = meshpt[nu] - meshpt[mu]
             bonds[frozenset([(1,nu),(1,mu)])] = r_nu_mu
+
+
 
     def _calculate_dEdlength(self):
         # because we split the bonds into separate dictionaries
@@ -955,7 +992,7 @@ class PVmesh(object):
                     #assert a == norm(omvec(polygon.point(av) - polygon.point(bv)))
 
                     sa = s - a; sb = s - b; sc = s - c
-                    dDdbond = 1/2. *  ( a*a*sb*sc + s*sa*sc + s*sa*sb )
+                    dDdbond = 1/2. *  ( -a*sb*sc + s*sa*sc + s*sa*sb )
                     dAdbond += preA * dDdbond
 
                 if bondk not in dEdbond:
@@ -963,69 +1000,115 @@ class PVmesh(object):
                 dEdbond[bondk] += pre * dAdbond
         self.dEdbond = dEdbond
 
-    def _stress_setup(self):
+    def _set_wl(self, wl):
+        block = np.array(self.tript.values() + self.meshpt.values())
+        Lx, Ly, mzero = np.amax(np.abs(block),axis=0)
+        assert mzero == 0.
+        cut = np.sqrt((self.lmax**2)/4. + wl**2) + 0.1
+        print 'setting cut off distance to ', cut
+        cl = CellList2D([2*Lx+1, 2*Ly+1], cut)
+        # construct a cell list for all the vertices and centres
+        # Then when it comes to checking intersections only do it for bonds which have both
+        # ends within the neighbouring cells.
+        for i, ipt in self.tript.items():
+            cl.add_particle(ipt[:2], (0, i))
+        for nu, nupt in self.meshpt.items():
+            cl.add_particle(nupt[:2], (1, nu))
+        self.cl = cl
+
+    def _stress_setup(self, wl):
         self._construct_bonds()
         self._calculate_dEdlength()
         self.lmax = max(map(norm, self.bonds.values()))
+        tript = self.tript; meshpt = self.meshpt
+        self._set_wl(wl)
+        
         self.is_stress_setup = True
 
     def calculate_stress(self, x_c, wl):
         # wl is the smoothing length
         # x_c the point about which we calculate stress
 
-        # perhaps we should construct python dictionaries for retrieving mesh points and lengths
         mesh = self.mesh; tri = self.tri
         tript, meshpt= self.tript, self.meshpt
         # lets map all the bonds
         if not self.is_stress_setup:
-            self._stress_setup()
+            self._stress_setup(wl)
         bonds = self.bonds 
         # worth finding the maximum length 
         lmax = self.lmax
+        is_near = self.cl.proximity_def(x_c)
 
         # Need to cut out all the bonds which are too far away to be worth checking. Efficiently.
         stress = np.zeros((3,3))
         dEdbond = self.dEdbond
+        nc = 0
         for bondk in bonds.keys(): 
             # The 't' type of bond identifies ibonds and nubonds
             (ta, a), (tb, b) = bondk
             pta = self.ptmesh[ta][a]
             ptb = self.ptmesh[tb][b]
-            if norm(pta - x_c) > lmax and norm(ptb - x_c) > lmax:
+            
+            if not (is_near(pta) or is_near(ptb)):
                 continue
-            else:
-                #bondv = ibonds[bond] if t == 0 else nubonds[bond]
-                bondv = pta-ptb
-                bondl = bond_intersection(x_c, wl, bondv, ptb)
-                if bondl is not None:
-                    # Non-zero stress contribution
+            bondv = pta-ptb
+            bondl = bond_intersection(x_c, wl, bondv, ptb)
+            if bondl is not None:
+                # Non-zero stress contribution
+                if ta == 1 and tb == 1 and (a in self.bulk_edge) and (b in self.bulk_edge):
+                    #print 'excluding stress with bond', a,b 
+                    #print 'at positions', meshpt[a], meshpt[b]
+                    #print bondl
+                    stress = None
+                    break
 
-                    # Because we havent carefully considered boundaries bondl and likewise bondv
-                    # hack this, Todo
-                    #if bondl == 0. or norm(bondv) == 0.: continue
-                    if norm(bondv) == 0.:
-                        continue
-                        print bondk
 
-                    bondv_hat = bondv/norm(bondv)
-                    stress += dEdbond[bondk] * bondl * np.outer(bondv_hat, bondv)
-                    #print dEdbond[bondk]
-                    #print stress
-        stress /= -1./(pi * wl**2)
-        pressure = np.trace(stress)
+                # Because we havent carefully considered boundaries bondl and likewise bondv
+                # hack this, Todo
+                #if bondl == 0. or norm(bondv) == 0.: continue
+                #if norm(bondv) == 0.:
+                    #continue
+                    #print bondk
+
+                bondv_hat = bondv/norm(bondv)
+                stress += dEdbond[bondk] * bondl * np.outer(bondv_hat, bondv)
+                nc += 1
+                #print dEdbond[bondk]
+        
+        if stress is None: return stress
+        #print 'added stress with %d contributions' % nc
+        stress *= -1./(pi * wl**2)
+
         return stress
-        #print stress
-    def stress_on_centres(self, wl):
 
+    def stress_on_centres(self, omega, clist=None):
+        #self._stress_setup(wl)
         stress = {} # wipe out previous stress in force calculation if it exists
-        for vhi in self.tri.vertices():
-            i = vhi.idx()
-            if i % 10 == 0:
+        pressure = {}
+        #excl = []
+        if clist is None: clist = self.tript.keys()
+        for i in clist:
+            vhi = self.tri.vertex_handle(i)
+            boundary = self.tri.is_boundary(vhi)
+            if i % 100 == 0:
                 print 'Made it to vertex', i
+            if boundary:
+                # We don't calculate stress for the boundary vertices
+                stress[i]= pressure[i] = None
+                continue
             ipt = self.tript[i]
-            stress[i] = self.calculate_stress(ipt, wl)
+            ss =  self.calculate_stress(ipt, omega)
+            if ss is None:
+                print 'excluded stress for cell', i
+                #excl.append(ipt)
+
+            stress[i] = ss
+            pressure[i] = None if ss is None else np.trace(ss)
             #print stress[i][:2,:2]
+        print 'Made it to vertex', i
+        #scat(np.array(excl))
         self.stress= stress
+        self.pressure = pressure
 
     def out_force_energy(self, outfile):
         # Still aren't explicitely handling the particle ids as we should be (?)
@@ -1052,7 +1135,7 @@ class PVmesh(object):
 
     ''' This is really the constructor '''
     @classmethod
-    def datbuild(cls, rdat):
+    def datbuild(cls, rdat, simplices=None):
         keys = rdat.keys
         x = np.array(rdat.data[keys['x']])
         y = np.array(rdat.data[keys['y']])
@@ -1060,7 +1143,9 @@ class PVmesh(object):
         area = np.array(rdat.data[keys['area']])
         #rvals = np.column_stack([x, y, z])
         rvals = np.column_stack([x, y, z])
-        dd = Delaunay(rvals[:,:2], qhull_options='')
+        if simplices is None:
+            dd = Delaunay(rvals[:,:2], qhull_options='')
+            simplices = dd.simplices
         if debug:
             print 'number of cells', rvals.shape[0]
             print 'number of points in trimesh', dd.points.shape[0]
@@ -1074,7 +1159,7 @@ class PVmesh(object):
             mv = tri.add_vertex(TriMesh.Point(*v))
             mverts[i] = mv
             tri.set_property(prefareaprop, mv, area[i])
-        for f in dd.simplices:
+        for f in simplices:
             tri.add_face(list(mverts[f])) 
         PV = PVmesh(tri)
         # We cheekily add this to the initialisation to avoid recovering it later
@@ -1121,8 +1206,10 @@ if __name__=='__main__':
     pv.calculate_energy()
     #pv.calculate_forces()
     #pv.calculate_stress(np.zeros(3), 1.)
-    pv._stress_setup()
-    pv.stress_on_centres(1.)
+    wl = 1.
+    pv._stress_setup(wl)
+    #pv.stress_on_centres(wl , [1,100, 200])
+    pv.stress_on_centres(wl)
 
     outdir = args.dir
 
@@ -1135,7 +1222,7 @@ if __name__=='__main__':
 
     if pv.stress:
         sout = path.join(outdir, 'hardy_stress.vtp')
-        wr.write_stress_ellipses(pv, sout)
+        wr.write_stress_ellipses(pv, sout, pv.stress)
 
 
     #sout = path.join(outdir, 'stresses.vtp')

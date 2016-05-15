@@ -1,5 +1,18 @@
 import numpy as np
 
+# This is a vital cellmesh.py method for reading the faces files from samos 
+def readfc(fcfile):
+    faces= []
+    with open(fcfile, 'r') as fc:
+        for line in fc:
+            face = map(int, line.split())
+            faceid, face = face[0], face[1:]
+            faces.append(face)
+        boundary = faces.pop()
+        simp = np.array(faces)
+    return simp, boundary
+            
+
 ### These are general methods copied from my command.py module
 
 #print square data to file, first column is int and rest are floats.

@@ -121,16 +121,22 @@ class CellList2D:
   # This means looking at the neighbour boxes (including oneself), and copying their list of neighbours into one
   # single neighbour list
   def get_neighbours(self,rval):
-      cell_index = self.get_cell_idx(rval)
-      #print "My cell is: " + str(cell_index)
-      neighbors = []
-      for idx in self.cell_list[cell_index].neighbors:
-	  #print "Cell " + str(idx) + " contributes neighbours " + str(self.cell_list[idx].indices)
-          neighbors.extend(deepcopy(self.cell_list[idx].indices))
-      return neighbors
-    
+    cell_index = self.get_cell_idx(rval)
+    #print "My cell is: " + str(cell_index)
+    neighbors = []
+    for idx in self.cell_list[cell_index].neighbors:
+  #print "Cell " + str(idx) + " contributes neighbours " + str(self.cell_list[idx].indices)
+      neighbors.extend(deepcopy(self.cell_list[idx].indices))
+    return neighbors
+  
     
   def printMe(self):
-      for cell in self.cell_list:
-	cell.printMe()
+    for cell in self.cell_list:
+      cell.printMe()
       
+  def proximity_def(self, xc):
+    cell_idx = self.get_cell_idx(xc)
+    def is_near_xc(xa):
+      xa_id = self.get_cell_idx(xa)
+      return xa_id in self.cell_list[cell_idx].neighbors
+    return is_near_xc
