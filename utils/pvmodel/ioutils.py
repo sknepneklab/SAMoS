@@ -55,6 +55,13 @@ def shiv(al):
         print a
         print eval(a)
 
+from matplotlib import pyplot as plt
+def plotrange(f, a, b, n=100):
+    x = np.linspace(a,b,n+1)
+    y = map(f, x)
+    plt.plot(x, y)
+    plt.show()
+
 #np.set_printoptions(threshold=np.nan)
 
 import contextlib

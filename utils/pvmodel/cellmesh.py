@@ -6,6 +6,8 @@ from ioutils import omvec, idtopt
 
 import numpy as np
 from numpy.linalg import norm
+import scipy.integrate as integrate
+
 npI = np.identity(3)
 def rmmultiply(v, M):
     return np.einsum('n,nm->m', v, M)
@@ -39,23 +41,27 @@ def scat(xyz):
 debug = False
 
 # Start of feature code
+def in0_1(x):
+    return x >= 0 and x <= 1
 
 # define a method for finding all the intersections of bonds with a circle
-def bond_intersection(x_c, wl, bond, x_a):
+def bond_intersection(x_c, wl, x_a, x_b):
     # x_c circle centre
     # wl circle radius
     # bond is the vector from particle x_a to particle x_b
     # x_a is the position of particle a, 
     # x_a is going to be the second vertex in the bond pairs
 
-    x_b = bond + x_a # just give the points, not the bonds, todo
+    bond = x_b-x_a
     nca = norm(x_c - x_a)
     ncb = norm(x_c - x_b)
-    if nca < wl and ncb < wl:
-        return norm(bond)
 
     def line(m):
         return m*bond + x_a
+
+    if nca < wl and ncb < wl:
+        return 0, 1, line
+    
     # using formula for quadratic ax^2 + bx + c = 0
     a = np.dot(bond, bond)
     b = 2 * np.dot(bond, x_a-x_c)
@@ -64,7 +70,7 @@ def bond_intersection(x_c, wl, bond, x_a):
     if disc <= 0:
         return None 
     else:
-        bondl = None
+        outa, outb = None, None
         sdisc = np.sqrt(disc)
         m_plus = (-b + sdisc)/(2*a)
         m_minus = (-b - sdisc)/(2*a)
@@ -73,20 +79,24 @@ def bond_intersection(x_c, wl, bond, x_a):
             # m_plus and m_minus should be one positive one negative in these two cases
             m = m_plus if m_plus > 0 else m_minus
             y= line(m)
-            bondl = norm(y - x_a)
+            outa, outb = 0, m
+            #print 'found a line partly in the smoothing region'
         elif ncb < wl and nca >= wl:
             m_plus = abs(m_plus); m_minus = abs(m_minus)
             m = m_plus if m_plus < m_minus else m_minus
             y = line(m)
-            bondl = norm(y - x_b)
+            outa, outb = m, 1
+            #print 'found a line partly in the smoothing region'
         elif nca >= wl and ncb >= wl:
-            y_m = line(m_minus)
-            y_p = line(m_plus)
-            bondl = norm(y_p - y_m)
-            
-        if bondl is None:
+            outa, outb= m_minus, m_plus
+            # The case where a bond line cuts the averaging zone but 
+            # the bond itself does not
+            if not in0_1(m_minus) or not in0_1(m_plus):
+                return None
+
+        if outa is None:
             sys.exit('failed to determine bond intersection')
-        return bondl
+        return outa, outb, line
 
 
 # The main object for operating on the cell mesh.
@@ -852,7 +862,7 @@ class PVmesh(object):
         self.forces = True
 
     def _pythonise(self, mesh):
-        meshpt = {}
+        meshpt = OrderedDict()
         for vh in mesh.vertices():
             meshpt[vh.idx()] = omvec(mesh.point(vh))
         return meshpt
@@ -936,13 +946,13 @@ class PVmesh(object):
                 polygon_l[p][frozenset([av.idx(),bv.idx()])] = \
                     norm(omvec(polygon.point(av) -polygon.point(bv)))
             polygon_s[p]= {}
-            for fh in polygon.faces():
-                s = 0.
-                for heh in polygon.fh(fh):
-                    av= polygon.from_vertex_handle(heh)
-                    bv= polygon.to_vertex_handle(heh)
-                    s += polygon_l[p][frozenset([av.idx(),bv.idx()])]
-                polygon_s[p][fh.idx()] = s/2.
+#            for fh in polygon.faces():
+                #s = 0.
+                #for heh in polygon.fh(fh):
+                    #av= polygon.from_vertex_handle(heh)
+                    #bv= polygon.to_vertex_handle(heh)
+                    #s += polygon_l[p][frozenset([av.idx(),bv.idx()])]
+                #polygon_s[p][fh.idx()] = s/2.
             cell_polygon[p] = (polygon, pullback)
 
 
@@ -966,8 +976,6 @@ class PVmesh(object):
                 bv = polygon.to_vertex_handle(heh)
                 avid = av.idx(); bvid = bv.idx()
                 m_avid = pullback[avid]; m_bvid = pullback[bvid]
-                #avidk = (0, m_avid) if avid == 0 else (1, m_avid)
-                #bvidk = (1, m_bvid) if bvid == 0 else (1, m_bvid)
                 avidk = m_avid; bvidk = m_bvid
                 bondk = frozenset([avidk, bvidk])
 
@@ -979,9 +987,6 @@ class PVmesh(object):
                     fid = f.idx()
                     if fid == -1:
                         continue #no face here
-                    dsemi = polygon_s[i][fid]
-                    s = np.sqrt(dsemi)
-                    preA = 1/(2. * s)
                     vhs = [fv.idx() for fv in polygon.fv(f)]
 
                     bond_pairs = map(frozenset, zip(vhs, np.roll(vhs, -1)))
@@ -989,9 +994,14 @@ class PVmesh(object):
                     # derivative with respect to the length dl
                     dl = bond_pairs.index(frozenset([avid,bvid]))
                     a, b, c = np.roll(lls, -dl)
+                    s = (a + b + c)/2
                     #assert a == norm(omvec(polygon.point(av) - polygon.point(bv)))
-
                     sa = s - a; sb = s - b; sc = s - c
+                    # should precalculate, todo
+                    cald = s*sa*sb*sc
+                    assert cald >= 0
+                    triA = np.sqrt(cald)
+                    preA = 1/(2. * triA)
                     dDdbond = 1/2. *  ( -a*sb*sc + s*sa*sc + s*sa*sb )
                     dAdbond += preA * dDdbond
 
@@ -1000,7 +1010,8 @@ class PVmesh(object):
                 dEdbond[bondk] += pre * dAdbond
         self.dEdbond = dEdbond
 
-    def _set_wl(self, wl):
+    def _set_wl(self, omega):
+        wl = omega.wl
         block = np.array(self.tript.values() + self.meshpt.values())
         Lx, Ly, mzero = np.amax(np.abs(block),axis=0)
         assert mzero == 0.
@@ -1016,26 +1027,24 @@ class PVmesh(object):
             cl.add_particle(nupt[:2], (1, nu))
         self.cl = cl
 
-    def _stress_setup(self, wl):
+    def _stress_setup(self, omega=None):
         self._construct_bonds()
         self._calculate_dEdlength()
         self.lmax = max(map(norm, self.bonds.values()))
         tript = self.tript; meshpt = self.meshpt
-        self._set_wl(wl)
-        
-        self.is_stress_setup = True
+        if omega:
+            self._set_wl(omega)
+            self.is_stress_setup = True
 
-    def calculate_stress(self, x_c, wl):
+    def calculate_stress(self, x_c, omega):
         # wl is the smoothing length
         # x_c the point about which we calculate stress
 
         mesh = self.mesh; tri = self.tri
         tript, meshpt= self.tript, self.meshpt
-        # lets map all the bonds
         if not self.is_stress_setup:
-            self._stress_setup(wl)
+            self._stress_setup(omega)
         bonds = self.bonds 
-        # worth finding the maximum length 
         lmax = self.lmax
         is_near = self.cl.proximity_def(x_c)
 
@@ -1043,6 +1052,7 @@ class PVmesh(object):
         stress = np.zeros((3,3))
         dEdbond = self.dEdbond
         nc = 0
+
         for bondk in bonds.keys(): 
             # The 't' type of bond identifies ibonds and nubonds
             (ta, a), (tb, b) = bondk
@@ -1052,37 +1062,42 @@ class PVmesh(object):
             if not (is_near(pta) or is_near(ptb)):
                 continue
             bondv = pta-ptb
-            bondl = bond_intersection(x_c, wl, bondv, ptb)
-            if bondl is not None:
+            inter = bond_intersection(x_c, omega.wl, pta, ptb)
+            if inter is not None:
+                m_minus, m_plus, line = inter
+                # what are the m values of the start and finish of the line segment
+                #y_a, y_b = line(m_minus), line(m_plus)
+
+                def omegaline(m):
+                    return omega( norm(line(m) - x_c) )
+
                 # Non-zero stress contribution
                 if ta == 1 and tb == 1 and (a in self.bulk_edge) and (b in self.bulk_edge):
                     #print 'excluding stress with bond', a,b 
                     #print 'at positions', meshpt[a], meshpt[b]
-                    #print bondl
                     stress = None
                     break
 
-
-                # Because we havent carefully considered boundaries bondl and likewise bondv
+                # Because we havent carefully considered boundaries 
                 # hack this, Todo
                 #if bondl == 0. or norm(bondv) == 0.: continue
                 #if norm(bondv) == 0.:
                     #continue
                     #print bondk
-
                 bondv_hat = bondv/norm(bondv)
-                stress += dEdbond[bondk] * bondl * np.outer(bondv_hat, bondv)
+                omega_int, err = integrate.quad(omegaline, m_minus, m_plus)
+                #print 'm_cuts', m_minus, m_plus
+                #print 'integration', line(m_minus), line(m_plus), omega_int
+                #io.plotrange(omegaline, m_minus, m_plus)
+                stress += -dEdbond[bondk] * omega_int * np.outer(bondv_hat, bondv)
                 nc += 1
-                #print dEdbond[bondk]
         
         if stress is None: return stress
         #print 'added stress with %d contributions' % nc
-        stress *= -1./(pi * wl**2)
-
+        #stress *= -1./(pi * wl**2)
         return stress
 
     def stress_on_centres(self, omega, clist=None):
-        #self._stress_setup(wl)
         stress = {} # wipe out previous stress in force calculation if it exists
         pressure = {}
         #excl = []
@@ -1098,11 +1113,12 @@ class PVmesh(object):
                 continue
             ipt = self.tript[i]
             ss =  self.calculate_stress(ipt, omega)
-            if ss is None:
-                print 'excluded stress for cell', i
+            #if ss is None:
+                #print 'excluded stress for cell', i
                 #excl.append(ipt)
 
             stress[i] = ss
+            # pressure should have a factor here. 1/3 ? 
             pressure[i] = None if ss is None else np.trace(ss)
             #print stress[i][:2,:2]
         print 'Made it to vertex', i

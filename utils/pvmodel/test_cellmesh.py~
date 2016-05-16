@@ -1,0 +1,15 @@
+import numpy as np
+from cellmesh import *
+
+def test_bond_intersection():
+    x_c = np.array([20.,20.])
+    a = np.array([25., 20.])
+test_bond_intersection()
+#return None
+	##bond_intersection(x_c, wl, a, b)
+	##if inter == None:
+	##else:
+		##ma, mb, line = inter
+		##print ma, mb
+		##print line(ma), line(mb)
+

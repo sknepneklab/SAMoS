@@ -294,10 +294,12 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
     pressure.SetNumberOfComponents(1)
     pressure.SetName("pressure")
 
-    #maxe1 =max(map(abs, list(evalues[:][0])))
+    #maxe1 =max(map(abs, list(evalues.values())))
+    maxe = np.max(np.array(evalues.values()))
     #maxe2 =max(map(abs, list(evalues[:][1])))
-    #normf = maxe1
-    normf= 1.
+    normf = maxe
+    print 'adjusting stress ellipses by a factor of ', normf
+    #normf= 1.
 
     ells = vtk.vtkCellArray()
     #for vhid in evalues.keys():

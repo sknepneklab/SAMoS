@@ -7,9 +7,11 @@ import ioutils as io
 
 import numpy as np
 import sys, os
+import math as m
 import random
 
 from collections import OrderedDict
+from matplotlib import pyplot as plt
 
 # Define analysis routines here
 
@@ -22,12 +24,13 @@ def choices(pv, nr=5):
     #boundary_choice = np.random.choice(boundary, size=nr, replace=False)
     return bulk_choice
 
-# template
+
+# template for Tracker objects
 class Tracker(object):
     def __init__(self,fileo):
         # setup
         self.outf = open(fileo, 'w')
-        self.track_id = 0
+        self.track_id = 2
         self.outd= OrderedDict()
     
     def update(self):
@@ -65,18 +68,47 @@ class Pressure_t(Tracker):
         outl = self.line.format(*outv)
         self.outf.write(outl + '\n')
 
+def hash_function(f, linspace, ne):
+    l = linspace[-1] - linspace[0]
+    hf = map(f, linspace)
+    def nf(r):
+        i = int(round((ne-1) * r/l))
+        return hf[i]
+    return nf
+
+def quartic_wl(wl):
+    def quartic(r):
+        return 5/(np.pi*wl**2) * (1 + 3*(r/wl))*(1-(r/wl))**3
+    return quartic
 
 # define a different function to do 
-def range_wl(args, pv, wls):
-    choice = choices(pv, nr=8)
-    fileo=  os.path.join(args.dir, 'pressure_wl.plot')
+ne = 1001 # The number of times the smoothing function is evaluated
+set_choice = [844, 707, 960, 606, 958, 801, 864, 859, 870, 302, 500]
+wrange = np.arange(0.1, 4, 0.1)
+def range_wl(args, pv, wls, ellipses=True):
+    #choice = choices(pv, nr=8)
+    choice = args.selection
+    fileo=  os.path.join(args.dir, 'pressure_wl.plot') 
     ptrack = Pressure_t(choice, fileo)
-    pv._stress_setup(wls[0])
+    pv._stress_setup()
     for wl in wls:
         print 'using wl ', wl
-        pv._set_wl(wl)
-        pv.stress_on_centres(wl, clist=choice)
+        om = quartic_wl(wl)
+        lspace = np.linspace(0., wl, ne)
+        #omega = hash_function(om, lspace, ne)
+        omega = om
+        omega.wl = wl
+        pv._set_wl(omega)
+        pv.stress_on_centres(omega, clist=choice)
+        
         ptrack.update(pv, wl)
+
+        # change the numbering in this line if you change wrange spacing
+        if ellipses:
+            wlnum = ('%d' % int(100*wl)).zfill(3)
+            stress_outname = 'hardy_stress_' + args.outnum + '_' + wlnum + '.vtp'
+            sout = path.join(args.dir, stress_outname)
+            wr.write_stress_ellipses(pv, sout, pv.stress)
     ptrack.cleanup()
 
 if __name__=='__main__':
@@ -93,6 +125,8 @@ if __name__=='__main__':
     parser.add_argument("-i", "--input", type=str, default='cell*.dat', help="Input dat file")
     parser.add_argument("-d", "--dir", type=str, default='/home/dan/tmp/', help="Output directory")
     parser.add_argument("-w", action='store_true')
+    parser.add_argument("-wl", type=float, default=1., help='smoothing length')
+    parser.add_argument("-s", action='store_true')
     #parser.add_argument("-o", "--output", type=str, default=epidat, help="Input dat file")
     args = parser.parse_args()
 
@@ -110,7 +144,7 @@ if __name__=='__main__':
     k = 1.
     gamma = 0.
     L = 0.
-    wl = 1.
+    wl = args.wl
 
     trackers = []
     def initial_setup(pv):
@@ -126,15 +160,19 @@ if __name__=='__main__':
         base_name, ext = path.splitext(base_file)
         # Naming convention
         outnum= base_name.split('_')[-1]
+        args.outnum = outnum
         print 'working on file number ', outnum
 
         rdat = ReadData(fin)
         facefile = 'faces_' + outnum + '.fc'
         simp, _ = io.readfc(facefile)
         pv = PVmesh.datbuild(rdat, simp)
-        #if first:
-            #initial_setup(pv)
-            #first = False
+            
+        if args.s:
+            args.selection=set_choice
+        else:
+            args.selection=pv.tript.keys()
+
 
         # Handle K, and Gamma
         nf = pv.tri.n_vertices()
@@ -147,12 +185,14 @@ if __name__=='__main__':
         pv.calculate_energy()
         #pv.calculate_forces()
 
-        #pv.stress_on_centres(wl)
         if args.w:
-            print 'w'
-            wls = np.arange(0.1, 5, 0.1)
+            wls = wrange
+            print 'Going to calculate stress for a range of smoothing lengths'
             print wls
             range_wl(args, pv, wls)
+        else:
+            print 'Just calculate for one value of smoothing length'
+            range_wl(args, pv, [wl], ellipses=True)
 
         outdir = args.dir
 
