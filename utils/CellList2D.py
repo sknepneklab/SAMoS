@@ -140,3 +140,11 @@ class CellList2D:
       xa_id = self.get_cell_idx(xa)
       return xa_id in self.cell_list[cell_idx].neighbors
     return is_near_xc
+
+  
+    
+
+    
+    
+
+

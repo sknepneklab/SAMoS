@@ -2,7 +2,7 @@
 from openmesh import *
 import writemesh as wr
 import ioutils as io
-from ioutils import omvec, idtopt
+from ioutils import omvec, idtopt, OrderedSet
 
 import numpy as np
 from numpy.linalg import norm
@@ -147,6 +147,7 @@ class PVmesh(object):
         self.meshes[1] = self.mesh
         # perhaps we should construct python dictionaries for retrieving mesh points and lengths
         self.tript = self._pythonise(self.tri)
+        self.tri_bulk = self.get_mesh_bulk(self.tri)
         self.meshpt = self._pythonise(self.mesh)
         self.ptmesh = {}
         self.ptmesh[0] = self.tript
@@ -206,7 +207,7 @@ class PVmesh(object):
     def get_mesh_bulk(self, mesh):
         bverts = self.get_mesh_boundary(mesh)
         vall= [vhi.idx() for vhi in mesh.vertices()]
-        return list(set(vall) - set(bverts))
+        return list(OrderedSet(vall) - OrderedSet(bverts))
 
     def iterate_boundary_vertex(self, tri, hehp):
         assert tri.is_boundary(hehp)
@@ -341,6 +342,8 @@ class PVmesh(object):
 
                 self.btv_bmv[vhid] = mvh.idx()
                 self.vh_mf[vhid] = mfh.idx()
+
+        self.true_mesh_boundary = self.get_mesh_boundary(self.mesh)
 
     def _set_face_properties(self):
         # organise the properties we will use
@@ -871,21 +874,21 @@ class PVmesh(object):
         tript = self.tript; meshpt = self.meshpt
         bonds = {}
         self.bonds = bonds
-        for vhi in self.tri.vertices():
-            i = vhi.idx()
+        # remove boundary bonds from the list here
+        #for vhi in self.tri.vertices():
+        for i in self.tri_bulk:
+            vhi = self.tri.vertex_handle(i)
             for vhnu in self.loop(vhi):
                 nu = vhnu
                 r = tript[i] - meshpt[nu]
-                #norm(r)
-                #if norm(r) >10.:
-                    #print 'here'
-                    #print tript[i], meshpt[nu]
-                    #sys.exit()
                 bonds[frozenset([(0,i),(1,nu)])] = r
         for eh in self.mesh.edges():
             heh = self.mesh.halfedge_handle(eh, 0)
             nu = self.mesh.to_vertex_handle(heh).idx()
             mu = self.mesh.from_vertex_handle(heh).idx()
+            # removing the rest of the boundary cell bonds
+            if nu in self.true_mesh_boundary and mu in self.true_mesh_boundary: 
+                continue
             r_nu_mu = meshpt[nu] - meshpt[mu]
             bonds[frozenset([(1,nu),(1,mu)])] = r_nu_mu
 
@@ -902,8 +905,8 @@ class PVmesh(object):
         cell_polygon ={}
         polygon_l = {}
         polygon_s = {}
-        for vhi in tri.vertices():
-            p = vhi.idx()
+        for p in self.tri_bulk:
+            vhi = tri.vertex_handle(p)
             ipt = tript[p]
             pts = []
             # we assume this loop orders the points counter-clockwise as they should be
@@ -957,8 +960,8 @@ class PVmesh(object):
 
 
         dEdbond = {}
-        for vhi in tri.vertices():
-            i = vhi.idx()
+        for i in self.tri_bulk:
+            vhi= tri.vertex_handle(i)
 
             kp = tri.property(self.kprop, vhi)
             gammap = tri.property(self.gammaprop, vhi)
@@ -969,6 +972,7 @@ class PVmesh(object):
             pre = kp*(area - prefarea)
             # pick out triangles
             polygon, pullback = cell_polygon[i]
+            nc = 0.
             for eh in polygon.edges():
                 heh = polygon.halfedge_handle(eh,0)
                 heho = polygon.halfedge_handle(eh,1)
@@ -982,6 +986,7 @@ class PVmesh(object):
                 # add contributions from two faces if they exist
                 f0= polygon.face_handle(heh)
                 f1 = polygon.face_handle(heho)
+                print f1.idx()
                 dAdbond = 0.
                 for f in [f0, f1]:
                     fid = f.idx()
@@ -1002,6 +1007,10 @@ class PVmesh(object):
                     assert cald >= 0
                     triA = np.sqrt(cald)
                     preA = 1/(2. * triA)
+                    if triA == 0.:
+                        #print 'zero area triangle turned up the boundary but who cares'
+                        print 'zero area triangle'
+                        print 'face id', fid
                     dDdbond = 1/2. *  ( -a*sb*sc + s*sa*sc + s*sa*sb )
                     dAdbond += preA * dDdbond
 
@@ -1090,6 +1099,9 @@ class PVmesh(object):
                 #print 'integration', line(m_minus), line(m_plus), omega_int
                 #io.plotrange(omegaline, m_minus, m_plus)
                 stress += -dEdbond[bondk] * omega_int * np.outer(bondv_hat, bondv)
+                print -dEdbond[bondk] 
+                #print omega_int
+                print
                 nc += 1
         
         if stress is None: return stress
@@ -1097,9 +1109,43 @@ class PVmesh(object):
         #stress *= -1./(pi * wl**2)
         return stress
 
-    def stress_on_centres(self, omega, clist=None):
-        stress = {} # wipe out previous stress in force calculation if it exists
-        pressure = {}
+    def calculate_vflow(self, x_c, omega):
+        vvals = self.vvals
+        vflow = 0.
+        for k in self.cl.get_neighbours(x_c):
+            ti, i = k
+            if ti == 0:
+                ipt = self.tript[i]
+            else: 
+                continue
+            nix = norm(ipt - x_c)
+            vflow += omega(nix) * vvals[i]
+        return vflow
+
+    def calculate_kinetic_stress(self, x_c, omega):
+
+        mesh = self.mesh; tri = self.tri
+        tript, meshpt= self.tript, self.meshpt
+
+        stressk = np.zeros((3,3))
+        vvals = self.vvals
+        # include boundaries for the moment just don't calculate stress for them
+        for k in self.cl.get_neighbours(x_c):
+            ti, i = k
+            if ti == 0:
+                ipt = self.tript[i]
+            else:
+                continue
+            vflow = self.calculate_vflow(x_c, omega)
+            vrel = vvals[i] - vflow
+            # mass is 1
+            stressk -= np.outer(vrel, vrel) * omega(norm(x_c -ipt))
+        return stressk
+
+    def stress_on_centres(self, omega, clist=None, kinetic=True):
+        stress = OrderedDict() # wipe out previous stress in force calculation if it exists
+        stressk = OrderedDict()
+        pressure = OrderedDict()
         #excl = []
         if clist is None: clist = self.tript.keys()
         for i in clist:
@@ -1113,14 +1159,18 @@ class PVmesh(object):
                 continue
             ipt = self.tript[i]
             ss =  self.calculate_stress(ipt, omega)
+            ssk = self.calculate_kinetic_stress(ipt, omega)
             #if ss is None:
                 #print 'excluded stress for cell', i
                 #excl.append(ipt)
 
             stress[i] = ss
+            stressk[i] = ssk
             # pressure should have a factor here. 1/3 ? 
             pressure[i] = None if ss is None else np.trace(ss)
+            #print stressk[i][:2,:2]
             #print stress[i][:2,:2]
+            #print 
         print 'Made it to vertex', i
         #scat(np.array(excl))
         self.stress= stress
@@ -1156,9 +1206,14 @@ class PVmesh(object):
         x = np.array(rdat.data[keys['x']])
         y = np.array(rdat.data[keys['y']])
         z = np.array(rdat.data[keys['z']])
+        vx = np.array(rdat.data[keys['vx']])
+        vy = np.array(rdat.data[keys['vy']])
+        vz = np.array(rdat.data[keys['vz']])
+
         area = np.array(rdat.data[keys['area']])
         #rvals = np.column_stack([x, y, z])
         rvals = np.column_stack([x, y, z])
+        vvals = np.column_stack([vx, vy, vz])
         if simplices is None:
             dd = Delaunay(rvals[:,:2], qhull_options='')
             simplices = dd.simplices
@@ -1178,6 +1233,7 @@ class PVmesh(object):
         for f in simplices:
             tri.add_face(list(mverts[f])) 
         PV = PVmesh(tri)
+        PV.vvals = vvals
         # We cheekily add this to the initialisation to avoid recovering it later
         PV.prefareaprop = prefareaprop
         return PV

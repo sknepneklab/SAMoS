@@ -78,7 +78,7 @@ def hash_function(f, linspace, ne):
 
 def quartic_wl(wl):
     def quartic(r):
-        return 5/(np.pi*wl**2) * (1 + 3*(r/wl))*(1-(r/wl))**3
+        return 5/(np.pi*wl**2) * (1 + 3*(r/wl))*(1-(r/wl))**3 if r < wl else 0. 
     return quartic
 
 # define a different function to do 
@@ -89,7 +89,7 @@ def range_wl(args, pv, wls, ellipses=True):
     #choice = choices(pv, nr=8)
     choice = args.selection
     fileo=  os.path.join(args.dir, 'pressure_wl.plot') 
-    ptrack = Pressure_t(choice, fileo)
+    ptrack = Pressure_t(choice, fileo, xvar='wl')
     pv._stress_setup()
     for wl in wls:
         print 'using wl ', wl
@@ -147,10 +147,10 @@ if __name__=='__main__':
     wl = args.wl
 
     trackers = []
-    def initial_setup(pv):
-        choice = choices(pv)
-        ptrack = Pressure_t(choice)
-        trackers.append(ptrack)
+    def initial_setup(args, pv):
+        fileo=  os.path.join(args.dir, 'pressure_t.plot') 
+        ptrack = Pressure_t(set_choice, fileo)
+        return ptrack
 
     first = True
     for fin in infiles:
@@ -167,9 +167,14 @@ if __name__=='__main__':
         facefile = 'faces_' + outnum + '.fc'
         simp, _ = io.readfc(facefile)
         pv = PVmesh.datbuild(rdat, simp)
+        if first:
+            ptrack = initial_setup(args, pv)
+            first = False
             
         if args.s:
             args.selection=set_choice
+            print 'using choice'
+            print set_choice
         else:
             args.selection=pv.tript.keys()
 
@@ -194,6 +199,7 @@ if __name__=='__main__':
             print 'Just calculate for one value of smoothing length'
             range_wl(args, pv, [wl], ellipses=True)
 
+        ptrack.update(pv, outnum)
         outdir = args.dir
 
         cell_outname = 'cell_dual_' + outnum+ '.vtp'

@@ -298,31 +298,32 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
     maxe = np.max(np.array(evalues.values()))
     #maxe2 =max(map(abs, list(evalues[:][1])))
     normf = maxe
+    normf = 1./2
     print 'adjusting stress ellipses by a factor of ', normf
     #normf= 1.
 
     ells = vtk.vtkCellArray()
-    #for vhid in evalues.keys():
-    for vhid in pv.tript.keys():
+    for ellid, vhid in enumerate(evalues.keys()):
+    #for vhid in pv.tript.keys():
         pt = pv.tript[vhid]
         shift =  pt[:2]
-        if vhid in evalues:
-            # cut down to two dimensions 
-            evals =  evalues[vhid][:2]
-            av, bv, = evals
-            a, b = av/normf, bv/normf
-            ea, eb, _ = evectors[vhid]
-            theta = np.arccos(np.dot(e_x, ea)) 
-            sg = 1. if np.dot(np.cross(e_x, ea),pv.normal) > 0 else -1.
-            R = rotation_2d(sg * theta)  
-            add_ellipse(Points, (a,b), shift, R, res)
-        else:
-            #add_cross(shift)
-            add_ellipse(Points, (0,0), shift, np.zeros((2,2)), res)
+
+        # cut down to two dimensions 
+        evals =  evalues[vhid][:2]
+        av, bv, = evals
+        a, b = av/normf, bv/normf
+        ea, eb, _ = evectors[vhid]
+        theta = np.arccos(np.dot(e_x, ea)) 
+        sg = 1. if np.dot(np.cross(e_x, ea),pv.normal) > 0 else -1.
+        R = rotation_2d(sg * theta)  
+        add_ellipse(Points, (a,b), shift, R, res)
+
+        #else:
+            #add_ellipse(Points, (0,0), shift, np.zeros((2,2)), res)
 
         polyline = vtk.vtkPolyLine()
         polyline.GetPointIds().SetNumberOfIds(res)
-        ptstart = vhid*res
+        ptstart = ellid*res
         for j, ptj in enumerate(range(ptstart, ptstart + res)):
             polyline.GetPointIds().SetId(j, ptj)
 
