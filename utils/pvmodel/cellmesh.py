@@ -318,6 +318,7 @@ class PVmesh(object):
             nuid= self.mesh.to_vertex_handle(heh).idx()
             #assert self.mesh.is_boundary(self.mesh.vertex_handle(nuid))
             self.bulk_edge.add(nuid)
+        self.mesh_bulk = [mvh.idx() for mvh in self.mesh.vertices()] # we didn't add boundary faces yet
 
         # construct the halfcells object which represents the boundary faces
         # Add boundary triangulation points to the mesh
@@ -902,62 +903,59 @@ class PVmesh(object):
         bonds = self.bonds
 
         # in order to manage cell areas lets create a little mesh for each cell
-        cell_polygon ={}
-        polygon_l = {}
-        polygon_s = {}
+        polygons = TriMesh()
+        # map the new single cell mesh vertices back onto our meshes
+        # we have to keep track of which mesh our ids belong to 
+        # {new_mesh_id: ('t', old_mesh_id)
+        pullback = {} 
+        # {('t', old_mesh_id): new_mesh_id}
+        pushforward = {}
+        for mu in self.mesh_bulk:
+            mupt = meshpt[mu]
+            mv = polygons.add_vertex(TriMesh.Point(*mupt))
+            pushforward[(1, mu)] = mv.idx()
+            pullback[mv.idx()] = (1, mu)
         for p in self.tri_bulk:
             vhi = tri.vertex_handle(p)
             ipt = tript[p]
             pts = []
             # we assume this loop orders the points counter-clockwise as they should be
             loop = self.loop(vhi)
-            for vhnu in loop:
-                nupt = meshpt[vhnu]
-                pts.append(nupt)
-            nupts = np.vstack(pts)
-
-            polygon = TriMesh()
-            # map the new single cell mesh vertices back onto our meshes
-            # we have to keep track of which mesh our ids belong to 
-            # {new_mesh_id: ('t', old_mesh_id)
-            pullback = {} 
-            lnupts = len(nupts)
-            mverts = np.array(np.zeros(lnupts+1),dtype='object')
-            mv = polygon.add_vertex(TriMesh.Point(*ipt))
-            mverts[0] = mv
-            pullback[mv.idx()] = (0, p)
-
-            for i, (vhnu, v) in enumerate(zip(loop, nupts)):
-                mv = polygon.add_vertex(TriMesh.Point(*v))
-                mverts[i+1] = mv
-                pullback[mv.idx()] = (1, vhnu)
+            lnupts = len(loop)
+            mv = polygons.add_vertex(TriMesh.Point(*ipt))
+            centerid = mv.idx()
+            pushforward[(0, p)] = centerid
+            pullback[centerid] = (0, p)
+            nuvertids = [pushforward[(1,nu)] for nu in loop]
+            #pullback[mv.idx()] = (0, p)
+            #for i, (vhnu, v) in enumerate(zip(loop, nupts)):
+                #mv = polygon.add_vertex(TriMesh.Point(*v))
+                #mverts[i+1] = mv
+                #pullback[mv.idx()] = (1, vhnu)
             simplices = np.zeros((lnupts, 3),dtype=int)
-            for i, (nu, mu) in enumerate(zip(mverts[1:], np.roll(mverts[1:], -1, axis=0))):
-                simplices[i,0] = 0
-                simplices[i,1] = nu.idx()
-                simplices[i,2] = mu.idx()
+            for i, (nu, mu) in enumerate(zip(nuvertids, np.roll(nuvertids, -1, axis=0))):
+                simplices[i,0] = centerid
+                simplices[i,1] = nu
+                simplices[i,2] = mu
             for f in simplices:
-                polygon.add_face(list(mverts[f]))
+                polygons.add_face([polygons.vertex_handle(vid) for vid in f])
             # semi perimeters and lengths should be precalculated
-            polygon_l[p] = {}
-            for eh in polygon.edges():
-                heh = polygon.halfedge_handle(eh, 0)
-                av= polygon.from_vertex_handle(heh)
-                bv= polygon.to_vertex_handle(heh)
 
-                a = norm(omvec(polygon.point(av) -polygon.point(bv)))
-                polygon_l[p][frozenset([av.idx(),bv.idx()])] = \
-                    norm(omvec(polygon.point(av) -polygon.point(bv)))
-            polygon_s[p]= {}
-#            for fh in polygon.faces():
-                #s = 0.
-                #for heh in polygon.fh(fh):
-                    #av= polygon.from_vertex_handle(heh)
-                    #bv= polygon.to_vertex_handle(heh)
-                    #s += polygon_l[p][frozenset([av.idx(),bv.idx()])]
-                #polygon_s[p][fh.idx()] = s/2.
-            cell_polygon[p] = (polygon, pullback)
+        polygon_l = {}
+        for eh in polygons.edges():
+            heh = polygons.halfedge_handle(eh, 0)
+            av= polygons.from_vertex_handle(heh)
+            bv= polygons.to_vertex_handle(heh)
+            a = norm(omvec(polygons.point(av) -polygons.point(bv)))
+            polygon_l[frozenset([av.idx(),bv.idx()])] = a
 
+
+        def get_star_hedges(polgons, vhi):
+            hehids = []
+            for fh in polygons.vf(vhi):
+                for heh in polygons.fh(fh):
+                    hehids.append(heh.idx())
+            return set(hehids)
 
         dEdbond = {}
         for i in self.tri_bulk:
@@ -971,48 +969,43 @@ class PVmesh(object):
             
             pre = kp*(area - prefarea)
             # pick out triangles
-            polygon, pullback = cell_polygon[i]
             nc = 0.
-            for eh in polygon.edges():
-                heh = polygon.halfedge_handle(eh,0)
-                heho = polygon.halfedge_handle(eh,1)
-                av = polygon.from_vertex_handle(heh)
-                bv = polygon.to_vertex_handle(heh)
+
+            pvhi = polygons.vertex_handle(pushforward[(0, i)])
+            for hehid in get_star_hedges(polygons, pvhi):
+                heh = polygons.halfedge_handle(hehid)
+                av = polygons.from_vertex_handle(heh)
+                bv = polygons.to_vertex_handle(heh)
                 avid = av.idx(); bvid = bv.idx()
-                m_avid = pullback[avid]; m_bvid = pullback[bvid]
-                avidk = m_avid; bvidk = m_bvid
+                avidk = pullback[avid]; bvidk = pullback[bvid]
                 bondk = frozenset([avidk, bvidk])
 
                 # add contributions from two faces if they exist
-                f0= polygon.face_handle(heh)
-                f1 = polygon.face_handle(heho)
-                print f1.idx()
-                dAdbond = 0.
-                for f in [f0, f1]:
-                    fid = f.idx()
-                    if fid == -1:
-                        continue #no face here
-                    vhs = [fv.idx() for fv in polygon.fv(f)]
+                f= polygons.face_handle(heh)
+                #f1 = polygon.face_handle(heho)
 
-                    bond_pairs = map(frozenset, zip(vhs, np.roll(vhs, -1)))
-                    lls = [polygon_l[i][bp] for bp in bond_pairs]
-                    # derivative with respect to the length dl
-                    dl = bond_pairs.index(frozenset([avid,bvid]))
-                    a, b, c = np.roll(lls, -dl)
-                    s = (a + b + c)/2
-                    #assert a == norm(omvec(polygon.point(av) - polygon.point(bv)))
-                    sa = s - a; sb = s - b; sc = s - c
-                    # should precalculate, todo
-                    cald = s*sa*sb*sc
-                    assert cald >= 0
-                    triA = np.sqrt(cald)
-                    preA = 1/(2. * triA)
-                    if triA == 0.:
-                        #print 'zero area triangle turned up the boundary but who cares'
-                        print 'zero area triangle'
-                        print 'face id', fid
-                    dDdbond = 1/2. *  ( -a*sb*sc + s*sa*sc + s*sa*sb )
-                    dAdbond += preA * dDdbond
+                fid = f.idx()
+                vhs = [fv.idx() for fv in polygons.fv(f)]
+
+                bond_pairs = map(frozenset, zip(vhs, np.roll(vhs, -1)))
+                lls = [polygon_l[bp] for bp in bond_pairs]
+                # derivative with respect to the length dl
+                dl = bond_pairs.index(frozenset([avid,bvid]))
+                a, b, c = np.roll(lls, -dl)
+                s = (a + b + c)/2
+                #assert a == norm(omvec(polygon.point(av) - polygon.point(bv)))
+                sa = s - a; sb = s - b; sc = s - c
+                # should precalculate, todo
+                cald = s*sa*sb*sc
+                assert cald >= 0
+                triA = np.sqrt(cald)
+                preA = 1/(2. * triA)
+                if triA == 0.:
+                    #print 'zero area triangle turned up the boundary but who cares'
+                    print 'zero area triangle'
+                    print 'face id', fid
+                dDdbond = 1/2. *  ( -a*sb*sc + s*sa*sc + s*sa*sb )
+                dAdbond = preA * dDdbond
 
                 if bondk not in dEdbond:
                     dEdbond[bondk] = 0.
@@ -1099,9 +1092,8 @@ class PVmesh(object):
                 #print 'integration', line(m_minus), line(m_plus), omega_int
                 #io.plotrange(omegaline, m_minus, m_plus)
                 stress += -dEdbond[bondk] * omega_int * np.outer(bondv_hat, bondv)
-                print -dEdbond[bondk] 
-                #print omega_int
-                print
+                #print -dEdbond[bondk] 
+                #print
                 nc += 1
         
         if stress is None: return stress
@@ -1159,17 +1151,19 @@ class PVmesh(object):
                 continue
             ipt = self.tript[i]
             ss =  self.calculate_stress(ipt, omega)
-            ssk = self.calculate_kinetic_stress(ipt, omega)
+            if kinetic:
+                ssk = self.calculate_kinetic_stress(ipt, omega)
+                stressk[i] = ssk
             #if ss is None:
                 #print 'excluded stress for cell', i
                 #excl.append(ipt)
 
             stress[i] = ss
-            stressk[i] = ssk
             # pressure should have a factor here. 1/3 ? 
             pressure[i] = None if ss is None else np.trace(ss)
             #print stressk[i][:2,:2]
-            #print stress[i][:2,:2]
+           
+            print stress[i][:2,:2]  if stress[i] != None else None
             #print 
         print 'Made it to vertex', i
         #scat(np.array(excl))

@@ -88,6 +88,7 @@ wrange = np.arange(0.1, 4, 0.1)
 def range_wl(args, pv, wls, ellipses=True):
     #choice = choices(pv, nr=8)
     choice = args.selection
+    print 'chioce',  choice
     fileo=  os.path.join(args.dir, 'pressure_wl.plot') 
     ptrack = Pressure_t(choice, fileo, xvar='wl')
     pv._stress_setup()
@@ -99,7 +100,7 @@ def range_wl(args, pv, wls, ellipses=True):
         omega = om
         omega.wl = wl
         pv._set_wl(omega)
-        pv.stress_on_centres(omega, clist=choice)
+        pv.stress_on_centres(omega, clist=choice, kinetic = False) 
         
         ptrack.update(pv, wl)
 
@@ -176,7 +177,7 @@ if __name__=='__main__':
             print 'using choice'
             print set_choice
         else:
-            args.selection=pv.tript.keys()
+            args.selection=pv.tri_bulk
 
 
         # Handle K, and Gamma

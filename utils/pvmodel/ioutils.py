@@ -1,4 +1,5 @@
 import numpy as np
+from collections import OrderedDict
 
 # This is a vital cellmesh.py method for reading the faces files from samos 
 def readfc(fcfile):
@@ -30,19 +31,24 @@ def datdump(dd, fo):
     htag = 'keys:'
     dump(dd, fo, htag=htag)
 
-def readdump(fo):
+# This only reads dumps of floats and ints
+def readdump(fo, firstc=int):
     headers = fo.next()[1:].split()
-    dd = {}
+    dd = OrderedDict()
     for h in headers:
         dd[h] = []
     for line in fo:
         for i, dat in enumerate(line.split()):
             ev = float
             if i is 0:
-                ev = int
-            dd[headers[i]].append( ev(dat) )
+                ev = firstc
+            try:
+                cdat = ev(dat)
+            except ValueError:
+                cdat = None
+            dd[headers[i]].append( cdat )
     return dd
-    
+
 
 # debugging
 
