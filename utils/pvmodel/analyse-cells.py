@@ -13,17 +13,20 @@ import random
 from collections import OrderedDict
 from matplotlib import pyplot as plt
 
+import argparse
+
+import writemesh as wr
+import os.path as path
+
+
 # Define analysis routines here
 
 # We need one for catching the pressure of some random cells
-def choices(pv, nr=5):
+def random_choice(pv, nr=5):
     # nr is the number of random points to choose
     bulk = pv.get_mesh_bulk(pv.tri)
-    #boundary = pv.mesh.get_mesh_boundary(pv.mesh)
     bulk_choice = np.random.choice(bulk, size=nr, replace=False)
-    #boundary_choice = np.random.choice(boundary, size=nr, replace=False)
     return bulk_choice
-
 
 # template for Tracker objects
 class Tracker(object):
@@ -58,15 +61,36 @@ class Pressure_t(Tracker):
     def update(self, pv, xxv):
         super(Pressure_t, self).update()
         pr = [pv.pressure[ch] for ch in self.choice]
-        #nones = [i for i, x in enumerate(pr) if x == None]
-        #for none in reverse(nones):
-            #self.choice.pop(none)
         for i, cid in enumerate(self.choice):
             self.outd[self.xvar].append(xxv)
             self.outd[cid].append(pr[i])
         outv = [xxv] + list(pr)
         outl = self.line.format(*outv)
         self.outf.write(outl + '\n')
+
+# Preferably would like to write out data to a structured format at each step
+# h5py and hdf5 are powerful tools for this but I also want a simple solution
+# numpy.savez is the simple solution for now.
+# Can't seem to decide if I want the number of data points over which the radial
+# averaging is calculated to change between time steps
+# for now. let it change. store a whole set of files.
+class STracker(Tracker):
+    def __init__(self, fileo, xvar='time'):
+        # track radially averaged profiles of pressure, pressure variance, stress components ...
+        self.xvar = xvar
+        self.fileo = fileo
+        self.qdict = OrderedDict()
+
+    def update(self, pv, xxv):
+        fileo = self.fileo
+        fileo = '_'.join([fileo, xxv])
+        print 'saving radial data to ', fileo+'.npz'
+
+        qdict = self.qdict
+        qdict['rspace'] = pv.rspace 
+        qdict['radial_pressure'] = pv.radial_pressure
+        if len(qdict) != 0:
+            np.savez(fileo, **qdict)
 
 def hash_function(f, linspace, ne):
     l = linspace[-1] - linspace[0]
@@ -81,14 +105,139 @@ def quartic_wl(wl):
         return 5/(np.pi*wl**2) * (1 + 3*(r/wl))*(1-(r/wl))**3 if r < wl else 0. 
     return quartic
 
+import glob
+# The template senario
+class Senario(object):
+    def __init__(self, args):
+        # Use the args object from argsparse and add to it as necessary to keep
+        #  track of all the parameters
+        self.args= args
+
+        inp_file = args.input
+        self.infiles = sorted(glob.glob(inp_file))
+        if self.infiles == []:
+            print 'Did not find any files using %s', inp_file
+            sys.exit()
+
+        # Cell parameters
+        args.k = 1.
+        args.gamma = 0.
+        args.L = 0.
+        args.wl = 3.0
+
+        self.fid = 0
+        self.numf = len(self.infiles)
+        self.verb = True
+        self.alog = 'analysis.log'
+
+    def __iter__(self):
+        return self
+
+    def next(self, step=1):
+        if self.fid < self.numf:
+            self.dataf = self.infiles[self.fid]
+            self.outnum = self._outnum()
+            if self.verb:
+                print 'working on file number ', self.outnum
+            try:
+                self._operate()
+            except:
+                self._finishup()
+                raise
+            self.fid += step
+        else:
+            self._finishup()
+            raise StopIteration()
+
+    def _outnum(self):
+        inp_dir, base_file = path.split(self.dataf)
+        base_name, ext = path.splitext(base_file)
+        outnum= base_name.split('_')[-1]
+        args.outnum = outnum
+        return outnum
+
+    def _operate(self):
+        pass # the code to execure on each data file
+
+    def _finishup(self):
+        pass # the cleanup code that needs to be executed
+
+    def save_parameters(self, paramsf='out.parameters'):
+        with open(paramsf, 'w') as fp:
+            if self.verb:
+                'recording the analysis parameters to ', paramsf
+            io.dumpargs(self.args.__dict__, fp)
+
+
+set_choice = [844, 707, 960, 606, 958, 801, 864, 859, 870, 302, 500]
+class Stress_Senario(Senario):
+    def __init__(self, args, wl=2.9):
+        super(Stress_Senario, self).__init__(args)
+        print 'initializing the run generator'
+        self.args.wl = wl
+
+        self.fileo=  os.path.join(args.dir, 'stress_st') 
+
+        om = quartic_wl(wl)
+        om.wl = wl
+        self.omega = om
+        self.st = STracker(self.fileo)
+        #lspace = np.linspace(0., wl, ne)
+        #omega = hash_function(om, lspace, ne)
+
+    def _operate(self):
+        args = self.args
+        outnum = self._outnum()
+        omega = self.omega
+        k, gamma, L  = args.k, args.gamma, args.L
+
+        rdat = ReadData(self.dataf)
+        facefile = 'faces_' + outnum + '.fc'
+        simp, _ = io.readfc(facefile)
+        pv = PVmesh.datbuild(rdat, simp)
+            
+        # Handle K, and Gamma
+        nf = pv.tri.n_vertices()
+        # Could easily read these from a .conf file
+        K = np.full(nf, k)
+        Gamma = np.full(nf, gamma)
+        cl = pv._construct_cl_dict(L)
+        pv.set_constants(K, Gamma, cl)
+
+        pv.calculate_energy()
+        #pv.calculate_forces()
+
+        if self.verb: print 'Just calculate for one value of smoothing length'
+        pv._stress_setup()
+        pv._set_wl(omega)
+        clist = set_choice if args.s else None
+        pv.stress_on_centres(omega, clist=clist, kinetic = False) 
+        #range_wl(args, pv, [wl], ellipses=True)
+        pv.radial()
+        self.st.update(pv, outnum)
+
+        #track.update(pv, outnum)
+        outdir = args.dir
+
+        cell_outname = 'cell_dual_' + outnum+ '.vtp'
+        mout = path.join(outdir, cell_outname)
+        wr.writemeshenergy(pv, mout)
+
+        tri_outname = 'cell_' + outnum + '.vtp'
+        tout = path.join(outdir, tri_outname)
+        wr.writetriforce(pv, tout)
+
+        stress_outname = 'hardy_stress_' + outnum + '.vtp'
+        sout = path.join(outdir, stress_outname)
+        wr.write_stress_ellipses(pv, sout, pv.stress)
+
 # define a different function to do 
 ne = 1001 # The number of times the smoothing function is evaluated
-set_choice = [844, 707, 960, 606, 958, 801, 864, 859, 870, 302, 500]
 wrange = np.arange(0.1, 4, 0.1)
 def range_wl(args, pv, wls, ellipses=True):
     #choice = choices(pv, nr=8)
     choice = args.selection
-    print 'chioce',  choice
+    #print 'choice',  choice
     fileo=  os.path.join(args.dir, 'pressure_wl.plot') 
     ptrack = Pressure_t(choice, fileo, xvar='wl')
     pv._stress_setup()
@@ -116,11 +265,6 @@ if __name__=='__main__':
 
     epidat = '/home/dan/cells/run/soft_rpatch/epithelial_equilini.dat'
 
-    import argparse
-
-    import writemesh as wr
-    import os.path as path
-
     parser = argparse.ArgumentParser()
  
     parser.add_argument("-i", "--input", type=str, default='cell*.dat', help="Input dat file")
@@ -134,92 +278,97 @@ if __name__=='__main__':
     if not os.path.exists(args.dir):
         os.mkdir(args.dir)
 
-    inp_file = args.input
-    import glob
-    infiles = sorted(glob.glob(inp_file))
-    if infiles == []:
-        print 'Did not find any files using %s', inp_file
-        sys.exit()
+    stressrun = Stress_Senario(args)
+    for _ in stressrun: pass
 
-    # Cell parameters
-    k = 1.
-    gamma = 0.
-    L = 0.
-    wl = args.wl
 
-    trackers = []
-    def initial_setup(args, pv):
-        fileo=  os.path.join(args.dir, 'pressure_t.plot') 
-        ptrack = Pressure_t(set_choice, fileo)
-        return ptrack
+#    sys.exit()
 
-    first = True
-    for fin in infiles:
+    #inp_file = args.input
+    #import glob
+    #infiles = sorted(glob.glob(inp_file))
+    #if infiles == []:
+        #print 'Did not find any files using %s', inp_file
+        #sys.exit()
+
+    ## Cell parameters
+    #k = 1.
+    #gamma = 0.
+    #L = 0.
+    #wl = args.wl
+
+    #trackers = []
+    #def initial_setup(args, pv):
+        #fileo=  os.path.join(args.dir, 'pressure_t.plot') 
+        #ptrack = Pressure_t(set_choice, fileo)
+        #return ptrack
+
+    #first = True
+    #for fin in infiles:
 
         
-        inp_dir, base_file = path.split(fin)
-        base_name, ext = path.splitext(base_file)
-        # Naming convention
-        outnum= base_name.split('_')[-1]
-        args.outnum = outnum
-        print 'working on file number ', outnum
+        #inp_dir, base_file = path.split(fin)
+        #base_name, ext = path.splitext(base_file)
+        ## Naming convention
+        #outnum= base_name.split('_')[-1]
+        #args.outnum = outnum
+        #print 'working on file number ', outnum
 
-        rdat = ReadData(fin)
-        facefile = 'faces_' + outnum + '.fc'
-        simp, _ = io.readfc(facefile)
-        pv = PVmesh.datbuild(rdat, simp)
-        if first:
-            ptrack = initial_setup(args, pv)
-            first = False
+        #rdat = ReadData(fin)
+        #facefile = 'faces_' + outnum + '.fc'
+        #simp, _ = io.readfc(facefile)
+        #pv = PVmesh.datbuild(rdat, simp)
+        #if first:
+            #ptrack = initial_setup(args, pv)
+            #first = False
             
-        if args.s:
-            args.selection=set_choice
-            print 'using choice'
-            print set_choice
-        else:
-            args.selection=pv.tri_bulk
+        #if args.s:
+            #args.selection=set_choice
+            #print 'using choice'
+            #print set_choice
+        #else:
+            #args.selection=pv.tri_bulk
 
 
-        # Handle K, and Gamma
-        nf = pv.tri.n_vertices()
-        # Could easily read these from a .conf file
-        K = np.full(nf, k)
-        Gamma = np.full(nf, gamma)
-        cl = pv._construct_cl_dict(L)
-        pv.set_constants(K, Gamma, cl)
+        ## Handle K, and Gamma
+        #nf = pv.tri.n_vertices()
+        ## Could easily read these from a .conf file
+        #K = np.full(nf, k)
+        #Gamma = np.full(nf, gamma)
+        #cl = pv._construct_cl_dict(L)
+        #pv.set_constants(K, Gamma, cl)
 
-        pv.calculate_energy()
-        #pv.calculate_forces()
+        #pv.calculate_energy()
+        ##pv.calculate_forces()
 
-        if args.w:
-            wls = wrange
-            print 'Going to calculate stress for a range of smoothing lengths'
-            print wls
-            range_wl(args, pv, wls)
-        else:
-            print 'Just calculate for one value of smoothing length'
-            range_wl(args, pv, [wl], ellipses=True)
+        #if args.w:
+            #wls = wrange
+            #print 'Going to calculate stress for a range of smoothing lengths'
+            #print wls
+            #range_wl(args, pv, wls)
+        #else:
+            #print 'Just calculate for one value of smoothing length'
+            #range_wl(args, pv, [wl], ellipses=True)
 
-        ptrack.update(pv, outnum)
-        outdir = args.dir
+        #outdir = args.dir
 
-        cell_outname = 'cell_dual_' + outnum+ '.vtp'
-        mout = path.join(outdir, cell_outname)
-        wr.writemeshenergy(pv, mout)
+        #cell_outname = 'cell_dual_' + outnum+ '.vtp'
+        #mout = path.join(outdir, cell_outname)
+        #wr.writemeshenergy(pv, mout)
 
-        tri_outname = 'cell_' + outnum + '.vtp'
-        tout = path.join(outdir, tri_outname)
-        wr.writetriforce(pv, tout)
+        #tri_outname = 'cell_' + outnum + '.vtp'
+        #tout = path.join(outdir, tri_outname)
+        #wr.writetriforce(pv, tout)
 
-        if False:
-            naive_stress = 'naive_stress_' + outnum + '.vtp'
-            sout = path.join(outdir, naive_stress)
-            wr.write_stress_ellipses(pv, sout, pv.n_stress)
+        #if False:
+            #naive_stress = 'naive_stress_' + outnum + '.vtp'
+            #sout = path.join(outdir, naive_stress)
+            #wr.write_stress_ellipses(pv, sout, pv.n_stress)
 
-        if pv.stress:
-            stress_outname = 'hardy_stress_' + outnum + '.vtp'
-            sout = path.join(outdir, stress_outname)
-            wr.write_stress_ellipses(pv, sout, pv.stress)
-            #stddict(pv.stress)
+        #if pv.stress:
+            #stress_outname = 'hardy_stress_' + outnum + '.vtp'
+            #sout = path.join(outdir, stress_outname)
+            #wr.write_stress_ellipses(pv, sout, pv.stress)
+            ##stddict(pv.stress)
 
 

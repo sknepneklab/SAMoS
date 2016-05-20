@@ -49,6 +49,12 @@ def readdump(fo, firstc=int):
             dd[headers[i]].append( cdat )
     return dd
 
+def dumpargs(dd, fo):
+    r1 = max(map(len, dd.keys()))
+    argsformat = '{:<%d} {:>10}\n' % r1
+    for k, v in dd.items():
+        fo.write(argsformat.format(k, v))
+    
 
 # debugging
 

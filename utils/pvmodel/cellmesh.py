@@ -18,6 +18,7 @@ from scipy.spatial import Delaunay
 from read_data import ReadData
 
 from math import pi 
+import math as m
 import sys
 
 # Samos
@@ -982,7 +983,6 @@ class PVmesh(object):
 
                 # add contributions from two faces if they exist
                 f= polygons.face_handle(heh)
-                #f1 = polygon.face_handle(heho)
 
                 fid = f.idx()
                 vhs = [fv.idx() for fv in polygons.fv(f)]
@@ -1000,10 +1000,7 @@ class PVmesh(object):
                 assert cald >= 0
                 triA = np.sqrt(cald)
                 preA = 1/(2. * triA)
-                if triA == 0.:
-                    #print 'zero area triangle turned up the boundary but who cares'
-                    print 'zero area triangle'
-                    print 'face id', fid
+
                 dDdbond = 1/2. *  ( -a*sb*sc + s*sa*sc + s*sa*sb )
                 dAdbond = preA * dDdbond
 
@@ -1021,6 +1018,7 @@ class PVmesh(object):
         print 'setting cut off distance to ', cut
         cl = CellList2D([2*Lx+1, 2*Ly+1], cut)
         # construct a cell list for all the vertices and centres
+        # can construct separate cell lists for both
         # Then when it comes to checking intersections only do it for bonds which have both
         # ends within the neighbouring cells.
         for i, ipt in self.tript.items():
@@ -1044,8 +1042,6 @@ class PVmesh(object):
 
         mesh = self.mesh; tri = self.tri
         tript, meshpt= self.tript, self.meshpt
-        if not self.is_stress_setup:
-            self._stress_setup(omega)
         bonds = self.bonds 
         lmax = self.lmax
         is_near = self.cl.proximity_def(x_c)
@@ -1057,45 +1053,42 @@ class PVmesh(object):
 
         for bondk in bonds.keys(): 
             # The 't' type of bond identifies ibonds and nubonds
-            (ta, a), (tb, b) = bondk
+            bka, bkb = bondk
+            ta, a = bka; tb, b = bkb
             pta = self.ptmesh[ta][a]
             ptb = self.ptmesh[tb][b]
             
             if not (is_near(pta) or is_near(ptb)):
                 continue
+#            neighbours= self.cl.get_neighbours(x_c)
+            #if bka not in neighbours and bkb not in neighbours:
+                #continue # bond is too far away to bother checking
             bondv = pta-ptb
             inter = bond_intersection(x_c, omega.wl, pta, ptb)
-            if inter is not None:
-                m_minus, m_plus, line = inter
-                # what are the m values of the start and finish of the line segment
-                #y_a, y_b = line(m_minus), line(m_plus)
+            if inter is None:
+                continue # couldn't find an intersection
+            m_minus, m_plus, line = inter
 
-                def omegaline(m):
-                    return omega( norm(line(m) - x_c) )
+            def omegaline(m):
+                return omega( norm(line(m) - x_c) )
 
-                # Non-zero stress contribution
-                if ta == 1 and tb == 1 and (a in self.bulk_edge) and (b in self.bulk_edge):
-                    #print 'excluding stress with bond', a,b 
-                    #print 'at positions', meshpt[a], meshpt[b]
-                    stress = None
-                    break
-
-                # Because we havent carefully considered boundaries 
-                # hack this, Todo
-                #if bondl == 0. or norm(bondv) == 0.: continue
-                #if norm(bondv) == 0.:
-                    #continue
-                    #print bondk
-                bondv_hat = bondv/norm(bondv)
-                omega_int, err = integrate.quad(omegaline, m_minus, m_plus)
-                #print 'm_cuts', m_minus, m_plus
-                #print 'integration', line(m_minus), line(m_plus), omega_int
-                #io.plotrange(omegaline, m_minus, m_plus)
-                stress += -dEdbond[bondk] * omega_int * np.outer(bondv_hat, bondv)
-                #print -dEdbond[bondk] 
-                #print
-                nc += 1
-        
+            # Non-zero stress contribution
+            # do this check earlier todo
+            if ta == 1 and tb == 1 and (a in self.bulk_edge) and (b in self.bulk_edge):
+                #print 'excluding stress with bond', a,b 
+                #print 'at positions', meshpt[a], meshpt[b]
+                stress = None
+                break 
+            bondv_hat = bondv/norm(bondv)
+            omega_int, err = integrate.quad(omegaline, m_minus, m_plus)
+            #print 'm_cuts', m_minus, m_plus
+            #print 'integration', line(m_minus), line(m_plus), omega_int
+            #io.plotrange(omegaline, m_minus, m_plus)
+            stress += -dEdbond[bondk] * omega_int * np.outer(bondv_hat, bondv)
+            #print -dEdbond[bondk] 
+            #print
+            nc += 1
+    
         if stress is None: return stress
         #print 'added stress with %d contributions' % nc
         #stress *= -1./(pi * wl**2)
@@ -1139,16 +1132,11 @@ class PVmesh(object):
         stressk = OrderedDict()
         pressure = OrderedDict()
         #excl = []
-        if clist is None: clist = self.tript.keys()
+        if clist is None: clist = self.tri_bulk
         for i in clist:
             vhi = self.tri.vertex_handle(i)
-            boundary = self.tri.is_boundary(vhi)
             if i % 100 == 0:
                 print 'Made it to vertex', i
-            if boundary:
-                # We don't calculate stress for the boundary vertices
-                stress[i]= pressure[i] = None
-                continue
             ipt = self.tript[i]
             ss =  self.calculate_stress(ipt, omega)
             if kinetic:
@@ -1163,35 +1151,47 @@ class PVmesh(object):
             pressure[i] = None if ss is None else np.trace(ss)
             #print stressk[i][:2,:2]
            
-            print stress[i][:2,:2]  if stress[i] != None else None
+            #print stress[i][:2,:2]  if stress[i] != None else None
             #print 
         print 'Made it to vertex', i
         #scat(np.array(excl))
+        self.clist = clist
         self.stress= stress
         self.pressure = pressure
 
-    def out_force_energy(self, outfile):
-        # Still aren't explicitely handling the particle ids as we should be (?)
-
-        outfe = OrderedDict()
-        ids, energy, fx, fy = [], [], [], []
-        for vh in self.tri.vertices():
-            #if self.tri.is_boundary(vh) and self.boundary:
-                #continue
-            ids.append(vh.idx())
-            energy.append(self.tri.property(self.enprop, vh))
-            fvh =  self.tri.property(self.fprop, vh)
-            fxx, fyy, _ = fvh
-            fx.append(fxx)
-            fy.append(fyy)
-        outfe['id'] = ids
-        outfe['energy'] = energy
-        outfe['fx'] = fx
-        outfe['fy'] = fy
-
-        with open(outfile, 'w') as fo:
-            print 'saving force and energy to ', fo.name
-            io.dump(outfe, fo)
+    # Now we have self.stress and self.pressure the next step is to 
+    #  reduce to averaged quantities
+    def radial(self, nstat=100.):
+        # first find the centre of mass
+        #triptarr = np.array(self.tript.values())
+        #triptarr = self.pressure.keys()
+        triptarr = np.array([self.tript[i] for i in self.clist])
+        ltript = len(triptarr)
+        rcm = np.sum(triptarr, axis=0)/ltript
+        print 'the centre of mass for the tissue', rcm
+        #now bin the points according to their distance from the centre
+        def distrcm(rval):
+            return norm(rval-rcm)
+        rcmd = map(distrcm, triptarr)
+        mrc = np.max(rcmd)
+        nbins = m.ceil(ltript/nstat)
+        rspace = np.linspace(0, mrc, nbins+1, endpoint=True)
+        # the bin index of each point based on distance from rcmb
+        npd = np.digitize(rcmd, rspace, right=True)-1
+        # It remains to average the contents of each bin
+        assert nbins == len(rspace)-1
+        ravg = np.zeros(nbins)
+        hcount = np.zeros(nbins)
+        for i, bn in zip(self.clist, npd):
+            prs = self.pressure[i]
+            if prs is None: continue
+            ravg[bn] += prs
+            hcount[bn] += 1
+        radial_pressure = np.true_divide(ravg, hcount)
+        self.rspace = rspace
+        self.radial_pressure = radial_pressure
+        #plt.plot(rspace[:-1], radial_pressure)
+        #plt.show()
 
     ''' This is really the constructor '''
     @classmethod
@@ -1289,14 +1289,5 @@ if __name__=='__main__':
     if pv.stress:
         sout = path.join(outdir, 'hardy_stress.vtp')
         wr.write_stress_ellipses(pv, sout, pv.stress)
-
-
-    #sout = path.join(outdir, 'stresses.vtp')
-    #wr.write_stress_ellipses(pv, sout)
-
-    # Dump the force and energy
-    #fef = path.join(outdir, 'force_energy.dat')
-    #pv.out_force_energy(fef)
-
 
 
