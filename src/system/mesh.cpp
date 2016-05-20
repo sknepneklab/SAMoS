@@ -713,40 +713,6 @@ void Mesh::fc_jacobian(int f)
 **/
 void Mesh::update_face_properties()
 {
-  /*
-  for (unsigned int e = 0; e < m_boundary_edges.size(); e++)
-  {
-    Edge& E = m_edges[m_boundary_edges[e]];
-    if (m_vertices[E.from].n_faces < 3) m_vertices[E.from].attached = false;
-  }
-  m_obtuse_boundary.clear();
-  for (int f = 0; f < m_nface; f++)
-  {
-    Face& face = m_faces[f];
-    face.boundary = false;
-    face.obtuse = false;
-    if (!face.is_hole)
-    {
-      for (int i = 0; i < face.n_sides; i++)
-        if (m_edges[m_edges[face.edges[i]].pair].boundary) // Face is at the boundary if the pair of one of its half-edges is a boundary edge
-        {
-          face.boundary = true;
-          break;
-        }
-      for (int i = 0; i < face.n_sides; i++)
-      {
-        Edge& E = m_edges[face.edges[i]];
-        if (m_edges[E.pair].boundary && face.get_angle(this->opposite_vertex(E.id)) < 0.0)
-        {
-          face.obtuse = true;
-          if (!E.attempted_removal)
-            m_obtuse_boundary.push_back(E.pair);
-          break;
-        }
-      }
-    }
-  }
-  */
   m_obtuse_boundary.clear();
   for (unsigned int e = 0; e < m_boundary_edges.size(); e++)
   {
@@ -932,6 +898,7 @@ PlotArea& Mesh::plot_area(bool boundary)
         if (!face.is_hole)
           if (find(added_faces.begin(),added_faces.end(),face.id) == added_faces.end())
           {
+            this->compute_circumcentre(face.id);
             m_plot_area.points.push_back(face.rc);
             m_plot_area.circum_radius.push_back(this->circum_radius(face.id));
             added_faces.push_back(face.id);
@@ -940,6 +907,7 @@ PlotArea& Mesh::plot_area(bool boundary)
       }
   }
   
+  vector<int> sides;
   for (int v = 0; v < m_size; v++)
   {
     Vertex& V = m_vertices[v];
@@ -947,7 +915,7 @@ PlotArea& Mesh::plot_area(bool boundary)
     {
       if (!V.boundary)
       {
-        vector<int> sides;
+        sides.clear();
         for (int f = 0; f < V.n_faces; f++)
           sides.push_back(face_idx[V.faces[f]]);
         m_plot_area.sides.push_back(sides);
@@ -956,7 +924,7 @@ PlotArea& Mesh::plot_area(bool boundary)
       }
       if (V.boundary && boundary)
       {
-        vector<int> sides;
+        sides.clear();
         sides.push_back(bnd_vert[V.id]);
         for (int f = 0; f < V.n_faces-1; f++)
           sides.push_back(face_idx[V.faces[f]]);
