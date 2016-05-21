@@ -88,12 +88,15 @@ class STracker(Tracker):
 
         qdict = self.qdict
         qdict['rspace'] = pv.rspace 
-        qdict['radial_pressure'] = pv.radial_pressure
+        for rname, rav in zip(pv.rnames, pv.ravg):
+            qdict[rname] = rav
+        #qdict['radial_pressure'] = pv.radial_pressure
         if len(qdict) != 0:
             np.savez(fileo, **qdict)
 
-def hash_function(f, linspace, ne):
+def hash_function(f, linspace):
     l = linspace[-1] - linspace[0]
+    ne = len(linspace)
     hf = map(f, linspace)
     def nf(r):
         i = int(round((ne-1) * r/l))
@@ -119,12 +122,6 @@ class Senario(object):
             print 'Did not find any files using %s', inp_file
             sys.exit()
 
-        # Cell parameters
-        args.k = 1.
-        args.gamma = 0.
-        args.L = 0.
-        args.wl = 3.0
-
         self.fid = 0
         self.numf = len(self.infiles)
         self.verb = True
@@ -136,7 +133,7 @@ class Senario(object):
     def next(self, step=1):
         if self.fid < self.numf:
             self.dataf = self.infiles[self.fid]
-            self.outnum = self._outnum()
+            self.outnum = self._outnum() # must call this function
             if self.verb:
                 print 'working on file number ', self.outnum
             try:
@@ -151,9 +148,10 @@ class Senario(object):
 
     def _outnum(self):
         inp_dir, base_file = path.split(self.dataf)
+        self.args.inp_dir = inp_dir
         base_name, ext = path.splitext(base_file)
         outnum= base_name.split('_')[-1]
-        args.outnum = outnum
+        self.args.outnum = outnum
         return outnum
 
     def _operate(self):
@@ -171,19 +169,20 @@ class Senario(object):
 
 set_choice = [844, 707, 960, 606, 958, 801, 864, 859, 870, 302, 500]
 class Stress_Senario(Senario):
-    def __init__(self, args, wl=2.9):
+    def __init__(self, args):
         super(Stress_Senario, self).__init__(args)
         print 'initializing the run generator'
-        self.args.wl = wl
+        wl= args.wl
 
         self.fileo=  os.path.join(args.dir, 'stress_st') 
 
         om = quartic_wl(wl)
+        #hspace = np.linspace(0, wl, 10001, endpoint=True)
+        #om = hash_function(om, hspace)
         om.wl = wl
+
         self.omega = om
         self.st = STracker(self.fileo)
-        #lspace = np.linspace(0., wl, ne)
-        #omega = hash_function(om, lspace, ne)
 
     def _operate(self):
         args = self.args
@@ -192,7 +191,7 @@ class Stress_Senario(Senario):
         k, gamma, L  = args.k, args.gamma, args.L
 
         rdat = ReadData(self.dataf)
-        facefile = 'faces_' + outnum + '.fc'
+        facefile = path.join(args.inp_dir, 'faces_' + outnum + '.fc')
         simp, _ = io.readfc(facefile)
         pv = PVmesh.datbuild(rdat, simp)
             
@@ -206,6 +205,15 @@ class Stress_Senario(Senario):
 
         pv.calculate_energy()
         #pv.calculate_forces()
+        #tmp test
+        cell_outname = 'cell_dual_' + outnum+ '.vtp'
+        mout = path.join(args.dir, cell_outname)
+        wr.writemeshenergy(pv, mout)
+
+        tri_outname = 'cell_' + outnum + '.vtp'
+        tout = path.join(args.dir, tri_outname)
+        wr.writetriforce(pv, tout)
+
 
         if self.verb: print 'Just calculate for one value of smoothing length'
         pv._stress_setup()
@@ -279,6 +287,7 @@ if __name__=='__main__':
         os.mkdir(args.dir)
 
     stressrun = Stress_Senario(args)
+    stressrun.save_parameters()
     for _ in stressrun: pass
 
 

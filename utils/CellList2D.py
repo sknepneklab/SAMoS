@@ -111,7 +111,7 @@ class CellList2D:
     self.cell_list[cell_idx].add_particle(idx)
     self.cell_indices[idx] = cell_idx
     #print "Added particle " + str(idx) + " to cell " + str(cell_idx)
-    
+   
   # Nuke the contents of the whole cell list
   def wipe(self):
     for cell in self.cell_list:
@@ -134,6 +134,13 @@ class CellList2D:
     for cell in self.cell_list:
       cell.printMe()
       
+  # Some little additional methods for finding bonds in space -- daniel
+  def add_bond(self, pta, ptb, bondk):
+    cell_idx_a = self.get_cell_idx(pta[:2])
+    cell_idx_b = self.get_cell_idx(ptb[:2])
+    self.cell_list[cell_idx_a].add_particle(bondk)
+    self.cell_list[cell_idx_b].add_particle(bondk)
+ 
   def proximity_def(self, xc):
     cell_idx = self.get_cell_idx(xc)
     def is_near_xc(xa):

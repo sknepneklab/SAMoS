@@ -169,12 +169,12 @@ def writemeshenergy(pv, outfile):
             #stress[vh.idx()] = pvstress[vh.idx()]
     #return stress
 
-#def get_stress(pv, pvstress):
-    #stress = OrderedDict()
-    #for i, pvs in pvstress.items():
-        #if pvs is not None:
-            #stress[i]= pvs
-    #return stress
+def get_stress(pv, pvstress):
+    stress = OrderedDict()
+    for i, pvs in pvstress.items():
+        if pvs is not None:
+            stress[i]= pvs
+    return stress
 def get_stress(a,b): return b
 
 # take an openmesh object and write it as .vtk with faces
@@ -286,8 +286,9 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
     # calculate principle stresses
     stress = get_stress(pv, pvstress)
     evalues, evectors = {}, {}
-    for i, ss in stress.items():
-        if ss is not None:
+    for i in pv.clist:
+        ss = stress[i]
+        if ss[0] is not np.nan:
             evalues[i], evectors[i] = eig(ss)
 
     pressure = vtk.vtkDoubleArray()
@@ -295,12 +296,11 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
     pressure.SetName("pressure")
 
     #maxe1 =max(map(abs, list(evalues.values())))
-    maxe = np.max(np.array(evalues.values()))
     #maxe2 =max(map(abs, list(evalues[:][1])))
-    normf = maxe
-    normf = 1./2
-    print 'adjusting stress ellipses by a factor of ', normf
-    #normf= 1.
+
+    #maxe = np.max(np.array(evalues.values()))
+    #print 'adjusting stress ellipses by a factor of ', normf
+    normf= 1.
 
     ells = vtk.vtkCellArray()
     for ellid, vhid in enumerate(evalues.keys()):
