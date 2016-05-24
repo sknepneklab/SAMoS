@@ -17,6 +17,13 @@ import os.path as path
     #def __init__(self, ddump):
         #self.ddump = ddump
 
+
+def makename(num, fn):
+    fn = '_'.join([fn, justifynum(num)])  + '.npz'
+    return fn
+def justifynum(num):
+    return '{:0>10}'.format(num)
+
 # we are using numpys .npz now
 def plot_radial(*fils):
     fig = plt.figure()
@@ -56,16 +63,28 @@ def plot_radial_all(fglob, *fdirs):
         #axi.draw()
         time.sleep(0.05)
 
+def plot_radial_all(num, fname):
+    fname = makename(num, fname)
+    plt.xlabel('radial distance')
+    data = np.load(fname)
+    xs = data['rspace']
+    xdiff = xs[1] - xs[0]
+    x = xs[:-1] + xdiff/2
+    for k in data:
+        if k == 'rspace': continue
+        plt.plot(x, data[k], label=k, marker='o')
+    plt.legend()
+    plt.show()
 
-def justifynum(num):
-    return '{:0>10}'.format(num)
+
+
 #cmplotting.py compare_radial 4000 stress_st . ../../rA_2.5/pressure_test/ ../../vpotential_only/pressure_test/
 def compare_radial(num, fname, *fdirs):
     plt.clf()
     fname = '_'.join([fname, justifynum(num)])  + '.npz'
     paths = [path.join(fd, fname) for fd in fdirs]
     plt.xlabel('radial distance')
-    plt.ylabel('2 * pressure')
+    plt.ylabel('pressure')
     for fi in paths:
         data = np.load(fi)
         xs = data['rspace']

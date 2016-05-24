@@ -88,11 +88,16 @@ class STracker(Tracker):
 
         qdict = self.qdict
         qdict['rspace'] = pv.rspace 
-        for rname, rav in zip(pv.rnames, pv.ravg):
+        for rname, rav in pv.ravg.items():
             qdict[rname] = rav
         #qdict['radial_pressure'] = pv.radial_pressure
         if len(qdict) != 0:
+            print 'saving'
+            print fileo
+            print qdict
+
             np.savez(fileo, **qdict)
+
 
 def hash_function(f, linspace):
     l = linspace[-1] - linspace[0]
@@ -103,9 +108,17 @@ def hash_function(f, linspace):
         return hf[i]
     return nf
 
+from scipy import integrate
 def quartic_wl(wl):
+    print 'generating smoothing function with wl = ', wl
     def quartic(r):
         return 5/(np.pi*wl**2) * (1 + 3*(r/wl))*(1-(r/wl))**3 if r < wl else 0. 
+        #return 5/(4* np.pi*wl) * (1 + 3*(r/wl))*(1-(r/wl))**3 if r < wl else 0. 
+    space = np.linspace(0, wl, 100, True)
+    qq = np.array(map(quartic, space))
+    ii = integrate.simps(qq* space*2*np.pi, space)
+    print 'integrated, ii = ', ii
+    #io.plotrange(quartic, 0, wl)
     return quartic
 
 import glob
@@ -176,12 +189,17 @@ class Stress_Senario(Senario):
 
         self.fileo=  os.path.join(args.dir, 'stress_st') 
 
+        self.omega= None
         om = quartic_wl(wl)
-        #hspace = np.linspace(0, wl, 10001, endpoint=True)
-        #om = hash_function(om, hspace)
-        om.wl = wl
+        #if args.fast:
+            #print 'using the fast integration method for omega'
+            #ne = 10001
+            #hspace = np.linspace(0, wl, ne, endpoint=True)
+            #oarr = np.vectorize(om)(hspace)
+            #self.omega = (oarr, hspace)
 
         self.omega = om
+
         self.st = STracker(self.fileo)
 
     def _operate(self):
@@ -205,21 +223,12 @@ class Stress_Senario(Senario):
 
         pv.calculate_energy()
         #pv.calculate_forces()
-        #tmp test
-        cell_outname = 'cell_dual_' + outnum+ '.vtp'
-        mout = path.join(args.dir, cell_outname)
-        wr.writemeshenergy(pv, mout)
-
-        tri_outname = 'cell_' + outnum + '.vtp'
-        tout = path.join(args.dir, tri_outname)
-        wr.writetriforce(pv, tout)
-
 
         if self.verb: print 'Just calculate for one value of smoothing length'
         pv._stress_setup()
-        pv._set_wl(omega)
+        pv._set_wl(omega, args.wl)
         clist = set_choice if args.s else None
-        pv.stress_on_centres(omega, clist=clist, kinetic = False) 
+        pv.stress_on_centres(omega, clist=clist, kinetic = False, fast=args.fast) 
         #range_wl(args, pv, [wl], ellipses=True)
         pv.radial()
         self.st.update(pv, outnum)
@@ -280,6 +289,10 @@ if __name__=='__main__':
     parser.add_argument("-w", action='store_true')
     parser.add_argument("-wl", type=float, default=1., help='smoothing length')
     parser.add_argument("-s", action='store_true')
+    parser.add_argument("-f", '--fast', action='store_true')
+    parser.add_argument("-k", type=float, default=1., help='Area constant')
+    parser.add_argument("-g", '--gamma', type=float, default=0., help='Perimeter constant')
+    parser.add_argument("-L", type=float, default=0., help='Contact length constant')
     #parser.add_argument("-o", "--output", type=str, default=epidat, help="Input dat file")
     args = parser.parse_args()
 
@@ -289,95 +302,4 @@ if __name__=='__main__':
     stressrun = Stress_Senario(args)
     stressrun.save_parameters()
     for _ in stressrun: pass
-
-
-#    sys.exit()
-
-    #inp_file = args.input
-    #import glob
-    #infiles = sorted(glob.glob(inp_file))
-    #if infiles == []:
-        #print 'Did not find any files using %s', inp_file
-        #sys.exit()
-
-    ## Cell parameters
-    #k = 1.
-    #gamma = 0.
-    #L = 0.
-    #wl = args.wl
-
-    #trackers = []
-    #def initial_setup(args, pv):
-        #fileo=  os.path.join(args.dir, 'pressure_t.plot') 
-        #ptrack = Pressure_t(set_choice, fileo)
-        #return ptrack
-
-    #first = True
-    #for fin in infiles:
-
-        
-        #inp_dir, base_file = path.split(fin)
-        #base_name, ext = path.splitext(base_file)
-        ## Naming convention
-        #outnum= base_name.split('_')[-1]
-        #args.outnum = outnum
-        #print 'working on file number ', outnum
-
-        #rdat = ReadData(fin)
-        #facefile = 'faces_' + outnum + '.fc'
-        #simp, _ = io.readfc(facefile)
-        #pv = PVmesh.datbuild(rdat, simp)
-        #if first:
-            #ptrack = initial_setup(args, pv)
-            #first = False
-            
-        #if args.s:
-            #args.selection=set_choice
-            #print 'using choice'
-            #print set_choice
-        #else:
-            #args.selection=pv.tri_bulk
-
-
-        ## Handle K, and Gamma
-        #nf = pv.tri.n_vertices()
-        ## Could easily read these from a .conf file
-        #K = np.full(nf, k)
-        #Gamma = np.full(nf, gamma)
-        #cl = pv._construct_cl_dict(L)
-        #pv.set_constants(K, Gamma, cl)
-
-        #pv.calculate_energy()
-        ##pv.calculate_forces()
-
-        #if args.w:
-            #wls = wrange
-            #print 'Going to calculate stress for a range of smoothing lengths'
-            #print wls
-            #range_wl(args, pv, wls)
-        #else:
-            #print 'Just calculate for one value of smoothing length'
-            #range_wl(args, pv, [wl], ellipses=True)
-
-        #outdir = args.dir
-
-        #cell_outname = 'cell_dual_' + outnum+ '.vtp'
-        #mout = path.join(outdir, cell_outname)
-        #wr.writemeshenergy(pv, mout)
-
-        #tri_outname = 'cell_' + outnum + '.vtp'
-        #tout = path.join(outdir, tri_outname)
-        #wr.writetriforce(pv, tout)
-
-        #if False:
-            #naive_stress = 'naive_stress_' + outnum + '.vtp'
-            #sout = path.join(outdir, naive_stress)
-            #wr.write_stress_ellipses(pv, sout, pv.n_stress)
-
-        #if pv.stress:
-            #stress_outname = 'hardy_stress_' + outnum + '.vtp'
-            #sout = path.join(outdir, stress_outname)
-            #wr.write_stress_ellipses(pv, sout, pv.stress)
-            ##stddict(pv.stress)
-
 

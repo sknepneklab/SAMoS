@@ -93,32 +93,24 @@ def writemeshenergy(pv, outfile):
     cradius.SetNumberOfComponents(1)
     cradius.SetName("cradius")
 
+    pressure = vtk.vtkDoubleArray()
+    pressure.SetNumberOfComponents(1)
+    pressure.SetName("pressure")
+
     for i, vh in enumerate(mesh.vertices()):
         pt =omvec(mesh.point(vh))
         Points.InsertNextPoint(pt)
         is_tri = pv.mesh.property(pv.tri_prop, vh)
         crnv = 0. if is_tri else pv.cradius[i] 
         cradius.InsertNextValue(crnv)
-
-    ## throw the edge vertices on the end
-    #nmv = mesh.n_vertices()
-    #boundary_vmap  = {}
-    #i = 0 # the boundary vertice count
-    #for bd in pv.boundaries:
-        #for vhid in bd:
-            #boundary_vmap[vhid] = nmv + i
-            #pt = omvec(tri.point(tri.vertex_handle(vhid)))
-            #Points.InsertNextPoint(pt)
-            #cradius.InsertNextValue(0.)
-            #i += 1
-
+    
     # Can actually add the boundary polygons here and show them 
     nfaces =0
     for vh in tri.vertices():
         vhids = []
         is_boundary = tri.is_boundary(vh)
 
-        fh = mesh.face_handle(vh.idx())
+        fh = mesh.face_handle(pv.vh_mf[vh.idx()])
         for meshvh in mesh.fv(fh):
             # need to store all the relevant vertex ids
             vhids.append(meshvh.idx())
@@ -136,6 +128,11 @@ def writemeshenergy(pv, outfile):
 
         b_id = tri.property(pv.boundary_prop, vh)
         boundary.InsertNextValue(b_id)
+        
+        pr = pv.pressure[vh.idx()]
+        prfacevalue = 0. if np.isnan(pr) else pr
+        print prfacevalue
+        pressure.InsertNextValue(prfacevalue)
 
     print 'added faces', nfaces
 
@@ -145,6 +142,7 @@ def writemeshenergy(pv, outfile):
 
     polydata.GetCellData().AddArray(energy)
     polydata.GetCellData().AddArray(boundary)
+    polydata.GetCellData().AddArray(pressure)
     polydata.GetPointData().AddArray(cradius)
 
     polydata.Modified()

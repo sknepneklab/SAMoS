@@ -52,9 +52,10 @@ class Block(object):
             setattr(self, k, v)
 
 wld = 3.0
+fast = False
 usedata = boundary_test_dataf
 defaults = {'k':1.0, 'gamma':0., 'L':0., 'wl':wld, 'input':usedata, 'dir':'/home/dan/tmp/test_cells',
-        's':False}
+        's':False, 'fast':fast}
 def time_stress():
     args = Block(defaults)
     stressrun = Stress_Senario(args)

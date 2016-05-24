@@ -38,8 +38,22 @@ def scat(xyz):
     plt.scatter(xyz[:,0],xyz[:,1])
     plt.show()
 
-
 debug = False
+
+# A function for integration which takes and arraylike and the space its defined on
+#  and initial and final values 
+def hashintegrate(arromega, arrspace, mm, mp):
+    arra = arrspace[0]; arrz = arrspace[-1]
+    arrange = arrz-arra
+    ne = len(arrspace)
+    # mm and mp are values in arrange
+    dx = (arrz - arra)/(ne-1)
+    imm = int(round(mm/dx))
+    imp = int(round(mp/dx)) 
+    # cut the array and then integrate with simpsons method
+    #print imm, imp
+    print mm, mp
+    return integrate.simps(arromega[imm:imp], x=arrspace[imm:imp])
 
 # Start of feature code
 def in0_1(x):
@@ -78,11 +92,15 @@ def bond_intersection(x_c, wl, x_a, x_b):
         # worry about the exactly which of these should be >,< and >=,<=
         if nca < wl and ncb >= wl:
             # m_plus and m_minus should be one positive one negative in these two cases
+            assert m_plus * m_minus  <= 0
             m = m_plus if m_plus > 0 else m_minus
             y= line(m)
             outa, outb = 0, m
             #print 'found a line partly in the smoothing region'
         elif ncb < wl and nca >= wl:
+            # the smaller of the two absolute values 
+            assert m_plus >= 0.
+            assert m_minus >= 0.
             m_plus = abs(m_plus); m_minus = abs(m_minus)
             m = m_plus if m_plus < m_minus else m_minus
             y = line(m)
@@ -98,6 +116,11 @@ def bond_intersection(x_c, wl, x_a, x_b):
         if outa is None:
             sys.exit('failed to determine bond intersection')
         return outa, outb, line
+
+# Want an object which wraps the Openmesh
+class Pymesh(object):
+    def __init__(self, omesh):
+        pass
 
 
 # The main object for operating on the cell mesh.
@@ -278,6 +301,7 @@ class PVmesh(object):
         self.n_tri_boundary = 0
         bval = 0
         self.vh_mf = {} # tri vertex -> mesh face
+        self.mf_vh = {} 
         self.btv_bmv = {} # tri vertex -> mesh vertex
         for vh in self.tri.vertices():
             if self.tri.is_boundary(vh):
@@ -310,6 +334,7 @@ class PVmesh(object):
                 vhs = list(mverts[fhs])
                 mfh = self.mesh.add_face(vhs)
                 self.vh_mf[vh.idx()] = mfh.idx()
+                self.mf_vh[mfh.idx()] = vh.idx()
                 self.tri.set_property(self.boundary_prop, vh, 0)
                 self.n_tri_internal += 1
 
@@ -345,6 +370,7 @@ class PVmesh(object):
 
                 self.btv_bmv[vhid] = mvh.idx()
                 self.vh_mf[vhid] = mfh.idx()
+                self.mf_vh[mfh.idx()] = vh.idx()
 
         self.true_mesh_boundary = self.get_mesh_boundary(self.mesh)
 
@@ -881,12 +907,14 @@ class PVmesh(object):
         self.bonds = bonds
         # remove boundary bonds from the list here
         #for vhi in self.tri.vertices():
+        self.lmax = 0.
         for i in self.tri_bulk:
             vhi = self.tri.vertex_handle(i)
             for vhnu in self.loop(vhi):
                 nu = vhnu
-                r = tript[i] - meshpt[nu]
-                bonds[frozenset([(0,i),(1,nu)])] = r
+                rnorm = norm(tript[i] - meshpt[nu])
+                if rnorm > self.lmax: self.lmax = rnorm
+                bonds[frozenset([(0,i),(1,nu)])] = None
         for eh in self.mesh.edges():
             heh = self.mesh.halfedge_handle(eh, 0)
             nu = self.mesh.to_vertex_handle(heh).idx()
@@ -894,8 +922,9 @@ class PVmesh(object):
             # removing the rest of the boundary cell bonds
             if nu in self.true_mesh_boundary and mu in self.true_mesh_boundary: 
                 continue
-            r_nu_mu = meshpt[nu] - meshpt[mu]
-            bonds[frozenset([(1,nu),(1,mu)])] = r_nu_mu
+            rnorm = norm(meshpt[nu] - meshpt[mu])
+            if rnorm > self.lmax: self.lmax = rnorm
+            bonds[frozenset([(1,nu),(1,mu)])] = eh.idx()
 
 
 
@@ -966,9 +995,7 @@ class PVmesh(object):
             vhi= tri.vertex_handle(i)
 
             kp = tri.property(self.kprop, vhi)
-            gammap = tri.property(self.gammaprop, vhi)
             area = tri.property(self.areaprop, vhi)
-            prim = tri.property(self.primprop, vhi)
             prefarea = self.tri.property(self.prefareaprop, vhi)
             
             pre = kp*(area - prefarea)
@@ -1010,10 +1037,44 @@ class PVmesh(object):
                 if bondk not in dEdbond:
                     dEdbond[bondk] = 0.
                 dEdbond[bondk] += pre * dAdbond
-        self.dEdbond = dEdbond
 
-    def _set_wl(self, omega):
-        wl = omega.wl
+        dEdbond_p = {}
+        dEdbond_cl = {}
+        for bondk, ehid in bonds.items():
+            ka, kb = bondk
+            ta, ida = ka
+            tb, idb = kb
+            if ta == 0. or tb == 0.:
+                continue # we are only concerned with cell-vertex bonds ('edges')
+            eh = self.mesh.edge_handle(ehid)
+            cl = self.mesh.property(self.clprop, eh)
+            dEdbond_cl[bondk] = cl
+            dEdbond_p[bondk] = 0.
+            print cl
+            for i in [0, 1]:
+                heh = self.mesh.halfedge_handle(eh, i)
+                f = self.mesh.face_handle(heh)
+                fid = f.idx()
+                if fid == -1:
+                    continue
+                vhi = self.mf_vh[fid]
+                vh= self.tri.vertex_handle(vhi)
+                gammap = tri.property(self.gammaprop, vh)
+                prim = tri.property(self.primprop, vh)
+                dec = gammap * prim 
+                dEdbond_p[bondk] += dec
+                print dec
+
+        dEdbondall = {}
+        for bondk in bonds.keys():
+            dEdbondall[bondk] = dEdbond[bondk]
+            if bondk in dEdbond_p:
+                dEdbondall[bondk] += dEdbond[bondk]
+
+        self.dEdbond = dEdbondall
+
+    def _set_wl(self, omega, wl):
+        self.wl = wl
         block = np.array(self.tript.values() + self.meshpt.values())
         Lx, Ly, mzero = np.amax(np.abs(block),axis=0)
         assert mzero == 0.
@@ -1040,13 +1101,12 @@ class PVmesh(object):
     def _stress_setup(self, omega=None):
         self._construct_bonds()
         self._calculate_dEdlength()
-        self.lmax = max(map(norm, self.bonds.values()))
         tript = self.tript; meshpt = self.meshpt
         if omega:
             self._set_wl(omega)
             self.is_stress_setup = True
 
-    def calculate_stress(self, x_c, omega):
+    def calculate_stress(self, x_c, omega, fast=False):
         # wl is the smoothing length
         # x_c the point about which we calculate stress
 
@@ -1054,7 +1114,7 @@ class PVmesh(object):
         tript, meshpt= self.tript, self.meshpt
         bonds = self.bonds 
         lmax = self.lmax
-        is_near = self.cl.proximity_def(x_c)
+        #is_near = self.cl.proximity_def(x_c)
 
         # Need to cut out all the bonds which are too far away to be worth checking. Efficiently.
         stress = np.zeros((3,3))
@@ -1073,20 +1133,13 @@ class PVmesh(object):
             pta = self.ptmesh[ta][a]
             ptb = self.ptmesh[tb][b]
             
-            if not (is_near(pta) or is_near(ptb)):
-                continue
-#            neighbours= self.cl.get_neighbours(x_c)
-            #if bka not in neighbours and bkb not in neighbours:
-                #continue # bond is too far away to bother checking
+            #if not (is_near(pta) or is_near(ptb)):
+                #continue
             bondv = pta-ptb
-            inter = bond_intersection(x_c, omega.wl, pta, ptb)
+            inter = bond_intersection(x_c, self.wl, pta, ptb)
             if inter is None:
                 continue # couldn't find an intersection
             m_minus, m_plus, line = inter
-
-            def omegaline(m):
-                return omega( norm(line(m) - x_c) )
-
             # Non-zero stress contribution
             # do this check earlier todo
             if ta == 1 and tb == 1 and (a in self.bulk_edge) and (b in self.bulk_edge):
@@ -1095,14 +1148,20 @@ class PVmesh(object):
                 stress = cnan
                 break 
             bondv_hat = bondv/norm(bondv)
-            omega_int, err = integrate.quad(omegaline, m_minus, m_plus)
-            #print 'm_cuts', m_minus, m_plus
-            #print 'integration', line(m_minus), line(m_plus), omega_int
+            # can use an arraylike representing the function and use integrate.simps
+            def omegaline(m):
+                return omega( norm(line(m) - x_c) )
             #io.plotrange(omegaline, m_minus, m_plus)
-            stress += -dEdbond[bondk] * omega_int * np.outer(bondv_hat, bondv)
-            #print -dEdbond[bondk] 
-            #print
+            if fast: # This is slower!
+                ne = 10
+                ospace = np.linspace(m_minus, m_plus, ne+1, True)
+                oarr = np.array(map(omegaline, ospace))
+                omega_int = integrate.trapz(oarr, x=ospace)
+            else:
+                omega_int, err = integrate.quad(omegaline, m_minus, m_plus)
+            self.omegad.append( omega_int )
             nc += 1
+            stress += dEdbond[bondk] * omega_int * np.outer(bondv_hat, bondv)
     
         #print 'added stress with %d contributions' % nc
         if np.isnan(stress[0][0]): return stress
@@ -1142,13 +1201,15 @@ class PVmesh(object):
             stressk -= np.outer(vrel, vrel) * omega(norm(x_c -ipt))
         return stressk
 
-    def stress_on_centres(self, omega, clist=None, kinetic=True):
+    def stress_on_centres(self, omega, clist=None, kinetic=True, fast=False):
         # By using standard numpy arrays here and adding an array for the indices in clist 
+
+        self.omegad = []
+
         cll = len(self.tript)
         self.clist= np.array(clist)
         self.stress = np.full((cll,3,3), np.nan)
         self.stressk = np.full((cll,3,3), np.nan)
-        self.pressure= np.full(cll, np.nan)
         
         if clist is None: clist = self.tri_bulk
         excl= []
@@ -1156,7 +1217,7 @@ class PVmesh(object):
             if i % 100 == 0:
                 print 'Made it to vertex', i
             ipt = self.tript[i]
-            st = self.calculate_stress(ipt, omega)
+            st = self.calculate_stress(ipt, omega, fast=fast)
 
             if np.isnan(st[0][0]):
                 excl.append(i)
@@ -1172,6 +1233,8 @@ class PVmesh(object):
         #print clist
         self.clist = [i for i in clist if i not in excl]
         #print self.clist
+        #plt.hist(self.omegad)
+        #plt.show()
         self.stress_parts()
 
     def stress_parts(self):
@@ -1192,7 +1255,7 @@ class PVmesh(object):
                 evalues[i], evectors[i] = est
         for i in self.clist:
             st = stress[i]
-            self.pressure[i] = np.trace(st)
+            self.pressure[i] = 1/2. * np.trace(st)
             smax, smin = evalues[i]
             if smin > smax: smin, smax = smax, smin
             self.nstress[i] = (smax + smin)/2
@@ -1230,8 +1293,8 @@ class PVmesh(object):
                 prs = rq[i]
                 ravg[rname][bn] += prs
             hcount[bn] += 1
-        for ravgit in ravg.values():
-            np.true_divide(ravgit, hcount)
+        for k, ravgit in ravg.items():
+            ravg[k] = np.true_divide(ravgit, hcount)
         self.rnames = qn
         self.ravg = ravg
         self.rspace =rspace
