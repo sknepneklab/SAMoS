@@ -377,7 +377,13 @@ void NeighbourList::build_faces(bool flag)
   mesh.generate_faces();
   mesh.generate_dual_mesh();
   mesh.postprocess(flag);
+  // Here we remove obtuse and edge trianges
+  // Strictly speaking, we should do this iteratively, until 
+  // there are no more triangles or edges to remove. This would be
+  // simple to implement, but we postpone it unless it causes problems in
+  // actual simulations. 
   mesh.remove_obtuse_boundary();
+  mesh.remove_edge_triangles();
   m_system->update_mesh();
   
   /*
