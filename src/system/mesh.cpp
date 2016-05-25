@@ -286,6 +286,67 @@ void Mesh::order_star(int v)
     V.attached = false;
   else
   {
+    if (!V.boundary)      // For internal verites just pick the first edge
+      edges.push_back(V.edges[0]);
+    else                  // For a bounday vertex, first edge in the star is always the one with its pair being a boundary edge
+    {
+      for (unsigned int e = 0; e < V.edges.size(); e++)
+      {
+        Edge& E = m_edges[V.edges[e]];
+        if (m_edges[E.pair].boundary)
+        {
+          edges.push_back(E.id);
+          break;
+        }
+      }
+    }
+    int i = 0;
+    while(edges.size() < V.edges.size())
+    {
+      Edge& Ei = m_edges[edges[i++]];
+      Vertex& Vi = m_vertices[Ei.to];
+      Vector3d ri = Vi.r - V.r;
+      double min_angle = M_PI;
+      int next_edge;
+      for (unsigned int e = 0; e < V.edges.size(); e++)
+      {
+        Edge& Ej = m_edges[V.edges[e]];
+        if (find(edges.begin(), edges.end(), Ej.id) == edges.end())  // Check if the edge has not already been included (note that most likly we don't even need this test, since angles are ordered)
+        {
+          Vertex& Vj = m_vertices[Ej.to];
+          Vector3d rj = Vj.r - V.r;
+          double ang = angle(ri,rj,V.N);
+          if (ang > 0 && ang < min_angle)
+          {
+            min_angle = ang;
+            next_edge = Ej.id;
+          }
+        }
+      }
+      edges.push_back(next_edge);
+    }
+    copy(edges.begin(),edges.end(),V.edges.begin());
+    // Here we handle duals, neighbours and faces 
+    for (int e = 0; e < V.n_edges; e++)
+    {
+      Edge& E = m_edges[V.edges[e]];
+      if (!m_faces[E.face].is_hole)
+        V.dual.push_back(E.dual);
+      V.neigh.push_back(E.to);
+      V.faces.push_back(E.face);
+    }
+    // Vertex star is not ordered
+    V.ordered = true;
+    // Make sure that the star of boudaries is in proper order
+    //if (V.boundary)
+    //  this->order_boundary_star(V.id);
+    this->dual_area(V.id);
+  }
+  /*
+  if (V.edges.size() == 0)
+    V.attached = false;
+  else
+  {
     edges.push_back(V.edges[0]);
     while (edges.size() < V.edges.size())
     {
@@ -332,6 +393,7 @@ void Mesh::order_star(int v)
     if (V.boundary)
       this->order_boundary_star(V.id);
   }
+  */
 }
 
 /*! Compute dual area by using expression 
@@ -340,7 +402,7 @@ void Mesh::order_star(int v)
  *  is the normal vector to the vertex.
  *  \note We assume that faces are ordered, otherwise the result will be 
  *  wrong.
- *  \param v verex index
+ *  \param v vertex index
 */
 double Mesh::dual_area(int v)
 {
@@ -829,17 +891,25 @@ void Mesh::angle_factor_deriv(int v)
   double r_nu_1_ri_dot_r_nu_n_ri = dot(r_nu_1_ri,r_nu_n_ri);
   
   // We first handle vertex itself
-  Vector3d d_ri = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_n_ri*f1.get_jacobian(V.id)-r_nu_n_ri + r_nu_1_ri*fn.get_jacobian(V.id) - r_nu_1_ri)
-                  -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_1_ri*(r_nu_n_ri.unit())*fn.get_jacobian(V.id) - len_r_nu_1_ri*r_nu_n_ri.unit()
-                                                                              + len_r_nu_n_ri*(r_nu_1_ri.unit())*f1.get_jacobian(V.id) - len_r_nu_n_ri*r_nu_1_ri.unit());
-  
   double fact = 0.0;
-  if (fabs(r_nu_1_ri_dot_r_nu_n_ri*r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)) < 1.0)
-    fact = sign/(2.0*M_PI)*1.0/sqrt(1.0 - r_nu_1_ri_dot_r_nu_n_ri*r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2));               
+  try
+  {
+    Vector3d d_ri = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_n_ri*f1.get_jacobian(V.id)-r_nu_n_ri + r_nu_1_ri*fn.get_jacobian(V.id) - r_nu_1_ri)
+                    -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_1_ri*(r_nu_n_ri.unit())*fn.get_jacobian(V.id) - len_r_nu_1_ri*r_nu_n_ri.unit()
+                                                                                + len_r_nu_n_ri*(r_nu_1_ri.unit())*f1.get_jacobian(V.id) - len_r_nu_n_ri*r_nu_1_ri.unit());
+    
+    if (fabs(r_nu_1_ri_dot_r_nu_n_ri*r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)) < 1.0)
+      fact = sign/(2.0*M_PI)*1.0/sqrt(1.0 - r_nu_1_ri_dot_r_nu_n_ri*r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2));               
+    
+    
+    V.angle_def.push_back(fact*d_ri);
+  }
+  catch (...)
+  {
+    cout << "Warning! Jacobians were not properly computed. This suggests problems with the mesh most likley due to poor choice of parameters. Results of this simulation are NOT reliable!" << endl;
+    V.angle_def.push_back(Vector3d(0,0,0));
+  }
   
-  
-  V.angle_def.push_back(fact*d_ri);
-                  
   // Now we handle all neighbours
   for (int e = 0; e < V.n_edges; e++)
     V.angle_def.push_back(Vector3d(0.0,0.0,0.0));
@@ -849,16 +919,31 @@ void Mesh::angle_factor_deriv(int v)
     if (e <= 1)
     {
       Vertex& Vj = m_vertices[m_edges[V.edges[e]].to];
-      Vector3d d_rj = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_n_ri*f1.get_jacobian(Vj.id))
+      try
+      {
+        Vector3d d_rj = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_n_ri*f1.get_jacobian(Vj.id))
                  -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_n_ri*(r_nu_1_ri.unit())*f1.get_jacobian(Vj.id));
-      V.angle_def[e+1] = V.angle_def[e+1] + fact*d_rj;
+
+        V.angle_def[e+1] = V.angle_def[e+1] + fact*d_rj;
+      } 
+      catch (...)
+      {
+        cout << "Warning! Jacobians were not properly computed. This suggests problems with the mesh most likley due to poor choice of parameters. Results of this simulation are NOT reliable!" << endl;
+      }
     }
     if (e >= V.n_edges-2)
     {
       Vertex& Vk = m_vertices[m_edges[V.edges[e]].to];
-      Vector3d d_rk = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_1_ri*fn.get_jacobian(Vk.id))
-                 -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_1_ri*(r_nu_n_ri.unit())*fn.get_jacobian(Vk.id));
-      V.angle_def[e+1] = V.angle_def[e+1] + fact*d_rk;
+      try
+      {
+        Vector3d d_rk = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_1_ri*fn.get_jacobian(Vk.id))
+                  -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_1_ri*(r_nu_n_ri.unit())*fn.get_jacobian(Vk.id));
+        V.angle_def[e+1] = V.angle_def[e+1] + fact*d_rk;
+      }
+      catch (...)
+      {
+        cout << "Warning! Jacobians were not properly computed. This suggests problems with the mesh most likley due to poor choice of parameters. Results of this simulation are NOT reliable!" << endl;
+      }
     }
   }
   
@@ -1331,7 +1416,7 @@ void Mesh::remove_face(int f)
  *  This funcion is used in conjunction with remove_edge_triangles function 
  *  to remove all trianges that live at the bounday and and have one 
  *  of its vertices having only two neighbours. This situation leads to 
- *  ill-defined angle deficites.
+ *  ill-defined angle deficits.
  *  \param f id of the face to remove
  *  \return true is the face was removed
 */
@@ -1383,6 +1468,7 @@ bool Mesh::remove_edge_face(int f)
   
   // Vertex is no longer attached
   V.attached = false;
+  V.boundary = false;
   // Update neighbour information
   for (unsigned int v = 0; v < V.neigh.size(); v++)
   {

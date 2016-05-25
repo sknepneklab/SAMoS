@@ -941,6 +941,7 @@ void System::update_mesh()
       m_mesh.update(p);
     }
     m_mesh.remove_obtuse_boundary();
+    m_mesh.remove_edge_triangles();
     m_mesh.equiangulate();
     m_mesh.update_dual_mesh();
     m_mesh.update_face_properties();
