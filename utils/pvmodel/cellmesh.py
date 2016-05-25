@@ -120,7 +120,104 @@ def bond_intersection(x_c, wl, x_a, x_b):
 # Want an object which wraps the Openmesh
 class Pymesh(object):
     def __init__(self, omesh):
-        pass
+        self.m = self.omesh
+        self.pym = self._pythonise()
+        self.n_vertices = self.m.n_vertices()
+        self.n_faces = self.m.n_face()
+
+    def _pythonise(self):
+        mesh= self.m
+        meshpt = OrderedDict()
+        for vh in mesh.vertices():
+            meshpt[vh.idx()] = omvec(mesh.point(vh))
+        return meshpt
+
+    def getvh(self, vhi):
+        return self.m.vertex_handle(vhi)
+    def getvpt(self, vhi):
+        return self.pym[vhi]
+    # for retrieving lots of property values its better to localise the dictionary
+    def getfprop(self, pname, i):
+        return getattr(self, pname)[i]
+
+def get_star_hedges(polygons, vhi):
+    hehids = []
+    for fh in polygons.vf(vhi):
+        for heh in polygons.fh(fh):
+            hehids.append(heh.idx())
+    return set(hehids)
+
+def get_star_edges(polygons, vhi):
+    ehids = []
+    for fh in polygons.vf(vhi):
+        for heh in polygons.fh(fh):
+            eh = polygons.edge_handle(heh)
+            ehids.append(eh.idx())
+    return set(ehids)
+
+class Vstress(object):
+    def __init__(self, stress, clist, name):
+        self.stress = stress
+        self.clist = clist
+        self.name = name
+        self._parts()
+
+    def _parts(self):
+        # suppose we always calculate stresses for the full tri_bulk at the moment
+        # still need to save the clist I think
+        sl = len(self.stress)
+        self.nstress = np.full(sl, np.nan)
+        self.sstress = np.full(sl, np.nan)
+        self.pressure =np.full(sl, np.nan)
+        # still ignoring kinetic part for now
+        stress = dict([(i, self.stress[i]) for i in self.clist])
+        evalues, evectors = {}, {}
+        #print stress
+        for i in self.clist:
+            st = stress[i]
+            if not np.isnan(st[0][0]):
+                est = eig(st[:2,:2])
+                evalues[i], evectors[i] = est
+        for i in self.clist:
+            st = stress[i]
+            self.pressure[i] = 1/2. * np.trace(st)
+            smax, smin = evalues[i]
+            if smin > smax: smin, smax = smax, smin
+            self.nstress[i] = (smax + smin)/2
+            self.sstress[i] = (smax - smin)/2
+
+    # Now we have self.stress and self.pressure the next step is to 
+    #  reduce to averaged quantities
+    def radial(self, rcm, rcmd, nstat=100.):
+        radialq= [self.pressure, self.nstress, self.sstress]
+        # going to name the output arrays by prepending self.name
+        qn = ['radial_pressure', 'radial_normal_stress', 'radial_shear_stress']
+        prep=self.name+'_'
+        qn = [prep + q for q in qn]
+        radials = dict(zip(qn, radialq))
+        print 'the centre of mass for the tissue', rcm
+        #now bin the points according to their distance from the centre
+        mrc = np.max(rcmd)
+        nbins = m.ceil(len(self.clist)/nstat)
+        rspace = np.linspace(0, mrc, nbins+1, endpoint=True)
+        # the bin index of each point based on distance from rcmb
+        npd = np.digitize(rcmd, rspace, right=True)-1
+        # It remains to average the contents of each bin
+        assert nbins == len(rspace)-1
+        lenr = len(radials)
+        ravg = dict([(rname, np.zeros(nbins)) for rname in qn])
+        hcount = np.zeros(nbins)
+        for i, bn in zip(self.clist, npd):
+            for rname, rq in radials.items():
+                prs = rq[i]
+                ravg[rname][bn] += prs
+            hcount[bn] += 1
+        for k, ravgit in ravg.items():
+            ravg[k] = np.true_divide(ravgit, hcount)
+        self.rnames = qn
+        self.ravg = ravg
+        self.rspace =rspace
+
 
 
 # The main object for operating on the cell mesh.
@@ -176,6 +273,17 @@ class PVmesh(object):
         self.ptmesh = {}
         self.ptmesh[0] = self.tript
         self.ptmesh[1] = self.meshpt
+
+        self.stresses = {}
+
+        # find the centre of mass
+        triptarr = self.tript.values()
+        ltript = len(triptarr)
+        self.rcm = np.sum(triptarr, axis=0)/ltript
+        def distrcm(rval):
+            return norm(rval-self.rcm)
+        self.rcmd = map(distrcm, triptarr)
+
         
     def _helengths(self, tri):
         # store half edge vectors as half edge property
@@ -616,7 +724,6 @@ class PVmesh(object):
 
         # For calculating derivative of area for boundary cells 
         for boundary in self.boundaries:
-            print boundary
             for j, vhid in enumerate(boundary):
                 mvhid = self.btv_bmv[vhid]
                 drmudrp[mvhid] = {}
@@ -713,7 +820,8 @@ class PVmesh(object):
         self.fprop = fprop
 
         # The duplicated code involved in determining the angle defecit derivative
-        #  for the primary and adjacent faces
+        #  for the primary and adjacent faces 
+        # actually its not duplicated anymore
         def setup_rmu(vhid):
             hc = self.halfcells[vhid]
             mu1, mun = hc[0], hc[-1] # mesh vertices
@@ -783,16 +891,18 @@ class PVmesh(object):
         # It remains to do some complicated math over loops of nearest neighbours, etc..
         # We also want to calculate stress now
         # {vhid: s_arr}
-        a_stress = OrderedDict()
-        p_stress = OrderedDict()
-        l_stress = OrderedDict()
-        stress = OrderedDict()
+        sl= len(self.tript)
+        a_stress = np.full((sl,3,3), 0.)
+        p_stress = np.full((sl,3,3), 0.)
+        l_stress = np.full((sl,3,3), 0.)
+        stress = np.full((sl,3,3), 0.)
+        # basically a hack
+        self.pressure =  np.full(sl,0.)
+        self.clist= self.tri_bulk 
         
+
         for trivh in tri.vertices():
-            fh = self.mesh.face_handle(trivh.idx())
             trivhid = trivh.idx()
-            fhidx = fh.idx()
-            # fhidx = trimesh vertices id
             kp = tri.property(self.kprop, trivh)
             gammap = tri.property(self.gammaprop, trivh)
             area = tri.property(self.areaprop, trivh)
@@ -801,10 +911,6 @@ class PVmesh(object):
             ag = self.tri.property(self.btheta_prop, trivh)
 
             trivhpt = omvec(self.tri.point(trivh))
-            stress[trivhid] = np.zeros((3,3))
-            a_stress[trivhid] = np.zeros((3,3))
-            p_stress[trivhid] = np.zeros((3,3))
-            l_stress[trivhid] = np.zeros((3,3))
             boundary = tri.is_boundary(trivh)
 
             # Immediate contribution
@@ -817,7 +923,6 @@ class PVmesh(object):
             # dAdrp and dPdrp
             for mu in loops[trivhid]:
                 r_mu_vh = idtopt(mesh, mu) - trivhpt # precalculate these
-                if trivhid == 1015: print trivhid, mu, fhidx
 
                 dAdrmu[trivhid][mu]
                 drmudrp[mu][trivhid]
@@ -829,9 +934,10 @@ class PVmesh(object):
                         zetat = dzetadr[trivhid][trivhid][mu] * prefarea
                         ac -= zetat
 
-                a_stress[trivhid] += farea_fac * np.outer(ac, r_mu_vh)
-                p_stress[trivhid] += fprim_fac * np.outer(pc, r_mu_vh)
-                l_stress[trivhid] += -1 * np.outer(lc, r_mu_vh)
+                if not boundary:
+                    a_stress[trivhid] += farea_fac * np.outer(ac, r_mu_vh)
+                    p_stress[trivhid] += fprim_fac * np.outer(pc, r_mu_vh)
+                    l_stress[trivhid] += -1 * np.outer(lc, r_mu_vh)
                 asum += ac
                 psum += pc
                 lsum += lc
@@ -877,9 +983,10 @@ class PVmesh(object):
                     asum += ac
                     psum += pc
                     lsum += lc
-                    a_stress[trivhid] += farea_fac  * np.outer(ac, r_mu_vh)
-                    p_stress[trivhid] += fprim_fac * np.outer(pc, r_mu_vh)
-                    l_stress[trivhid] += -1 * np.outer(lc, r_mu_vh)
+                    if not boundary:
+                        a_stress[trivhid] += farea_fac  * np.outer(ac, r_mu_vh)
+                        p_stress[trivhid] += fprim_fac * np.outer(pc, r_mu_vh)
+                        l_stress[trivhid] += -1 * np.outer(lc, r_mu_vh)
 
                 area_nnsum += farea_fac * asum
                 prim_nnsum += fprim_fac * psum
@@ -890,9 +997,15 @@ class PVmesh(object):
             totalforce = imforce + nnforce
             tri.set_property(fprop, trivh, totalforce)
 
-            stress[trivhid] = a_stress[trivhid] + p_stress[trivhid]
+            total_stress = a_stress[trivhid] + p_stress[trivhid] + l_stress[trivhid]
+            stress[trivhid] = total_stress/area
 
-        self.n_stress = stress
+        # mark
+        clist = self.tri_bulk
+        vst = Vstress(stress, clist, 'simple')
+        vst.radial(self.rcm, self.rcmd)
+        self.stresses['simple'] = vst
+        self.nstress = stress
         self.forces = True
 
     def _pythonise(self, mesh):
@@ -908,23 +1021,30 @@ class PVmesh(object):
         # remove boundary bonds from the list here
         #for vhi in self.tri.vertices():
         self.lmax = 0.
+        self.avginubond =0.
+        ninu = 0
         for i in self.tri_bulk:
             vhi = self.tri.vertex_handle(i)
             for vhnu in self.loop(vhi):
                 nu = vhnu
                 rnorm = norm(tript[i] - meshpt[nu])
                 if rnorm > self.lmax: self.lmax = rnorm
+                self.avginubond += rnorm
+                ninu += 1
                 bonds[frozenset([(0,i),(1,nu)])] = None
+        self.avginubond /= ninu
+        print 'Average (i, nu) bond, ', self.avginubond
         for eh in self.mesh.edges():
             heh = self.mesh.halfedge_handle(eh, 0)
             nu = self.mesh.to_vertex_handle(heh).idx()
             mu = self.mesh.from_vertex_handle(heh).idx()
             # removing the rest of the boundary cell bonds
-            if nu in self.true_mesh_boundary and mu in self.true_mesh_boundary: 
-                continue
+            #if nu in self.true_mesh_boundary and mu in self.true_mesh_boundary: 
+                #continue
             rnorm = norm(meshpt[nu] - meshpt[mu])
             if rnorm > self.lmax: self.lmax = rnorm
             bonds[frozenset([(1,nu),(1,mu)])] = eh.idx()
+        print 'maximum bond length, ', self.lmax
 
 
 
@@ -981,16 +1101,13 @@ class PVmesh(object):
             bv= polygons.to_vertex_handle(heh)
             a = norm(omvec(polygons.point(av) -polygons.point(bv)))
             polygon_l[frozenset([av.idx(),bv.idx()])] = a
-
-
-        def get_star_hedges(polgons, vhi):
-            hehids = []
-            for fh in polygons.vf(vhi):
-                for heh in polygons.fh(fh):
-                    hehids.append(heh.idx())
-            return set(hehids)
+        self.polygon_l = polygon_l
 
         dEdbond = {}
+        for bondk in self.bonds.keys():
+            dEdbond[bondk] = 0.
+
+        nc = {}
         for i in self.tri_bulk:
             vhi= tri.vertex_handle(i)
 
@@ -999,9 +1116,8 @@ class PVmesh(object):
             prefarea = self.tri.property(self.prefareaprop, vhi)
             
             pre = kp*(area - prefarea)
+            #print pre
             # pick out triangles
-            nc = 0.
-
             pvhi = polygons.vertex_handle(pushforward[(0, i)])
             for hehid in get_star_hedges(polygons, pvhi):
                 heh = polygons.halfedge_handle(hehid)
@@ -1017,7 +1133,7 @@ class PVmesh(object):
                 fid = f.idx()
                 vhs = [fv.idx() for fv in polygons.fv(f)]
 
-                bond_pairs = map(frozenset, zip(vhs, np.roll(vhs, -1)))
+                bond_pairs = map(frozenset, zip(vhs, np.roll(vhs, 1)))
                 lls = [polygon_l[bp] for bp in bond_pairs]
                 # derivative with respect to the length dl
                 dl = bond_pairs.index(frozenset([avid,bvid]))
@@ -1034,8 +1150,13 @@ class PVmesh(object):
                 dDdbond = 1/2. *  ( -a*sb*sc + s*sa*sc + s*sa*sb )
                 dAdbond = preA * dDdbond
 
-                if bondk not in dEdbond:
-                    dEdbond[bondk] = 0.
+                #if bondk not in dEdbond:
+                    #dEdbond[bondk] = 0.
+                #print pre, dAdbond
+                if bondk in nc.keys():
+                    nc[bondk] += 1
+                else:
+                    nc[bondk] = 1
                 dEdbond[bondk] += pre * dAdbond
 
         dEdbond_p = {}
@@ -1050,7 +1171,6 @@ class PVmesh(object):
             cl = self.mesh.property(self.clprop, eh)
             dEdbond_cl[bondk] = cl
             dEdbond_p[bondk] = 0.
-            print cl
             for i in [0, 1]:
                 heh = self.mesh.halfedge_handle(eh, i)
                 f = self.mesh.face_handle(heh)
@@ -1063,17 +1183,20 @@ class PVmesh(object):
                 prim = tri.property(self.primprop, vh)
                 dec = gammap * prim 
                 dEdbond_p[bondk] += dec
-                print dec
 
         dEdbondall = {}
         for bondk in bonds.keys():
             dEdbondall[bondk] = dEdbond[bondk]
             if bondk in dEdbond_p:
-                dEdbondall[bondk] += dEdbond[bondk]
+                dEdbondall[bondk] += dEdbond_p[bondk]
+                dEdbondall[bondk] += dEdbond_cl[bondk]
 
+        self.pushforward = pushforward
+        self.pullback = pullback
+        self.polygons = polygons
         self.dEdbond = dEdbondall
 
-    def _set_wl(self, omega, wl):
+    def _set_wl(self, wl):
         self.wl = wl
         block = np.array(self.tript.values() + self.meshpt.values())
         Lx, Ly, mzero = np.amax(np.abs(block),axis=0)
@@ -1086,6 +1209,8 @@ class PVmesh(object):
         # Then when it comes to checking intersections only do it for bonds which have both
         # ends within the neighbouring cells.
         for i, ipt in self.tript.items():
+            print i
+            print ipt[:2]
             cl.add_particle(ipt[:2], (0, i))
         for nu, nupt in self.meshpt.items():
             cl.add_particle(nupt[:2], (1, nu))
@@ -1098,13 +1223,45 @@ class PVmesh(object):
             self.bondcl.add_bond(pta, ptb, bondk)
         self.cl = cl
 
-    def _stress_setup(self, omega=None):
+    def _stress_setup(self, wl=None):
         self._construct_bonds()
         self._calculate_dEdlength()
         tript = self.tript; meshpt = self.meshpt
-        if omega:
-            self._set_wl(omega)
-            self.is_stress_setup = True
+        if wl:
+            self._set_wl(wl)
+
+    # single cell only virial stress
+    # Hopefully comparing this with the simple stress will shed some light
+    def calculate_virial(self, vhi):
+
+        # the cell vertices
+        #for pvh in self.vv(self.pushforward[vhi]):
+        stress = np.zeros((3,3))
+        polygons = self.polygons
+
+        pvhi = polygons.vertex_handle(self.pushforward[(0, vhi)])
+        nc = 0
+        for ehid in get_star_edges(polygons, pvhi):
+            eh = polygons.edge_handle(ehid)
+            heh = polygons.halfedge_handle(eh, 0)
+            vha = polygons.from_vertex_handle(heh)
+            vhb = polygons.to_vertex_handle(heh)
+            a = vha.idx(); b = vhb.idx()
+            avidk = self.pullback[a]; bvidk = self.pullback[b]
+            bondk = frozenset([avidk, bvidk])
+            ta, ai = avidk
+            tb, bi = bvidk
+            pta = self.ptmesh[ta][ai]
+            ptb = self.ptmesh[tb][bi]
+            bondv = ptb - pta
+            bondv_hat = bondv/norm(bondv)
+            stress += self.dEdbond[bondk] * np.outer(bondv, bondv_hat)
+            nc += 1
+            #print nc, self.dEdbond[bondk]
+        vh = self.tri.vertex_handle(vhi)
+        area = self.tri.property(self.areaprop, vh)
+        stress = 1/area * stress
+        return stress
 
     def calculate_stress(self, x_c, omega, fast=False):
         # wl is the smoothing length
@@ -1114,7 +1271,6 @@ class PVmesh(object):
         tript, meshpt= self.tript, self.meshpt
         bonds = self.bonds 
         lmax = self.lmax
-        #is_near = self.cl.proximity_def(x_c)
 
         # Need to cut out all the bonds which are too far away to be worth checking. Efficiently.
         stress = np.zeros((3,3))
@@ -1133,20 +1289,18 @@ class PVmesh(object):
             pta = self.ptmesh[ta][a]
             ptb = self.ptmesh[tb][b]
             
-            #if not (is_near(pta) or is_near(ptb)):
-                #continue
             bondv = pta-ptb
             inter = bond_intersection(x_c, self.wl, pta, ptb)
             if inter is None:
                 continue # couldn't find an intersection
             m_minus, m_plus, line = inter
-            # Non-zero stress contribution
             # do this check earlier todo
             if ta == 1 and tb == 1 and (a in self.bulk_edge) and (b in self.bulk_edge):
                 #print 'excluding stress with bond', a,b 
                 #print 'at positions', meshpt[a], meshpt[b]
                 stress = cnan
                 break 
+            # Non-zero stress contribution below here
             bondv_hat = bondv/norm(bondv)
             # can use an arraylike representing the function and use integrate.simps
             def omegaline(m):
@@ -1167,6 +1321,57 @@ class PVmesh(object):
         if np.isnan(stress[0][0]): return stress
         #stress *= -1./(pi * wl**2)
         return stress
+
+    def stress_on_centres(self, omega, clist=None, 
+            hardy=True, virial=True, kinetic=False, fast=False):
+        # By using standard numpy arrays here and adding an array for the indices in clist 
+        if clist is None: clist = self.tri_bulk
+        self.omega = omega
+        self.omegad = []
+
+        cll = len(self.tript)
+        self.clist= np.array(clist)
+        self.stress = np.full((cll,3,3), np.nan)
+        self.stressk = np.full((cll,3,3), np.nan)
+        self.stressv = np.full((cll,3,3), np.nan)
+        avg =[]
+        
+        excl= []
+        for i in clist:
+            if i % 100 == 0:
+                print 'Made it to vertex', i
+            ipt = self.tript[i]
+            if hardy:
+                st = self.calculate_stress(ipt, omega, fast=fast)
+
+                if np.isnan(st[0][0]):
+                    excl.append(i)
+                self.stress[i][:,:] = st
+            if virial:
+                # virial is always well defined for the whole bulk
+                self.stressv[i][:,:] = self.calculate_virial(i)
+                avg.append(1/2. *np.trace(self.stressv[i][:,:]))
+
+            if kinetic:
+                ssk = self.calculate_kinetic_stress(ipt, omega)
+                self.stressk[i][:,:] = ssk
+            #print stressk[i][:2,:2]
+            #print 
+        print 'pressure'
+        print np.mean(np.array(avg))
+        #print 'Made it to vertex', i
+        clist = [i for i in clist if i not in excl]
+        #plt.hist(self.omegad)
+        #plt.show()
+        if hardy:
+            vst = Vstress(self.stress, clist, 'hardy')
+            vst.radial(self.rcm,self.rcmd)
+            self.stresses['hardy'] =  vst
+        if virial:
+            vv = Vstress(self.stressv, self.tri_bulk, 'virial')
+            vv.radial(self.rcm,self.rcmd)
+            self.stresses['virial'] = vv
+
 
     def calculate_vflow(self, x_c, omega):
         vvals = self.vvals
@@ -1201,106 +1406,6 @@ class PVmesh(object):
             stressk -= np.outer(vrel, vrel) * omega(norm(x_c -ipt))
         return stressk
 
-    def stress_on_centres(self, omega, clist=None, kinetic=True, fast=False):
-        # By using standard numpy arrays here and adding an array for the indices in clist 
-
-        self.omegad = []
-
-        cll = len(self.tript)
-        self.clist= np.array(clist)
-        self.stress = np.full((cll,3,3), np.nan)
-        self.stressk = np.full((cll,3,3), np.nan)
-        
-        if clist is None: clist = self.tri_bulk
-        excl= []
-        for i in clist:
-            if i % 100 == 0:
-                print 'Made it to vertex', i
-            ipt = self.tript[i]
-            st = self.calculate_stress(ipt, omega, fast=fast)
-
-            if np.isnan(st[0][0]):
-                excl.append(i)
-            self.stress[i][:,:] = st
-            if kinetic:
-                ssk = self.calculate_kinetic_stress(ipt, omega)
-                self.stressk[i][:,:] = ssk
-            #print stressk[i][:2,:2]
-            #print stress[i][:2,:2]  if stress[i] != None else None
-            #print 
-        print 'Made it to vertex', i
-        #scat(np.array(excl))
-        #print clist
-        self.clist = [i for i in clist if i not in excl]
-        #print self.clist
-        #plt.hist(self.omegad)
-        #plt.show()
-        self.stress_parts()
-
-    def stress_parts(self):
-        # suppose we always calculate stresses for the full tri_bulk at the moment
-        # still need to save the clist I think
-        sl = len(self.stress)
-        self.nstress = np.full(sl, np.nan)
-        self.sstress = np.full(sl, np.nan)
-        self.pressure =np.full(sl, np.nan)
-        # still ignoring kinetic part for now
-        stress = dict([(i, self.stress[i]) for i in self.clist])
-        evalues, evectors = {}, {}
-        #print stress
-        for i in self.clist:
-            st = stress[i]
-            if not np.isnan(st[0][0]):
-                est = eig(st[:2,:2])
-                evalues[i], evectors[i] = est
-        for i in self.clist:
-            st = stress[i]
-            self.pressure[i] = 1/2. * np.trace(st)
-            smax, smin = evalues[i]
-            if smin > smax: smin, smax = smax, smin
-            self.nstress[i] = (smax + smin)/2
-            self.sstress[i] = (smax - smin)/2
-
-    # Now we have self.stress and self.pressure the next step is to 
-    #  reduce to averaged quantities
-    def radial(self, nstat=100.):
-        radialq= [self.pressure, self.nstress, self.sstress]
-        qn = ['radial_pressure', 'radial_normal_stress', 'radial_shear_stress']
-        radials = dict(zip(qn, radialq))
-        # first find the centre of mass
-        #triptarr = np.array(self.tript.values())
-        #triptarr = self.pressure.keys()
-        triptarr = np.array([self.tript[i] for i in self.clist])
-        ltript = len(triptarr)
-        rcm = np.sum(triptarr, axis=0)/ltript
-        print 'the centre of mass for the tissue', rcm
-        #now bin the points according to their distance from the centre
-        def distrcm(rval):
-            return norm(rval-rcm)
-        rcmd = map(distrcm, triptarr)
-        mrc = np.max(rcmd)
-        nbins = m.ceil(ltript/nstat)
-        rspace = np.linspace(0, mrc, nbins+1, endpoint=True)
-        # the bin index of each point based on distance from rcmb
-        npd = np.digitize(rcmd, rspace, right=True)-1
-        # It remains to average the contents of each bin
-        assert nbins == len(rspace)-1
-        lenr = len(radials)
-        ravg = dict([(rname, np.zeros(nbins)) for rname in qn])
-        hcount = np.zeros(nbins)
-        for i, bn in zip(self.clist, npd):
-            for rname, rq in radials.items():
-                prs = rq[i]
-                ravg[rname][bn] += prs
-            hcount[bn] += 1
-        for k, ravgit in ravg.items():
-            ravg[k] = np.true_divide(ravgit, hcount)
-        self.rnames = qn
-        self.ravg = ravg
-        self.rspace =rspace
-
-        #plt.plot(rspace[:-1], radial_pressure)
-        #plt.show()
 
     ''' This is really the constructor '''
     @classmethod

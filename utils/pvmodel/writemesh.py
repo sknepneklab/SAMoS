@@ -131,7 +131,6 @@ def writemeshenergy(pv, outfile):
         
         pr = pv.pressure[vh.idx()]
         prfacevalue = 0. if np.isnan(pr) else pr
-        print prfacevalue
         pressure.InsertNextValue(prfacevalue)
 
     print 'added faces', nfaces
@@ -201,9 +200,9 @@ def writetriforce(pv, outfile):
 
     # Stress calculation fails for boundaries
     # Stress at boundaries is not symmetric
-    if pv.forces:
-        stress = get_stress(pv, pv.n_stress)
-        evalues, evectors = eig(stress.values())
+    #if pv.forces:
+        #stress = get_stress(pv, pv.n_stress)
+        #evalues, evectors = eig(stress.values())
     #io.stddict(pv.stress)
     #print evalues
     #print 
@@ -261,7 +260,7 @@ def rotation_2d(theta):
     R = np.matrix('{} {}; {} {}'.format(c, -s, s, c))
     return R
 
-def add_ellipse(Points, evals, shift, R, res):
+def add_ellipse(Points, evals, shift, R, res, pressure, pr=0.):
     x, y = shift
     a, b = evals
     a, b = abs(a), abs(b)
@@ -271,7 +270,7 @@ def add_ellipse(Points, evals, shift, R, res):
         xy_i = np.einsum('mn,n->m',  R, xy_i)
         xe, xy = xy_i
         Points.InsertNextPoint(xe + x, xy + y, 0.)
-        #print 'inserting point', xe + x, xy + y, 0.
+        pressure.InsertNextValue(pr)
  
 def write_stress_ellipses(pv, outfile, pvstress, res=20):
     # any visualisation has to do something with None stresses
@@ -282,9 +281,10 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
     e_x = np.array([1., 0., 0.])
 
     # calculate principle stresses
-    stress = get_stress(pv, pvstress)
+    stress = pvstress.stress
+    clist = pvstress.clist
     evalues, evectors = {}, {}
-    for i in pv.clist:
+    for i in clist:
         ss = stress[i]
         if ss[0] is not np.nan:
             evalues[i], evectors[i] = eig(ss)
@@ -296,10 +296,13 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
     #maxe1 =max(map(abs, list(evalues.values())))
     #maxe2 =max(map(abs, list(evalues[:][1])))
 
-    #maxe = np.max(np.array(evalues.values()))
-    #print 'adjusting stress ellipses by a factor of ', normf
-    normf= 1.
-
+    maxe = np.max(np.absolute(np.array(evalues.values())))
+    if maxe == 0.:
+        print evalues
+    #normf = maxe/0.5
+    normf = 1.
+    print 'adjusting stress ellipses by a factor of ', normf
+    
     ells = vtk.vtkCellArray()
     for ellid, vhid in enumerate(evalues.keys()):
     #for vhid in pv.tript.keys():
@@ -314,10 +317,12 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
         theta = np.arccos(np.dot(e_x, ea)) 
         sg = 1. if np.dot(np.cross(e_x, ea),pv.normal) > 0 else -1.
         R = rotation_2d(sg * theta)  
-        add_ellipse(Points, (a,b), shift, R, res)
 
-        #else:
-            #add_ellipse(Points, (0,0), shift, np.zeros((2,2)), res)
+
+        pr = pvstress.pressure[vhid]
+        prfacevalue = 0. if np.isnan(pr) else pr
+        pressure.InsertNextValue(prfacevalue)
+        add_ellipse(Points, (a,b), shift, R, res,  pressure, pr=prfacevalue )
 
         polyline = vtk.vtkPolyLine()
         polyline.GetPointIds().SetNumberOfIds(res)
@@ -327,9 +332,11 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
 
         ells.InsertNextCell(polyline)
 
+
     polydata = vtk.vtkPolyData()
     polydata.SetPoints(Points)
     
+    polydata.GetPointData().AddArray(pressure)
     polydata.SetLines(ells)
     polydata.Modified()
 

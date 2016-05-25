@@ -87,16 +87,19 @@ class STracker(Tracker):
         print 'saving radial data to ', fileo+'.npz'
 
         qdict = self.qdict
-        qdict['rspace'] = pv.rspace 
-        for rname, rav in pv.ravg.items():
-            qdict[rname] = rav
-        #qdict['radial_pressure'] = pv.radial_pressure
+        # prepend to 'rspace'
+        for stress in pv.stresses.values():
+            space_name = '_'.join([stress.name, 'rspace'])
+            qdict[space_name] = stress.rspace 
+            for rname, rav in stress.ravg.items():
+                qdict[rname] = rav
+
         if len(qdict) != 0:
             print 'saving'
             print fileo
-            print qdict
+            #print qdict
 
-            np.savez(fileo, **qdict)
+        np.savez(fileo, **qdict)
 
 
 def hash_function(f, linspace):
@@ -179,6 +182,14 @@ class Senario(object):
                 'recording the analysis parameters to ', paramsf
             io.dumpargs(self.args.__dict__, fp)
 
+    def _name_vtp(self, name, i=None):
+        args= self.args
+        outname = name + args.outnum
+        if i:
+             outname += '_' + str(i) 
+        outname += '.vtp'
+        return path.join(args.dir, outname)
+
 
 set_choice = [844, 707, 960, 606, 958, 801, 864, 859, 870, 302, 500]
 class Stress_Senario(Senario):
@@ -191,29 +202,59 @@ class Stress_Senario(Senario):
 
         self.omega= None
         om = quartic_wl(wl)
-        #if args.fast:
-            #print 'using the fast integration method for omega'
-            #ne = 10001
-            #hspace = np.linspace(0, wl, ne, endpoint=True)
-            #oarr = np.vectorize(om)(hspace)
-            #self.omega = (oarr, hspace)
-
         self.omega = om
 
         self.st = STracker(self.fileo)
+
+        wlf = os.path.join(args.dir, 'stress_wl')
+        self.wlst = STracker(wlf, xvar='wl')
+
+    def _read_pv(self):
+        rdat = ReadData(self.dataf)
+        facefile = path.join(args.inp_dir, 'faces_' + args.outnum + '.fc')
+        simp, _ = io.readfc(facefile)
+        #pv = PVmesh.datbuild(rdat, simp)
+        pv = PVmesh.datbuild(rdat)
+        return pv
 
     def _operate(self):
         args = self.args
         outnum = self._outnum()
         omega = self.omega
-        k, gamma, L  = args.k, args.gamma, args.L
 
-        rdat = ReadData(self.dataf)
-        facefile = path.join(args.inp_dir, 'faces_' + outnum + '.fc')
-        simp, _ = io.readfc(facefile)
-        pv = PVmesh.datbuild(rdat, simp)
-            
+        pv = self._read_pv()
+        self._handle_constants(pv)
+        pv.calculate_energy()
+        pv.calculate_forces()
+        # ready to output simple stress immediately
+        nsout = self._name_vtp('simple_stress_')
+        wr.write_stress_ellipses(pv, nsout, pv.stresses['simple'])
+        if args.simple: return
+
+        if self.verb: print 'Just use one value of smoothing length'
+        pv._stress_setup()
+        self._iterate_wl(pv)
+        pv._set_wl(args.wl)
+        clist = set_choice if args.s else None
+
+        pv.stress_on_centres(omega, clist=clist, hardy=args.hardy)
+        self.st.update(pv, outnum)
+        vsout = self._name_vtp('virial_stress_')
+        wr.write_stress_ellipses(pv, vsout, pv.stresses['virial'])
+        
+        mout = self._name_vtp('cell_dual_')
+        wr.writemeshenergy(pv, mout)
+
+        tout = self._name_vtp('cell_')
+        wr.writetriforce(pv, tout)
+
+        if args.hardy:
+            sout = self._name_vtp('hardy_stress_')
+            wr.write_stress_ellipses(pv, sout, pv.stresses['hardy'])
+
+    def _handle_constants(self, pv):
         # Handle K, and Gamma
+        k, gamma, L  = args.k, args.gamma, args.L
         nf = pv.tri.n_vertices()
         # Could easily read these from a .conf file
         K = np.full(nf, k)
@@ -221,32 +262,28 @@ class Stress_Senario(Senario):
         cl = pv._construct_cl_dict(L)
         pv.set_constants(K, Gamma, cl)
 
-        pv.calculate_energy()
-        #pv.calculate_forces()
 
-        if self.verb: print 'Just calculate for one value of smoothing length'
-        pv._stress_setup()
-        pv._set_wl(omega, args.wl)
-        clist = set_choice if args.s else None
-        pv.stress_on_centres(omega, clist=clist, kinetic = False, fast=args.fast) 
-        #range_wl(args, pv, [wl], ellipses=True)
-        pv.radial()
-        self.st.update(pv, outnum)
+    def _iterate_wl(self,pv):
+        args = self.args
+        if not args.w:
+            return
+        start, stop, step = eval(args.w)
+        wls = range(start, stop, step)
+        for wl in wls:
+            pv._set_wl(wl)
+            pv.stress_on_centres(self.omega)
+            #pv.radial()
+            wlnum = ('%d' % int(1000*wl)).zfill(4)
+            self.wlst.update(pv, wlnum)
 
-        #track.update(pv, outnum)
-        outdir = args.dir
+            wlout = self._name_vtp('hardy_stress_', wlnum)
+            print 'the name of one stress output ', wlout
+            wr.write_stress_ellipses(pv, wlout, pv.stress)
 
-        cell_outname = 'cell_dual_' + outnum+ '.vtp'
-        mout = path.join(outdir, cell_outname)
-        wr.writemeshenergy(pv, mout)
+        # Fow now just stop here
+        #sys.exit()
 
-        tri_outname = 'cell_' + outnum + '.vtp'
-        tout = path.join(outdir, tri_outname)
-        wr.writetriforce(pv, tout)
 
-        stress_outname = 'hardy_stress_' + outnum + '.vtp'
-        sout = path.join(outdir, stress_outname)
-        wr.write_stress_ellipses(pv, sout, pv.stress)
 
 # define a different function to do 
 ne = 1001 # The number of times the smoothing function is evaluated
@@ -286,18 +323,28 @@ if __name__=='__main__':
  
     parser.add_argument("-i", "--input", type=str, default='cell*.dat', help="Input dat file")
     parser.add_argument("-d", "--dir", type=str, default='/home/dan/tmp/', help="Output directory")
-    parser.add_argument("-w", action='store_true')
     parser.add_argument("-wl", type=float, default=1., help='smoothing length')
     parser.add_argument("-s", action='store_true')
     parser.add_argument("-f", '--fast', action='store_true')
     parser.add_argument("-k", type=float, default=1., help='Area constant')
     parser.add_argument("-g", '--gamma', type=float, default=0., help='Perimeter constant')
     parser.add_argument("-L", type=float, default=0., help='Contact length constant')
-    #parser.add_argument("-o", "--output", type=str, default=epidat, help="Input dat file")
+    parser.add_argument("-w", type=str, default='', 
+            help='A list containing start finish and step for wl values')
+    # debugging operations
+    parser.add_argument("--simple", action='store_true')
+    parser.add_argument("--hardy", action='store_true')
     args = parser.parse_args()
 
     if not os.path.exists(args.dir):
         os.mkdir(args.dir)
+
+    print 'vertex model parameters'
+    print 'k ', args.k
+    print 'gamma, ',  args.gamma
+    print 'L ',args.L
+    if args.w:
+        print 'Calculating stress for wl = ', range(*eval(args.w))
 
     stressrun = Stress_Senario(args)
     stressrun.save_parameters()

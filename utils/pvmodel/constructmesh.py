@@ -6,6 +6,7 @@ import writemesh as wr
 
 import numpy as np
 import sys
+import ioutils as io
 
 from collections import OrderedDict
 
@@ -27,13 +28,15 @@ def makeout(rvals, parea):
 
 npnormal= np.array([0.,0.,1.])
 def fillout(outd, normal=npnormal):
-    #OrderedDict(
-    pass
-
+    ld= len(outd.values()[0])
+    outd['nvz'] = zeros = np.full(ld, 1.)
+    for hh in ['vx', 'vy', 'vz', 'nvx', 'nvy']:
+        outd[hh] = np.full(ld, 0.)
+    return outd
 
 # Single cell, n sides
 
-def single(nsides,prefarea=5., origin=[0.,0.,0.]):
+def single(nsides, prefarea=5., origin=[0.,0.,0.]):
     parea = prefarea
     rvals = np.array(origin).reshape((1,3))
     rad = np.linspace(-np.pi, np.pi, nsides, endpoint=False)
@@ -47,8 +50,9 @@ def single(nsides,prefarea=5., origin=[0.,0.,0.]):
     #print np.column_stack([x, y, z])
 
     outd = makeout(rvals, area)
+    outd = fillout(outd)
     return outd
-single.defaults = [6]
+single.defaults = ['6']
 single.call = ['single( nsides )']
 
 
@@ -81,6 +85,6 @@ if __name__=='__main__':
 
     with open('test.dat', 'w') as fo:
         print outd
-        wr.datdump(outd, fo)
+        io.datdump(outd, fo)
 
 
