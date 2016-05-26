@@ -21,6 +21,7 @@ import pickle
 
 from Writer import *
 from Geometry import *
+from Hessian import *
 from read_param import *
 from read_data import *
 try:
@@ -151,8 +152,8 @@ class SimRun:
 				rad=data.data[data.keys['radius']]
 				if self.Nvariable:
 					self.radius[u,:self.Nval[u]]=rad
-				else:
-					self.radius[u,:]=rad
+				#else:
+					#self.radius[u,:]=rad
 			#if u>0 and takeDrift:
 				#rval_u0=rval_u
 				#print u
@@ -255,6 +256,105 @@ class SimRun:
 			plt.xlabel("r-r'")
 			plt.ylabel('Correlation')
 		return bins,velcorr,fig
+	  
+	# Project our displacements or any stuff like that onto the eigenmodes of a hessian matrix, which has been calculated separately
+	# we will need self.eigval and self.eigvec
+	# I assume that the global skip has already taken care of any of the transient stuff
+	# I am *not* removing any dreaded rattlers, because they should be part of the whole thing. 
+	def projectModes(self,Hessian):
+		if self.Nvariable:
+			print "Hessians and dividing particles don't mix! Stopping here!"
+			self.proj=0
+			self.projv=0
+		else:
+			# self.rval and self.vval is where the fun is, self.rval=np.zeros((self.Nsnap,self.N,3))
+			self.proj=np.zeros((3*Hessian.N,self.Nsnap))
+			self.projv=np.zeros((3*Hessian.N,self.Nsnap))
+			#proj2=np.zeros((3*Hessian.N,self.Nsnap))
+			for u in range(self.Nsnap):
+				dr=self.geom.ApplyPeriodic2d(self.rval[u,:,:]-Hessian.rval)
+				# aah. modulo periodic boundary conditions
+				dv=self.vval[u,:,:]
+				# serious WTF
+				#if self.debug:
+					#if u==100:
+						#plt.figure()
+						#plt.quiver(self.rval[u,:,0],self.rval[u,:,1],dr[:,0],dr[:,1])
+						#plt.title('Displacements')
+						
+						#plt.figure()
+						#plt.quiver(self.rval[u,:,0],self.rval[u,:,1],dv[:,0],dv[:,1])
+						#plt.title('Velocities')
+				# now project onto the modes
+				# This is the organisation of our matrix
+				#plt.quiver(self.rval[:,0],self.rval[:,1],self.eigvec[0:3*self.N:3,u],self.eigvec[1:3*self.N:3,u])
+				self.proj[:,u]=np.einsum('i,ij->j',dr[:,0],Hessian.eigvec[0:3*Hessian.N:3,:]) + np.einsum('i,ij->j',dr[:,1],Hessian.eigvec[1:3*Hessian.N:3,:])
+				self.projv[:,u]=np.einsum('i,ij->j',dv[:,0],Hessian.eigvec[0:3*Hessian.N:3,:]) + np.einsum('i,ij->j',dv[:,1],Hessian.eigvec[1:3*Hessian.N:3,:])
+				#for v in range(3*Hessian.N):
+					#proj2[v,u]=np.sum(dr[:,0]*Hessian.eigvec[0:3*Hessian.N:3,u]) + np.einsum('i,ij->j',dr[:,1],Hessian.eigvec[1:3*Hessian.N:3,:])
+			# projection normalization
+			self.proj/=self.Nsnap
+			self.projv/=self.Nsnap
+			self.proj2av=np.sum(self.proj**2,axis=1)
+			self.projv2av=np.sum(self.projv**2,axis=1)
+		return self.proj,self.projv,self.proj2av,self.projv2av
+			
+	def plotProjections(self,Hessian,nmodes=5):
+	  
+		multmap=LinearSegmentedColormap('test',cdict,N=nmodes) 
+		tval=np.linspace(0,self.Nsnap-1,self.Nsnap)
+		plt.figure()
+		for u in range(nmodes):
+			plt.plot(tval,self.proj[u,:],'.-',color=multmap(u),label='mode '+str(u))
+		plt.legend()
+		plt.xlabel('time')
+		plt.ylabel('projection')
+		plt.title('Displacements')
+		
+		plt.figure()
+		for u in range(nmodes):
+			plt.plot(tval,self.projv[u,:],'.-',color=multmap(u),label='mode '+str(u))
+		plt.legend()
+		plt.xlabel('time')
+		plt.ylabel('projection')
+		plt.title('Velocities')
+		  
+		
+		tau=1.0/float(self.param.nu)
+		v=float(self.param.v0)
+		
+		plt.figure()
+		plt.loglog(Hessian.eigval,0.5*Hessian.eigval*self.proj2av,'.-r',label='projection')
+		# directly add the prediction here
+		plt.loglog(Hessian.eigval,v**2*tau/(4.0*(1.0+Hessian.eigval*tau)),'-k',label='prediction')
+		plt.xlabel(r'$\lambda$')
+		plt.ylabel('Energy')
+		plt.xlim(0,12)
+		#plt.ylim(1e-10,1e-5)
+		plt.title('Energy from displacement projections, v0=' + str(self.param.v0)+ ' tau=' + str(tau))
+		
+		plt.figure()
+		plt.loglog(Hessian.eigval,self.proj2av,'o-r',label='displacements')
+		plt.loglog(Hessian.eigval,self.projv2av,'o-g',label='velocities')
+		plt.xlabel(r'$\lambda$')
+		plt.ylabel('projection square')
+		#plt.xlim(-0.01,12)
+		plt.legend()
+		plt.title('Square projections, v0=' + str(self.param.v0)+ ' tau=' + str(tau))
+		
+		
+		plt.figure()
+		plt.semilogy(Hessian.eigval,Hessian.eigval**2*self.proj2av,'o-r',label='displacements')
+		plt.semilogy(Hessian.eigval,self.projv2av,'o-g',label='velocitites')
+		plt.xlabel(r'$\lambda$')
+		plt.ylabel('velocity projections (expected)')
+		plt.xlim(-0.01,12)
+		plt.legend()
+		plt.title('Square velocity projections, v0=' + str(self.param.v0)+ ' tau=' + str(tau))
+		
+		
+			
+			
 	
-	#def getSelfInt(self):
+
 
