@@ -214,6 +214,9 @@ public:
   //! Remove obtuse boundary faces
   void remove_obtuse_boundary();
   
+  //! Remove edge triangles
+  void remove_edge_triangles();
+  
   //! Return true if the vertex is a boundary vertex
   //! \param v index of the vertex
   bool is_boundary_vertex(int v)
@@ -267,6 +270,14 @@ private:
   //! Order boundary star
   void order_boundary_star(int);
   
+  //! Remove edge
+  void remove_edge(int);
+  
+  //! Remove face
+  void remove_face(int);
+  
+  //! Remove edge face
+  bool remove_edge_face(int);
   
   //! Functor used to compare lengths of two edges
   struct CompareEdgeLens
@@ -310,7 +321,7 @@ private:
     }
     const Mesh& m_mesh;
   };
-  
+ 
 };
 
 #endif
