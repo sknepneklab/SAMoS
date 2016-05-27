@@ -69,10 +69,12 @@ except:
 
 class Hessian:
     
-	def __init__(self,conf,debug=False):
+	def __init__(self,conf,rattlers=[],debug=False):
 		self.conf=conf
 		self.rval=self.conf.rval
+		self.rattlers=rattlers
 		self.N=self.conf.N
+		self.Nrigid=self.N-len(rattlers)
 		self.geom=self.conf.geom
 		self.inter=self.conf.inter
 		self.debug=debug
@@ -80,7 +82,7 @@ class Hessian:
 	def makeMatrix(self,addRestoring=True,ksurf=10.0):
 		# This matrix is in principle 3N by 3N. We will have to be careful later on in throwing out extra off-surface modes
 		print "Hessian: Info - allocating the " + str(3*self.N) + " by " + str(3*self.N) + " Hessian matrix."
-		self.Hessian=np.zeros((3*self.N,3*self.N))
+		self.Hessian=np.zeros((3*self.Nrigid,3*self.N))
 		# Construct it particle by particle (easiest way: everything here is always going to be N**2, no matter what, due to diagonalization algorithm)
 		# Follow the formula derived in my notes
 		# The unit normal for everybody will certainly be used
@@ -98,87 +100,90 @@ class Hessian:
 		fsum=0.0
 		fav=0.0
 		for i in range(self.N):
-			# get some of the constants that are necessary here:
-			neighbours, drvec, dr=self.conf.getNeighbours(i,self.inter.getMult(),self.inter.getDmax())
-			# contact normal vectors
-			nij=np.transpose(np.transpose(drvec)/np.transpose(dr))
-			# Forces
-			fvec=self.inter.getForce(i,neighbours,drvec,dr)
-			fsum+=sum(fvec)
-			# Projected onto the contact normal
-			fval=np.sum(fvec*nij,axis=1)
-			fav+=sum(fval)
-			# Stiffnesses
-			kij=self.inter.getStiffness(i,neighbours,drvec,dr)
-			# equilibrium distances are given by dr already
-			# Alright: elements are labeled as follows: Contact ij has sub-square 3i, 3i+1, 3i+2 and 3j, 3j+1, 3j+2
-			diagsquare=np.zeros((3,3))
-			for j in range(len(neighbours)):
-				n=nij[j,:]
-				N=Normal[neighbours[j],:]
-				subsquare=np.zeros((3,3))
-				# xx, xy and xz
-				subsquare[0,0]=-fval[j]/dr[j]*(1-n[0]*n[0]-N[0]*N[0])+kij[j]*n[0]*n[0]
-				subsquare[0,1]=-fval[j]/dr[j]*(0-n[0]*n[1]-N[0]*N[1])+kij[j]*n[0]*n[1]
-				subsquare[0,2]=-fval[j]/dr[j]*(0-n[0]*n[2]-N[0]*N[2])+kij[j]*n[0]*n[2]
-				# yx, yy and yz
-				subsquare[1,0]=-fval[j]/dr[j]*(0-n[1]*n[0]-N[1]*N[0])+kij[j]*n[1]*n[0]
-				subsquare[1,1]=-fval[j]/dr[j]*(1-n[1]*n[1]-N[1]*N[1])+kij[j]*n[1]*n[1]
-				subsquare[1,2]=-fval[j]/dr[j]*(0-n[1]*n[2]-N[1]*N[2])+kij[j]*n[1]*n[2]
-				# zx, zy and zz
-				subsquare[2,0]=-fval[j]/dr[j]*(0-n[2]*n[0]-N[2]*N[0])+kij[j]*n[2]*n[0]
-				subsquare[2,1]=-fval[j]/dr[j]*(0-n[2]*n[1]-N[2]*N[1])+kij[j]*n[2]*n[1]
-				subsquare[2,2]=-fval[j]/dr[j]*(1-n[2]*n[2]-N[2]*N[2])+kij[j]*n[2]*n[2]
-				# Stick into the big matrix
-				label=neighbours[j]
-				self.Hessian[3*i:(3*i+3),3*label:(3*label+3)]=-subsquare
-				# Add the required bits to the diagonal part of the matrix
-				# xx, xy and xz
-				diagsquare[0,0]+=fval[j]/dr[j]*(1-n[0]*n[0]-N[0]*N[0])-kij[j]*n[0]*n[0]
-				diagsquare[0,1]+=fval[j]/dr[j]*(0-n[0]*n[1]-N[0]*N[1])-kij[j]*n[0]*n[1]
-				diagsquare[0,2]+=fval[j]/dr[j]*(0-n[0]*n[2]-N[0]*N[2])-kij[j]*n[0]*n[2]
-				# yx, yy and yz
-				diagsquare[1,0]+=fval[j]/dr[j]*(0-n[1]*n[0]-N[1]*N[0])-kij[j]*n[1]*n[0]
-				diagsquare[1,1]+=fval[j]/dr[j]*(1-n[1]*n[1]-N[1]*N[1])-kij[j]*n[1]*n[1]
-				diagsquare[1,2]+=fval[j]/dr[j]*(0-n[1]*n[2]-N[1]*N[2])-kij[j]*n[1]*n[2]
-				# zx, zy and zz
-				diagsquare[2,0]+=fval[j]/dr[j]*(0-n[2]*n[0]-N[2]*N[0])-kij[j]*n[2]*n[0]
-				diagsquare[2,1]+=fval[j]/dr[j]*(0-n[2]*n[1]-N[2]*N[1])-kij[j]*n[2]*n[1]
-				diagsquare[2,2]+=fval[j]/dr[j]*(1-n[2]*n[2]-N[2]*N[2])-kij[j]*n[2]*n[2]
-				# Add the curvature term if required
-				# Sooooo. The derivation says there is just a -fval/Rval n N term here, due to the tilt of the normal with parallel transport
-				# However, this term very explicitly punishes out-from-surface deviations. 
-				# Making this larger gives much cleaner results. Soo - huh?
-				if (addCurvature):
+			if i not in rattlers:
+				if (i%200==0):
+					print i
+				# get some of the constants that are necessary here:
+				neighbours, drvec, dr=self.conf.getNeighbours(i,self.inter.getMult(),self.inter.getDmax())
+				# contact normal vectors
+				nij=np.transpose(np.transpose(drvec)/np.transpose(dr))
+				# Forces
+				fvec=self.inter.getForce(i,neighbours,drvec,dr)
+				fsum+=sum(fvec)
+				# Projected onto the contact normal
+				fval=np.sum(fvec*nij,axis=1)
+				fav+=sum(fval)
+				# Stiffnesses
+				kij=self.inter.getStiffness(i,neighbours,drvec,dr)
+				# equilibrium distances are given by dr already
+				# Alright: elements are labeled as follows: Contact ij has sub-square 3i, 3i+1, 3i+2 and 3j, 3j+1, 3j+2
+				diagsquare=np.zeros((3,3))
+				for j in range(len(neighbours)):
+					n=nij[j,:]
+					N=Normal[neighbours[j],:]
+					subsquare=np.zeros((3,3))
 					# xx, xy and xz
-					diagsquare[0,0]+=-fval[j]/Rval*n[0]*N[0]
-					diagsquare[0,1]+=-fval[j]/Rval*n[1]*N[0]
-					diagsquare[0,2]+=-fval[j]/Rval*n[2]*N[0]
+					subsquare[0,0]=-fval[j]/dr[j]*(1-n[0]*n[0]-N[0]*N[0])+kij[j]*n[0]*n[0]
+					subsquare[0,1]=-fval[j]/dr[j]*(0-n[0]*n[1]-N[0]*N[1])+kij[j]*n[0]*n[1]
+					subsquare[0,2]=-fval[j]/dr[j]*(0-n[0]*n[2]-N[0]*N[2])+kij[j]*n[0]*n[2]
 					# yx, yy and yz
-					diagsquare[1,0]+=-fval[j]/Rval*n[0]*N[1]
-					diagsquare[1,1]+=-fval[j]/Rval*n[1]*N[1]
-					diagsquare[1,2]+=-fval[j]/Rval*n[2]*N[1]
+					subsquare[1,0]=-fval[j]/dr[j]*(0-n[1]*n[0]-N[1]*N[0])+kij[j]*n[1]*n[0]
+					subsquare[1,1]=-fval[j]/dr[j]*(1-n[1]*n[1]-N[1]*N[1])+kij[j]*n[1]*n[1]
+					subsquare[1,2]=-fval[j]/dr[j]*(0-n[1]*n[2]-N[1]*N[2])+kij[j]*n[1]*n[2]
 					# zx, zy and zz
-					diagsquare[2,0]+=-fval[j]/Rval*n[0]*N[2]
-					diagsquare[2,1]+=-fval[j]/Rval*n[1]*N[2]
-					diagsquare[2,2]+=-fval[j]/Rval*n[2]*N[2]
-				
-				if (addRestoring):
-					# Manual restoring force along the normal
-					#ksurf=10
-					diagsquare[0,0]+=-ksurf*N[0]*N[0]
-					diagsquare[0,1]+=-ksurf*N[1]*N[0]
-					diagsquare[0,2]+=-ksurf*N[2]*N[0]
+					subsquare[2,0]=-fval[j]/dr[j]*(0-n[2]*n[0]-N[2]*N[0])+kij[j]*n[2]*n[0]
+					subsquare[2,1]=-fval[j]/dr[j]*(0-n[2]*n[1]-N[2]*N[1])+kij[j]*n[2]*n[1]
+					subsquare[2,2]=-fval[j]/dr[j]*(1-n[2]*n[2]-N[2]*N[2])+kij[j]*n[2]*n[2]
+					# Stick into the big matrix
+					label=neighbours[j]
+					self.Hessian[3*i:(3*i+3),3*label:(3*label+3)]=-subsquare
+					# Add the required bits to the diagonal part of the matrix
+					# xx, xy and xz
+					diagsquare[0,0]+=fval[j]/dr[j]*(1-n[0]*n[0]-N[0]*N[0])-kij[j]*n[0]*n[0]
+					diagsquare[0,1]+=fval[j]/dr[j]*(0-n[0]*n[1]-N[0]*N[1])-kij[j]*n[0]*n[1]
+					diagsquare[0,2]+=fval[j]/dr[j]*(0-n[0]*n[2]-N[0]*N[2])-kij[j]*n[0]*n[2]
 					# yx, yy and yz
-					diagsquare[1,0]+=-ksurf*N[0]*N[1]
-					diagsquare[1,1]+=-ksurf*N[1]*N[1]
-					diagsquare[1,2]+=-ksurf*N[2]*N[1]
+					diagsquare[1,0]+=fval[j]/dr[j]*(0-n[1]*n[0]-N[1]*N[0])-kij[j]*n[1]*n[0]
+					diagsquare[1,1]+=fval[j]/dr[j]*(1-n[1]*n[1]-N[1]*N[1])-kij[j]*n[1]*n[1]
+					diagsquare[1,2]+=fval[j]/dr[j]*(0-n[1]*n[2]-N[1]*N[2])-kij[j]*n[1]*n[2]
 					# zx, zy and zz
-					diagsquare[2,0]+=-ksurf*N[0]*N[2]
-					diagsquare[2,1]+=-ksurf*N[1]*N[2]
-					diagsquare[2,2]+=-ksurf*N[2]*N[2]
-			#print diagsquare
-			self.Hessian[3*i:(3*i+3),3*i:(3*i+3)]=-diagsquare
+					diagsquare[2,0]+=fval[j]/dr[j]*(0-n[2]*n[0]-N[2]*N[0])-kij[j]*n[2]*n[0]
+					diagsquare[2,1]+=fval[j]/dr[j]*(0-n[2]*n[1]-N[2]*N[1])-kij[j]*n[2]*n[1]
+					diagsquare[2,2]+=fval[j]/dr[j]*(1-n[2]*n[2]-N[2]*N[2])-kij[j]*n[2]*n[2]
+					# Add the curvature term if required
+					# Sooooo. The derivation says there is just a -fval/Rval n N term here, due to the tilt of the normal with parallel transport
+					# However, this term very explicitly punishes out-from-surface deviations. 
+					# Making this larger gives much cleaner results. Soo - huh?
+					if (addCurvature):
+						# xx, xy and xz
+						diagsquare[0,0]+=-fval[j]/Rval*n[0]*N[0]
+						diagsquare[0,1]+=-fval[j]/Rval*n[1]*N[0]
+						diagsquare[0,2]+=-fval[j]/Rval*n[2]*N[0]
+						# yx, yy and yz
+						diagsquare[1,0]+=-fval[j]/Rval*n[0]*N[1]
+						diagsquare[1,1]+=-fval[j]/Rval*n[1]*N[1]
+						diagsquare[1,2]+=-fval[j]/Rval*n[2]*N[1]
+						# zx, zy and zz
+						diagsquare[2,0]+=-fval[j]/Rval*n[0]*N[2]
+						diagsquare[2,1]+=-fval[j]/Rval*n[1]*N[2]
+						diagsquare[2,2]+=-fval[j]/Rval*n[2]*N[2]
+					
+					if (addRestoring):
+						# Manual restoring force along the normal
+						#ksurf=10
+						diagsquare[0,0]+=-ksurf*N[0]*N[0]
+						diagsquare[0,1]+=-ksurf*N[1]*N[0]
+						diagsquare[0,2]+=-ksurf*N[2]*N[0]
+						# yx, yy and yz
+						diagsquare[1,0]+=-ksurf*N[0]*N[1]
+						diagsquare[1,1]+=-ksurf*N[1]*N[1]
+						diagsquare[1,2]+=-ksurf*N[2]*N[1]
+						# zx, zy and zz
+						diagsquare[2,0]+=-ksurf*N[0]*N[2]
+						diagsquare[2,1]+=-ksurf*N[1]*N[2]
+						diagsquare[2,2]+=-ksurf*N[2]*N[2]
+				#print diagsquare
+				self.Hessian[3*i:(3*i+3),3*i:(3*i+3)]=-diagsquare
 		fav/=self.N
 		print "Hessian: Estimating distance from mechanical equilibrium of initial configuration "
 		print "Scaled force sum is " + str(fsum/fav)
@@ -195,6 +200,7 @@ class Hessian:
 		#print HessianASym
 		# Use routines for hermitian eigenvector decomposition
 		# Default is ascending order, which suits us
+		print "Starting Diagonalisation!"
 		self.eigval, self.eigvec = LA.eigh(HessianSym)
 		if self.debug:
 			# start with some debugging output

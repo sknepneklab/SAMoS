@@ -38,14 +38,14 @@ parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many sa
 #parser.add_argument("--writeD",action='store_true', default=False, help="Output defects")
 args = parser.parse_args()
 #sim = SimRun(True,args.directory,args.conffile,args.input,args.skip,True)
-sim = SimRun(args.directory,args.conffile,args.input,args.radii,args.skip,True)
-#sim.getMSD()
-bins,velcorr,fig=sim.getVelcorr(0.5)
-data={'bins':bins,'velcorr':velcorr,'configuration':args.conffile}
-outvel=args.output + '/velcorr.p'
-outfig=args.output + '/velcorr.pdf'
-pickle.dump(data,open(outvel,'wb'))
-plt.savefig(outfig)
+sim = SimRun(args.directory,args.conffile,args.input,args.radii,args.skip,True,True)
+tplot,msd = sim.getMSD()
+#bins,velcorr,fig=sim.getVelcorr(0.5)
+#data={'bins':bins,'velcorr':velcorr,'tplot':tplot,'msd':msd,'configuration':args.conffile}
+#outglassy=args.output + '/glassy.p'
+#outfig=args.output + '/velcorr.pdf'
+#pickle.dump(data,open(outglassy,'wb'))
+#plt.savefig(outfig)
 #plt.show()
 
 

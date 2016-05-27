@@ -65,6 +65,8 @@ ostream& operator<<(ostream& out, const Vertex& v)
     out << "boundary vertex" << endl;
   if (v.ordered)
     out << "vertex is ordered" << endl;
+  if (v.attached)
+    out << "vertex is attached" << endl;
   out << " ------------------------------------";
   out << endl;
   return out;
