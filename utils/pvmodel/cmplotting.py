@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 import time
 from glob import glob
 import os.path as path
+import pickle
 
 # is building a class on top of matplotlib which manages the graph formatting 
 #overengineering the problem?
@@ -18,10 +19,10 @@ import os.path as path
         #self.ddump = ddump
 
 
-def makename(num, fn):
-    fn = '_'.join([fn, justifynum(num)])  + '.npz'
+def _makename(num, fn, ext='.npz'):
+    fn = '_'.join([fn, _justifynum(num)])  + ext
     return fn
-def justifynum(num):
+def _justifynum(num):
     return '{:0>10}'.format(num)
 
 # we are using numpys .npz now
@@ -64,44 +65,92 @@ def plot_radial(*fils):
         #time.sleep(0.05)
 
 def plot_radial_all(num, fname):
-    fname = makename(num, fname)
+    fname = _makename(num, fname, '.npz')
     plt.xlabel('radial distance')
     data = np.load(fname)
     xs = data['simple_rspace']
-    xsh = data['hardy_rspace']
+    xsh = data['virial_rspace']
     xdiff = xsh[1] - xsh[0]
     xh = xsh[:-1] + xdiff/2
     xdiff = xs[1] - xs[0]
     x = xs[:-1] + xdiff/2
-    for k in data:
-        if 'rspace' in k: continue
-        if 'simple' in k:
-            plt.plot(x, data[k], label=k, marker='o', alpha=0.5)
-        if 'hardy' in k:
-            plt.plot(xh, data[k], label=k, marker='x', alpha=0.5)
+
+    k = 'simple_radial_pressure'
+    plt.plot(x, data[k], label=k, marker='o', alpha=0.5)
+    k = 'virial_radial_pressure'
+    plt.plot(x, data[k], label=k, marker='o', alpha=1.5)
+        #plt.plot(xh, data[k], label=k, marker='x', alpha=0.5)
         
     plt.legend()
     #plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
            #ncol=2, mode="expand", borderaxespad=0.)
     plt.show()
 
-def outnum(name):
+def _outnum(name):
     name = path.basename(name)
     bname, _ = path.splitext(name)
     return int(bname.split('_')[-1])
 
-def plot_avg_pressures(fglob):
+def plot_avg_pressures(fglob='stress_st*.npz'):
     stfiles = sorted(glob(fglob))
     plt.xlabel('step')
     plt.ylabel('average_pressure')
     stdatas = [np.load(st) for st in stfiles]
-    xsteps = map(outnum, stfiles)
+    xsteps = map(_outnum, stfiles)
     spressure = [np.mean(data['simple_radial_pressure']) for data in stdatas]
     plt.plot(xsteps, spressure, label='simple pressure', marker='o')
     vpressure = [np.mean(data['virial_radial_pressure']) for data in stdatas]
     plt.plot(xsteps, vpressure, label='virial pressure', marker='o')
-    hpressure = [np.mean(data['hardy_radial_pressure']) for data in stdatas]
-    plt.plot(xsteps, hpressure, label='hardy pressure', marker='o')
+    #hpressure = [np.mean(data['hardy_radial_pressure']) for data in stdatas]
+    #plt.plot(xsteps, hpressure, label='hardy pressure', marker='o')
+    plt.legend()
+    plt.show()
+
+def _loadpkl(fname):
+    return pickle.load(open(fname, 'rb'))
+
+def _nanmean(arr):
+    return np.mean(arr[~np.isnan(arr)])
+
+def avg_pressures(fglob='stresses*.pkl'):
+    sfiles = sorted(glob(fglob))
+    datas = map(_loadpkl, sfiles)
+    plt.xlabel('step')
+    plt.ylabel('average_pressure')
+    xsteps = map(_outnum, sfiles)
+    #print _nanmean(datas[0]['simple'].pressure)
+    #print _nanmean(datas[0]['virial'].pressure)
+    spressure= [_nanmean(stress['simple'].pressure) for stress in datas]
+    plt.plot(xsteps, spressure, label='simple pressure', marker='o')
+    vpressure= [_nanmean(stress['virial'].pressure) for stress in datas]
+    plt.plot(xsteps, vpressure, label='virial pressure', marker='o')
+    if 'hardy' in stress:
+        hpressure= [_nanmean(stress['hardy'].pressure) for stress in datas]
+        plt.plot(xsteps, -np.array(hpressure), label='hardy pressure', marker='o')
+    plt.legend()
+    plt.show()
+
+def avg_stresses(stname='virial', fglob='stresses*.pkl'):
+    sfiles = sorted(glob(fglob))
+    datas = map(_loadpkl, sfiles)
+    plt.xlabel('step')
+    xsteps = map(_outnum, sfiles)
+    if not stname in datas[0] and stname != 'all':
+        print 'didn\'t find that stress name'
+        return 
+    if stname == 'all':
+        names = datas[0].keys()
+    else:
+        plt.title(stname)
+        names= [stname]
+    for name in names:
+        spressure= [_nanmean(stress[name].pressure) for stress in datas]
+        plt.plot(xsteps, spressure, label=name+' pressure', marker='o')
+        vpressure= [_nanmean(stress[name].sstress) for stress in datas]
+        plt.plot(xsteps, vpressure, label=name+' shear stress', marker='o')
+        hpressure= [_nanmean(stress[name].nstress) for stress in datas]
+        plt.plot(xsteps, np.array(hpressure), label=name+' normal stress', marker='o')
+    plt.legend()
     plt.show()
 
 
@@ -126,7 +175,7 @@ def plot_wls(yname='radial_pressure', fglob='stress_wl*.npz'):
 #cmplotting.py compare_radial 4000 stress_st . ../../rA_2.5/pressure_test/ ../../vpotential_only/pressure_test/
 def compare_radial(num, fname, *fdirs):
     plt.clf()
-    fname = '_'.join([fname, justifynum(num)])  + '.npz'
+    fname = '_'.join([fname, _justifynum(num)])  + '.npz'
     paths = [path.join(fd, fname) for fd in fdirs]
     plt.xlabel('radial distance')
     plt.ylabel('pressure')
@@ -143,10 +192,10 @@ def compare_radial(num, fname, *fdirs):
            ncol=2, mode="expand", borderaxespad=0.)
     plt.show()
 
-def readdotplot(fi):
+def _readdotplot(fi):
         ddump = io.readdump(fi, firstc=float)
         return ddump
-def testspace():
+def _testspace():
     rs1 = np.linspace(0, 2, 100)
     y1 = map(lambda x:x*x, rs1)
     rs2 = np.linspace(0.1, 2.5, 100)
@@ -167,6 +216,10 @@ if __name__=='__main__':
     nargs = len(args)
     if nargs is 0:
         print 'cmplotting <function> [arguments]'
+        calls = [name for name, loc in locals().items() if callable(loc)
+                and name[0] != '_']
+        for call in calls:
+            print call
         sys.exit()
 
     fname = args[0]

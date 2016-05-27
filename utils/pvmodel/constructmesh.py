@@ -34,6 +34,42 @@ def fillout(outd, normal=npnormal):
         outd[hh] = np.full(ld, 0.)
     return outd
 
+import collections
+#class Pointset(collections.abc.Set):
+
+def _extend_ptset(pts, npts):
+    rpts = []
+    for npt in npts:
+        isnew = True
+        for pt in pts:
+            if np.allclose(np.array(pt), np.array(npt), rtol=0.1):
+                isnew = False
+                break
+        if isnew:
+            rpts.append(npt)
+    return pts.extend(rpts)
+
+# minimal hexagonal configuration
+def areahex(area=3.0):
+    # first find the radius length of a hexagon with the correct area
+    l = np.sqrt((2*area)/(3*np.sqrt(3)))
+    print l
+    # distance between hex centers
+    lc = np.cos(np.pi/6) * 2 * l
+    print lc
+    rads = np.linspace(0, 2*np.pi, 6, False)
+    def hexes(rad):
+        return [np.cos(rad), np.sin(rad), 0.]
+    hpts = lc*np.array(map(hexes, rads))
+    pts = list(hpts)
+    crads = lc*np.array(map(hexes, rads+(np.pi/6)))
+    for hcenter in hpts:
+        _extend_ptset(pts, [hcenter+hpt for hpt in hpts])
+    print len(pts)
+    outd = makeout(pts, [area]*len(pts))
+    outd =fillout(outd)
+    return outd
+
 # Single cell, n sides
 
 def single(nsides, prefarea=5., origin=[0.,0.,0.]):
@@ -75,16 +111,20 @@ if __name__=='__main__':
 
     if len(fargs) is 0:
         print 'No arguments given to constructmesh.%s' % fname
-        fargs = f_using.defaults
-        print 'Using defaults ', f_using.defaults
+
+        if hasattr(f_using, 'defaults'):
+            fargs = f_using.defaults
+            print 'Using defaults ', f_using.defaults
+        else:
+            fargs = []
 
     print fargs
-    print map(eval, fargs)
-    ff = map(eval, fargs)
+    #ff = map(eval, fargs)
+    ff = fargs
     outd = f_using(*ff)
-
-    with open('test.dat', 'w') as fo:
-        print outd
-        io.datdump(outd, fo)
+    if outd:
+        with open('test.dat', 'w') as fo:
+            print outd
+            io.datdump(outd, fo)
 
 

@@ -101,6 +101,23 @@ class STracker(Tracker):
 
         np.savez(fileo, **qdict)
 
+import pickle
+# Seems like pickling the data might be better
+# could pickle pv.stresses
+# what other data is useful to pickle?
+class Pickler(Tracker):
+    def __init__(self, fileo='stresses'):
+        self.fileo = fileo
+
+    def update(self, pv, xxv):
+        fileo = self.fileo
+        fileo = '_'.join([fileo, xxv]) + '.pkl'
+        print 'saving stress data to ', fileo
+
+        with open(fileo, 'wb') as fo:
+            pickle.dump(pv.stresses, fo)
+        
+
 
 def hash_function(f, linspace):
     l = linspace[-1] - linspace[0]
@@ -146,7 +163,8 @@ class Senario(object):
     def __iter__(self):
         return self
 
-    def next(self, step=1):
+    def next(self):
+        step = self.args.step
         if self.fid < self.numf:
             self.dataf = self.infiles[self.fid]
             self.outnum = self._outnum() # must call this function
@@ -205,16 +223,16 @@ class Stress_Senario(Senario):
         self.omega = om
 
         self.st = STracker(self.fileo)
-
         wlf = os.path.join(args.dir, 'stress_wl')
         self.wlst = STracker(wlf, xvar='wl')
+        self.pkr = Pickler(os.path.join(args.dir, 'stresses'))
 
     def _read_pv(self):
         rdat = ReadData(self.dataf)
         facefile = path.join(args.inp_dir, 'faces_' + args.outnum + '.fc')
         simp, _ = io.readfc(facefile)
-        #pv = PVmesh.datbuild(rdat, simp)
-        pv = PVmesh.datbuild(rdat)
+        pv = PVmesh.datbuild(rdat, simp)
+        #pv = PVmesh.datbuild(rdat)
         return pv
 
     def _operate(self):
@@ -225,7 +243,7 @@ class Stress_Senario(Senario):
         pv = self._read_pv()
         self._handle_constants(pv)
         pv.calculate_energy()
-        pv.calculate_forces()
+        pv.calculate_forces(exclude_boundary=args.exclude)
         # ready to output simple stress immediately
         nsout = self._name_vtp('simple_stress_')
         wr.write_stress_ellipses(pv, nsout, pv.stresses['simple'])
@@ -239,6 +257,7 @@ class Stress_Senario(Senario):
 
         pv.stress_on_centres(omega, clist=clist, hardy=args.hardy)
         self.st.update(pv, outnum)
+        self.pkr.update(pv, outnum)
         vsout = self._name_vtp('virial_stress_')
         wr.write_stress_ellipses(pv, vsout, pv.stresses['virial'])
         
@@ -331,9 +350,14 @@ if __name__=='__main__':
     parser.add_argument("-L", type=float, default=0., help='Contact length constant')
     parser.add_argument("-w", type=str, default='', 
             help='A list containing start finish and step for wl values')
-    # debugging operations
-    parser.add_argument("--simple", action='store_true')
-    parser.add_argument("--hardy", action='store_true')
+    parser.add_argument('-step', type=int, default=1, help='Step through time')
+    # flags
+    parser.add_argument("--simple", action='store_true', 
+            help='Only perform simple stress calculation')
+    parser.add_argument("--hardy", action='store_true', 
+            help='Turn on Hardy stress calculation')
+    parser.add_argument("--exclude", action='store_true', 
+            help='Mirrors exclude_boundary flag in samso')
     args = parser.parse_args()
 
     if not os.path.exists(args.dir):

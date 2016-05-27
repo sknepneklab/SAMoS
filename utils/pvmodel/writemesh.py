@@ -129,11 +129,10 @@ def writemeshenergy(pv, outfile):
         b_id = tri.property(pv.boundary_prop, vh)
         boundary.InsertNextValue(b_id)
         
-        pr = pv.pressure[vh.idx()]
+        pr = pv.stresses['virial'].pressure[vh.idx()]
         prfacevalue = 0. if np.isnan(pr) else pr
         pressure.InsertNextValue(prfacevalue)
 
-    print 'added faces', nfaces
 
     polydata = vtk.vtkPolyData()
     polydata.SetPoints(Points)
@@ -261,6 +260,7 @@ def rotation_2d(theta):
     return R
 
 def add_ellipse(Points, evals, shift, R, res, pressure, pr=0.):
+    #print 'add ellipse ', evals
     x, y = shift
     a, b = evals
     a, b = abs(a), abs(b)
