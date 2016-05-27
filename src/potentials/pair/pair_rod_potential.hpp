@@ -80,7 +80,6 @@ public:
   //! \param param Contains information about all parameters (k)
   PairRodPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param)
   {
-    int ntypes = m_system->get_ntypes();
     if (param.find("k") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No potential strength (k) specified for rod pair potential. Setting it to 1.");
@@ -123,18 +122,18 @@ public:
     }
     m_msg->write_config("potential.pair.rod.model",m_model);
     
-    m_pair_params = new RodParameters*[ntypes];
-    for (int i = 0; i < ntypes; i++)
+    m_pair_params = new RodParameters*[m_ntypes];
+    for (int i = 0; i < m_ntypes; i++)
     {
-      m_pair_params[i] = new RodParameters[ntypes];
-      for (int j = 0; j < ntypes; j++)
+      m_pair_params[i] = new RodParameters[m_ntypes];
+      for (int j = 0; j < m_ntypes; j++)
         m_pair_params[i][j].k = m_k;
     }
   }
   
   virtual ~PairRodPotential()
   {
-    for (int i = 0; i < m_system->get_ntypes(); i++)
+    for (int i = 0; i < m_ntypes; i++)
       delete [] m_pair_params[i];
     delete [] m_pair_params;
   }

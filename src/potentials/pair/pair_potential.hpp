@@ -88,6 +88,22 @@ public:
       if (lexical_cast<double>(param["max_val"]) != 1.0)
         m_msg->msg(Messenger::WARNING,"Maximum value for the phase-in factor is not set to 1 (it is equal "+param["max_val"]+"). Is that what you really want to do?");
     }
+    if (param.find("ntypes") != param.end())
+    {
+      m_ntypes = lexical_cast<int>(param["ntypes"]);
+      if (m_ntypes < m_system->get_ntypes())
+      {
+        m_msg->msg(Messenger::WARNING,"Number of particle types has to be equal or greater than the number of types defined in the intial configuation. Using value read from the intial configuration.");
+        m_ntypes = m_system->get_ntypes();
+      }
+      else
+        m_msg->msg(Messenger::INFO,"Number of different particle types is set to "+param["ntypes"]+".");
+    }
+    else
+    {
+      m_ntypes = m_system->get_ntypes();
+      m_msg->msg(Messenger::WARNING,"Number of particle types will be read from the intitial configuration.");
+    }
   }
                                                                                                        
   //! Destructor 
@@ -120,6 +136,7 @@ protected:
   bool m_use_particle_radii;        //!< If true, base potential ranges (if they exist) on particle radii
   bool m_phase_in;                  //!< If true, gradually switch on potential for particles that are younger than a given age
   bool m_compute_stress;            //!< If true, compute stress tensor
+  int m_ntypes;                     //!< Total number of particle types in the system
   
 };
 

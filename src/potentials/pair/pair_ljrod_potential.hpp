@@ -83,7 +83,6 @@ public:
   //! \param param Contains information about all parameters (k)
   PairLJRodPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param)
   {
-    int ntypes = m_system->get_ntypes();
     if (!m_nlist)
     {
       m_msg->msg(Messenger::ERROR,"Lennard Jones rod pair potential requires neighbour list. None given.");
@@ -151,11 +150,11 @@ public:
       m_shifted = true;
       m_msg->write_config("potential.pair.ljrod.shifted","true");
     }
-    m_pair_params = new LJRodParameters*[ntypes];
-    for (int i = 0; i < ntypes; i++)
+    m_pair_params = new LJRodParameters*[m_ntypes];
+    for (int i = 0; i < m_ntypes; i++)
     {
-      m_pair_params[i] = new LJRodParameters[ntypes];
-      for (int j = 0; j < ntypes; j++)
+      m_pair_params[i] = new LJRodParameters[m_ntypes];
+      for (int j = 0; j < m_ntypes; j++)
       {
         m_pair_params[i][j].eps = m_eps;
         m_pair_params[i][j].sigma = m_sigma;
@@ -166,7 +165,7 @@ public:
   
   virtual ~PairLJRodPotential()
   {
-    for (int i = 0; i < m_system->get_ntypes(); i++)
+    for (int i = 0; i < m_ntypes; i++)
       delete [] m_pair_params[i];
     delete [] m_pair_params;
   }

@@ -70,7 +70,6 @@ public:
   //! \param param Contains information about all parameters (epsilon, sigma, and rcut)
   PairMorsePotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param)
   {
-    int ntypes = m_system->get_ntypes();
     if (!m_nlist)
     {
       m_msg->msg(Messenger::ERROR,"Morse pair potential requires neighbour list. None given.");
@@ -147,11 +146,11 @@ public:
       m_msg->msg(Messenger::INFO,"Morse potential shifted to zero at cutoff.");
       m_shifted = true;
     }
-    m_pair_params = new MorseParameters*[ntypes];
-    for (int i = 0; i < ntypes; i++)
+    m_pair_params = new MorseParameters*[m_ntypes];
+    for (int i = 0; i < m_ntypes; i++)
     {
-      m_pair_params[i] = new MorseParameters[ntypes];
-      for (int j = 0; j < ntypes; j++)
+      m_pair_params[i] = new MorseParameters[m_ntypes];
+      for (int j = 0; j < m_ntypes; j++)
       {
         m_pair_params[i][j].D = m_D;
         m_pair_params[i][j].a = m_a;
@@ -163,7 +162,7 @@ public:
   
   virtual ~PairMorsePotential()
   {
-    for (int i = 0; i < m_system->get_ntypes(); i++)
+    for (int i = 0; i < m_ntypes; i++)
       delete [] m_pair_params[i];
     delete [] m_pair_params;
   }

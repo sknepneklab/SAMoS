@@ -69,7 +69,6 @@ public:
   //! \param param Contains information about all parameters (k)
   PairBoundaryBendingPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param), m_has_part_params(false), m_theta0(M_PI)
   {
-    int ntypes = m_system->get_ntypes();
     if (param.find("kappa") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No bending rigidity (kappa) specified for boundary bending pair potential. Setting it to 1.");
@@ -95,8 +94,8 @@ public:
     m_msg->write_config("potential.pair.boundary_bending.theta0",lexical_cast<string>(m_theta0));
     
     
-    m_particle_params = new BoundaryBendingParameters[ntypes];
-    for (int i = 0; i < ntypes; i++)
+    m_particle_params = new BoundaryBendingParameters[m_ntypes];
+    for (int i = 0; i < m_ntypes; i++)
     {
       m_particle_params[i].kappa = m_kappa;
       m_particle_params[i].theta0 = m_theta0;

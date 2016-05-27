@@ -76,7 +76,6 @@ public:
   //! \param param Contains information about all parameters (k)
   PairSoftAttractivePotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param)
   {
-    int ntypes = m_system->get_ntypes();
     if (param.find("k") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No potential strength (k) specified for soft attractive pair potential. Setting it to 1.");
@@ -123,11 +122,11 @@ public:
       m_msg->write_config("potential.pair.soft_attractive.phase_in","true");
     }    
     
-    m_pair_params = new SoftAttractiveParameters*[ntypes];
-    for (int i = 0; i < ntypes; i++)
+    m_pair_params = new SoftAttractiveParameters*[m_ntypes];
+    for (int i = 0; i < m_ntypes; i++)
     {
-      m_pair_params[i] = new SoftAttractiveParameters[ntypes];
-      for (int j = 0; j < ntypes; j++)
+      m_pair_params[i] = new SoftAttractiveParameters[m_ntypes];
+      for (int j = 0; j < m_ntypes; j++)
       {
         m_pair_params[i][j].k = m_k;
         m_pair_params[i][j].a = m_a;
@@ -139,7 +138,7 @@ public:
   
   virtual ~PairSoftAttractivePotential()
   {
-    for (int i = 0; i < m_system->get_ntypes(); i++)
+    for (int i = 0; i < m_ntypes; i++)
       delete [] m_pair_params[i];
     delete [] m_pair_params;
   }

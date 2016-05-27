@@ -69,7 +69,6 @@ public:
   //! \param param Contains information about all parameters (k)
   PairVertexParticlePotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param), m_has_part_params(false), m_include_boundary(true)
   {
-    int ntypes = m_system->get_ntypes();
     if (param.find("K") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No area stiffness (K) specified for vertex-particle pair potential. Setting it to 1.");
@@ -142,19 +141,19 @@ public:
       m_msg->write_config("potential.pair.vertex_particle.include_boundary","true");
     }
     
-    m_particle_params = new VertexParticleParameters[ntypes];
-    for (int i = 0; i < ntypes; i++)
+    m_particle_params = new VertexParticleParameters[m_ntypes];
+    for (int i = 0; i < m_ntypes; i++)
     {
       m_particle_params[i].K = m_K;
       m_particle_params[i].gamma = m_gamma;
       m_particle_params[i].lambda = m_lambda;
     }
     
-    m_pair_params = new VertexParticleParameters*[ntypes];
-    for (int i = 0; i < ntypes; i++)
+    m_pair_params = new VertexParticleParameters*[m_ntypes];
+    for (int i = 0; i < m_ntypes; i++)
     {
-      m_pair_params[i] = new VertexParticleParameters[ntypes];
-      for (int j = 0; j < ntypes; j++)
+      m_pair_params[i] = new VertexParticleParameters[m_ntypes];
+      for (int j = 0; j < m_ntypes; j++)
       {
         m_pair_params[i][j].K = m_K;
         m_pair_params[i][j].gamma = m_gamma;
@@ -166,7 +165,7 @@ public:
   
   virtual ~PairVertexParticlePotential()
   {
-    for (int i = 0; i < m_system->get_ntypes(); i++)
+    for (int i = 0; i < m_ntypes; i++)
       delete [] m_pair_params[i];
     delete [] m_pair_params;
     delete [] m_particle_params;
