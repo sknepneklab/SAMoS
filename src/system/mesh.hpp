@@ -190,6 +190,9 @@ public:
   //! Order vertex star
   void order_star(int);
   
+  //! Order dual star
+  void order_dual(int);
+  
   //! Compute dual area
   double dual_area(int);
   
