@@ -351,6 +351,8 @@ void Mesh::order_dual(int v)
 {
   Vertex& V = m_vertices[v];
   V.dual.clear();
+  if (V.n_faces == 0)
+    V.attached = false;
   if (!V.attached) return;
 
   if (!V.ordered)
@@ -366,13 +368,14 @@ void Mesh::order_dual(int v)
   {
     Vector3d r0 = m_vertices[V.neigh[0]].r - V.r;
     double min_angle = M_PI;
-    int fface;
+    int fface = 0;
     for (unsigned int f = 0; f < V.faces.size(); f++)
     {
        Face& face = m_faces[V.faces[f]];
        if (!face.is_hole)
        {
-         double ang = std::fabs(angle(r0,face.rc,V.N));
+         Vector3d r1 = face.rc - V.r;
+         double ang = std::fabs(angle(r0,r1,V.N));
          if (ang < min_angle)
          {
            min_angle = ang;
@@ -387,7 +390,7 @@ void Mesh::order_dual(int v)
   {
     Face& Fi = m_faces[V.dual[i++]];
     Vector3d ri = Fi.rc - V.r;
-    double min_angle = M_PI;
+    double min_angle = 2.0*M_PI;
     int next_dual;
     for (unsigned int f = 0; f < V.faces.size(); f++)
     {
@@ -398,7 +401,8 @@ void Mesh::order_dual(int v)
         {
           Vector3d rj = Fj.rc - V.r;
           double ang = angle(ri,rj,V.N);
-          if (ang > 0 && ang < min_angle)
+          ang = (ang >= 0.0) ? ang : 2.0*M_PI+ang;
+          if (ang < min_angle)
           {
             min_angle = ang;
             next_dual = Fj.id;
@@ -460,12 +464,14 @@ double Mesh::dual_area(int v)
   
   V.area *= 0.5;
   
+  /*
   if (V.area < 0)
   {
     cout << "Negative area for vertex " << endl << V << endl;
     for (int f = 0; f < V.n_faces; f++)
       cout << m_faces[V.dual[f]] << endl;
   }
+  */
   return V.area;
 }
 
@@ -1510,6 +1516,7 @@ bool Mesh::remove_edge_face(int f)
   }
   V.neigh.clear();
   V.faces.clear();
+  V.dual.clear();
   
   // Remove edges
   while (V.edges.size() > 0)
