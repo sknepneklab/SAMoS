@@ -75,6 +75,7 @@ typedef struct
   vector<vector<int> > sides;
   vector<double> area;
   vector<double> perim;
+  vector<double> circum_radius;
 } PlotArea;
 
 /*! Mesh class handles basic manipuations with mesesh
@@ -89,9 +90,7 @@ public:
            m_nface(0), 
            m_is_triangulation(true), 
            m_max_face_perim(20.0),
-           m_circumcenter(true), 
-           m_lambda(0.32), 
-           m_circle_param(1.5)
+           m_circumcenter(true)
   {   }
   
   //! Get mesh size
@@ -131,14 +130,6 @@ public:
   //! Sets the circumcenter flag
   //! \param val value of the circumcenter flag
   void set_circumcenter(bool val) { m_circumcenter = val; }
-  
-  //! Set value of the boundary edge paramter lambda
-  //! \param lambda new value of lambda
-  void set_lambda(double lambda) { m_lambda = lambda; }
-  
-  //! Set value of the boundary edge circumceter size paramter 
-  //! \param factor new value of m_circle_param
-  void set_circle_param(double factor) { m_circle_param = factor; }
   
   //! Add a vertex
   //! \param p particle
@@ -199,6 +190,9 @@ public:
   //! Order vertex star
   void order_star(int);
   
+  //! Order dual star
+  void order_dual(int);
+  
   //! Compute dual area
   double dual_area(int);
   
@@ -222,6 +216,9 @@ public:
   
   //! Remove obtuse boundary faces
   void remove_obtuse_boundary();
+  
+  //! Remove edge triangles
+  void remove_edge_triangles();
   
   //! Return true if the vertex is a boundary vertex
   //! \param v index of the vertex
@@ -250,8 +247,6 @@ private:
   bool m_is_triangulation;    //!< If true, all faces are triangles (allows more assumptions)
   double m_max_face_perim;    //!< If face perimeter is greater than this value, reject face and treat it as a hole.
   bool m_circumcenter;        //!< If true, compute face circumcenters. Otherwise compute geometric centre. 
-  double m_lambda;            //!< This parameter determines which boundary edges will be removed
-  double m_circle_param;      //!< Remove boundary edges with circumscribed circles this much larger than the average radius
     
   vector<Vertex> m_vertices;           //!< Contains all vertices
   vector<Edge> m_edges;                //!< Contains all edge
@@ -278,6 +273,14 @@ private:
   //! Order boundary star
   void order_boundary_star(int);
   
+  //! Remove edge
+  void remove_edge(int);
+  
+  //! Remove face
+  void remove_face(int);
+  
+  //! Remove edge face
+  bool remove_edge_face(int);
   
   //! Functor used to compare lengths of two edges
   struct CompareEdgeLens
@@ -321,7 +324,7 @@ private:
     }
     const Mesh& m_mesh;
   };
-  
+ 
 };
 
 #endif

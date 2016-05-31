@@ -82,7 +82,8 @@ public:
                   | qi::as_string[keyword["ljrod"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]    /*! Handles Lennard-Jones rod potential */
                   | qi::as_string[keyword["soft_attractive"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]    /*! Handles soft attractive potential */
                   | qi::as_string[keyword["vp"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]       /*! Handles vertex-particle potential */
-                  | qi::as_string[keyword["line_tension"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]       /*! Handles line-tension potential */
+                  | qi::as_string[keyword["line_tension"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]     /*! Handles line-tension potential */
+                  | qi::as_string[keyword["boundary_bending"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ] /*! Handles boundary bending potential */
                   /* to add new potential: | qi::as_string[keyword["newpotential"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&PotentialData::params, phx::ref(potential_data)) = qi::_1 ]

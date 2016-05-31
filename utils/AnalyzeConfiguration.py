@@ -55,6 +55,7 @@ parser.add_argument("--writeP",action='store_true', default=False, help="Output 
 parser.add_argument("--writeT",action='store_true', default=False, help="Output tesselation")
 parser.add_argument("--writeD",action='store_true', default=False, help="Output defects")
 parser.add_argument("--getStatsBasic",action='store_true',default=False, help="Output basic stats (v2av, packing fraction, energy, pressure)")
+parser.add_argument("--prefix",type=str,default='frame',help="prefix of vtp output files")
 args = parser.parse_args()
 
 
@@ -92,7 +93,7 @@ for f in files:
 	else:
 		writeme = Writer(args.nematic)
 	if args.writeP:
-		outparticles = args.output + '/frame%06d_particles.vtp' % u  # + str(u) + '_particles.vtp'
+		outparticles = args.output + '/'+ args.prefix + '%06d_particles.vtp' % u  # + str(u) + '_particles.vtp'
 		print outparticles
 		writeme.writeConfigurationVTK(conf,outparticles)
 	#plt.show()
@@ -116,7 +117,7 @@ for f in files:
 		#print LoopList
 		if args.writeD:
 			#print "Still to be done ..."
-			outdefects = args.output + '/frame%06d_defects.vtp' % u # + str(u) + '_defects.vtp'	
+			outdefects = args.output + '/' + args.prefix + '%06d_defects.vtp' % u # + str(u) + '_defects.vtp'	
 			print outdefects
 			defects = Defects(tess,conf)
 			# Look for nematic defects in the director field, but do not look for velocity defects (since it's a mess)
@@ -132,7 +133,7 @@ for f in files:
 			#defects.PlotDefects()
 			writeme.writeDefects(defects_n, defects_v,numdefect_n,numdefect_v,outdefects)
 		if args.writeT:
-			outpatches = args.output + '/frame%06d_patches.vtp' % u #+ str(u) + '_patches.vtp'
+			outpatches = args.output + '/' + args.prefix + '%06d_patches.vtp' % u #+ str(u) + '_patches.vtp'
 			print outpatches
 			if args.makeEdges:
 				tess.makeEdges(3.0)   

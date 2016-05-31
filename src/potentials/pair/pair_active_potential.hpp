@@ -67,7 +67,6 @@ public:
   //! \param param Contains information about all parameters (alpha, sigma, and rcut)
   PairActivePotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param)
   {
-    int ntypes = m_system->get_ntypes();
     if (!m_nlist)
     {
       m_msg->msg(Messenger::ERROR,"Active pair potential requires neighbour list. None given.");
@@ -92,11 +91,11 @@ public:
     
     m_msg->write_config("potential.pair.active.rcut",lexical_cast<string>(m_rcut));
     
-    m_pair_params = new ActiveParameters*[ntypes];
-    for (int i = 0; i < ntypes; i++)
+    m_pair_params = new ActiveParameters*[m_ntypes];
+    for (int i = 0; i < m_ntypes; i++)
     {
-      m_pair_params[i] = new ActiveParameters[ntypes];
-      for (int j = 0; j < ntypes; j++)
+      m_pair_params[i] = new ActiveParameters[m_ntypes];
+      for (int j = 0; j < m_ntypes; j++)
       {
         m_pair_params[i][j].alpha = m_alpha;
       }
@@ -105,7 +104,7 @@ public:
   
   virtual ~PairActivePotential()
   {
-    for (int i = 0; i < m_system->get_ntypes(); i++)
+    for (int i = 0; i < m_ntypes; i++)
       delete [] m_pair_params[i];
     delete [] m_pair_params;
   }

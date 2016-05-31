@@ -100,15 +100,15 @@ void PairVertexParticlePotential::compute(double dt)
       Vector3d area_vec(0.0,0.0,0.0);
       Vector3d perim_vec(0.0,0.0,0.0);
       Vector3d con_vec(0.0,0.0,0.0);
-      for (int e = 0; e < vi.n_edges; e++)
+      for (int f = 0; f < vi.n_faces; f++)
       {
-        Edge& Ep = mesh.get_edges()[vi.edges[prev(e,vi.n_edges)]];
-        Edge& E = mesh.get_edges()[vi.edges[e]];
-        Edge& En = mesh.get_edges()[vi.edges[next(e,vi.n_edges)]];
+        int fid = vi.dual[f];
+        int fid_m = vi.dual[prev(f,vi.n_faces)];
+        int fid_p = vi.dual[next(f,vi.n_faces)];
         
-        Face& f_nu_m = mesh.get_faces()[Ep.face];
-        Face& f_nu   = mesh.get_faces()[E.face];
-        Face& f_nu_p = mesh.get_faces()[En.face];
+        Face& f_nu_m = mesh.get_faces()[fid_m];
+        Face& f_nu   = mesh.get_faces()[fid];
+        Face& f_nu_p = mesh.get_faces()[fid_p];
          
         Vector3d& r_nu_m = f_nu_m.rc; 
         Vector3d& r_nu   = f_nu.rc; 
@@ -122,24 +122,10 @@ void PairVertexParticlePotential::compute(double dt)
         
         if (vi.boundary)
         {
-          if (e == 0)
+          if (f == 0)
             area_vec = area_vec + cross(r_nu,Nvec) - (cross(vi.r,Nvec))*f_nu.get_jacobian(i);
-          else if (e == vi.n_edges - 2)
+          else if (f == vi.n_faces - 2)
             area_vec = area_vec - cross(r_nu,Nvec) + (cross(vi.r,Nvec))*f_nu.get_jacobian(i);
-        }
-        if (m_compute_stress)
-        {
-          pi.s_xx = area_term*cross_prod_1.x*r_nu_i.x;
-          pi.s_xy = area_term*cross_prod_1.x*r_nu_i.y;
-          pi.s_xz = area_term*cross_prod_1.x*r_nu_i.z;
-          
-          pi.s_yx = area_term*cross_prod_1.y*r_nu_i.x;
-          pi.s_yy = area_term*cross_prod_1.y*r_nu_i.y;
-          pi.s_yz = area_term*cross_prod_1.y*r_nu_i.z;
-          
-          pi.s_zx = area_term*cross_prod_1.z*r_nu_i.x;
-          pi.s_zy = area_term*cross_prod_1.z*r_nu_i.y;
-          pi.s_zz = area_term*cross_prod_1.z*r_nu_i.z;
         }
         Vector3d cross_prod_2(0.0,0.0,0.0);
         if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_2 = ((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i);
@@ -147,63 +133,31 @@ void PairVertexParticlePotential::compute(double dt)
         perim_vec = perim_vec + cross_prod_2; 
         if (vi.boundary)
         {
-          if (e == 0 || (e == vi.n_edges - 2))
+          if (f == 0 || (f == vi.n_faces - 2))
           {
             Vector3d r_nu_i_unit = r_nu_i.unit();
             perim_vec = perim_vec + r_nu_i_unit*f_nu.get_jacobian(i) - r_nu_i_unit;
           }
         }
-        if (m_compute_stress)
-        {
-          pi.s_xx += perim_term*cross_prod_2.x*r_nu_i.x;
-          pi.s_xy += perim_term*cross_prod_2.x*r_nu_i.y;
-          pi.s_xz += perim_term*cross_prod_2.x*r_nu_i.z;
-          
-          pi.s_yx += perim_term*cross_prod_2.y*r_nu_i.x;
-          pi.s_yy += perim_term*cross_prod_2.y*r_nu_i.y;
-          pi.s_yz += perim_term*cross_prod_2.y*r_nu_i.z;
-          
-          pi.s_zx += perim_term*cross_prod_2.z*r_nu_i.x;
-          pi.s_zy += perim_term*cross_prod_2.z*r_nu_i.y;
-          pi.s_zz += perim_term*cross_prod_2.z*r_nu_i.z;
-        }
-        if (m_has_pair_params)
-          lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[E.to].type - 1].lambda;
+        //if (m_has_pair_params)
+        //  lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[E.to].type - 1].lambda;
         Vector3d cross_prod_3(0.0,0.0,0.0);
         if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_3 = lambda*(((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i));
         con_vec = con_vec + cross_prod_3; 
-        if (m_compute_stress)
-        {
-          pi.s_xx += cross_prod_3.x*r_nu_i.x;
-          pi.s_xy += cross_prod_3.x*r_nu_i.y;
-          pi.s_xz += cross_prod_3.x*r_nu_i.z;
-          
-          pi.s_yx += cross_prod_3.y*r_nu_i.x;
-          pi.s_yy += cross_prod_3.y*r_nu_i.y;
-          pi.s_yz += cross_prod_3.y*r_nu_i.z;
-          
-          pi.s_zx += cross_prod_3.z*r_nu_i.x;
-          pi.s_zy += cross_prod_3.z*r_nu_i.y;
-          pi.s_zz += cross_prod_3.z*r_nu_i.z;
-        }
-        if (m_has_pair_params)
-          lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[En.to].type - 1].lambda;
+        //if (m_has_pair_params)
+        //  lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[En.to].type - 1].lambda;
         Vector3d cross_prod_4(0.0,0.0,0.0);
         if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_4 = lambda*(((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i));
         con_vec = con_vec - cross_prod_4; 
-        if (m_compute_stress)
-        { 
-          pi.s_xx -= cross_prod_4.x*r_nu_i.x;
-          pi.s_xy -= cross_prod_4.x*r_nu_i.y;
-          pi.s_xz -= cross_prod_4.x*r_nu_i.z;
-          
-          pi.s_yx -= cross_prod_4.y*r_nu_i.x;
-          pi.s_yy -= cross_prod_4.y*r_nu_i.y;
-          pi.s_yz -= cross_prod_4.y*r_nu_i.z;
-          
-          pi.s_zx -= cross_prod_4.z*r_nu_i.x;
-          pi.s_zy -= cross_prod_4.z*r_nu_i.y;
-          pi.s_zz -= cross_prod_4.z*r_nu_i.z;
+        if (vi.boundary)
+        {
+          if (f == 0 || (f == vi.n_faces - 2))
+          {
+            if (m_has_pair_params)
+              lambda = m_pair_params[vi.type - 1][vi.type - 1].lambda;
+            Vector3d r_nu_i_unit = r_nu_i.unit();
+            con_vec = con_vec + lambda*(r_nu_i_unit*f_nu.get_jacobian(i) - r_nu_i_unit);
+          }
         }
         pot_eng += lambda*(r_nu - r_nu_m).len();
       }
@@ -254,16 +208,16 @@ void PairVertexParticlePotential::compute(double dt)
         Vector3d con_vec(0.0,0.0,0.0);
         Vector3d Nvec = Vector3d(pj.Nx, pj.Ny, pj.Nz);
         
-        for (int e = 0; e < vj.n_edges; e++)
+        for (int f = 0; f < vj.n_faces; f++)
         {
-          Edge& E = mesh.get_edges()[vj.edges[e]];
-          Face& f_nu   = mesh.get_faces()[E.face];
+          int fid = vj.dual[f];
+          Face& f_nu   = mesh.get_faces()[fid];
           if (f_nu.has_vertex(i))
           {
-            Edge& Ep = mesh.get_edges()[vj.edges[prev(e,vj.n_edges)]];
-            Edge& En = mesh.get_edges()[vj.edges[next(e,vj.n_edges)]];
-            Face& f_nu_m = mesh.get_faces()[Ep.face];
-            Face& f_nu_p = mesh.get_faces()[En.face];
+            int fid_m = vj.dual[prev(f,vj.n_faces)];
+            int fid_p = vj.dual[next(f,vj.n_faces)];
+            Face& f_nu_m = mesh.get_faces()[fid_m];
+            Face& f_nu_p = mesh.get_faces()[fid_p];
             Vector3d& r_nu_m = f_nu_m.rc; 
             Vector3d& r_nu   = f_nu.rc; 
             Vector3d& r_nu_p = f_nu_p.rc; 
@@ -276,24 +230,10 @@ void PairVertexParticlePotential::compute(double dt)
             //if (vi.boundary && vj.boundary)
             if (vj.boundary)
             {
-               if (e == 0)
+               if (f == 0)
                  area_vec = area_vec - (cross(vj.r,Nvec))*f_nu.get_jacobian(i);
-               else if (e == vj.n_edges - 2)
+               else if (f == vj.n_faces - 2)
                  area_vec = area_vec + (cross(vj.r,Nvec))*f_nu.get_jacobian(i);
-            }
-            if (m_compute_stress)
-            {
-              pi.s_xx += area_term*cross_prod_1.x*r_nu_i.x;
-              pi.s_xy += area_term*cross_prod_1.x*r_nu_i.y;
-              pi.s_xz += area_term*cross_prod_1.x*r_nu_i.z;
-          
-              pi.s_yx += area_term*cross_prod_1.y*r_nu_i.x;
-              pi.s_yy += area_term*cross_prod_1.y*r_nu_i.y;
-              pi.s_yz += area_term*cross_prod_1.y*r_nu_i.z;
-          
-              pi.s_zx += area_term*cross_prod_1.z*r_nu_i.x;
-              pi.s_zy += area_term*cross_prod_1.z*r_nu_i.y;
-              pi.s_zz += area_term*cross_prod_1.z*r_nu_i.z;
             }
             Vector3d cross_prod_2(0.0,0.0,0.0);
             if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_2 = ((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i);
@@ -301,63 +241,31 @@ void PairVertexParticlePotential::compute(double dt)
             perim_vec = perim_vec + cross_prod_2; 
             if (vj.boundary)
             {
-              if (e == 0 || (e == vj.n_edges - 2))
+              if (f == 0 || (f == vj.n_faces - 2))
               {
                 Vector3d r_nu_j = r_nu - vj.r;
                 perim_vec = perim_vec + r_nu_j.unit()*f_nu.get_jacobian(i);
               }
             }
-            if (m_compute_stress)
-            {
-              pi.s_xx += perim_term*cross_prod_2.x*r_nu_i.x;
-              pi.s_xy += perim_term*cross_prod_2.x*r_nu_i.y;
-              pi.s_xz += perim_term*cross_prod_2.x*r_nu_i.z;
-          
-              pi.s_yx += perim_term*cross_prod_2.y*r_nu_i.x;
-              pi.s_yy += perim_term*cross_prod_2.y*r_nu_i.y;
-              pi.s_yz += perim_term*cross_prod_2.y*r_nu_i.z;
-          
-              pi.s_zx += perim_term*cross_prod_2.z*r_nu_i.x;
-              pi.s_zy += perim_term*cross_prod_2.z*r_nu_i.y;
-              pi.s_zz += perim_term*cross_prod_2.z*r_nu_i.z;
-            }
-            if (m_has_pair_params)
-              lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[E.to].type - 1].lambda;
+            //if (m_has_pair_params)
+            //  lambda = m_pair_params[vj.type - 1][mesh.get_vertices()[E.to].type - 1].lambda;
             Vector3d cross_prod_3(0.0,0.0,0.0);
             if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_3 = lambda*(((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i));
             con_vec = con_vec + cross_prod_3; 
-            if (m_compute_stress)
-            {
-              pi.s_xx += cross_prod_3.x*r_nu_i.x;
-              pi.s_xy += cross_prod_3.x*r_nu_i.y;
-              pi.s_xz += cross_prod_3.x*r_nu_i.z;
-          
-              pi.s_yx += cross_prod_3.y*r_nu_i.x;
-              pi.s_yy += cross_prod_3.y*r_nu_i.y;
-              pi.s_yz += cross_prod_3.y*r_nu_i.z;
-          
-              pi.s_zx += cross_prod_3.z*r_nu_i.x;
-              pi.s_zy += cross_prod_3.z*r_nu_i.y;
-              pi.s_zz += cross_prod_3.z*r_nu_i.z;
-            }
-            if (m_has_pair_params)
-              lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[Ep.to].type - 1].lambda;
+            //if (m_has_pair_params)
+            //  lambda = m_pair_params[vj.type - 1][mesh.get_vertices()[Ep.to].type - 1].lambda;
             Vector3d cross_prod_4(0.0,0.0,0.0);
             if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_4 = lambda*(((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i));
             con_vec = con_vec - cross_prod_4; 
-            if (m_compute_stress)
+            if (vj.boundary)
             {
-              pi.s_xx -= cross_prod_4.x*r_nu_i.x;
-              pi.s_xy -= cross_prod_4.x*r_nu_i.y;
-              pi.s_xz -= cross_prod_4.x*r_nu_i.z;
-          
-              pi.s_yx -= cross_prod_4.y*r_nu_i.x;
-              pi.s_yy -= cross_prod_4.y*r_nu_i.y;
-              pi.s_yz -= cross_prod_4.y*r_nu_i.z;
-          
-              pi.s_zx -= cross_prod_4.z*r_nu_i.x;
-              pi.s_zy -= cross_prod_4.z*r_nu_i.y;
-              pi.s_zz -= cross_prod_4.z*r_nu_i.z;
+              if (f == 0 || (f == vj.n_faces - 2))
+              {
+                if (m_has_pair_params)
+                  lambda = m_pair_params[vj.type - 1][vj.type - 1].lambda;
+                Vector3d r_nu_j = r_nu - vj.r;
+                con_vec = con_vec + lambda*(r_nu_j.unit()*f_nu.get_jacobian(i));
+              }
             }
           }
         }

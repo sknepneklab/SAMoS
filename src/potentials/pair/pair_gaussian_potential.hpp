@@ -75,7 +75,6 @@ public:
   //! \param param Contains information about all parameters (epsilon, sigma, and rcut)
   PairGaussianPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param)
   {
-    int ntypes = m_system->get_ntypes();
     if (!m_nlist)
     {
       m_msg->msg(Messenger::ERROR,"Gaussian pair potential requires neighbour list. None given.");
@@ -174,11 +173,11 @@ public:
       m_msg->write_config("potential.pair.gaussian.phase_in","true");
     }   
     
-    m_pair_params = new GaussianParameters*[ntypes];
-    for (int i = 0; i < ntypes; i++)
+    m_pair_params = new GaussianParameters*[m_ntypes];
+    for (int i = 0; i < m_ntypes; i++)
     {
-      m_pair_params[i] = new GaussianParameters[ntypes];
-      for (int j = 0; j < ntypes; j++)
+      m_pair_params[i] = new GaussianParameters[m_ntypes];
+      for (int j = 0; j < m_ntypes; j++)
       {
         m_pair_params[i][j].A = m_A;
         m_pair_params[i][j].B = m_A;
@@ -204,7 +203,7 @@ public:
   
   virtual ~PairGaussianPotential()
   {
-    for (int i = 0; i < m_system->get_ntypes(); i++)
+    for (int i = 0; i < m_ntypes; i++)
       delete [] m_pair_params[i];
     delete [] m_pair_params;
   }

@@ -100,6 +100,7 @@
 #include "pair_soft_attractive_potential.hpp"
 #include "pair_vertex_particle_potential.hpp"
 #include "pair_line_tension_potential.hpp"
+#include "pair_boundary_bending_potential.hpp"
 #include "potential.hpp"
 #include "integrator.hpp"
 #include "integrator_brownian.hpp"

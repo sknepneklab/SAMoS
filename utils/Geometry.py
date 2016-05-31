@@ -111,7 +111,7 @@ class Geometry(object):
 		dr=r2-r1
 		dr[:,:,0]-=self.Lx*np.round(dr[:,:,0]/self.Lx)
 		dr[:,:,1]-=self.Ly*np.round(dr[:,:,1]/self.Ly)
-		dr[:,:,2]-=self.Lz*np.round(dr[:,:,3]/self.Lz)
+		dr[:,:,2]-=self.Lz*np.round(dr[:,:,2]/self.Lz)
 		return dr
 	 
 	# rather use these ones, kill the other ones eventually
