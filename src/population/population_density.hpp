@@ -142,8 +142,8 @@ public:
     m_msg->write_config("population.density.new_type",lexical_cast<string>(m_new_type));
     if (param.find("new_r") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Density population control. No new particle radius set. Using default 0.");
-      m_new_radius = 0.0;  // No type change
+      m_msg->msg(Messenger::WARNING,"Density population control. No new particle radius set. Using default 0 (i.e. inherit from mother).");
+      m_new_radius = 0.0;  // No radius change: inherit from mother
     }
     else
     {
@@ -151,6 +151,16 @@ public:
       m_new_radius =  lexical_cast<double>(param["new_r"]);
     }
     m_msg->write_config("population.density.new_radius",lexical_cast<string>(m_new_radius));
+	if (param.find("poly")== param.end())
+	{
+	  m_msg->msg(Messenger::WARNING,"Density population control. No polydispersity set. Using default 0.");
+	  m_poly = 0.0;  // no polydispersity (added)
+	}
+	else
+	{
+      m_msg->msg(Messenger::INFO,"Density population control. Polydispersity of new particles set to "+param["poly"]+".");
+      m_poly =  lexical_cast<double>(param["poly"]);
+    }
     if (param.find("old_group") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Density population control. No old group set. Using default \"all\".");
@@ -239,6 +249,7 @@ private:
   double m_split_distance;       //!< Fraction of the particle radius to split after the division
   double m_rho_max;              //!< Maximum local density where division rate decays 
   double m_alpha;                //!< When dividing particles, move new one to alpha*m_split_distance and the old one to (1-alpha)*split_distance
+  double m_poly;				 //!< When dividing particles, give the daughter a radius of m_new_radius with polydispersity poly. To avoid selecting for small radii.
    
 };
 
