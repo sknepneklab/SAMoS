@@ -483,8 +483,11 @@ double Mesh::dual_area(int v)
   
   
   if (V.area < 0)
-    V.area = -V.area;
-    //cout << "Negative area for vertex " << V << endl;
+  {
+    cout << "Negative area for vertex " << V << endl;
+    for (unsigned int f = 0; f < V.faces.size(); f++)
+      cout << m_faces[V.dual[f]].id << " " << m_faces[V.dual[f]].rc << endl;
+  }
 
   return V.area;
 }

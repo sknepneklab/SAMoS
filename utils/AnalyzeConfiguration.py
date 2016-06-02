@@ -50,7 +50,7 @@ parser.add_argument("--contractile", action='store_true',default=False, help="Ad
 parser.add_argument("-a", "--alpha", type=float, default=0.0, help="Prefactor of the contractile term")
 parser.add_argument("--closeHoles", action='store_true', default=False, help="Closes the holes in the tesselation to help tracking of defects (recommended for low density and/or nematic)")
 parser.add_argument("--makeEdges",action='store_true', default=False, help="Make edges to the tesselation along borders")
-parser.add_argument("-m", "--mult",type = float, default=1.0, help="Multiplier for tesselation neighbour radius")
+parser.add_argument("-m", "--mult",type = float, default=1.0, help="initial Multiplier for tesselation neighbour radius")
 parser.add_argument("--writeP",action='store_true', default=False, help="Output particle positions velocities directors.")
 parser.add_argument("--writeT",action='store_true', default=False, help="Output tesselation")
 parser.add_argument("--writeD",action='store_true', default=False, help="Output defects")
@@ -112,7 +112,7 @@ for f in files:
 		conf.getTangentBundle()
 		tess = Tesselation(conf)
 		print "initialized tesselation"
-		LoopList,Ival,Jval = tess.findLoop(args.closeHoles,args.mult)
+		LoopList,Ival,Jval = tess.findLoop(args.closeHoles,args.mult,1.1)
 		print "found loops"
 		#print LoopList
 		if args.writeD:
@@ -136,7 +136,7 @@ for f in files:
 			outpatches = args.output + '/' + args.prefix + '%06d_patches.vtp' % u #+ str(u) + '_patches.vtp'
 			print outpatches
 			if args.makeEdges:
-				tess.makeEdges(0.85)   
+				tess.makeEdges(3.0)   
 			tess.OrderPatches()
 			print "ordered patches"
 			if args.contractile:
