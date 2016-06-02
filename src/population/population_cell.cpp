@@ -1,3 +1,4 @@
+
 /* *************************************************************
  *  
  *   Soft Active Mater on Surfaces (SAMoS)
@@ -70,7 +71,11 @@ void PopulationCell::divide(int t)
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi); 
       Vertex& V = mesh.get_vertices()[p.get_id()];
-      if (!V.boundary && m_rng->drnd() < exp((V.area-m_max_A0)/m_div_rate) )  // Only internal verices can divide
+	  // actual probability of dividing now: (attempt_freq * dt) exp[(A-A_max)*m_div_rate/A_max 
+	  // In the limits where we can linearise both this and the growth rate, this gives:
+	  // P_div = (attempt_freq * dt) [1+m_div_rate*m_growth_rate t]. This division coefficient is dimensionless now.
+	  double prob_div =m_freq*m_system->get_integrator_step()*exp(m_div_rate*(V.area/m_max_A0-1.0)); 
+      if (!V.boundary && m_rng->drnd() < prob_div)  // Only internal verices can divide
       {
         //cout << t << " " << V.area << " " << p.A0 << " " << exp((V.area-p.A0)/m_div_rate) << endl;
         Particle p_new(m_system->size(), p.get_type(), p.get_radius());
@@ -133,7 +138,15 @@ void PopulationCell::remove(int t)
     {
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi);
-      if (m_rng->drnd() < exp((p.age-m_max_age)/m_death_rate))
+	  // actual probability of dying now: (attempt_freq * dt) exp[(age-max_age)*m_death_rate] 
+	  // In the limits where we can linearise this it gives:
+	  // P_div = (attempt_freq * dt) [1+m_death_rate*(age-age_max)]. This death rate is an inverse time scale
+	  //double prob_death =m_freq*m_system->get_integrator_step()*exp((p.age-m_max_age)*m_death_rate); 
+	  // Trying a very simple, linearly increasing death chance
+	  //double prob_death = m_freq*m_system->get_integrator_step()*p.age/m_max_age;
+	  // Trying something even simpler (so as to have a chance of homeostasis): a constant death rate
+	  double prob_death = m_freq*m_system->get_integrator_step()/m_max_age;
+      if (m_rng->drnd() < prob_death)
           to_remove.push_back(p.get_id());
     }
     int offset = 0;
@@ -169,11 +182,12 @@ void PopulationCell::grow(int t)
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();
     for (int i = 0; i < N; i++)
     {
+	  // Growth probability stays dimensionless, between 0 and 1. Instead, the actual growth rate is no an inverse time
       if (m_rng->drnd() < m_growth_prob)
       {
         int pi = particles[i];
         Particle& p = m_system->get_particle(pi); 
-        p.A0 *= (1.0+m_growth_rate);
+        p.A0 *= (1.0+m_freq*m_system->get_integrator_step()*m_growth_rate);
       }
     }
     m_system->set_force_nlist_rebuild(true);

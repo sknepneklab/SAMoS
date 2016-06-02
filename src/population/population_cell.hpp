@@ -82,8 +82,8 @@ public:
     }
     if (param.find("division_rate") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Cell population control. No division rate set. Using default 0.001.");
-      m_div_rate = 0.001;
+      m_msg->msg(Messenger::WARNING,"Cell population control. No division multiplier rate set. Using default 1.0.");
+      m_div_rate = 1.0;
     }
     else
     {
@@ -153,8 +153,8 @@ public:
     m_msg->write_config("population.cell.move_split",lexical_cast<string>(m_alpha));
     if (param.find("growth_rate") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Cell population control. No growth rate set. Assuming 0.00001.");
-      m_growth_rate = 1e-5;
+      m_msg->msg(Messenger::WARNING,"Cell population control. No growth rate set. Assuming 0.01.");
+      m_growth_rate = 1e-2;
     }
     else
     {
@@ -163,7 +163,7 @@ public:
     }
     if (param.find("growth_prob") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Cell population control. No growth proability set. Assuming 0.5.");
+      m_msg->msg(Messenger::WARNING,"Cell population control. No growth proability set. Assuming 0.5 (so as to introduce stochasticity)");
       m_growth_prob = 0.5;
     }
     else
