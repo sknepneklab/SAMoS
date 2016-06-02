@@ -79,10 +79,22 @@ void NeighbourList::build()
  //   mesh.reset();
  //   mesh.set_circumcenter(m_circumcenter);
  //}
- if (m_use_cell_list) 
-   this->build_cell();
+ if (!m_disable_nlist)
+ {
+  if (m_use_cell_list) 
+    this->build_cell();
+  else
+    this->build_nsq();
+ }
  else
-   this->build_nsq();
+ {
+   m_old_state.clear();
+   for (int i = 0; i < m_system->size(); i++)
+    {
+      Particle& pi = m_system->get_particle(i);
+      m_old_state.push_back(PartPos(pi.x,pi.y,pi.z));
+    }
+ }
   
  this->build_mesh();
 }
@@ -251,6 +263,8 @@ bool NeighbourList::need_update(Particle& p)
 //! Builds contact list based on particle distance
 void NeighbourList::build_contacts()
 {
+  if (m_disable_nlist)
+    throw runtime_error("Nlist build has to be enabled to build contacts.");
   //Mesh& mesh = m_system->get_mesh();
   int N = m_system->size();
   double dist = m_contact_dist;
@@ -371,7 +385,7 @@ void NeighbourList::build_faces(bool flag)
     for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
       mesh.add_edge(i,m_contact_list[i][j]);
   }
- 
+  
   mesh.set_circumcenter(m_circumcenter);
   mesh.set_max_face_perim(m_max_perim);
   mesh.generate_faces();
@@ -385,22 +399,6 @@ void NeighbourList::build_faces(bool flag)
   mesh.remove_obtuse_boundary();
   mesh.remove_edge_triangles();
   m_system->update_mesh();
-  
-  /*
-   bool removed_obtuse = false;
-   while (!removed_obtuse)
-   {
-     removed_obtuse = true;
-     if (mesh.remove_obtuse_boundary())
-     { 
-       mesh.generate_faces();
-       mesh.generate_dual_mesh();
-       mesh.postprocess();
-       m_system->update_mesh();
-       removed_obtuse = false;
-     }
-   }
-   */
 }
 
 #ifdef HAS_CGAL

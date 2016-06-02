@@ -940,11 +940,17 @@ void System::update_mesh()
       Particle& p = m_particles[i];
       m_mesh.update(p);
     }
-    m_mesh.remove_obtuse_boundary();
-    m_mesh.remove_edge_triangles();
-    m_mesh.equiangulate();
-    m_mesh.update_dual_mesh();
-    m_mesh.update_face_properties();
+    bool converged = false;
+    while(!converged)
+    {
+      //cout << "iteration : " << iter++ << endl;
+      converged = true;
+      converged = converged && m_mesh.remove_obtuse_boundary();
+      converged = converged && m_mesh.remove_edge_triangles();
+      m_mesh.update_dual_mesh();
+      m_mesh.update_face_properties();
+      converged = converged && m_mesh.equiangulate();
+    }
     for (int i = 0; i < m_mesh.size(); i++)
     {
       m_mesh.order_dual(i);

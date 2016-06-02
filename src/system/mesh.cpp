@@ -72,19 +72,16 @@ void Mesh::reset()
  *  by the indices of two vertices that belong to it.
  *  We also populate the auxiliary data structure edge_map
  *  that allows us to quickly search over vertex pairs.
- *  \param ei index of the 1st vertex
- *  \param ej index of the 2nd vertex
+ *  \param vi index of the 1st vertex
+ *  \param vj index of the 2nd vertex
 */
-void Mesh::add_edge(int ei, int ej)
+void Mesh::add_edge(int vi, int vj)
 {
-  if (m_edge_map.find(make_pair(ei,ej)) == m_edge_map.end())
-  {
-    m_edges.push_back(Edge(m_nedge,ei,ej));
-    m_vertices[ei].add_edge(m_nedge);
-    m_vertices[ei].add_neighbour(ej);
-    m_edge_map[make_pair(ei,ej)] = m_nedge;
-    m_nedge++;
-  }
+  m_edges.push_back(Edge(m_nedge,vi,vj));
+  m_vertices[vi].add_edge(m_nedge);
+  m_vertices[vi].add_neighbour(vj);
+  m_edge_map[make_pair(vi,vj)] = m_nedge;
+  m_nedge++;
 }
 
 /*! Generates faces from the edge information
@@ -673,7 +670,18 @@ void Mesh::edge_flip(int e)
   this->dual_area(V2.id);   this->dual_perimeter(V2.id);
   this->dual_area(V3.id);   this->dual_perimeter(V3.id);
   this->dual_area(V4.id);   this->dual_perimeter(V4.id);
-    
+  
+  // Update face angles and centers
+  this->compute_angles(F.id);
+  this->compute_centre(F.id);
+  this->compute_angles(Fp.id);
+  this->compute_centre(Fp.id);
+  
+  // Update angle deficit
+  this->angle_factor_deriv(V1.id);
+  this->angle_factor_deriv(V2.id);
+  this->angle_factor_deriv(V3.id);
+  this->angle_factor_deriv(V4.id);  
 }
 
 /*! Implements the equiangulation of the mesh. This is a procedure where 
@@ -681,13 +689,14 @@ void Mesh::edge_flip(int e)
  *  flipped. This procedure is guaranteed to converge and at the end one 
  *  recovers a Delaunday triangulation. 
 */
-void Mesh::equiangulate()
+bool Mesh::equiangulate()
 {
   //cout << "Entered equiangulate" << endl;
   if (!m_is_triangulation)
-    return;   // We cannot equiangulate a non-triangular mesh
+    return true;   // We cannot equiangulate a non-triangular mesh
   //cout << "Still in equiangulate" << endl;
   bool flips = true;
+  bool no_flips = true;
   while (flips)
   {
     flips = false;
@@ -708,10 +717,12 @@ void Mesh::equiangulate()
         {
           this->edge_flip(E.id);
           flips = true;
+          no_flips = false;
         }
       }
     }
   }
+  return no_flips;
 }
 
 /*! For a triangular mesh compute derivatives (gradients) of the
@@ -846,8 +857,9 @@ void Mesh::update_face_properties()
  *  remove the edge boundary edge. This leaves the face 
  *  information invalid. All faces need to be rebuilt.
 */
-void Mesh::remove_obtuse_boundary()
+bool Mesh::remove_obtuse_boundary()
 {
+  bool no_removals = true;
   for (int e = 0; e < m_nedge; e++)
     m_edges[e].attempted_removal = false;
   this->update_face_properties();
@@ -855,7 +867,9 @@ void Mesh::remove_obtuse_boundary()
   {
     this->remove_edge_pair(*(m_obtuse_boundary.begin()));
     this->update_face_properties();
+    no_removals = false;
   }
+  return no_removals;
 }
 
 /*! Remove edge triangles.
@@ -863,8 +877,9 @@ void Mesh::remove_obtuse_boundary()
  *  to of its edges with having boundary pairs. That is, if on of 
  *  its vertices have only two neighbours.
 */
-void Mesh::remove_edge_triangles()
+bool Mesh::remove_edge_triangles()
 {
+  bool no_removals = true;
   bool done = false;
   while (!done)
   {
@@ -873,9 +888,11 @@ void Mesh::remove_edge_triangles()
       if (this->remove_edge_face(f))
       {
         done = false;
+        no_removals = false;
         break;
       }
   }
+  return no_removals;
 }
 
 /*! Find the factor to scale the native area with for the boundary vertices.
