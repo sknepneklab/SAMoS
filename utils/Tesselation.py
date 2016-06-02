@@ -42,7 +42,7 @@ class Tesselation:
 		self.debug=debug
                 self.ordered_patches = False
 		
-	def findLoop(self,closeHoles=False,mult0=1.0):
+	def findLoop(self,closeHoles=False,mult0=1.0,mult1=MMAX):
 		neighList=[]
 		self.Ival=[]
 		self.Jval=[]
@@ -74,7 +74,7 @@ class Tesselation:
 			neighbours=[]
 			if closeHoles:
 				mult=mult0
-				while len(neighbours)<4 and mult<MMAX:
+				while len(neighbours)<5 and mult<mult1:
 					neighbours=self.conf.getNeighbours(i,mult,dmax)[0]
 					mult=1.1*mult
                                 #print i, ' --> ', neighbours
@@ -187,11 +187,12 @@ class Tesselation:
 			self.LoopCen.append(lcen)
 			self.LoopList.append(llist)
 			self.l+=1
+		print "Found " + str(len(self.LoopList)) + " loops!"
 		return self.LoopList,self.Ival,self.Jval
       
 	# Much prettier: a loop that is too big (as measured by the mean square distance of the distances to the particles)
 	# Deconstruct it into lots of little loops (virtual ones), with defined centers
-	def makeEdges(self,rmax):   
+	def makeEdges(self,rmax):
 		for l0 in range(len(self.LoopList)):
 			llist=self.LoopList[l0]
 			looppos=self.rval[llist]
@@ -212,9 +213,9 @@ class Tesselation:
 						kside=len(llist)-1
 					# Attempting to catch the inward pointing loops: the have to be global boundary ~sqrt(N)
 					if len(llist)<0.5*np.sqrt(len(self.rval)):
-						newcen=0.5*(self.rval[llist[k]]+self.rval[llist[kside]])-self.conf.sigma*dlvec[k,:]/np.sqrt(np.sum(dlvec[k,:]**2))
+						newcen=0.5*(self.rval[llist[k]]+self.rval[llist[kside]])-self.conf.inter.sigma*dlvec[k,:]/np.sqrt(np.sum(dlvec[k,:]**2))
 					else:
-						newcen=0.5*(self.rval[llist[k]]+self.rval[llist[kside]])+self.conf.sigma*dlvec[k,:]/np.sqrt(np.sum(dlvec[k,:]**2))
+						newcen=0.5*(self.rval[llist[k]]+self.rval[llist[kside]])+self.conf.inter.sigma*dlvec[k,:]/np.sqrt(np.sum(dlvec[k,:]**2))
 					self.LoopCen.append(newcen)
 					try:
 						self.ParList[llist[k]].remove(l0)
