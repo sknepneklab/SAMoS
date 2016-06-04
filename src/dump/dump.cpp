@@ -953,7 +953,9 @@ void Dump::dump_vtp(int step)
       if (mesh.size() > 0)
       {
         Vertex& V = mesh.get_vertices()[i];
-        dual_area->InsertNextValue(V.area);
+        // This is just a workaround a bug in some versions of Paraview that do not properly parse numbers in scientific notation
+        if (V.area > 1e-7)  dual_area->InsertNextValue(V.area);
+         else  dual_area->InsertNextValue(0.0);
         angle_def->InsertNextValue(mesh.angle_factor(V.id));
       }
     }
