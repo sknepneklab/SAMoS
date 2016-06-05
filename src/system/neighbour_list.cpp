@@ -57,28 +57,22 @@ static int check_projection(Particle& pi, Particle& pj, Particle& pk)
   return (t >= 0.0 && t <= 1.0);
 }
 
-/*! Build neighbour list using N^2 algorithm 
+/*! Build neighbour list.
 */
 void NeighbourList::build()
 {
- //cout << "Building NL. " << endl;
  m_list.clear();
+ 
+ if (m_remove_detached)
+   this->remove_detached();
   
  for (int i = 0; i < m_system->size(); i++)
  {
-   //Particle& p = m_system->get_particle(i);
-   //p.coordination = 0;
    m_list.push_back(vector<int>());
    if (m_build_contacts)
      m_contact_list.push_back(vector<int>());
  }
-
- //if (m_build_contacts)
- //{
- //   Mesh& mesh = m_system->get_mesh();
- //   mesh.reset();
- //   mesh.set_circumcenter(m_circumcenter);
- //}
+ 
  if (!m_disable_nlist)
  {
   if (m_use_cell_list) 
@@ -110,8 +104,6 @@ void NeighbourList::build_mesh()
 #ifdef HAS_CGAL
     if (m_triangulation)
     {
-      //this->build_contacts();
-      //this->build_faces(false);
       this->build_triangulation();
     }
     else
@@ -134,15 +126,12 @@ void NeighbourList::build_nsq()
   double cut = m_cut+m_pad;
   double cut2 = cut*cut;
   double d2;
-  //Mesh& mesh = m_system->get_mesh();
   
   m_old_state.clear();
   
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
-    //if (m_build_contacts)
-    //  mesh.add_vertex(pi);
     for (int j = i + 1; j < N; j++)
     {
       Particle& pj = m_system->get_particle(j);
@@ -181,7 +170,6 @@ void NeighbourList::build_cell()
   double cut = m_cut+m_pad;
   double cut2 = cut*cut;
   double d2;
-  //Mesh& mesh = m_system->get_mesh();
   
   m_old_state.clear();
   
@@ -190,8 +178,6 @@ void NeighbourList::build_cell()
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
-    //if (m_build_contacts)
-    //  mesh.add_vertex(pi);
     int cell_idx = m_cell_list->get_cell_idx(pi);
     vector<int>& neigh_cells = m_cell_list->get_cell(cell_idx).get_neighbours();  // per design includes this cell as well
     for (vector<int>::iterator it = neigh_cells.begin(); it != neigh_cells.end(); it++)
@@ -228,7 +214,6 @@ void NeighbourList::build_cell()
     }
     m_old_state.push_back(PartPos(pi.x,pi.y,pi.z));
   }
-  //m_msg->msg(Messenger::INFO, "Rebuilt neighbour list (using cell list).");
 }
 
 //! Check is neighbour list of the given particle needs update
@@ -265,14 +250,12 @@ void NeighbourList::build_contacts()
 {
   if (m_disable_nlist)
     throw runtime_error("Nlist build has to be enabled to build contacts.");
-  //Mesh& mesh = m_system->get_mesh();
   int N = m_system->size();
   double dist = m_contact_dist;
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
     double ri = pi.get_radius();
-    //cout << i << " --> ";
     vector<int>& neigh = this->get_neighbours(i);
     for (unsigned int j = 0; j < neigh.size(); j++)
     {
@@ -485,6 +468,30 @@ void NeighbourList::remove_dangling()
     }
   }
 }
+
+/*! Loop over all vertices and remove particles that belong to cells that are detached from the
+ *  rest of the tissue. This is clearly only possible is triangulation has been set, i.e., for
+ *  tissue simulations. 
+ */
+ void NeighbourList::remove_detached()
+ {
+   Mesh& mesh = m_system->get_mesh();
+   if (mesh.size() == 0) return; 
+   
+   vector<int> to_remove;
+   int offset = 0;  // We need to shift vertex ids to match them in the removal
+   for (int v = 0; v < mesh.size(); v++)
+   {
+     Vertex& V = mesh.get_vertices()[v];
+     if (!V.attached)
+     {
+       to_remove.push_back(V.id-offset);
+       offset++;
+     }
+   }
+   for (unsigned int i = 0; i < to_remove.size(); i++)
+     m_system->remove_particle(to_remove[i]);
+ } 
 
 /*! Aufiliary function which checks if all negbours are on the same side a line connecting two 
  *  particles. This is used in constructing meshes to make sure that some edges are not 
