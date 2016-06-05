@@ -241,7 +241,7 @@ class Writer:
 		polygonPolyData.SetPoints(points)
 		polygonPolyData.SetPolys(polygons)
 		# Add stresses ...
-		eng, press,stress = tess.conf.compute_energy_and_pressure()
+		eng, press,ncon,stress = tess.conf.compute_energy_and_pressure()
 		if contractile:
 			press_c=tess.computeContractile(self.alpha)
 			print press_c

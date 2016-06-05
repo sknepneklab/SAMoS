@@ -98,36 +98,41 @@ void PopulationDensity::divide(int t)
         p_new.age = 0.0; // age of child is 0: make sure age-dependent potentials are consistent with this
         for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)
           p_new.groups.push_back(*it_g);
-        if (m_rng->drnd() < m_type_change_prob_1)  // Attempt to change type, radius and group for first child
+		// Breaking backwards compatibility on never used functionality: Only ever attempt to change the radius of the second child
+        if (m_rng->drnd() < m_type_change_prob_1)  // Attempt to change type and group for first child
         {
           if (m_new_type == 0)
             new_type = p.get_type();
           else
             new_type = m_new_type;
           p.set_type(new_type);
-          if (m_new_radius == 0.0)
-            new_r = p.get_radius();
-          else
-            new_r = m_new_radius;
-          p.set_radius(new_r);
           m_system->change_group(p,m_old_group,m_new_group);
         }
         m_system->add_particle(p_new);
         Particle& pr = m_system->get_particle(p_new.get_id());
-        if (m_rng->drnd() < m_type_change_prob_2)  // Attempt to change type, radius and group for second child
+        if (m_rng->drnd() < m_type_change_prob_2)  // Attempt to change type and group for second child
         {
           if (m_new_type == 0)
             new_type = pr.get_type();
           else
             new_type = m_new_type;
           pr.set_type(new_type);
-          if (m_new_radius == 0.0)
-            new_r = pr.get_radius();
-          else
-            new_r = m_new_radius;
-          pr.set_radius(new_r);
           m_system->change_group(pr,m_old_group,m_new_group);
         }
+        // For the polydispersity function: Change radius of second child.
+        if (m_new_radius==0.0)
+		   new_r = pr.get_radius(); 
+        else 
+		{
+		  if (m_poly == 0.0)
+			new_r = m_new_radius;
+		  else 
+		  {
+			  new_r = m_new_radius*(1+m_poly*(m_rng->drnd()-0.5));
+			  //cout << "new radius " << new_r << endl;
+		  }
+		}
+        pr.set_radius(new_r);
       }
     }
     if (!m_system->group_ok(m_group_name))

@@ -62,9 +62,9 @@ void IntegratorLangevin::integrate()
     Particle& p = m_system->get_particle(pi);
     double fact = dt2/p.mass;
     // B step
-    p.vx += fact*p.fx;
-    p.vy += fact*p.fy;
-    p.vz += fact*p.fz;
+    p.vx += fact*(p.fx + m_v0*p.nx);
+    p.vy += fact*(p.fy + m_v0*p.ny);
+    p.vz += fact*(p.fz + m_v0*p.nz);
     // A step
     p.x += dt2*p.vx;
     p.y += dt2*p.vy;
@@ -102,9 +102,9 @@ void IntegratorLangevin::integrate()
     p.z += dt2*p.vz;
     // B step
     double fact = dt2/p.mass;
-    p.vx += fact*p.fx;
-    p.vy += fact*p.fy;
-    p.vz += fact*p.fz;
+    p.vx += fact*(p.fx + m_v0*p.nx);
+    p.vy += fact*(p.fy + m_v0*p.ny);
+    p.vz += fact*(p.fz + m_v0*p.nz);
     // Project everything back to the manifold
     m_constrainer->enforce(p);
     p.age += m_dt;

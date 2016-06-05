@@ -71,7 +71,6 @@ public:
   //! \param param Contains information about all parameters (alpha and sigma)
   PairCoulombPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param)
   {
-    int ntypes = m_system->get_ntypes();
     if (param.find("alpha") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No potential strength (alpha) specified for Coulomb pair potential. Setting it to 1.");
@@ -102,11 +101,11 @@ public:
       m_msg->write_config("potential.pair.coulomb.phase_in","true");
     }    
     
-    m_pair_params = new CoulombParameters*[ntypes];
-    for (int i = 0; i < ntypes; i++)
+    m_pair_params = new CoulombParameters*[m_ntypes];
+    for (int i = 0; i < m_ntypes; i++)
     {
-      m_pair_params[i] = new CoulombParameters[ntypes];
-      for (int j = 0; j < ntypes; j++)
+      m_pair_params[i] = new CoulombParameters[m_ntypes];
+      for (int j = 0; j < m_ntypes; j++)
       {
         m_pair_params[i][j].alpha = m_alpha;
         m_pair_params[i][j].sigma = m_sigma;
@@ -116,7 +115,7 @@ public:
   
   virtual ~PairCoulombPotential()
   {
-    for (int i = 0; i < m_system->get_ntypes(); i++)
+    for (int i = 0; i < m_ntypes; i++)
       delete [] m_pair_params[i];
     delete [] m_pair_params;
   }

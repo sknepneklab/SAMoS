@@ -207,7 +207,7 @@ struct Vertex
   vector<int> neigh;           //!< Contains indices of all neighbours
   vector<int> edges;           //!< Contains indices of all edges that originate at this vertex
   vector<int> faces;           //!< Contains indices of faces this vertex belongs to
-  vector<int> dual;            //!< Centres of all faces surrounding it. Boundary vertices are special.
+  vector<int> dual;            //!< Centres of all faces surrounding it, ordered counterclockwise
   vector<Vector3d> angle_def;  //!< Contains derivatives with respect to three coordinates at the boundary 
     
 };

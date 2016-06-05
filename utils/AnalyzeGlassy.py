@@ -40,13 +40,13 @@ args = parser.parse_args()
 #sim = SimRun(True,args.directory,args.conffile,args.input,args.skip,True)
 sim = SimRun(args.directory,args.conffile,args.input,args.radii,args.skip,True,True)
 tplot,msd = sim.getMSD()
-#bins,velcorr,fig=sim.getVelcorr(0.5)
-#data={'bins':bins,'velcorr':velcorr,'tplot':tplot,'msd':msd,'configuration':args.conffile}
-#outglassy=args.output + '/glassy.p'
-#outfig=args.output + '/velcorr.pdf'
-#pickle.dump(data,open(outglassy,'wb'))
-#plt.savefig(outfig)
-#plt.show()
+bins,velcorr,fig=sim.getVelcorr(0.5)
+data={'bins':bins,'velcorr':velcorr,'tplot':tplot,'msd':msd,'configuration':args.conffile}
+outglassy=args.output + '/glassy.p'
+outfig=args.output + '/velcorr.pdf'
+pickle.dump(data,open(outglassy,'wb'))
+plt.savefig(outfig)
+plt.show()
 
 
 	

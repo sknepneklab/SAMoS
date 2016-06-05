@@ -65,6 +65,17 @@ public:
   //! \param param Contains information about all parameters 
   IntegratorLangevin(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstrainerPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
   { 
+    if (param.find("v0") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Langevin dynamics integrator. Active velocity v0 not specified. Using default value 1.");
+      m_v0 = 1.0;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Langevin dynamics integrator. Setting magnitude of active velocity to "+param["v0"]+".");
+      m_v0 = lexical_cast<double>(param["v0"]);
+    }
+    m_msg->write_config("integrator.langevin.v0",lexical_cast<string>(m_v0));
     if (param.find("gamma") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Langevin dynamics integrator for particle position. Friction constant not set. Using default value 1.");
@@ -96,6 +107,7 @@ public:
 private:
   
   RNGPtr  m_rng;          //!< Random number generator 
+  double  m_v0;           //!< Magnitude of the active velocity 
   double  m_gamma;        //!< Friction constant 
   
 };

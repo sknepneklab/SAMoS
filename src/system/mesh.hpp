@@ -190,6 +190,9 @@ public:
   //! Order vertex star
   void order_star(int);
   
+  //! Order dual star
+  void order_dual(int);
+  
   //! Compute dual area
   double dual_area(int);
   
@@ -203,7 +206,7 @@ public:
   void edge_flip(int);
   
   //! Mesh equiangulation
-  void equiangulate();
+  bool equiangulate();
   
   //! Face centre Jacobian
   void fc_jacobian(int);
@@ -212,10 +215,10 @@ public:
   void update_face_properties();
   
   //! Remove obtuse boundary faces
-  void remove_obtuse_boundary();
+  bool remove_obtuse_boundary();
   
   //! Remove edge triangles
-  void remove_edge_triangles();
+  bool remove_edge_triangles();
   
   //! Return true if the vertex is a boundary vertex
   //! \param v index of the vertex

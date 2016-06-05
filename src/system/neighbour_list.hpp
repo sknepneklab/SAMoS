@@ -112,7 +112,9 @@ public:
                                                                                                  m_contact_dist(0.0),
                                                                                                  m_max_perim(20.0),
                                                                                                  m_max_edge_len(7.0),
-                                                                                                 m_circumcenter(true)
+                                                                                                 m_circumcenter(true),
+                                                                                                 m_disable_nlist(false),
+                                                                                                 m_remove_detached(false)
   {
     m_msg->write_config("nlist.cut",lexical_cast<string>(m_cut));
     m_msg->write_config("nlist.pad",lexical_cast<string>(m_pad));
@@ -211,6 +213,18 @@ public:
       m_msg->write_config("nlist.circumcenter","false");
       m_circumcenter = false;
     }
+    if (param.find("disable_nlist") != param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Neighbour list will not be built. This should be used in pair with triangulations when particle connections are build based on tringulations.");
+      m_msg->write_config("nlist.disable_nlist","true");
+      m_disable_nlist = true;
+    }
+    if (param.find("remove_detached") != param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Neighbour list. Particles detached from the mesh (tissue) will be erased.");
+      m_msg->write_config("nlist.remove_detached","true");
+      m_remove_detached = true;
+    }
     this->build();
   }
   
@@ -291,6 +305,8 @@ private:
   double m_max_perim;              //!< Maximum value of the perimeter beyond which face becomes a hole.
   double m_max_edge_len;           //!< Maximum value of the edge beyond which we drop it (for triangulations)
   bool m_circumcenter;             //!< If true, use cell circumcenters when computing duals. 
+  bool m_disable_nlist;            //!< If true, neigbour list is not built (only used for cell simulations)
+  bool m_remove_detached;          //!< If true, remove detached particles (vertices) before rebuilding neighbour list (for cell simulations)
   vector<vector<int> >  m_contact_list;    //!< Holds the contact list for each particle
     
   // Actual neighbour list builds
@@ -308,6 +324,9 @@ private:
  
   // Remove dangling edges
   void remove_dangling();
+  
+  // Remove detached particles
+  void remove_detached();
   
 #ifdef HAS_CGAL
   // Build Delaunay triangulation
