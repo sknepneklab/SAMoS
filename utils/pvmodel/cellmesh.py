@@ -997,7 +997,7 @@ class PVmesh(object):
                         lsum += lc
                 # testing only 'passive boundaries'
                 # turn off the direct contribution for boundary vertices only
-                        #if not nnboundary:
+                       #if not nnboundary:
                         if not boundary:
                             a_stress[trivhid] += farea_fac  * np.outer(r_mu_vh, ac)
                             p_stress[trivhid] += fprim_fac * np.outer(r_mu_vh, pc)
@@ -1289,7 +1289,8 @@ class PVmesh(object):
         
         return stress
 
-    def calculate_stress(self, x_c, omega, fast=False):
+    def calculate_stress(self, x_c, omega, exclude=True, fast=False):
+        # exclude flag sets whether to return np.nan for points touching the boundary
         # wl is the smoothing length
         # x_c the point about which we calculate stress
 
@@ -1321,25 +1322,19 @@ class PVmesh(object):
                 continue # couldn't find an intersection
             m_minus, m_plus, line = inter
             # do this check earlier todo
-            if ta == 1 and tb == 1 and (a in self.bulk_edge) and (b in self.bulk_edge):
-                #print 'excluding stress with bond', a,b 
-                #print 'at positions', meshpt[a], meshpt[b]
-                stress = cnan
-                break 
+            if exclude:
+                if ta == 1 and tb == 1 and (a in self.bulk_edge) and (b in self.bulk_edge):
+                    #print 'excluding stress with bond', a,b 
+                    #print 'at positions', meshpt[a], meshpt[b]
+                    stress = cnan
+                    break 
             # Non-zero stress contribution below here
             bondv_hat = bondv/norm(bondv)
             # can use an arraylike representing the function and use integrate.simps
             def omegaline(m):
                 return omega( norm(line(m) - x_c) )
             #io.plotrange(omegaline, m_minus, m_plus)
-            if fast: # This is slower!
-                ne = 10
-                ospace = np.linspace(m_minus, m_plus, ne+1, True)
-                oarr = np.array(map(omegaline, ospace))
-                omega_int = integrate.trapz(oarr, x=ospace)
-            else:
-                omega_int, err = integrate.quad(omegaline, m_minus, m_plus)
-            self.omegad.append( omega_int )
+            omega_int, err = integrate.quad(omegaline, m_minus, m_plus)
             nc += 1
             stress += dEdbond[bondk] * omega_int * np.outer(bondv_hat, bondv)
     
@@ -1387,8 +1382,6 @@ class PVmesh(object):
         #print np.mean(np.array(avg))
         ##print 'Made it to vertex', i
         clist = [i for i in clist if i not in excl]
-        #plt.hist(self.omegad)
-        #plt.show()
         if hardy:
             vst = Vstress(self.stress, clist, 'hardy')
             vst.radial(self.rcm,self.rcmd)
@@ -1398,6 +1391,18 @@ class PVmesh(object):
             vv.radial(self.rcm,self.rcmd)
             self.stresses['virial'] = vv
 
+    def stress_on_vertices(self, omega):
+        # self.meshpt
+        cll = len(self.meshpt)
+        self.stress = np.full((cll,3,3), np.nan)
+        for nu, nupt in self.meshpt.items():
+            st = self.calculate_stress(nupt, omega, exclude=False)
+            self.stress[nu][:,:] = st
+
+        clist = self.meshpt.keys()
+        vst = Vstress(self.stress, clist, 'hardy_vertices') 
+        vst.radial(self.rcm,self.rcmd)
+        self.stresses['hardy_vertices'] = vst
 
     def calculate_vflow(self, x_c, omega):
         vvals = self.vvals

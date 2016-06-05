@@ -118,15 +118,19 @@ def avg_pressures(fglob='stresses*.pkl'):
     plt.xlabel('step')
     plt.ylabel('average_pressure')
     xsteps = map(_outnum, sfiles)
-    #print _nanmean(datas[0]['simple'].pressure)
-    #print _nanmean(datas[0]['virial'].pressure)
-    spressure= [_nanmean(stress['simple'].pressure) for stress in datas]
-    plt.plot(xsteps, spressure, label='simple pressure', marker='o')
-    vpressure= [_nanmean(stress['virial'].pressure) for stress in datas]
-    plt.plot(xsteps, vpressure, label='virial pressure', marker='o')
-    if 'hardy' in stress:
+    stn = datas[0]
+    if 'simple' in stn:
+        spressure= [_nanmean(stress['simple'].pressure) for stress in datas]
+        plt.plot(xsteps, spressure, label='simple pressure', marker='o')
+    if 'virial' in stn:
+        vpressure= [_nanmean(stress['virial'].pressure) for stress in datas]
+        plt.plot(xsteps, vpressure, label='virial pressure', marker='o')
+    if 'hardy' in stn:
         hpressure= [_nanmean(stress['hardy'].pressure) for stress in datas]
-        plt.plot(xsteps, -np.array(hpressure), label='hardy pressure', marker='o')
+        plt.plot(xsteps, np.array(hpressure), label='hardy pressure', marker='o')
+    if 'hardy_vertices' in stn:
+        hpressure= [_nanmean(stress['hardy_vertices'].pressure) for stress in datas]
+        plt.plot(xsteps, np.array(hpressure), label='hardy vertex pressure', marker='o')
     plt.legend()
     plt.show()
 

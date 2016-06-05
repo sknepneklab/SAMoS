@@ -256,8 +256,12 @@ class Stress_Senario(Senario):
         clist = set_choice if args.s else None
 
         pv.stress_on_centres(omega, clist=clist, hardy=args.hardy)
+        pv.stress_on_vertices(omega)
+
         self.st.update(pv, outnum)
         self.pkr.update(pv, outnum)
+        return  # stop here
+
         vsout = self._name_vtp('virial_stress_')
         wr.write_stress_ellipses(pv, vsout, pv.stresses['virial'])
         
