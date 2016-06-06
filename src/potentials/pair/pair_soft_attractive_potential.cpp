@@ -104,8 +104,8 @@ void PairSoftAttractivePotential::compute(double dt)
       double pot_eng = 0.0;
       if (r < r_f)
       {
-		pi.coordination+=1;
-		pj.coordination+=1;
+		    pi.coordination+=1;
+		    pj.coordination+=1;
         if (r <= r_turn)
         {
           diff = ai_p_aj - r;
