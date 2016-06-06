@@ -110,6 +110,18 @@ public:
     }
     m_msg->write_config("potential.pair.boundary_attraction.wc",lexical_cast<string>(m_wc));
     
+    if (param.find("bulk") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Boundary attraction pair potential is computed only with cells in the bulk (no boundary-boundary interactions).");
+      m_exclude_boundary = true;
+      m_msg->write_config("potential.pair.boundary_attraction.bulk","true");
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Boundary attraction pair potential is computed between all neighbouring cells (including boundary-boundary interactions).");
+      m_exclude_boundary = false;
+      m_msg->write_config("potential.pair.boundary_attraction.bulk","false");
+    }
     
     m_pair_params = new BoundaryAttractionParameters*[m_ntypes];
     for (int i = 0; i < m_ntypes; i++)
@@ -212,6 +224,7 @@ private:
   double m_epsilon;                             //!< strength of the potential
   double m_rc;                                  //!< lower cutoff
   double m_wc;                                  //!< width of the potential  
+  bool m_exclude_boundary;                      //!< If true, compute force only with bulk cells
   BoundaryAttractionParameters** m_pair_params;       //!< type specific pair parameters 
      
 };
