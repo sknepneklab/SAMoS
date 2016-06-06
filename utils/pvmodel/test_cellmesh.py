@@ -1,6 +1,7 @@
 import numpy as np
 from cellmesh import *
 from analyse_cells import *
+import writemesh as wr
 
 from collections import OrderedDict
 
@@ -41,7 +42,7 @@ def timeit(f):
         return result
     return timed
 
-tdataf = '/home/dan/cells/run/basic/vpotential_only/cell_0000000000.dat'
+tdataf = '/home/dan/cells/run/weeks/basic/vpotential_only/cell_0000000000.dat'
 boundary_test_dataf = '/home/dan/cells/run/rprefA/rA_3.5/cell_0000004500.dat'
 # simple object represents the args object I use to configure Senarios
 class Block(object):
@@ -53,7 +54,9 @@ class Block(object):
 
 wld = 3.0
 fast = False
-usedata = boundary_test_dataf
+#usedata = boundary_test_dataf
+hexdata = '/home/dan/cells/run/hex/cell_0000000000.dat'
+usedata = hexdata
 defaults = {'k':1.0, 'gamma':0., 'L':0., 'wl':wld, 'input':usedata, 'dir':'/home/dan/tmp/test_cells',
         's':False, 'fast':fast}
 def time_stress():
@@ -63,9 +66,20 @@ def time_stress():
     nxt= timeit(stressrun.next)
     nxt()
 
+def test_dual():
+    args= Block(defaults)
+    rdat = ReadData(args.input)
+    pv = PVmesh.datbuild(rdat)
+    wr.writemeshenergy(pv, 'testmeshwrite.vtp')
+
+
+
+
 
 if __name__=='__main__':
     #test_bond_intersection()
-    time_stress()
+    #time_stress()
+    test_dual()
+
 
 

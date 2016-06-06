@@ -118,27 +118,247 @@ def bond_intersection(x_c, wl, x_a, x_b):
         return outa, outb, line
 
 # Want an object which wraps the Openmesh
-class Pymesh(object):
-    def __init__(self, omesh):
-        self.m = self.omesh
-        self.pym = self._pythonise()
-        self.n_vertices = self.m.n_vertices()
-        self.n_faces = self.m.n_face()
+# We want to easily get list of boundary and bulk elements
+# We want to easily map from vertices of one mesh to the faces of another
+# It's hard to say whether Openmesh is offering advantages over 
+# a pure python mesh implementation --- 
 
-    def _pythonise(self):
-        mesh= self.m
+normal = np.array([0.,0., 1.])
+class Pymesh(object):
+    # This object just holds methods
+        
+    def finalize(self):
+        self._pythonise()
+        self._helengths()
+        self.normal = normal
+
+    def _pythonise(mesh):
         meshpt = OrderedDict()
         for vh in mesh.vertices():
             meshpt[vh.idx()] = omvec(mesh.point(vh))
-        return meshpt
-
-    def getvh(self, vhi):
+        mesh.pym = meshpt
+        
+    def _helengths(self):
+        # store half edge vectors as half edge property
+        tri = self
+        pym = tri.pym
+        lvec = {}
+        for eh in tri.edges():
+            heh = tri.halfedge_handle(eh, 0)
+            heho = tri.opposite_halfedge_handle(heh)
+            vt = tri.to_vertex_handle(heh)
+            vf = tri.from_vertex_handle(heh)
+            npvt = pym[vt.idx()]
+            npvf = pym[vf.idx()]
+            vedge = npvt - npvf
+            lvec[heh.idx()] = vedge
+            lvec[heho.idx()] = -vedge
+        self.lvec = lvec 
+ 
+    def vh(self, vhi):
         return self.m.vertex_handle(vhi)
-    def getvpt(self, vhi):
+    def vpt(self, vhi):
         return self.pym[vhi]
     # for retrieving lots of property values its better to localise the dictionary
     def getfprop(self, pname, i):
         return getattr(self, pname)[i]
+ 
+    # -- some tools for iterating through parts of the openmesh --
+    # going to assume that we constuct pymesh objects from Samos output and don't mutate the mesh
+    def iterable_boundary(self, vh):
+        # vh is the starting vertex which should be on the boundary
+        mesh = self
+        vhidstart = vh.idx()
+        # A quick check for a boundary halfedge using the fact that it doesn't have a face 
+        def is_boundary_he(mesh, he):
+            fh = mesh.face_handle(he)
+            return fh.idx() is -1
+        start_he = None
+        # We need to find the boundary halfedge specifically
+        for heh in mesh.voh(vh):
+            if is_boundary_he(mesh, heh):
+                #print 'found boundary edge for vhid', vh.idx()
+                start_he = heh
+                break
+        assert start_he is not None
+        def iterable(start_he, mesh):
+            he_i = start_he
+            while True:
+                yield he_i
+                he_i = mesh.next_halfedge_handle(he_i)
+                if he_i.idx() == start_he.idx():
+                    raise StopIteration
+        self._iterable_boundary = iterable(start_he, mesh)
+        return self._iterable_boundary
+
+    # -- Finding the boundary and bulk 
+    @property
+    def boundary(self):
+        if hasattr(self, '_boundary'):
+            return self._boundary
+        mesh = self
+        for vh in mesh.vertices():
+            if mesh.is_boundary(vh):
+                break
+        itb = self.iterable_boundary(vh)
+        self._boundary = [mesh.to_vertex_handle(heh).idx() for heh in list(itb)]
+        return self._boundary
+
+    @property
+    def boundary_hegdes(self):
+        if hasattr(self, '_boundary_hedges'):
+            return self._boundary_hedges
+        tboundary = self.boundary
+        vhi = tboundary[0]
+        vh = self.vertex_handle(vhi)
+        itb = self.iterable_boundary(vh)
+        heids = [heh.idx() for heh in list(itb)]
+        self._boundary_hedges = OrderedDict(zip(tboundary, heids))
+        return self._boundary_hedges
+    
+    @property
+    def bulk(self):
+        if hasattr(self, '_bulk'):
+            return self._bulk
+        mesh = self
+        bverts = self.get_mesh_boundary(mesh)
+        vall= [vhi.idx() for vhi in mesh.vertices()]
+        self._bulk = list(OrderedSet(vall) - OrderedSet(bverts))
+        return self._bulk
+
+    # just returns the face ids of all the faces adjacent to a boundary vertex
+    def iterate_boundary_vertex(self, hehp):
+        tri = self
+        assert tri.is_boundary(hehp)
+        facels = []
+        while True:
+            heho = tri.opposite_halfedge_handle(hehp)
+            if tri.is_boundary(heho):
+                break
+            facels.append(tri.face_handle(heho).idx())
+            hehp = tri.prev_halfedge_handle(heho)
+        return facels
+ 
+    # Simply iterate the vertex faces but make sure it is done anticlockwise
+    # Can also do tri.vf(vh) and then reverse it 
+    def iterate_vertex(tri, vh):
+        start = tri.halfedge_handle(vh)
+        facels = []
+        he = start
+        while True:
+            fh = tri.face_handle(he)
+            facels.append(fh.idx())
+            hehp = tri.next_halfedge_handle(he)
+            heho = tri.opposite_halfedge_handle(hehp)
+            he = heho
+            if he.idx() == start.idx():
+                break
+        return facels
+
+
+# can I just subclass Trimesh / Polymesh
+
+class NPolyMesh(PolyMesh, Pymesh):
+    pass
+
+class NTriMesh(TriMesh, Pymesh):
+
+    def dual(self):
+        tri = self
+        mesh = NPolyMesh()
+
+        self.slambda = {}
+
+        # Trimesh vertice ids and mesh faces ids naturally match up
+        ccenters = np.zeros((tri.n_faces(),3))
+        cradius = np.zeros(tri.n_faces())
+        for j, fh in enumerate(tri.faces()):
+            # Calculate circumcentres of mesh
+            l_s = np.zeros(3)
+            vhs = []
+            for i, heh in enumerate(tri.fh(fh)):
+                lvec = tri.lvec[heh.idx()]
+                l_s[i] = norm(lvec)**2
+                vtmp = tri.to_vertex_handle(heh)
+                vhs.append(vtmp)
+                
+            # match up vertices and edges 
+            vhs = np.roll(vhs, -1, axis=0)
+            vi, vj, vk = [omvec(tri.point(vh)) for vh in vhs]
+            lsi, lsj, lsk = l_s
+            lli = lsi*(lsj + lsk - lsi)
+            llj = lsj*(lsk + lsi - lsj)
+            llk = lsk*(lsi + lsj - lsk)
+            # actually want to save lli,llj,llk for later as a face property
+            llp = OrderedDict([(vhs[0].idx(),lli), (vhs[1].idx(),llj), (vhs[2].idx(),llk)])
+            self.slambda[fh.idx] = llp
+
+            llnorm = lli + llj + llk
+            cc = np.array(lli*vi + llj*vj + llk*vk)/llnorm
+            ccenters[j] = cc
+            cradius[j] = norm(cc- vi)
+        self.cradius = cradius # for visualisation
+        # Add cicumcenters to form a new mesh, one for each face
+        mverts = np.array(np.zeros(len(ccenters)),dtype='object')
+        for j, cc in enumerate(ccenters):
+            mverts[j] = mesh.add_vertex(PolyMesh.Point(*cc))
+        # Add mesh faces, one for each vertex
+        to_mesh_face = {}
+        to_tri_vertex = {}
+        to_boundary_mesh_vertex = {}
+        for vh in tri.vertices():
+            if tri.is_boundary(vh):
+                pass
+            else: # Internal vertex
+                # needs to be anticlockwise
+                fhs = [f.idx() for f in list(tri.vf(vh))]
+                fhs.reverse()
+                vhs = list(mverts[fhs])
+                mfh = mesh.add_face(vhs)
+                to_mesh_face[vh.idx()] = mfh.idx()
+                to_boundary_mesh_vertex[mfh.idx()] = vh.idx()
+
+        # maintain a list of the mesh vertex ids which make up the edge of the internal cells
+        mesh.bulk_edge = mesh.boundary
+        # we didn't add boundary faces yet
+        mesh.bulkl = [mvh.idx() for mvh in mesh.vertices()] 
+        tboundary = tri.boundary
+        tb_hedges = tri.boundary_hegdes
+        halfcells = OrderedDict()
+        tript = tri.pym
+
+        # construct the halfcells object which represents the boundary faces
+        # Add boundary triangulation points to the mesh
+        for vhid in tboundary:
+
+            hehnid = tb_hedges[vhid] # So this is the outgoing edge
+            hehn = tri.halfedge_handle(hehnid)
+            hehp = tri.prev_halfedge_handle(hehn)
+            # write custom function for iterating around a vertex starting from hehp
+            halfcell= self.iterate_boundary_vertex(hehp)
+            vh = tri.vertex_handle(vhid)
+            halfcells[vhid] = halfcell
+
+            # Add vertex
+            vhpt = tript[vhid]
+            mvh = mesh.add_vertex(PolyMesh.Point(*vhpt))
+
+            # Add face
+            hcf = list(mverts[halfcell])
+            hcf.append(mvh)
+            mfh = mesh.add_face(hcf)
+
+            to_boundary_mesh_vertex[vhid] = mvh.idx()
+            to_mesh_face[vhid] = mfh.idx()
+            to_tri_vertex[mfh.idx()] = vh.idx()
+
+        # Assign the dictionaries to their appropriate object
+        self.to_mesh_face = to_mesh_face
+        self.to_boundary_mesh_vertex = to_boundary_mesh_vertex
+        mesh.to_tri_vertex = to_tri_vertex
+        mesh.halfcells = halfcells
+        mesh.finalize()
+        return mesh
 
 def get_star_hedges(polygons, vhi):
     hehids = []
@@ -227,317 +447,92 @@ class PVmesh(object):
 
         self.debug = False
 
+        # The cell centre triangulation
         self.tri = tri
-        # the edge mesh (dual mesh)
-        self.mesh = None
 
         # openmesh doesn't store edge lengths?
-        self.tri_lvecprop =  self._helengths(self.tri)
         if self.debug:
             print
             print 'trimesh'
             diagnose(self.tri)
 
-        self.boundary = True
-        # halfcells = {trimesh.idx() : [mesh vhids] } # should be correctly ordered
-        self.halfcells = {}
+        # The cell vertex mesh
+        print 'calculating the dual'
+        self.mesh = self.tri.dual()
 
-        self._dual()
         if self.debug:
             print 
             print 'mesh'
             diagnose(self.mesh)
 
-        if self.debug: print 'Calculating edge lengths for mesh'
-        self.mesh_lvecprop = self._helengths(self.mesh)
-
         # Set face normal to e_z
         self.normal = np.array([0,0,1])
 
-        if self.debug: print 'Calculating Area and perimeter'
-        self._set_face_properties()
-
-        self.forces = False
-        self.is_stress_setup = False
-        self.stress = None
+        #self._set_face_properties()
 
         # Use these through out the code in the future instead of idotpt(mesh, v_handle)
         # So 0 corresponds to the triangulation and 1 corresponts to the vertex mesh
-        self.meshes = {}
-        self.meshes[0] = self.tri
-        self.meshes[1] = self.mesh
-        # perhaps we should construct python dictionaries for retrieving mesh points and lengths
-        self.tript = self._pythonise(self.tri)
-        self.tri_bulk = self.get_mesh_bulk(self.tri)
-        self.meshpt = self._pythonise(self.mesh)
-        self.ptmesh = {}
-        self.ptmesh[0] = self.tript
-        self.ptmesh[1] = self.meshpt
+        #self.meshes = {}
+        #self.meshes[0] = self.tri
+        #self.meshes[1] = self.mesh
+        ## perhaps we should construct python dictionaries for retrieving mesh points and lengths
+        #self.tript = self._pythonise(self.tri)
+        #self.tri_bulk = self.get_mesh_bulk(self.tri)
+        #self.meshpt = self._pythonise(self.mesh)
+        #self.ptmesh = {}
+        #self.ptmesh[0] = self.tript
+        #self.ptmesh[1] = self.meshpt
 
         self.stresses = {}
 
         # find the centre of mass
-        triptarr = self.tript.values()
+        # move this into tri object
+        print 'finding the centre of mass'
+        triptarr = self.tri.pym.values()
         ltript = len(triptarr)
         self.rcm = np.sum(triptarr, axis=0)/ltript
         def distrcm(rval):
             return norm(rval-self.rcm)
         self.rcmd = map(distrcm, triptarr)
 
-        
-    def _helengths(self, tri):
-        # store half edge vectors as half edge property
-
-        lvecprop = HPropHandle()
-        tri.add_property(lvecprop, 'lvec')
-
-        for eh in tri.edges():
-            heh = tri.halfedge_handle(eh, 0)
-            heho = tri.opposite_halfedge_handle(heh)
-            vt = tri.to_vertex_handle(heh)
-            vf = tri.from_vertex_handle(heh)
-            npvt = omvec(tri.point(vt))
-            npvf = omvec(tri.point(vf))
-            vedge = npvt - npvf
-            tri.set_property(lvecprop, heh, vedge)
-            tri.set_property(lvecprop, heho, -vedge)
-            
-        return lvecprop
-       
-    # How about some tools for dealing with openmesh objects and triangulation
-    def iterable_boundary(self, mesh, vh):
-        vhidstart = vh.idx()
-        def is_boundary_he(mesh, he):
-            fh = mesh.face_handle(he)
-            return fh.idx() is -1
-        start_he = None
-        # We need to find the boundary one specifically
-        for heh in mesh.voh(vh):
-            if is_boundary_he(mesh, heh):
-                #print 'found boundary edge for vhid', vh.idx()
-                start_he = heh
-                break
-        assert start_he is not None
-        #print 'starting iteration on', start_he.idx()
-        def iterable(start_he, mesh):
-            he_i = start_he
-            while True:
-                yield he_i
-                he_i = mesh.next_halfedge_handle(he_i)
-                if he_i.idx() == start_he.idx():
-                    raise StopIteration
-        return iterable(start_he, mesh)
-
-    def get_mesh_boundary(self, mesh):
-        for vhi in mesh.vertices():
-            if mesh.is_boundary(vhi):
-                break
-        itb = self.iterable_boundary(mesh, vhi)
-        bverts = [mesh.to_vertex_handle(heh).idx() for heh in list(itb)]
-        return bverts
-    
-    def get_mesh_bulk(self, mesh):
-        bverts = self.get_mesh_boundary(mesh)
-        vall= [vhi.idx() for vhi in mesh.vertices()]
-        return list(OrderedSet(vall) - OrderedSet(bverts))
-
-    def iterate_boundary_vertex(self, tri, hehp):
-        assert tri.is_boundary(hehp)
-        facels = []
-        while True:
-            heho = tri.opposite_halfedge_handle(hehp)
-            if tri.is_boundary(heho):
-                break
-            facels.append(tri.face_handle(heho).idx())
-            hehp = tri.prev_halfedge_handle(heho)
-        return facels
-
-    
-    def _dual(self):
-        self.mesh = PolyMesh()
-
-        lambda_prop = FPropHandle()
-        self.tri.add_property(lambda_prop, 'lambda')
-        self.lambda_prop = lambda_prop
-
-        self.boundary_prop = VPropHandle()
-        self.tri.add_property(self.boundary_prop, 'boundary')
-
-        self.boundaries = [] # [[]]
-        # add list as well to keep track of which boundary halfedge is outgoing from the vertex
-        self.b_nheh = []
-
-        # Trimesh vertice ids and mesh faces ids naturally match up
-        ccenters = np.zeros((self.tri.n_faces(),3))
-        cradius = np.zeros(self.tri.n_faces())
-        for j, fh in enumerate(self.tri.faces()):
-            # Calculate circumcentres of mesh
-            l_s = np.zeros(3)
-            vhs = []
-            for i, heh in enumerate(self.tri.fh(fh)):
-                lvec =self.tri.property(self.tri_lvecprop, heh)
-                l_s[i] = norm(lvec)**2
-                vtmp = self.tri.to_vertex_handle(heh)
-                vhs.append(vtmp)
-                
-            # match up vertices and edges 
-            vhs = np.roll(vhs, -1, axis=0)
-            vi, vj, vk = [omvec(self.tri.point(vh)) for vh in vhs]
-            lsi, lsj, lsk = l_s
-            lli = lsi*(lsj + lsk - lsi)
-            llj = lsj*(lsk + lsi - lsj)
-            llk = lsk*(lsi + lsj - lsk)
-            # actually want to save lli,llj,llk for later as a face property
-            llp = OrderedDict([(vhs[0].idx(),lli), (vhs[1].idx(),llj), (vhs[2].idx(),llk)])
-            self.tri.set_property(lambda_prop, fh, llp)
-
-            llnorm = lli + llj + llk
-            cc = np.array(lli*vi + llj*vj + llk*vk)/llnorm
-            ccenters[j] = cc
-            cradius[j] = norm(cc- vi)
-        self.cradius = cradius # for visualisation
-        # Add cicumcenters to form a new mesh
-        tri_prop= VPropHandle()
-        self.mesh.add_property(tri_prop, 'tri')
-        self.tri_prop = tri_prop
-        mverts = np.array(np.zeros(len(ccenters)),dtype='object')
-        for j, cc in enumerate(ccenters):
-            mverts[j] = self.mesh.add_vertex(PolyMesh.Point(*cc))
-            self.mesh.set_property(tri_prop, mverts[j], 0)
-        # Add faces
-        self.n_tri_internal = 0
-        self.n_tri_boundary = 0
-        bval = 0
-        self.vh_mf = {} # tri vertex -> mesh face
-        self.mf_vh = {} 
-        self.btv_bmv = {} # tri vertex -> mesh vertex
-        for vh in self.tri.vertices():
-            if self.tri.is_boundary(vh):
-                is_new = True not in map(lambda boundary: vh.idx() in boundary, self.boundaries)
-                if is_new:
-                    bval += 1
-                    self.boundaries.append([])
-                    self.b_nheh.append([])
-                    for heh in self.iterable_boundary(self.tri, vh):
-                        #print 'looping along boundary', heh.idx()
-                        #print 'adding' , self.tri.from_vertex_handle(heh).idx() 
-                        self.boundaries[-1].append( self.tri.from_vertex_handle(heh).idx() )
-                        self.b_nheh[-1].append(heh)
-                self.tri.set_property(self.boundary_prop, vh, bval)
-                self.n_tri_boundary += 1
-            else: # Internal vertex
-                # construct the face by stepping around the halfedges
-                heh = self.tri.halfedge_handle(vh)
-                fhs = [ self.tri.face_handle(heh).idx() ]
-                start = heh.idx()
-                while True:
-                    hehp = self.tri.prev_halfedge_handle(heh)
-                    heho = self.tri.opposite_halfedge_handle(hehp)
-                    if heho.idx() == start:
-                        break
-                    fh_this = self.tri.face_handle(heho)
-                    fhs.append(fh_this.idx())
-                    heh = heho
-
-                vhs = list(mverts[fhs])
-                mfh = self.mesh.add_face(vhs)
-                self.vh_mf[vh.idx()] = mfh.idx()
-                self.mf_vh[mfh.idx()] = vh.idx()
-                self.tri.set_property(self.boundary_prop, vh, 0)
-                self.n_tri_internal += 1
-
-        # maintain a list of the mesh vertex ids which make up the edge of the internal cells
-        self.bulk_edge = set()
-        for bv in self.mesh.vertices():
-            if self.mesh.is_boundary(bv):
-                break
-        for heh in self.iterable_boundary(self.mesh, bv):
-            nuid= self.mesh.to_vertex_handle(heh).idx()
-            #assert self.mesh.is_boundary(self.mesh.vertex_handle(nuid))
-            self.bulk_edge.add(nuid)
-        self.mesh_bulk = [mvh.idx() for mvh in self.mesh.vertices()] # we didn't add boundary faces yet
-
-        # construct the halfcells object which represents the boundary faces
-        # Add boundary triangulation points to the mesh
-        for i, boundary in enumerate(self.boundaries):
-            for j, vhid in enumerate(boundary):
-                vh = self.tri.vertex_handle(vhid)
-                hehn = self.b_nheh[i][j]
-                hehp = self.tri.prev_halfedge_handle(hehn)
-                # write custom function for iterating around a vertex starting from hehp
-                halfcell= self.iterate_boundary_vertex(self.tri, hehp)
-                self.halfcells[vhid] = halfcell
-
-                tript = omvec(self.tri.point(self.tri.vertex_handle(vhid)))
-                mvh = self.mesh.add_vertex(PolyMesh.Point(*tript))
-                self.mesh.set_property(tri_prop, mvh, 1)
-
-                hcf = list(mverts[halfcell])
-                hcf.append(mvh)
-                mfh = self.mesh.add_face(hcf)
-
-                self.btv_bmv[vhid] = mvh.idx()
-                self.vh_mf[vhid] = mfh.idx()
-                self.mf_vh[mfh.idx()] = vh.idx()
-
-        self.true_mesh_boundary = self.get_mesh_boundary(self.mesh)
 
     def _set_face_properties(self):
         # organise the properties we will use
+        # mesh area, mesh perimeter, angular defecit
         mesh = self.mesh
         tri = self.tri
-        areaprop = VPropHandle()
-        self.tri.add_property(areaprop, 'area')
-        primprop = VPropHandle()
-        self.tri.add_property(primprop, 'prim')
-        self.btheta_prop = VPropHandle()
-        self.tri.add_property(self.btheta_prop, 'angular defecit')
+        areas = OrderedDict()
+        prims = OrderedDict()
+        bthetas = OrderdDict()
 
-        for vh in tri.vertices():
+        meshpt = mesh.pym
+        tript = tri.pym
+        for fh in mesh.faces():
             vhid = vh.idx()
             area = 0.
             prim = 0.
             ag = 1. # Angular defecit. Set it to one for internal vertices
-            boundary = tri.is_boundary(vh)
-            if not boundary:
-                #fh = mesh.face_handle(self.vh_mf[vh.idx()])
-                fh = mesh.face_handle(self.vh_mf[vh.idx()])
-                for heh in mesh.fh(fh):
-                    # mirror this with the boundary calculation and forget about lvecprop
-                    rmu = omvec(mesh.point(mesh.from_vertex_handle(heh)))
-                    rmup = omvec(mesh.point(mesh.to_vertex_handle(heh)))
-                    area += np.dot(np.cross(rmu, rmup), self.normal)
-                    ap=  np.dot(np.cross(rmu, rmup), self.normal)
-                    lvec = mesh.property(self.mesh_lvecprop, heh)
-                    l = norm(lvec)
-                    prim += l
-                area = area/2
-            else:
-                # calculate area for boundary vertices
-                hcell = self.halfcells[vhid]
-                hcellpts = map(lambda x: omvec(self.mesh.point(mesh.vertex_handle(x))), hcell) 
-                r_i = omvec(self.tri.point(vh))
-                hcellpts.append(r_i)
-                n = len(hcellpts)
-                for i, hpt in enumerate(hcellpts):
-                    ip = (i+1) % n
-                    area += np.dot(np.cross(hpt, hcellpts[ip]), self.normal)
-                    l = norm(hpt-hcellpts[ip])
-                    prim += l
-                area = area/2
+            # the mesh points
+            fpts = [meshpt[mvh] for mvh in mesh.fv(fh)]
+            n = len(fpts)
+            for i, fpt in enumerate(fpts):
+                ip = (i+1) % n
+                area += np.dot(np.cross(fpt, fpts[ip]), mesh.normal)
+                l = norm(fpt-fpts[ip])
+                prim += l
+            area = area/2.
 
-                # Calculate angular defecit for boundary vertices
-                # Could store real angular defecit here or the updated target areas
-                # Go with storing angular defecit
-                r_p = omvec(tri.point(vh))
-                hc = self.halfcells[vh.idx()]
-                r_mu_1, r_mu_n = idtopt(mesh, hc[0]), idtopt(mesh, hc[-1])
-                r_mu_1_p = r_mu_1 - r_p
-                r_mu_n_p = r_mu_n - r_p
-                dtheta = np.arccos( np.dot(r_mu_1_p, r_mu_n_p) / (norm(r_mu_1_p) * norm(r_mu_n_p)) )
-                sg = np.dot( np.cross(r_mu_1_p , r_mu_n_p), self.normal) >= 0
-                ag = dtheta if sg else 2*pi - dtheta
-                ag /= 2*pi
+            vhid = mesh.to_tri_vertex[fh.idx()]
+
+            r_p = omvec(tri.point(vh))
+            hc = self.halfcells[vh.idx()]
+            r_mu_1, r_mu_n = idtopt(mesh, hc[0]), idtopt(mesh, hc[-1])
+            r_mu_1_p = r_mu_1 - r_p
+            r_mu_n_p = r_mu_n - r_p
+            dtheta = np.arccos( np.dot(r_mu_1_p, r_mu_n_p) / (norm(r_mu_1_p) * norm(r_mu_n_p)) )
+            sg = np.dot( np.cross(r_mu_1_p , r_mu_n_p), self.normal) >= 0
+            ag = dtheta if sg else 2*pi - dtheta
+            ag /= 2*pi
 
             self.tri.set_property(self.btheta_prop, vh, ag)
             #print 'setting angular defecit of', ag
@@ -545,9 +540,6 @@ class PVmesh(object):
             #print 'setting perimeter of', prim
             self.tri.set_property(areaprop, vh, area)
             self.tri.set_property(primprop, vh, prim)
-        #for vh in self.tri.vertices():
-            #area = self.tri.property(areaprop, vh)
-            #print vh.idx(), area
 
         self.areaprop = areaprop
         self.primprop = primprop
@@ -618,7 +610,6 @@ class PVmesh(object):
 
 
     def calculate_energy(self):
-        # And attach values as a property to the faces of the mesh (inner vertices of triangulation)
         mesh = self.mesh
         tri = self.tri
 
@@ -1024,7 +1015,6 @@ class PVmesh(object):
         vst.radial(self.rcm, self.rcmd)
         self.stresses['simple'] = vst
         self.nstress = stress
-        self.forces = True
 
     def _pythonise(self, mesh):
         meshpt = OrderedDict()
@@ -1055,9 +1045,7 @@ class PVmesh(object):
             heh = self.mesh.halfedge_handle(eh, 0)
             nu = self.mesh.to_vertex_handle(heh).idx()
             mu = self.mesh.from_vertex_handle(heh).idx()
-            # removing the rest of the boundary cell bonds
-            #if nu in self.true_mesh_boundary and mu in self.true_mesh_boundary: 
-                #continue
+
             rnorm = norm(meshpt[nu] - meshpt[mu])
             if rnorm > self.lmax: self.lmax = rnorm
             bonds[frozenset([(1,nu),(1,mu)])] = eh.idx()
@@ -1460,22 +1448,21 @@ class PVmesh(object):
             print 'number of cells', rvals.shape[0]
             print 'number of points in trimesh', dd.points.shape[0]
 
-        tri = TriMesh()
-        prefareaprop = VPropHandle()
-        tri.add_property(prefareaprop, 'prefarea')
+        tri = NTriMesh()
+        prefarea = OrderedDict()
         # make a mesh out of this delaunay
         mverts = np.array(np.zeros(len(rvals)),dtype='object')
         for i, v  in enumerate(rvals):
             mv = tri.add_vertex(TriMesh.Point(*v))
             mverts[i] = mv
-            tri.set_property(prefareaprop, mv, area[i])
+            prefarea[mv.idx()] = area[i]
         for f in simplices:
             tri.add_face(list(mverts[f])) 
-        PV = PVmesh(tri)
-        PV.vvals = vvals
-        # We cheekily add this to the initialisation to avoid recovering it later
-        PV.prefareaprop = prefareaprop
-        return PV
+        tri.prefarea= prefarea
+        tri.vvals = vvals
+        tri.finalize()
+        pv = PVmesh(tri)
+        return pv
 
 if __name__=='__main__':
 
@@ -1528,7 +1515,6 @@ if __name__=='__main__':
     #pv.calculate_stress(np.zeros(3), 1.)
     wl = 1.
     pv._stress_setup(wl)
-    #pv.stress_on_centres(wl , [1,100, 200])
     pv.stress_on_centres(wl)
 
     outdir = args.dir

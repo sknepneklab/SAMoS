@@ -75,73 +75,53 @@ def writemesh(mesh, outfile):
 # take an openmesh object and write it as .vtk with faces
 def writemeshenergy(pv, outfile):
     
-    tri = pv.tri
     mesh = pv.mesh
     Points = vtk.vtkPoints()
     Faces = vtk.vtkCellArray()
 
-    energy = vtk.vtkDoubleArray()
-    energy.SetNumberOfComponents(1)
-    energy.SetName("energy")
-    enprop = pv.enprop
+    #energy = vtk.vtkDoubleArray()
+    #energy.SetNumberOfComponents(1)
+    #energy.SetName("energy")
+    #enprop = pv.enprop
 
-    boundary = vtk.vtkDoubleArray()
-    boundary.SetNumberOfComponents(1)
-    boundary.SetName("boundary")
+    #cradius = vtk.vtkDoubleArray()
+    #cradius.SetNumberOfComponents(1)
+    #cradius.SetName("cradius")
 
-    cradius = vtk.vtkDoubleArray()
-    cradius.SetNumberOfComponents(1)
-    cradius.SetName("cradius")
+    #pressure = vtk.vtkDoubleArray()
+    #pressure.SetNumberOfComponents(1)
+    #pressure.SetName("pressure")
 
-    pressure = vtk.vtkDoubleArray()
-    pressure.SetNumberOfComponents(1)
-    pressure.SetName("pressure")
-
+    meshpt = mesh.pym
     for i, vh in enumerate(mesh.vertices()):
-        pt =omvec(mesh.point(vh))
+        pt = meshpt[vh.idx()]
         Points.InsertNextPoint(pt)
-        is_tri = pv.mesh.property(pv.tri_prop, vh)
-        crnv = 0. if is_tri else pv.cradius[i] 
-        cradius.InsertNextValue(crnv)
     
     # Can actually add the boundary polygons here and show them 
-    nfaces =0
-    for vh in tri.vertices():
-        vhids = []
-        is_boundary = tri.is_boundary(vh)
-
-        fh = mesh.face_handle(pv.vh_mf[vh.idx()])
-        for meshvh in mesh.fv(fh):
-            # need to store all the relevant vertex ids
-            vhids.append(meshvh.idx())
-
-        n = len(vhids)
+    for mf in mesh.faces():
+        mvhs = list(mesh.fv(mf))
+        n = len(mvhs)
         Polygon = vtk.vtkPolygon()
         Polygon.GetPointIds().SetNumberOfIds(n)
-        for i, vhid in enumerate(vhids):
-            Polygon.GetPointIds().SetId(i, vhid)
+        for i, mvh in enumerate(mvhs):
+            Polygon.GetPointIds().SetId(i, mvh.idx())
         Faces.InsertNextCell(Polygon)
-        nfaces += 1
-
-        fen = tri.property(enprop, vh)
-        energy.InsertNextValue(fen)
-
-        b_id = tri.property(pv.boundary_prop, vh)
-        boundary.InsertNextValue(b_id)
         
-        pr = pv.stresses['virial'].pressure[vh.idx()]
-        prfacevalue = 0. if np.isnan(pr) else pr
-        pressure.InsertNextValue(prfacevalue)
+        #fen = tri.property(enprop, vh)
+        #energy.InsertNextValue(fen)
+
+        #pr = pv.stresses['virial'].pressure[vh.idx()]
+        #prfacevalue = 0. if np.isnan(pr) else pr
+        #pressure.InsertNextValue(prfacevalue)
 
 
     polydata = vtk.vtkPolyData()
     polydata.SetPoints(Points)
     polydata.SetPolys(Faces)
 
-    polydata.GetCellData().AddArray(energy)
-    polydata.GetCellData().AddArray(boundary)
-    polydata.GetCellData().AddArray(pressure)
-    polydata.GetPointData().AddArray(cradius)
+    #polydata.GetCellData().AddArray(energy)
+    #polydata.GetCellData().AddArray(pressure)
+    #polydata.GetPointData().AddArray(cradius)
 
     polydata.Modified()
     writer = vtk.vtkXMLPolyDataWriter()
