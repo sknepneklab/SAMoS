@@ -225,6 +225,12 @@ public:
       m_msg->write_config("nlist.remove_detached","true");
       m_remove_detached = true;
     }
+    if (param.find("max_iter") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Neighbour list. Setting maximum number of iterations for boundary builds in tissue simulations to "+param["max_iter"]+".");
+      m_msg->write_config("nlist.max_iter",param["max_iter"]);
+      m_system->set_max_mesh_iterations(lexical_cast<int>(param["max_iter"]));
+    }
     this->build();
   }
   

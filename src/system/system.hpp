@@ -296,6 +296,10 @@ public:
   
   //! Get the value of the integrator time step
   double get_integrator_step() { return m_dt; }
+  
+  //! Set the number of mesh iteration 
+  //! \param iter number of iteration 
+  void set_max_mesh_iterations(int iter) { m_max_mesh_iter = iter; }
     
 private:
   
@@ -319,6 +323,7 @@ private:
   int m_current_particle_flag;          //!< Keeps track of the last particle flag (distinct immutable id) of all particles. For bookkeeping. Clumsy as hell!  
   double m_dt;                          //!< This is a global integrator step used by all integrators (\note: it can be overwritten by a specific integrator)
   bool m_has_exclusions;                //!< If true, there are bonded interactions in the system and therefore those are accompanied with exclusions
+  int m_max_mesh_iter;                  //!< Maximum number of iterations when cleaning up boundaries in the tissue simulations
   vector<vector<int> > m_exclusions;    //!< Which particles to be excluded from computing non bonded interactions (basically everything in bonds and angles)
    
 };
