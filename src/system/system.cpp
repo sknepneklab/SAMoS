@@ -954,6 +954,11 @@ void System::update_mesh()
       converged = converged && m_mesh.equiangulate();
       iter++;
     }
+    if (iter >= m_max_mesh_iter)
+    {
+      cout << "Exceeded maximum number of itrations in boundary build. Most likely something is wrong with input paramters. Results will not be reliable." << endl;
+      throw runtime_error("Exceeded maximum number of itrations in boundary build.");
+    }
     for (int i = 0; i < m_mesh.size(); i++)
     {
       m_mesh.order_dual(i);
