@@ -43,6 +43,7 @@
 void PairLineTensionPotential::compute(double dt)
 {
   double lambda = m_lambda;
+  double l0 = m_l0;
   int N = m_system->size();
   Mesh& mesh = m_system->get_mesh();
   
@@ -61,24 +62,29 @@ void PairLineTensionPotential::compute(double dt)
     Edge& E = mesh.get_edges()[e];
     if (E.boundary)
     {
-      Vertex& Vi = mesh.get_vertices()[E.from];
-      Vertex& Vj = mesh.get_vertices()[E.to];
       Particle& pi = m_system->get_particle(E.from);
       Particle& pj = m_system->get_particle(E.to);
+      double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
+      m_system->apply_periodic(dx,dy,dz);
       if (m_has_pair_params)
+      {
         lambda = m_pair_params[pi.get_type() - 1][pj.get_type() - 1].lambda;
-      Vector3d rij = Vj.r - Vi.r;
-      double l = rij.len();
-      Vector3d urij = rij.unit();
-      double fact = lambda*l;
-      pi.fx += fact*urij.x;
-      pi.fy += fact*urij.y;
-      pi.fz += fact*urij.z;
-      pj.fx -= fact*urij.x;
-      pj.fy -= fact*urij.y;
-      pj.fz -= fact*urij.z;
-      double pot_eng = 0.5*lambda*l*l;
+        l0 = m_pair_params[pi.get_type() - 1][pj.get_type() - 1].l0;
+      }
+      double r_sq = dx*dx + dy*dy + dz*dz;
+      double r = sqrt(r_sq);
+      double dl = r - l0;
+      double pot_eng = 0.5*lambda*dl*dl;
       m_potential_energy += pot_eng;
+      // Handle force
+      double force_factor = lambda*dl/r;
+      pi.fx += force_factor*dx;
+      pi.fy += force_factor*dy;
+      pi.fz += force_factor*dz;
+      // Use 3d Newton's law
+      pj.fx -= force_factor*dx;
+      pj.fy -= force_factor*dy;
+      pj.fz -= force_factor*dz;
       if (m_system->compute_per_particle_energy())
       {
         pi.add_pot_energy("line_tension",pot_eng);

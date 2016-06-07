@@ -50,6 +50,7 @@ using std::sqrt;
 struct LineTensionParameters
 {
   double lambda;
+  double l0;
 };
 
 /*! PairLineTensionPotential implements the line tension term in the model for an active tissue model.
@@ -81,6 +82,17 @@ public:
     }
     m_msg->write_config("potential.pair.line_tension.lambda",lexical_cast<string>(m_lambda));
     
+    if (param.find("l0") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"No prefered distance (l0) specified for line tension pair potential. Setting it to 0.");
+      m_l0 = 0.0;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Global prefered distance (l0) for line tension pair potential is set to "+param["l0"]+".");
+      m_l0 = lexical_cast<double>(param["l0"]);
+    }
+    m_msg->write_config("potential.pair.line_tension.l0",lexical_cast<string>(m_l0));
     
     m_pair_params = new LineTensionParameters*[m_ntypes];
     for (int i = 0; i < m_ntypes; i++)
@@ -89,6 +101,7 @@ public:
       for (int j = 0; j < m_ntypes; j++)
       {
         m_pair_params[i][j].lambda = m_lambda;
+        m_pair_params[i][j].l0 = m_l0;
       }
     }
     
@@ -131,10 +144,26 @@ public:
       param["lambda"] = m_lambda;
     }
     m_msg->write_config("potential.pair.line_tension.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".push",lexical_cast<string>(param["lambda"]));
+    
+    if (pair_param.find("l0") != pair_param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Line tension pair potential. Setting prefered distance to "+pair_param["l0"]+" for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      param["l0"] = lexical_cast<double>(pair_param["l0"]);
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Line tension pair potential. Using default prefered distance ("+lexical_cast<string>(m_l0)+") for particle pair of types ("+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
+      param["l0"] = m_l0;
+    }
+    m_msg->write_config("potential.pair.line_tension.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".push",lexical_cast<string>(param["l0"]));
         
     m_pair_params[type_1-1][type_2-1].lambda = param["lambda"];
+    m_pair_params[type_1-1][type_2-1].l0 = param["l0"];
     if (type_1 != type_2)
+    {
       m_pair_params[type_2-1][type_1-1].lambda = param["lambda"];
+      m_pair_params[type_2-1][type_1-1].l0 = param["l0"];
+    }
     
     m_has_pair_params = true;
   }
@@ -149,6 +178,7 @@ public:
 private:
        
   double m_lambda;                  //!< line tension 
+  double m_l0;                      //!< rest lenght (optimal distance) between neigbouring cells
   LineTensionParameters** m_pair_params;       //!< type specific pair parameters 
      
 };
