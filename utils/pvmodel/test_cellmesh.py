@@ -70,11 +70,16 @@ def test_dual():
     args= Block(defaults)
     rdat = ReadData(args.input)
     pv = PVmesh.datbuild(rdat)
+    nf = pv.tri.n_vertices()
+    k, gamma, L = 1., 0.1, 0.1
+    K = np.full(nf, k)
+    Gamma = np.full(nf, gamma)
+    cl = pv.mesh._construct_cl_dict(L)
+    pv.set_constants(K, Gamma, cl)
+    pv.calculate_energy()
+    pv.calculate_forces()
     wr.writemeshenergy(pv, 'testmeshwrite.vtp')
-
-
-
-
+    wr.writetriforce(pv, 'testtriwrite.vtp')
 
 if __name__=='__main__':
     #test_bond_intersection()

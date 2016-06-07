@@ -244,6 +244,7 @@ class Stress_Senario(Senario):
         self._handle_constants(pv)
         pv.calculate_energy()
         pv.calculate_forces(exclude_boundary=args.exclude)
+
         # ready to output simple stress immediately
         nsout = self._name_vtp('simple_stress_')
         wr.write_stress_ellipses(pv, nsout, pv.stresses['simple'])
@@ -260,7 +261,6 @@ class Stress_Senario(Senario):
 
         self.st.update(pv, outnum)
         self.pkr.update(pv, outnum)
-        return  # stop here
 
         vsout = self._name_vtp('virial_stress_')
         wr.write_stress_ellipses(pv, vsout, pv.stresses['virial'])
@@ -282,7 +282,7 @@ class Stress_Senario(Senario):
         # Could easily read these from a .conf file
         K = np.full(nf, k)
         Gamma = np.full(nf, gamma)
-        cl = pv._construct_cl_dict(L)
+        cl = pv.mesh._construct_cl_dict(L)
         pv.set_constants(K, Gamma, cl)
 
 
@@ -302,41 +302,6 @@ class Stress_Senario(Senario):
             wlout = self._name_vtp('hardy_stress_', wlnum)
             print 'the name of one stress output ', wlout
             wr.write_stress_ellipses(pv, wlout, pv.stress)
-
-        # Fow now just stop here
-        #sys.exit()
-
-
-
-# define a different function to do 
-ne = 1001 # The number of times the smoothing function is evaluated
-wrange = np.arange(0.1, 4, 0.1)
-def range_wl(args, pv, wls, ellipses=True):
-    #choice = choices(pv, nr=8)
-    choice = args.selection
-    #print 'choice',  choice
-    fileo=  os.path.join(args.dir, 'pressure_wl.plot') 
-    ptrack = Pressure_t(choice, fileo, xvar='wl')
-    pv._stress_setup()
-    for wl in wls:
-        print 'using wl ', wl
-        om = quartic_wl(wl)
-        lspace = np.linspace(0., wl, ne)
-        #omega = hash_function(om, lspace, ne)
-        omega = om
-        omega.wl = wl
-        pv._set_wl(omega)
-        pv.stress_on_centres(omega, clist=choice, kinetic = False) 
-        
-        ptrack.update(pv, wl)
-
-        # change the numbering in this line if you change wrange spacing
-        if ellipses:
-            wlnum = ('%d' % int(100*wl)).zfill(3)
-            stress_outname = 'hardy_stress_' + args.outnum + '_' + wlnum + '.vtp'
-            sout = path.join(args.dir, stress_outname)
-            wr.write_stress_ellipses(pv, sout, pv.stress)
-    ptrack.cleanup()
 
 if __name__=='__main__':
 

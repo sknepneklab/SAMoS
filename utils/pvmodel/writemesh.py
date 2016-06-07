@@ -157,6 +157,7 @@ def get_stress(a,b): return b
 def writetriforce(pv, outfile):
 
     tri = pv.tri
+    tript = tri.pym
 
     Points = vtk.vtkPoints()
     Faces = vtk.vtkCellArray()
@@ -189,14 +190,12 @@ def writetriforce(pv, outfile):
     
     for vh in pv.tri.vertices():
         vhid = vh.idx()
-        pt =omvec(pv.tri.point(vh))
+        pt = tript[vhid]
         Points.InsertNextPoint(pt)
-
         idtriv.InsertNextValue(vh.idx())
         
-        if pv.forces:
-            fov = pv.tri.property(pv.fprop, vh)
-            force.InsertNextTuple3(*fov)
+        fov = pv.tri.forces[vhid]
+        force.InsertNextTuple3(*fov)
         if False:
             if not pv.tri.is_boundary(vh):
                 s_1 = evalues[vhid][0] * evectors[vhid][0]
@@ -208,10 +207,7 @@ def writetriforce(pv, outfile):
                 stress_2.InsertNextTuple3(*np.zeros(3))
 
     for fh in tri.faces():
-        vhids = []
-        for vh in tri.fv(fh):
-            # need to store all the relevant vertex ids
-            vhids.append(vh.idx())
+        vhids = [vh.idx() for vh in tri.fv(fh)]
         n = len(vhids)
         Polygon = vtk.vtkPolygon()
         Polygon.GetPointIds().SetNumberOfIds(n)
@@ -224,8 +220,7 @@ def writetriforce(pv, outfile):
     polydata.SetPolys(Faces)
 
     polydata.GetPointData().AddArray(idtriv)
-    if pv.forces:
-        polydata.GetPointData().AddArray(force)
+    polydata.GetPointData().AddArray(force)
     if False:
         polydata.GetPointData().AddArray(stress_1)
         polydata.GetPointData().AddArray(stress_2)
@@ -258,6 +253,10 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
 
     Points = vtk.vtkPoints()
 
+    tri = pv.tri
+    mesh = pv.mesh
+    tript = tri.pym
+    meshpt = mesh.pym
     e_x = np.array([1., 0., 0.])
 
     # calculate principle stresses
@@ -285,8 +284,7 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
     
     ells = vtk.vtkCellArray()
     for ellid, vhid in enumerate(evalues.keys()):
-    #for vhid in pv.tript.keys():
-        pt = pv.tript[vhid]
+        pt = tript[vhid]
         shift =  pt[:2]
 
         # cut down to two dimensions 
@@ -295,7 +293,7 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
         a, b = av/normf, bv/normf
         ea, eb, _ = evectors[vhid]
         theta = np.arccos(np.dot(e_x, ea)) 
-        sg = 1. if np.dot(np.cross(e_x, ea),pv.normal) > 0 else -1.
+        sg = 1. if np.dot(np.cross(e_x, ea),mesh.normal) > 0 else -1.
         R = rotation_2d(sg * theta)  
 
 
