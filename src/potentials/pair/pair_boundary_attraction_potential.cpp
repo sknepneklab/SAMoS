@@ -67,32 +67,35 @@ void PairBoundaryAttractionPotential::compute(double dt)
       for (int j = 0; j < Vi.n_edges; j++)
       {
         Vertex& Vj = mesh.get_vertices()[Vi.neigh[j]];
-        Particle& pj = m_system->get_particle(Vj.id);
-        if (m_has_pair_params)
+        if (!(Vj.boundary && m_exclude_boundary))
         {
-          epsilon = m_pair_params[pi.get_type()-1][pj.get_type()-1].epsilon;
-          rc = m_pair_params[pi.get_type()-1][pj.get_type()-1].rc;
-          wc = m_pair_params[pi.get_type()-1][pj.get_type()-1].wc;
-        }
-        double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
-        m_system->apply_periodic(dx,dy,dz);
-        double r = sqrt(dx*dx + dy*dy + dz*dz);
-        if (r >= rc && r <= (rc+wc))
-        {
-          double cos_fac = cos(0.5*M_PI*(r-rc)/wc);
-          double potential_energy = -epsilon*cos_fac*cos_fac;
-          m_potential_energy += potential_energy;
-          double fact = -0.5*M_PI*epsilon/wc*sin(M_PI*(r-rc)/wc)/r;
-          pi.fx += fact*dx;
-          pi.fy += fact*dy;
-          pi.fz += fact*dz;
-          pj.fx -= fact*dx;
-          pj.fy -= fact*dy;
-          pj.fz -= fact*dz;
-          if (m_system->compute_per_particle_energy())
+          Particle& pj = m_system->get_particle(Vj.id);
+          if (m_has_pair_params)
           {
-            pi.add_pot_energy("boundary_attraction",potential_energy);
-            pj.add_pot_energy("boundary_attraction",potential_energy);
+            epsilon = m_pair_params[pi.get_type()-1][pj.get_type()-1].epsilon;
+            rc = m_pair_params[pi.get_type()-1][pj.get_type()-1].rc;
+            wc = m_pair_params[pi.get_type()-1][pj.get_type()-1].wc;
+          }
+          double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
+          m_system->apply_periodic(dx,dy,dz);
+          double r = sqrt(dx*dx + dy*dy + dz*dz);
+          if (r >= rc && r <= (rc+wc))
+          {
+            double cos_fac = cos(0.5*M_PI*(r-rc)/wc);
+            double potential_energy = -epsilon*cos_fac*cos_fac;
+            m_potential_energy += potential_energy;
+            double fact = -0.5*M_PI*epsilon/wc*sin(M_PI*(r-rc)/wc)/r;
+            pi.fx += fact*dx;
+            pi.fy += fact*dy;
+            pi.fz += fact*dz;
+            pj.fx -= fact*dx;
+            pj.fy -= fact*dy;
+            pj.fz -= fact*dz;
+            if (m_system->compute_per_particle_energy())
+            {
+              pi.add_pot_energy("boundary_attraction",potential_energy);
+              pj.add_pot_energy("boundary_attraction",potential_energy);
+            }
           }
         }
       }

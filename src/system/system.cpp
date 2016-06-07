@@ -77,7 +77,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
                                                                              m_force_nlist_rebuild(false),
                                                                              m_nlist_rescale(1.0),
                                                                              m_current_particle_flag(0),
-                                                                             m_dt(0.0)
+                                                                             m_dt(0.0),
+                                                                             m_max_mesh_iter(100)
 {
   vector<int> types;
   vector<string> s_line;
@@ -941,7 +942,8 @@ void System::update_mesh()
       m_mesh.update(p);
     }
     bool converged = false;
-    while(!converged)
+    int iter = 0;
+    while(!converged && iter <= m_max_mesh_iter)
     {
       //cout << "iteration : " << iter++ << endl;
       converged = true;
@@ -950,6 +952,12 @@ void System::update_mesh()
       m_mesh.update_dual_mesh();
       m_mesh.update_face_properties();
       converged = converged && m_mesh.equiangulate();
+      iter++;
+    }
+    if (iter >= m_max_mesh_iter)
+    {
+      cout << "Exceeded maximum number of itrations in boundary build. Most likely something is wrong with input paramters. Results will not be reliable." << endl;
+      throw runtime_error("Exceeded maximum number of itrations in boundary build.");
     }
     for (int i = 0; i < m_mesh.size(); i++)
     {
