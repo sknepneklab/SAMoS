@@ -106,12 +106,28 @@ def plot_avg_pressures(fglob='stress_st*.npz'):
     plt.legend()
     plt.show()
 
+# descriptor for saving the plots to a default name under plots/
+import os
+def defaultsave(f):
+    def saved(*args, **kw):
+        f(*args, **kw)
+
+        pdir = 'plots/'
+        if not os.path.exists(pdir):
+            os.mkdir(pdir)
+        
+        out = os.path.join(pdir, f.__name__+'.png')
+        plt.savefig(out)
+        plt.show()
+    return saved
+
 def _loadpkl(fname):
     return pickle.load(open(fname, 'rb'))
 
 def _nanmean(arr):
     return np.mean(arr[~np.isnan(arr)])
 
+@defaultsave
 def avg_pressures(fglob='stresses*.pkl'):
     sfiles = sorted(glob(fglob))
     datas = map(_loadpkl, sfiles)
@@ -131,8 +147,11 @@ def avg_pressures(fglob='stresses*.pkl'):
     if 'hardy_vertices' in stn:
         hpressure= [_nanmean(stress['hardy_vertices'].pressure) for stress in datas]
         plt.plot(xsteps, np.array(hpressure), label='hardy vertex pressure', marker='o')
+    # go ahead and plot the average force magnitude as well
+    avgfs = [st['avg_force'] for st in datas]
+    plt.plot(xsteps, avgfs, label='average force magnitude', marker='o')
     plt.legend()
-    plt.show()
+
 
 def avg_stresses(stname='virial', fglob='stresses*.pkl'):
     sfiles = sorted(glob(fglob))

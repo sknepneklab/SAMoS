@@ -44,6 +44,7 @@ def timeit(f):
 
 tdataf = '/home/dan/cells/run/weeks/basic/vpotential_only/cell_0000000000.dat'
 boundary_test_dataf = '/home/dan/cells/run/rprefA/rA_3.5/cell_0000004500.dat'
+
 # simple object represents the args object I use to configure Senarios
 class Block(object):
     def __init__(self, dd={}, **kwargs):

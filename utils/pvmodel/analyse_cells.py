@@ -28,16 +28,25 @@ def random_choice(pv, nr=5):
     bulk_choice = np.random.choice(bulk, size=nr, replace=False)
     return bulk_choice
 
+verb = False
+
 # template for Tracker objects
 class Tracker(object):
     def __init__(self,fileo):
         # setup
-        self.outf = open(fileo, 'w')
-        self.track_id = 2
+        self.fileo =fileo
         self.outd= OrderedDict()
     
-    def update(self):
-        self.track_id += 1
+    def update(self, pv, xxv):
+        fileo = self.fileo
+        foutname = '_'.join([fileo, xxv]) + '.pkl'
+        if verb: print 'saving radial data to ', foutname
+        self.foutname = foutname
+        self._update(pv)
+
+    # overwrite this to change behaviour
+    def _update(self, pv):
+        pass
     
     def write_whole(self):
         io.dump(self.outd, self.outf)
@@ -45,79 +54,28 @@ class Tracker(object):
     def cleanup(self):
         self.outf.close()
 
-class Pressure_t(Tracker):
-    def __init__(self, choice, fileo, xvar='time'):
-        super(Pressure_t, self).__init__(fileo)
-        print 'printing to ', fileo
-        self.choice = choice
-        self.outd[xvar]= []
-        for cid in choice:
-            self.outd[cid]= []
-        # header
-        self.outf.write('# ' + xvar + ' ' + '  '.join(map(str, list(choice))) + '\n')
-        self.line = '{}  ' + '  '.join(['{}']*len(choice))
-        self.xvar = xvar
-
-    def update(self, pv, xxv):
-        super(Pressure_t, self).update()
-        pr = [pv.pressure[ch] for ch in self.choice]
-        for i, cid in enumerate(self.choice):
-            self.outd[self.xvar].append(xxv)
-            self.outd[cid].append(pr[i])
-        outv = [xxv] + list(pr)
-        outl = self.line.format(*outv)
-        self.outf.write(outl + '\n')
-
-# Preferably would like to write out data to a structured format at each step
-# h5py and hdf5 are powerful tools for this but I also want a simple solution
-# numpy.savez is the simple solution for now.
-# Can't seem to decide if I want the number of data points over which the radial
-# averaging is calculated to change between time steps
-# for now. let it change. store a whole set of files.
-class STracker(Tracker):
-    def __init__(self, fileo, xvar='time'):
-        # track radially averaged profiles of pressure, pressure variance, stress components ...
-        self.xvar = xvar
-        self.fileo = fileo
-        self.qdict = OrderedDict()
-
-    def update(self, pv, xxv):
-        fileo = self.fileo
-        fileo = '_'.join([fileo, xxv])
-        print 'saving radial data to ', fileo+'.npz'
-
-        qdict = self.qdict
-        # prepend to 'rspace'
-        for stress in pv.stresses.values():
-            space_name = '_'.join([stress.name, 'rspace'])
-            qdict[space_name] = stress.rspace 
-            for rname, rav in stress.ravg.items():
-                qdict[rname] = rav
-
-        if len(qdict) != 0:
-            print 'saving'
-            print fileo
-            #print qdict
-
-        np.savez(fileo, **qdict)
-
 import pickle
+# Can wrap the whole code in a try: finally: block.
+# This will ensure that relevent quantities are saved
+class FPickler(Tracker):
+    def _update(self, pv):
+        forces = pv.tri.forces
+        bulkforces = [forces[i] for i in pv.tri.bulk]
+        avg_force = np.mean(bulkforces)
+        self.outd['avg_force'] = avg_force
+        with open(self.foutname, 'wb') as fo:
+            pickle.dump(self.outd, fo)
+
 # Seems like pickling the data might be better
 # could pickle pv.stresses
 # what other data is useful to pickle?
-class Pickler(Tracker):
+class SPickler(Tracker):
     def __init__(self, fileo='stresses'):
         self.fileo = fileo
 
-    def update(self, pv, xxv):
-        fileo = self.fileo
-        fileo = '_'.join([fileo, xxv]) + '.pkl'
-        print 'saving stress data to ', fileo
-
-        with open(fileo, 'wb') as fo:
+    def _update(self, pv):
+        with open(self.foutname, 'wb') as fo:
             pickle.dump(pv.stresses, fo)
-        
-
 
 def hash_function(f, linspace):
     l = linspace[-1] - linspace[0]
@@ -130,14 +88,14 @@ def hash_function(f, linspace):
 
 from scipy import integrate
 def quartic_wl(wl):
-    print 'generating smoothing function with wl = ', wl
+    if verb: print 'generating smoothing function with wl = ', wl
     def quartic(r):
         return 5/(np.pi*wl**2) * (1 + 3*(r/wl))*(1-(r/wl))**3 if r < wl else 0. 
         #return 5/(4* np.pi*wl) * (1 + 3*(r/wl))*(1-(r/wl))**3 if r < wl else 0. 
     space = np.linspace(0, wl, 100, True)
     qq = np.array(map(quartic, space))
     ii = integrate.simps(qq* space*2*np.pi, space)
-    print 'integrated, ii = ', ii
+    # assert ii is close to 1
     #io.plotrange(quartic, 0, wl)
     return quartic
 
@@ -157,7 +115,6 @@ class Senario(object):
 
         self.fid = 0
         self.numf = len(self.infiles)
-        self.verb = True
         self.alog = 'analysis.log'
 
     def __iter__(self):
@@ -168,8 +125,7 @@ class Senario(object):
         if self.fid < self.numf:
             self.dataf = self.infiles[self.fid]
             self.outnum = self._outnum() # must call this function
-            if self.verb:
-                print 'working on file number ', self.outnum
+            print 'working on file number ', self.outnum
             try:
                 self._operate()
             except:
@@ -196,7 +152,7 @@ class Senario(object):
 
     def save_parameters(self, paramsf='out.parameters'):
         with open(paramsf, 'w') as fp:
-            if self.verb:
+            if verb:
                 'recording the analysis parameters to ', paramsf
             io.dumpargs(self.args.__dict__, fp)
 
@@ -222,10 +178,9 @@ class Stress_Senario(Senario):
         om = quartic_wl(wl)
         self.omega = om
 
-        self.st = STracker(self.fileo)
         wlf = os.path.join(args.dir, 'stress_wl')
-        self.wlst = STracker(wlf, xvar='wl')
-        self.pkr = Pickler(os.path.join(args.dir, 'stresses'))
+        self.glo = FPickler(os.path.join(args.dir, 'avg'))
+        self.pkr = SPickler(os.path.join(args.dir, 'stresses'))
 
     def _read_pv(self):
         rdat = ReadData(self.dataf)
@@ -245,25 +200,36 @@ class Stress_Senario(Senario):
         pv.calculate_energy()
         pv.calculate_forces(exclude_boundary=args.exclude)
 
-        # ready to output simple stress immediately
-        nsout = self._name_vtp('simple_stress_')
-        wr.write_stress_ellipses(pv, nsout, pv.stresses['simple'])
-        if args.simple: return
-
-        if self.verb: print 'Just use one value of smoothing length'
+        if verb: print 'Just use one value of smoothing length'
         pv._stress_setup()
         self._iterate_wl(pv)
         pv._set_wl(args.wl)
         clist = set_choice if args.s else None
 
         pv.stress_on_centres(omega, clist=clist, hardy=args.hardy)
-        pv.stress_on_vertices(omega)
+        print 'avg virial pressure', pv.stresses['virial'].avg_pressure
+        pv.stress_on_vertices(omega, args.hardy)
 
-        self.st.update(pv, outnum)
+        forces = pv.tri.forces
+        bulkforces = [forces[i] for i in pv.tri.bulk]
+        avg_force = np.mean(map(norm, bulkforces))
+        print 'avg_force', avg_force
+        # piggy-backing on the stresses object...
+        pv.stresses['avg_force'] = avg_force
+        
+        vforces = [pv.mesh.vertex_force[nu] for nu in pv.mesh.bulk]
+        print 'avg vertex force', np.mean(map(norm, vforces))
+        pv.stresses['avg_vertex_force'] = np.mean(map(norm, vforces))
+
+        print 'avg virial pressure', pv.stresses['virial'].avg_pressure
+
         self.pkr.update(pv, outnum)
 
-        vsout = self._name_vtp('virial_stress_')
-        wr.write_stress_ellipses(pv, vsout, pv.stresses['virial'])
+        stressnames = ['virial', 'hardy']
+        for sname in stressnames:
+            if sname in pv.stresses:
+                vsout = self._name_vtp(sname+'_stress_')
+                wr.write_stress_ellipses(pv, vsout, pv.stresses[sname])
         
         mout = self._name_vtp('cell_dual_')
         wr.writemeshenergy(pv, mout)
@@ -286,6 +252,7 @@ class Stress_Senario(Senario):
         pv.set_constants(K, Gamma, cl)
 
 
+    # out of order
     def _iterate_wl(self,pv):
         args = self.args
         if not args.w:

@@ -16,6 +16,8 @@ from ioutils import omvec, idtopt
 from math import cos, sin
 # Generic parts
 
+verb = False
+
 def vtk_write(polydata, outfile):
     writer = vtk.vtkXMLPolyDataWriter()
     if vtk.VTK_MAJOR_VERSION <= 5:
@@ -23,7 +25,7 @@ def vtk_write(polydata, outfile):
     else:
         writer.SetInputData(polydata)
 
-    print 'saving ', outfile 
+    if verb: print 'saving ', outfile 
 
     writer.SetFileName(outfile)
     writer.SetDataModeToAscii()
@@ -84,18 +86,21 @@ def writemeshenergy(pv, outfile):
     #energy.SetName("energy")
     #enprop = pv.enprop
 
-    #cradius = vtk.vtkDoubleArray()
-    #cradius.SetNumberOfComponents(1)
-    #cradius.SetName("cradius")
+    force = vtk.vtkDoubleArray()
+    force.SetNumberOfComponents(3)
+    force.SetName("force")
+
 
     #pressure = vtk.vtkDoubleArray()
     #pressure.SetNumberOfComponents(1)
     #pressure.SetName("pressure")
 
     meshpt = mesh.pym
+    vforces =mesh.vertex_force
     for i, vh in enumerate(mesh.vertices()):
         pt = meshpt[vh.idx()]
         Points.InsertNextPoint(pt)
+        force.InsertNextTuple3(*vforces[vh.idx()])
     
     # Can actually add the boundary polygons here and show them 
     for mf in mesh.faces():
@@ -121,7 +126,7 @@ def writemeshenergy(pv, outfile):
 
     #polydata.GetCellData().AddArray(energy)
     #polydata.GetCellData().AddArray(pressure)
-    #polydata.GetPointData().AddArray(cradius)
+    polydata.GetPointData().AddArray(force)
 
     polydata.Modified()
     writer = vtk.vtkXMLPolyDataWriter()
@@ -129,8 +134,6 @@ def writemeshenergy(pv, outfile):
         writer.SetInput(polydata)
     else:
         writer.SetInputData(polydata)
-
-    print 'saving ', outfile 
 
     writer.SetFileName(outfile)
     writer.SetDataModeToAscii()
@@ -280,7 +283,7 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
         print evalues
     #normf = maxe/0.5
     normf = 1.
-    print 'adjusting stress ellipses by a factor of ', normf
+    if verb: print 'adjusting stress ellipses by a factor of ', normf
     
     ells = vtk.vtkCellArray()
     for ellid, vhid in enumerate(evalues.keys()):

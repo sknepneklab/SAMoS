@@ -53,7 +53,7 @@ def _extend_ptset(pts, npts):
 def areahex(area=3.0):
     # first find the radius length of a hexagon with the correct area
     l = np.sqrt((2*area)/(3*np.sqrt(3)))
-    print l
+    print l/2.
     # distance between hex centers
     lc = np.cos(np.pi/6) * 2 * l
     print lc

@@ -21,10 +21,13 @@ from math import pi
 import math as m
 import sys
 
+
 # Samos
 from CellList2D import CellList2D
 
 # debugging 
+
+from cmplotting import _nanmean
 
 
 def diagnose(mesh):
@@ -37,7 +40,6 @@ def scat(xyz):
     plt.scatter(xyz[:,0],xyz[:,1])
     plt.show()
 
-debug = False
 
 # A function for integration which takes and arraylike and the space its defined on
 #  and initial and final values 
@@ -142,6 +144,7 @@ class Pymesh(object):
         tri = self
         pym = tri.pym
         lvec = {}
+        ll = {}
         for eh in tri.edges():
             heh = tri.halfedge_handle(eh, 0)
             heho = tri.opposite_halfedge_handle(heh)
@@ -152,15 +155,16 @@ class Pymesh(object):
             vedge = npvt - npvf
             lvec[heh.idx()] = vedge
             lvec[heho.idx()] = -vedge
+            nve = norm(vedge)
+            ll[heh.idx()] = nve
+            ll[heho.idx()] = nve
         self.lvec = lvec 
- 
-    def vh(self, vhi):
-        return self.m.vertex_handle(vhi)
-    def vpt(self, vhi):
-        return self.pym[vhi]
-    # for retrieving lots of property values its better to localise the dictionary
-    def getfprop(self, pname, i):
-        return getattr(self, pname)[i]
+        self.ll = ll
+
+    def store_llsquared(self):
+        ll = self.ll
+        llsquared = dict(zip(ll.keys(), map(lambda x: x*x, ll.values())))
+        self.llsquared = llsquared
  
     # -- some tools for iterating through parts of the openmesh --
     # going to assume that we constuct pymesh objects from Samos output and don't mutate the mesh
@@ -222,7 +226,7 @@ class Pymesh(object):
             return self._bulk
         mesh = self
         bverts = mesh.boundary
-        vall = mesh.pym.keys()
+        vall = [v.idx() for v in mesh.vertices()]
         self._bulk = list(OrderedSet(vall) - OrderedSet(bverts))
         return self._bulk
 
@@ -331,6 +335,7 @@ class NTriMesh(TriMesh, Pymesh):
         cradius = np.zeros(tri.n_faces())
         for j, fh in enumerate(tri.faces()):
             # Calculate circumcentres of mesh
+            fhid = fh.idx()
             l_s = np.zeros(3)
             vhs = []
             for i, heh in enumerate(tri.fh(fh)):
@@ -348,7 +353,7 @@ class NTriMesh(TriMesh, Pymesh):
             llk = lsk*(lsi + lsj - lsk)
             # actually want to save lli,llj,llk for later as a face property
             llp = OrderedDict([(vhs[0].idx(),lli), (vhs[1].idx(),llj), (vhs[2].idx(),llk)])
-            self.slambda[fh.idx()] = llp
+            self.slambda[fhid] = llp
 
             llnorm = lli + llj + llk
             cc = np.array(lli*vi + llj*vj + llk*vk)/llnorm
@@ -374,12 +379,17 @@ class NTriMesh(TriMesh, Pymesh):
                 mfh = mesh.add_face(vhs)
                 to_mesh_face[vh.idx()] = mfh.idx()
                 to_tri_vertex[mfh.idx()] = vh.idx()
-                to_boundary_mesh_vertex[mfh.idx()] = vh.idx()
+                #to_boundary_mesh_vertex[mfh.idx()] = vh.idx()
 
         # maintain a list of the mesh vertex ids which make up the edge of the internal cells
         mesh.bulk_edge = mesh.boundary
+        # Want to calculate the real boundary like this later
+        del mesh._boundary 
         # we didn't add boundary faces yet
         mesh.bulkl = [mvh.idx() for mvh in mesh.vertices()] 
+        mesh.bulkinner = mesh.bulk
+        del mesh._bulk
+
         tboundary = tri.boundary
         tb_hedges = tri.boundary_hegdes
         halfcells = OrderedDict()
@@ -448,6 +458,7 @@ class Vstress(object):
             if smin > smax: smin, smax = smax, smin
             self.nstress[i] = (smax + smin)/2
             self.sstress[i] = (smax - smin)/2
+        self.avg_pressure = _nanmean(self.pressure)
 
     # Now we have self.stress and self.pressure the next step is to 
     #  reduce to averaged quantities
@@ -481,28 +492,27 @@ class Vstress(object):
         self.rspace =rspace
 
 
+debug = False
 
 # The main object for operating on the cell mesh.
 class PVmesh(object):
 
     def __init__(self, tri):
 
-        self.debug = False
-
         # The cell centre triangulation
         self.tri = tri
 
         # openmesh doesn't store edge lengths?
-        if self.debug:
+        if debug:
             print
             print 'trimesh'
             diagnose(self.tri)
 
         # The cell vertex mesh
-        print 'calculating the dual'
+        if debug: print 'calculating the dual'
         self.mesh = self.tri.dual()
 
-        if self.debug:
+        if debug:
             print 
             print 'mesh'
             diagnose(self.mesh)
@@ -604,7 +614,7 @@ class PVmesh(object):
         energies = map(self._energy, vhids)
         self.tri.energies = OrderedDict(zip(vhids, energies))
         tenergy = sum(energies)
-        print 'total energy', tenergy
+        if debug: print 'total energy', tenergy
 
     def calculate_forces(self, exclude_boundary=False):
         mesh = self.mesh
@@ -723,6 +733,7 @@ class PVmesh(object):
                 vplus, vminus = meshpt[vhplus.idx()], meshpt[vhminus.idx()]
                 dAdrmu[trivhid][vhid] = 1/2. * ( np.cross(vplus, mesh.normal) 
                         - np.cross(vminus, mesh.normal) )
+
                 #dPdrmu
                 # get lengths
                 vhpt = meshpt[vhid]
@@ -823,7 +834,9 @@ class PVmesh(object):
         l_stress = np.full((sl,3,3), 0.)
         # simple stress always defined for the whole bulk
         stress = np.full((sl,3,3), np.nan)
-        vertex_force = OrderedDict(zip(range(mesh.n_vertices()), np.full(mesh.n_vertices, 0.)))
+        lbl = len(mesh.bulkl)
+        lbl =mesh.n_vertices()
+        vertex_force = OrderedDict(zip(range(lbl), np.full(lbl, 0.)))
 
         for trivh in tri.vertices():
             trivhid = trivh.idx()
@@ -856,7 +869,10 @@ class PVmesh(object):
                     pc = rmmultiply(dPdrmu[trivhid][mu], drmudrp[mu][trivhid])
                     lc = rmmultiply(dLdrmu[trivhid][mu], drmudrp[mu][trivhid])
 
-                    vertex_force[mu] += ac + pc + lc
+                    vff = farea_fac * dAdrmu[trivhid][mu] 
+                    vfp = fprim_fac * dPdrmu[trivhid][mu]
+                    vfl = -1 * dLdrmu[trivhid][mu]
+                    vertex_force[mu] +=  vff + vfp + vfl
 
                     if boundary: # angle defecit contribution
                         if mu in dzetadr[trivhid][trivhid]:
@@ -905,10 +921,9 @@ class PVmesh(object):
                         r_mu_vh = meshpt[mu] - trivhpt
                         #ac = np.einsum('n,nm->m', dAdrmu[vhnn][mu], drmudrp[mu][trivhid])
                         ac = rmmultiply(dAdrmu[vhnn][mu], drmudrp[mu][trivhid])
-                        pc = np.einsum('n,nm->m', dPdrmu[vhnn][mu], drmudrp[mu][trivhid])
-                        lc = np.einsum('n,nm->m', dLdrmu[vhnn][mu], drmudrp[mu][trivhid])
-                        
-                        vertex_force[mu] += ac + pc + lc
+                        pc = rmmultiply(dPdrmu[vhnn][mu], drmudrp[mu][trivhid])
+                        lc = rmmultiply(dLdrmu[vhnn][mu], drmudrp[mu][trivhid])
+
                         if nnboundary:
                             vht = mu in dzetadr[vhnn][trivhid]
                             if vht:
@@ -937,53 +952,25 @@ class PVmesh(object):
                 total_stress = a_stress[trivhid] + p_stress[trivhid] + l_stress[trivhid]
                 stress[trivhid] = total_stress/iarea
 
+        # vertex forces on the true mesh.boundary are way large
+        # just set them to zero for the moment
+        for mvh in mesh.boundary:
+            vertex_force[mvh] =  np.zeros(3)
         tri.forces = forces
-        # mark
-        vst = Vstress(stress, tri.bulk, 'simple')
-        #print stress
-        vst.radial(self.rcm, self.rcmd)
-        self.stresses['simple'] = vst
-        self.nstress = stress
+        mesh.vertex_forces = vertex_force
+        # This stress gives values close to zero because the sum of the forces used 
+        # is close to zero
+        #vst = Vstress(stress, tri.bulk, 'simple')
+        #vst.radial(self.rcm, self.rcmd)
+        #self.stresses['simple'] = vst
+
         mesh.vertex_force = vertex_force
-        print sum(vertex_force.values())
+        #io.stddict(vertex_force)
 
-
-    def _construct_bonds(self):
-        tript = self.tri.pym; meshpt = self.mesh.pym
-        bonds = {}
-        self.bonds = bonds
-        # Find the max bond length while we are at it
-        self.lmax = 0.
-        self.avginubond =0.
-        ninu = 0
-        for i in self.tri.bulk:
-            vhi = self.tri.vertex_handle(i)
-            for vhnu in self.loops[i]:
-                nu = vhnu
-                rnorm = norm(tript[i] - meshpt[nu])
-                if rnorm > self.lmax: self.lmax = rnorm
-                self.avginubond += rnorm
-                ninu += 1
-                bonds[frozenset([(0,i),(1,nu)])] = None
-        self.avginubond /= ninu
-        for eh in self.mesh.edges():
-            heh = self.mesh.halfedge_handle(eh, 0)
-            nu = self.mesh.to_vertex_handle(heh).idx()
-            mu = self.mesh.from_vertex_handle(heh).idx()
-
-            rnorm = norm(meshpt[nu] - meshpt[mu])
-            if rnorm > self.lmax: self.lmax = rnorm
-            bonds[frozenset([(1,nu),(1,mu)])] = eh.idx()
-        print 'maximum bond length, ', self.lmax
-
-    def _calculate_dEdlength(self):
-        # because we split the bonds into separate dictionaries
-        # we need to do the same here.
+    def _triangulate_areas(self):
         tri = self.tri; mesh = self.mesh
         tript = self.tri.pym; meshpt = self.mesh.pym
-        bonds = self.bonds
 
-        # in order to manage cell areas lets create a little mesh for each cell
         polygons = NPolyMesh()
         # map the new single cell mesh vertices back onto our meshes
         # we have to keep track of which mesh our ids belong to 
@@ -991,6 +978,7 @@ class PVmesh(object):
         pullback = {} 
         # {('t', old_mesh_id): new_mesh_id}
         pushforward = {}
+        pvh_in_tri = {}
         for mu in self.mesh.bulkl:
             mupt = meshpt[mu]
             mv = polygons.add_vertex(TriMesh.Point(*mupt))
@@ -1002,10 +990,10 @@ class PVmesh(object):
             pts = []
             # we assume this loop orders the points counter-clockwise as they should be
             loop = self.loops[p]
-            loop, _ = self.loop(vhi)
             lnupts = len(loop)
             mv = polygons.add_vertex(TriMesh.Point(*ipt))
             centerid = mv.idx()
+            pvh_in_tri[centerid] = None
             pushforward[(0, p)] = centerid
             pullback[centerid] = (0, p)
             nuvertids = [pushforward[(1,nu)] for nu in loop]
@@ -1017,7 +1005,7 @@ class PVmesh(object):
                 simplices[i,2] = mu
             for f in simplices:
                 polygons.add_face([polygons.vertex_handle(vid) for vid in f])
-            # semi perimeters and lengths should be precalculated
+
         polygons.finalize()
         polypt = polygons.pym
 
@@ -1030,6 +1018,68 @@ class PVmesh(object):
             a = norm(polypt[av.idx()] - polypt[bv.idx()])
             polygon_l[frozenset([av.idx(),bv.idx()])] = a
         self.polygon_l = polygon_l
+
+        self.polygons = polygons
+        # todo think about where these dictionaries should live
+        self.pushforward = pushforward
+        self.pullback = pullback
+        # can be part of polygons object
+        polygons.pushforward = pushforward
+        polygons.pullback = pullback
+        polygons.pvh_in_tri = pvh_in_tri
+
+    # can we just work on the polygons mesh instead of using a separate bonds list(?)
+    def _construct_bonds(self):
+        tript = self.tri.pym; meshpt = self.mesh.pym
+        bonds = {}
+        self.bonds = bonds
+        # Find the max bond length while we are at it
+        self.lmax = 0.
+        self.avginubond =0.
+
+        poly = self.polygons
+        in_tri = poly.pvh_in_tri
+        pullback = poly.pullback
+        is_mesh_edge = {}
+        avginubond = 0.
+        lmaxlist = []
+        for eh in poly.edges():
+            heh = poly.halfedge_handle(eh, 0)
+            hehid = heh.idx()
+            va = poly.to_vertex_handle(heh)
+            vb = poly.from_vertex_handle(heh)
+            ta, ida = pullback[va.idx()]
+            tb, idb = pullback[vb.idx()]
+            llen = poly.ll[hehid]
+            lmaxlist.append(llen)
+            if ta == 0 or tb == 0:
+                avginubond += llen
+            else:
+                is_mesh_edge[eh.idx()] = 1
+
+            bondk = frozenset([(ta, ida), (tb, idb)])
+            bonds[bondk] = eh.idx()
+        mel = len(is_mesh_edge)
+        # the number of new edges
+        tel = poly.n_edges() - mel
+        self.avginubond = avginubond / tel
+        self.lmax = max(lmaxlist)
+        poly.is_mesh_edge = is_mesh_edge
+
+        if debug:
+            print 'maximum bond length, ', self.lmax
+
+
+    def _calculate_dEdlength(self):
+        # because we split the bonds into separate dictionaries
+        # we need to do the same here.
+        tri = self.tri; mesh = self.mesh
+        tript = self.tri.pym; meshpt = self.mesh.pym
+        bonds = self.bonds
+        polygons = self.polygons
+        pushforward = polygons.pushforward
+        pullback = polygons.pullback
+        polygon_l = self.polygon_l
 
         dEdbond = {}
         for bondk in self.bonds.keys():
@@ -1081,25 +1131,37 @@ class PVmesh(object):
                 dDdbond = 1/2. *  ( -a*sb*sc + s*sa*sc + s*sa*sb )
                 dAdbond = preA * dDdbond
 
-                #if bondk not in dEdbond:
-                    #dEdbond[bondk] = 0.
-                #print pre, dAdbond
-                if bondk in nc.keys():
-                    nc[bondk] += 1
-                else:
-                    nc[bondk] = 1
                 dEdbond[bondk] += pre * dAdbond
 
         dEdbond_p = {}
         dEdbond_cl = {}
-        for bondk, ehid in bonds.items():
+
+        to_mesh_edge = {}
+        for eh in mesh.edges():
+            heh = mesh.halfedge_handle(eh, 0)
+            vto = mesh.to_vertex_handle(heh)
+            vfrom = mesh.from_vertex_handle(heh)
+            bondk = frozenset([(1, vto.idx()), (1, vfrom.idx())])
+            try:
+                pehid = bonds[bondk]
+            except KeyError:
+                # should just be a boundary mesh edge
+                pass
+
+            to_mesh_edge[pehid] = eh.idx()
+        self.polygons.to_mesh_edge = to_mesh_edge
+
+        for bondk, pehid in bonds.items():
             ka, kb = bondk
             ta, ida = ka
             tb, idb = kb
             if ta == 0. or tb == 0.:
                 continue # we are only concerned with cell-vertex bonds ('edges')
+
+            ehid = to_mesh_edge[pehid]
             eh = self.mesh.edge_handle(ehid)
             heh = mesh.halfedge_handle(eh, 0)
+
             cl = mesh.clproperty[heh.idx()]
 
             dEdbond_cl[bondk] = cl
@@ -1126,10 +1188,6 @@ class PVmesh(object):
                 dEdbondall[bondk] += dEdbond_p[bondk]
                 dEdbondall[bondk] += dEdbond_cl[bondk]
 
-        self.polygons = polygons
-        # todo think about where these dictionaries should live
-        self.pushforward = pushforward
-        self.pullback = pullback
         self.dEdbond = dEdbondall
 
     def _set_wl(self, wl):
@@ -1140,7 +1198,7 @@ class PVmesh(object):
         Lx, Ly, mzero = np.amax(np.abs(block),axis=0)
         assert mzero == 0.
         cut = np.sqrt((self.lmax**2)/4. + wl**2) + 0.1
-        print 'setting cut off distance to ', cut
+        if debug: print 'setting cut off distance to ', cut
         cl = CellList2D([2*Lx+1, 2*Ly+1], cut)
         # construct a cell list for all the vertices and centres
         # can construct separate cell lists for both
@@ -1160,6 +1218,7 @@ class PVmesh(object):
         self.cl = cl
 
     def _stress_setup(self, wl=None):
+        self._triangulate_areas()
         self._construct_bonds()
         self._calculate_dEdlength()
         if wl:
@@ -1193,17 +1252,88 @@ class PVmesh(object):
             st = self.dEdbond[bondk] * np.outer(bondv, bondv_hat)
             stress += st
             nc += 1
-            #print nc, self.dEdbond[bondk]
-            #print stress[:2,:2]
-            #print np.trace(stress[:2,:2])
-            #print
         mvhi = self.tri.to_mesh_face[vhi]
         area = self.mesh.areas[mvhi]
         # sign issues (?)
         stress = 1/area * stress
         #print stress[:2,:2]
         #print 1/2. *np.trace(stress[:2,:2])
-        
+        return stress
+
+    def _edgeparts(self):
+        mesh = self.mesh
+        poly = self.polygons
+        # definitely going to need to store lengths and squares of lengths of polygon edges
+        poly.store_llsquared()
+        ll = poly.ll
+        lls = poly.llsquared
+        # break all the mesh edges in two parts
+        # edgepart { (mu,nu): l_mu_nu_dash }
+        # order of vertices matters this time around
+        edgepart = {}
+        pullback = poly.pullback
+        for peh in poly.edges():
+            if peh.idx() not in poly.is_mesh_edge:
+                continue
+            # iterating over the mesh edges on the polygon
+            heh = poly.halfedge_handle(peh, 0) 
+            heho = poly.halfedge_handle(peh, 1) 
+            mu = poly.to_vertex_handle(heh).idx()
+            nu = poly.from_vertex_handle(heh).idx()
+            _, meshmu = pullback[mu]
+            _, meshnu = pullback[nu]
+            if meshmu in mesh.bulk_edge and meshnu in mesh.bulk_edge:
+                # don't both with the very outer part
+                continue
+            # iterate around both faces adjacent to the edge 'peh'
+            # (and at the boundary (?))
+            fha = poly.face_handle(heh)
+            fhb = poly.face_handle(heho)
+            lmunu = ll[heh.idx()]
+            heh2 = poly.next_halfedge_handle(heh)
+            heh3 = poly.next_halfedge_handle(heh2)
+            heho2 = poly.next_halfedge_handle(heho)
+            heho3 = poly.next_halfedge_handle(heho2)
+            curlyR = lls[heho2.idx()] + lls[heho3.idx()] - lls[heh2.idx()] - lls[heh3.idx()]
+            lmupart = 1/2. * ( curlyR/(2*lmunu) + lmunu )
+            lnupart = lmunu - lmupart
+            edgepart[(mu,nu)] = lmupart
+            edgepart[(nu,mu)] = lnupart
+        # now use these parts to calculate the vertex force
+        poly.edgepart = edgepart
+
+    def nuvirial(self, vhnu):
+        tri = self.tri; mesh = self.mesh
+        poly = self.polygons
+        stress = np.zeros((3,3))
+
+        # tri faces and mesh vertices match up their ids already
+        tfh = self.tri.face_handle(vhnu)
+        bka = (1, vhnu)
+        pvhid = poly.pushforward[bka]
+        pvh= poly.vertex_handle(pvhid)
+
+        for pheh in poly.voh(pvh):
+            vto = poly.to_vertex_handle(pheh)
+            eh = poly.edge_handle(pheh)
+
+            bkb = poly.pullback[vto.idx()]
+            if eh.idx() in poly.is_mesh_edge:
+                lbond = poly.edgepart[(pvhid, vto.idx())]
+            else:
+                # this is an 'internal edge' which comes up in the area decomposition
+                # we can use the full length of the bond
+                lbond = poly.ll[pheh.idx()]
+            bondv = poly.lvec[pheh.idx()]
+            bondk = frozenset([bka, bkb])
+            stress += self.dEdbond[bondk] * lbond * np.outer(bondv, bondv)/norm(bondv)
+            #st = self.dEdbond[bondk] * np.outer(bondv, bondv_hat)
+
+        areatri = [tri.ll[heh.idx()] for heh in tri.fh(tfh)]
+        s = sum(areatri)/2
+        a,b,c = areatri
+        area = np.sqrt(s*(s-a)*(s-b)*(s-c))
+        stress = 1./area * stress
         return stress
 
     def calculate_stress(self, x_c, omega, exclude=True, fast=False):
@@ -1275,8 +1405,9 @@ class PVmesh(object):
         
         excl= []
         for i in clist:
-            if i % 100 == 0:
-                print 'Made it to vertex', i
+            if i % 100 == 0: 
+                if debug:
+                    print 'Made it to vertex', i
             ipt = tript[i]
             if hardy:
                 st = self.calculate_stress(ipt, omega, fast=fast)
@@ -1307,18 +1438,31 @@ class PVmesh(object):
             vv.radial(self.rcm,self.rcmd)
             self.stresses['virial'] = vv
 
-    def stress_on_vertices(self, omega):
+    def stress_on_vertices(self, omega, hardy = False):
         meshpt = self.mesh.pym
         cll = len(meshpt)
-        self.stress = np.full((cll,3,3), np.nan)
+        self._edgeparts()
+        stress = np.full((cll,3,3), np.nan)
+        virstress = np.full((cll,3,3), np.nan)
         for nu, nupt in meshpt.items():
-            st = self.calculate_stress(nupt, omega, exclude=False)
-            self.stress[nu][:,:] = st
+            if hardy: 
+                st = self.calculate_stress(nupt, omega, exclude=False)
+                stress[nu][:,:] = st
+        for nu in self.mesh.bulkinner:
+            st = self.nuvirial(nu)
+            virstress[nu][:,:] = st
 
-        clist = meshpt.keys()
-        vst = Vstress(self.stress, clist, 'hardy_vertices') 
+        if hardy:
+            clist = meshpt.keys()
+            vst = Vstress(stress, clist, 'hardy_vertices') 
+            vst.radial(self.rcm,self.rcmd)
+            self.stresses['hardy_vertices'] = vst
+
+        clist = self.mesh.bulkinner
+        vst = Vstress(virstress, clist, 'vertices')
+        print 'vertex pressure avg', _nanmean(vst.pressure)
         vst.radial(self.rcm,self.rcmd)
-        self.stresses['hardy_vertices'] = vst
+        self.stresses['vertices'] = vst
 
     def calculate_vflow(self, x_c, omega):
         vvals = self.vvals
@@ -1380,7 +1524,12 @@ class PVmesh(object):
         prefareas = OrderedDict()
         # make a mesh out of this delaunay
         mverts = np.array(np.zeros(len(rvals)),dtype='object')
-        for i, v  in enumerate(rvals):
+        meshset = set(simplices.flatten())
+        cellset = set(range(len(rvals)))
+        # cellset > meshset
+        lostcells = cellset - meshset.intersection(cellset)
+        for i in meshset:
+            v = rvals[i]
             mv = tri.add_vertex(TriMesh.Point(*v))
             mverts[i] = mv
             prefareas[mv.idx()] = area[i]
