@@ -50,6 +50,7 @@
 using std::list;
 using std::runtime_error;
 using std::sqrt;
+using std::exp;
 
 /*! PopulationActomyosin class handles a basic model for actomyosin binding and unbiding.
  *  This is inteded to be a crude approximation of the phosphorealtion processes
