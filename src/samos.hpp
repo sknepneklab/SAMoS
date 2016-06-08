@@ -128,6 +128,7 @@
 #include "population_growth.hpp"
 #include "population_elongation.hpp"
 #include "population_cell.hpp"
+#include "population_actomyosin.hpp"
 #include "bond_potential.hpp" 
 #include "bond_harmonic_potential.hpp"
 #include "bond_fene_potential.hpp"

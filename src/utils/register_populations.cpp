@@ -50,4 +50,6 @@ void register_populations(PopulationMap& populations)
   populations["elongate"] = boost::factory<PopulationElongationPtr>();
   // Register cell population control with the class factory
   populations["cell"] = boost::factory<PopulationCellPtr>();
+  // Register actomyosin population control with the class factory
+  populations["actomyosin"] = boost::factory<PopulationActomyosinPtr>();
 }
