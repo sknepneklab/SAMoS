@@ -8,9 +8,12 @@ def readfc(fcfile):
         for line in fc:
             face = map(int, line.split())
             faceid, face = face[0], face[1:]
+            if len(face) > 3:
+                # should be a boundary face
+                continue
             faces.append(face)
-        boundary = faces.pop()
         simp = np.array(faces)
+        boundary = 'not implemented'
     return simp, boundary
             
 

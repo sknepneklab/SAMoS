@@ -32,6 +32,7 @@
 # Reads in data files. Base handler for data analysis
 
 import gzip
+from collections import OrderedDict
 
 class ReadData:
   
@@ -56,11 +57,11 @@ class ReadData:
 	  # Determine number of header lines and read the correct keys
 	  nheader=0
 	  read_keys=False
+          self.keys = OrderedDict()
 	  while read_keys==False:
 		if lines[nheader][0] == '#':
 		  header = lines[nheader].strip()[1:]
 		  keys = header.split()
-		  self.keys = {}
 		  for k in keys: self.keys[k] = keys.index(k)
 		  #print keys
 		  nheader+=1
@@ -69,7 +70,6 @@ class ReadData:
 		elif lines[0][0:5] == 'keys:':
 		  header = lines[nheader].strip()[6:]
 		  keys = header.split()
-		  self.keys = {}
 		  for k in keys: self.keys[k] = keys.index(k)
 		  nheader+=1
 		  if (self.keys.has_key('id')) or (self.keys.has_key('type')) or (self.keys.has_key('radius')) or(self.keys.has_key('x')):

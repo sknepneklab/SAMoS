@@ -1516,6 +1516,7 @@ class PVmesh(object):
         if simplices is None:
             dd = Delaunay(rvals[:,:2], qhull_options='')
             simplices = dd.simplices
+            #print 'calculating the dual faces myself'
         if debug:
             print 'number of cells', rvals.shape[0]
             print 'number of points in trimesh', dd.points.shape[0]

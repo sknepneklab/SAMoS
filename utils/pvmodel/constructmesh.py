@@ -5,6 +5,7 @@
 import writemesh as wr
 
 import numpy as np
+from numpy.linalg import norm
 import sys
 import ioutils as io
 
@@ -70,8 +71,68 @@ def areahex(area=3.0):
     outd =fillout(outd)
     return outd
 
-# Single cell, n sides
+from random import random
+def random_direction():
+    rtheta = random()* np.pi
+    return np.cos(rtheta), np.sin(rtheta)
+from read_data import ReadData
+# cut a piece of an existing input dat file
+#constructmesh.py circleslice epithelial_equilini.dat 
+def circleslice(ifile, radius=6., boundary=False,  center=[0.,0.,0.]):
+    rdat = ReadData(ifile)
+    keys = rdat.keys
+    x = np.array(rdat.data[keys['x']])
+    y = np.array(rdat.data[keys['y']])
+    z = np.array(rdat.data[keys['z']])
+    rlists = [rdat.data[k] for k in keys.values()]
+    outd = OrderedDict()
+    for k in keys:
+        outd[k] = []
+    for i, xval in enumerate(x):
+        cd= norm(center - np.array([x[i],y[i],z[i]]))
+        if cd < radius:
+            # keep this line
+            for kn, kv in keys.items():
+                outd[kn].append( rdat.data[kv][i] )
+    # fix the ids
+    ids = range(len(outd.values()[0]))
+    lz = ids[-1] +1
+    outd['id'] = ids
+    print [len(v) for v in outd.values()]
+    #io.stddict(outd)
 
+    # add circular boundary of cells
+    if boundary:
+        rr = radius + 0.2
+        bcelldensity = 0.9
+        nbcells = round( (2* np.pi * rr) * bcelldensity)
+        thetas = np.linspace(0, 2*np.pi, nbcells, False)
+
+        xb = rr *np.cos(thetas)
+        yb = rr *np.sin(thetas)
+        area = rdat.data[keys['area']][0]
+        for istepped, xval in enumerate(xb):
+            i = lz + istepped
+            outd['id'].append(i)
+            outd['radius'].append(1.)
+            outd['x'].append(xb[istepped])
+            outd['y'].append(yb[istepped])
+            outd['nvz'].append(1.)
+            outd['area'].append(area)
+            # make a random direction
+            nx, ny = random_direction()
+            outd['nx'].append(nx)
+            outd['ny'].append(ny)
+            for kn in ['z', 'vx', 'vy', 'vz', 'nz', 'nvx', 'nvy']:
+                outd[kn].append(0.)
+
+    print outd['id']
+
+    # dump
+    with open('slice.input', 'w') as fo:
+        io.dump(outd, fo)
+
+# Single cell, n sides
 def single(nsides, prefarea=5., origin=[0.,0.,0.]):
     parea = prefarea
     rvals = np.array(origin).reshape((1,3))
@@ -118,9 +179,17 @@ if __name__=='__main__':
         else:
             fargs = []
 
-    print fargs
-    #ff = map(eval, fargs)
     ff = fargs
+    print fargs
+    for i, f in enumerate(ff):
+        try:
+            ff[i] = eval(f)
+        except:
+            # This string has a '.' and look like an object
+            #ff[i] = f
+            pass
+    print ff
+
     outd = f_using(*ff)
     if outd:
         with open('test.dat', 'w') as fo:
