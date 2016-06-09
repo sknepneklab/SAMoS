@@ -46,6 +46,7 @@
 
 #include "messenger.hpp"
 #include "system.hpp"
+#include "neighbour_list.hpp"
 
 #include "parse_parameters.hpp"
 
@@ -66,7 +67,7 @@ public:
   //! \param sys Reference to the System object
   //! \param msg Reference to the system wide messenger
   //! \param param Reference to the parameters that control given population control
-  Population(SystemPtr sys, const MessengerPtr msg, pairs_type& param) : m_system(sys), m_msg(msg)
+  Population(SystemPtr sys, const MessengerPtr msg, pairs_type& param) : m_system(sys), m_msg(msg), m_has_nlist(false)
   { 
     if (param.find("group") == param.end())
     {
@@ -91,6 +92,15 @@ public:
     m_msg->write_config("population.freq",lexical_cast<string>(m_freq));
   }
   
+  //! Set neighbour list. 
+  //! \note Neighbour list is not set in the contructor because some models do not require it. 
+  //! This is a bit clumsy but gives us more flexibility
+  void set_nlist(NeighbourListPtr nlist) 
+  {
+    m_nlist = nlist;
+    m_has_nlist = true;
+  }
+  
   //! Particle division (emulates cell division)
   virtual void divide(int) = 0;
   
@@ -110,11 +120,13 @@ protected:
   
   SystemPtr m_system;            //!< Contains pointer to the System object
   MessengerPtr m_msg;            //!< Handles messages sent to output
+  NeighbourListPtr m_nlist;         //!< Handles NeighbourList object
   string m_group_name;           //!< Name of the group to apply this population to
   int m_freq;                    //!< Frequency (in the number of time steps) with which to attempt population control
   double m_l_rescale;            //!< Rescale particle length by total of this amount
   int m_l_rescale_steps;         //!< Rescale particle lenght over this many steps
   double m_l_scale;              //!< Rescale particle lenth by this much in each step (=m_l_rescale**(m_grow_l_freq/m_l_rescale_steps))
+  bool m_has_nlist;              //!< If true, population has neighbour list set
    
 };
 

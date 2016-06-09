@@ -75,6 +75,7 @@ public:
                   | qi::as_string[keyword["grow"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ]        /*! Handles particle growth */
                   | qi::as_string[keyword["elongate"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ]    /*! Handles rod elongation population control */
                   | qi::as_string[keyword["cell"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ]        /*! Handles cell growth/division/death */
+                  | qi::as_string[keyword["actomyosin"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ]  /*! Handles actomyosin attachment/detachment */
                   /* to add new population: | qi::as_string[keyword["newpopulation"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&PopulationData::params, phx::ref(population_data)) = qi::_1 ]

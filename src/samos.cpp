@@ -878,7 +878,7 @@ int main(int argc, char* argv[])
                 }
                 for (vector<DumpPtr>::iterator it_d = dump.begin(); it_d != dump.end(); it_d++)
                   (*it_d)->dump(time_step);
-				 for (vector<LoggerPtr>::iterator it_l = log.begin(); it_l != log.end(); it_l++)
+				        for (vector<LoggerPtr>::iterator it_l = log.begin(); it_l != log.end(); it_l++)
                   (*it_l)->log();
                 for (std::map<std::string, IntegratorPtr>::iterator it_integ = integrator.begin(); it_integ != integrator.end(); it_integ++)
                   (*it_integ).second->integrate();
@@ -1221,6 +1221,8 @@ int main(int argc, char* argv[])
               if (qi::phrase_parse(population_data.params.begin(), population_data.params.end(), param_parser, qi::space, parameter_data))
               {
                 population.push_back(boost::shared_ptr<Population>(populations[population_data.type](sys,msg,parameter_data)));  // dirty workaround shared_ptr and inherited classes
+                if (defined["nlist"])
+                  population[population.size()-1]->set_nlist(nlist);
                 msg->msg(Messenger::INFO,"Adding population of type "+population_data.type+".");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
                   msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for population "+population_data.type+" is set to "+(*it).second+".");
