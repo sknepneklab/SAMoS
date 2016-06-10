@@ -71,10 +71,10 @@ void PopulationCell::divide(int t)
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi); 
       Vertex& V = mesh.get_vertices()[p.get_id()];
-	  // actual probability of dividing now: (attempt_freq * dt) exp[(A-A_max)*m_div_rate/A_max 
-	  // In the limits where we can linearise both this and the growth rate, this gives:
-	  // P_div = (attempt_freq * dt) [1+m_div_rate*m_growth_rate t]. This division coefficient is dimensionless now.
-	  double prob_div =m_freq*m_system->get_integrator_step()*exp(m_div_rate*(V.area/m_max_A0-1.0)); 
+	    // actual probability of dividing now: (attempt_freq * dt) exp[(A-A_max)*m_div_rate/A_max] 
+	    // In the limits where we can linearise both this and the growth rate, this gives:
+	    // P_div = (attempt_freq * dt) [1+m_div_rate*m_growth_rate t]. This division coefficient is dimensionless now.
+	    double prob_div = m_freq*m_system->get_integrator_step()*exp(m_div_rate*(V.area/m_max_A0-1.0));
       if (!V.boundary && m_rng->drnd() < prob_div)  // Only internal verices can divide
       {
         //cout << t << " " << V.area << " " << p.A0 << " " << exp((V.area-p.A0)/m_div_rate) << endl;

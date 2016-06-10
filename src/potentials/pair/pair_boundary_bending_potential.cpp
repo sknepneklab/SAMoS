@@ -81,7 +81,9 @@ void PairBoundaryBendingPotential::compute(double dt)
       double vec_dot = dot(r_pm_p,r_pp_p);
       double ratio = denom*vec_dot;
       double theta = acos(ratio);
-      double fact = kappa*(theta-theta0)/sqrt(1-ratio*ratio);
+      double fact = 0;
+      if (1.0 - ratio*ratio > 1e-7 )
+        fact = kappa*(theta-theta0)/sqrt(1-ratio*ratio);
       
       Vector3d fm = fact*(denom*r_pp_p - denom_2*(vec_dot*r_pp_p_len)*r_pm_p.unit());
       Vector3d fp = fact*(denom*r_pm_p - denom_2*(vec_dot*r_pm_p_len)*r_pp_p.unit());
