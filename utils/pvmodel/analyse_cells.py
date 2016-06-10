@@ -18,6 +18,7 @@ import argparse
 import writemesh as wr
 import os.path as path
 
+divider = '###########  ############'
 
 # Define analysis routines here
 
@@ -30,63 +31,12 @@ def random_choice(pv, nr=5):
 
 verb = False
 
-# template for Tracker objects
-class Tracker(object):
-    def __init__(self,fileo):
-        # setup
-        self.fileo =fileo
-        self.outd= OrderedDict()
-    
-    def update(self, pv, xxv):
-        fileo = self.fileo
-        foutname = '_'.join([fileo, xxv]) + '.pkl'
-        if verb: print 'saving radial data to ', foutname
-        self.foutname = foutname
-        self._update(pv)
-
-    # overwrite this to change behaviour
-    def _update(self, pv):
-        pass
-    
-    def write_whole(self):
-        io.dump(self.outd, self.outf)
-
-    def cleanup(self):
-        self.outf.close()
-
-import pickle
-# Can wrap the whole code in a try: finally: block.
-# This will ensure that relevent quantities are saved
-class FPickler(Tracker):
-    def _update(self, pv):
-        forces = pv.tri.forces
-        bulkforces = [forces[i] for i in pv.tri.bulk]
-        avg_force = np.mean(bulkforces)
-        self.outd['avg_force'] = avg_force
-        with open(self.foutname, 'wb') as fo:
-            pickle.dump(self.outd, fo)
-
-# Seems like pickling the data might be better
-# could pickle pv.stresses
-# what other data is useful to pickle?
-class SPickler(Tracker):
-    def __init__(self, fileo='stresses'):
-        self.fileo = fileo
-
-    def _update(self, pv):
-        with open(self.foutname, 'wb') as fo:
-            pickle.dump(pv.stresses, fo)
-
-def hash_function(f, linspace):
-    l = linspace[-1] - linspace[0]
-    ne = len(linspace)
-    hf = map(f, linspace)
-    def nf(r):
-        i = int(round((ne-1) * r/l))
-        return hf[i]
-    return nf
-
 from scipy import integrate
+def uniformkernel(wl):
+    def unif(r):
+        return 1/(np.pi * wl**2)
+    return unif
+
 def quartic_wl(wl):
     if verb: print 'generating smoothing function with wl = ', wl
     def quartic(r):
@@ -98,6 +48,16 @@ def quartic_wl(wl):
     # assert ii is close to 1
     #io.plotrange(quartic, 0, wl)
     return quartic
+
+def hash_function(f, linspace):
+    l = linspace[-1] - linspace[0]
+    ne = len(linspace)
+    hf = map(f, linspace)
+    def nf(r):
+        i = int(round((ne-1) * r/l))
+        return hf[i]
+    return nf
+
 
 import glob
 # The template senario
@@ -165,6 +125,56 @@ class Senario(object):
         return path.join(args.dir, outname)
 
 
+# template for Tracker objects
+class Tracker(object):
+    def __init__(self,fileo):
+        # setup
+        self.fileo =fileo
+        self.outd= OrderedDict()
+    
+    def update(self, pv, xxv):
+        fileo = self.fileo
+        foutname = '_'.join([fileo, xxv]) + '.pkl'
+        if verb: print 'saving radial data to ', foutname
+        self.foutname = foutname
+        self._update(pv)
+
+    # overwrite this to change behaviour
+    def _update(self, pv):
+        pass
+    
+    def write_whole(self):
+        io.dump(self.outd, self.outf)
+
+    def cleanup(self):
+        self.outf.close()
+
+import pickle
+# Can wrap the whole code in a try: finally: block.
+# This will ensure that relevent quantities are saved
+class FPickler(Tracker):
+    def _update(self, pv):
+        forces = pv.tri.forces
+        bulkforces = [forces[i] for i in pv.tri.bulk]
+        avg_force = np.mean(map(norm, bulkforces))
+        self.outd['avg_force'] = avg_force
+        vforces = [pv.mesh.vertex_forces[i] for i in mesh.bulk]
+        self.outd['avg_vertex_force'] = np.mean(map(norm, vforces))
+        with open(self.foutname, 'wb') as fo:
+            pickle.dump(self.outd, fo)
+
+# Seems like pickling the data might be better
+# could pickle pv.stresses
+# what other data is useful to pickle?
+class SPickler(Tracker):
+    def __init__(self, fileo='stresses'):
+        self.fileo = fileo
+
+    def _update(self, pv):
+        with open(self.foutname, 'wb') as fo:
+            pickle.dump(pv.stresses, fo)
+
+
 set_choice = [844, 707, 960, 606, 958, 801, 864, 859, 870, 302, 500]
 class Stress_Senario(Senario):
     def __init__(self, args):
@@ -175,7 +185,10 @@ class Stress_Senario(Senario):
         self.fileo=  os.path.join(args.dir, 'stress_st') 
 
         self.omega= None
-        om = quartic_wl(wl)
+        if args.kernel == 'quartic':
+            om = quartic_wl(wl)
+        elif args.kernel == 'uniform':
+            om = uniformkernel(wl)
         self.omega = om
 
         wlf = os.path.join(args.dir, 'stress_wl')
@@ -199,47 +212,55 @@ class Stress_Senario(Senario):
         self._handle_constants(pv)
         pv.calculate_energy()
         pv.calculate_forces(exclude_boundary=args.exclude)
+        print divider
+        print 'areametric', pv.areametric()
+        print 'primmetric', pv.perimmetric()
 
         if verb: print 'Just use one value of smoothing length'
-        pv._stress_setup()
-        self._iterate_wl(pv)
+        pv._stress_setup(centroid=args.centroid)
+        #self._iterate_wl(pv)
         pv._set_wl(args.wl)
         clist = set_choice if args.s else None
 
+        pv.makecellparts()
         pv.stress_on_centres(omega, clist=clist, hardy=args.hardy)
-        print 'avg virial pressure', pv.stresses['virial'].avg_pressure
-        pv.stress_on_vertices(omega, args.hardy)
+        print 'virial avg_pressure', pv.stresses['virial'].avg_pressure
+        #print pv.stresses['virial'].pressure.values()[:100]
+        #pv.stress_on_vertices(omega)
 
         forces = pv.tri.forces
         bulkforces = [forces[i] for i in pv.tri.bulk]
         avg_force = np.mean(map(norm, bulkforces))
         print 'avg_force', avg_force
-        # piggy-backing on the stresses object...
         pv.stresses['avg_force'] = avg_force
-        
-        vforces = [pv.mesh.vertex_force[nu] for nu in pv.mesh.bulk]
-        print 'avg vertex force', np.mean(map(norm, vforces))
-        pv.stresses['avg_vertex_force'] = np.mean(map(norm, vforces))
 
-        print 'avg virial pressure', pv.stresses['virial'].avg_pressure
+        #print pv.stresses['virial'].pressure
+        #print 'hardy_vertex pressure', pv.stresses['hardy_vertices'].avg_pressure
+        # Polygons mesh. Just for debugging
+        #wr.writepoints(pv.mesh.centroids.values(), self._name_vtp('centroids_'))
+        #wr.writemesh(pv.polygons, self._name_vtp('polygons_'))
 
+        if args.hardy:
+            pv.stresses['virial'].compare(pv.stresses['hardy'])
+
+        # pickle useful datas
         self.pkr.update(pv, outnum)
 
+        ### vtp output 
         stressnames = ['virial', 'hardy']
         for sname in stressnames:
             if sname in pv.stresses:
                 vsout = self._name_vtp(sname+'_stress_')
-                wr.write_stress_ellipses(pv, vsout, pv.stresses[sname])
+                wr.write_stress_ellipses(pv, vsout, pv.stresses[sname], 
+                        scale=args.scale)
+        #vsout = self._name_vtp('hardy_vertex_stress_')
+        #wr.write_stress_ellipses(pv, vsout, pv.stresses['hardy_vertices'],usecentres=False)
         
         mout = self._name_vtp('cell_dual_')
         wr.writemeshenergy(pv, mout)
 
         tout = self._name_vtp('cell_')
         wr.writetriforce(pv, tout)
-
-        if args.hardy:
-            sout = self._name_vtp('hardy_stress_')
-            wr.write_stress_ellipses(pv, sout, pv.stresses['hardy'])
 
     def _handle_constants(self, pv):
         # Handle K, and Gamma
@@ -277,36 +298,73 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
  
     parser.add_argument("-i", "--input", type=str, default='cell*.dat', help="Input dat file")
-    parser.add_argument("-d", "--dir", type=str, default='/home/dan/tmp/', help="Output directory")
+    parser.add_argument("-c", "--conf", type=str, default='*.conf', help="Input dat file")
+    parser.add_argument("-d", "--dir", type=str, default='tmp/', help="Output directory")
     parser.add_argument("-wl", type=float, default=1., help='smoothing length')
     parser.add_argument("-s", action='store_true')
-    parser.add_argument("-f", '--fast', action='store_true')
     parser.add_argument("-k", type=float, default=1., help='Area constant')
     parser.add_argument("-g", '--gamma', type=float, default=0., help='Perimeter constant')
-    parser.add_argument("-L", type=float, default=0., help='Contact length constant')
+    parser.add_argument("-L",  type=float, default=0., help='Contact length constant')
     parser.add_argument("-w", type=str, default='', 
             help='A list containing start finish and step for wl values')
     parser.add_argument('-step', type=int, default=1, help='Step through time')
+    parser.add_argument('-kf', "--kernel", type=str, default='quartic',
+            help = 'the type of smoothing function to use')
+    parser.add_argument('--scale', type=float, default=1., 
+        help='scale stress ellipses')
+
+    valid_smoothing_functions = ['uniform', 'quartic']
     # flags
+    parser.add_argument("--centroid", action='store_true', 
+            help='Use the polygonal centroid as the center for stress calcuation')
     parser.add_argument("--simple", action='store_true', 
             help='Only perform simple stress calculation')
     parser.add_argument("--hardy", action='store_true', 
             help='Turn on Hardy stress calculation')
     parser.add_argument("--exclude", action='store_true', 
             help='Mirrors exclude_boundary flag in samso')
+    #parser.add_argument("--norm", action='store_true', 
+            #help='Noramlize stress ellipses')
+
+
     args = parser.parse_args()
 
     if not os.path.exists(args.dir):
         os.mkdir(args.dir)
 
+    # find that configuration file
+    if '*' in args.conf:
+        # probably gave a regular expression to find the configuration file
+        confs = glob.glob(args.conf)
+        print 'found configuration file(s)', confs
+        args.conf = confs[0]
+
+    from read_conf import ReadConf
+    rc = ReadConf(args.conf)
+    myparams = ['L', 'k', 'gamma']
+    samparams = ['lambda', 'K', 'gamma']
+    pmap = dict(zip(samparams, myparams))
+    try:
+        attrs = rc.key_words['pair_potential'][0].attributes
+        for attr in attrs:
+            if attr.name in samparams:
+                setattr(args, pmap[attr.name], float(attr.val))
+            if attr.name == 'exclude_boundary':
+                args.exclude = True
+    except KeyError:
+        raise
+
     print 'vertex model parameters'
     print 'k ', args.k
-    print 'gamma, ',  args.gamma
+    print 'gamma ',  args.gamma
     print 'L ',args.L
+    print 'Excluding the boundary:', args.exclude
+    print 'Using the cell centroids for stress calculation:', args.centroid
     if args.w:
         print 'Calculating stress for wl = ', range(*eval(args.w))
 
     stressrun = Stress_Senario(args)
     stressrun.save_parameters()
     for _ in stressrun: pass
+
 

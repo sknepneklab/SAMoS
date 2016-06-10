@@ -71,14 +71,65 @@ def areahex(area=3.0):
     outd =fillout(outd)
     return outd
 
-from random import random
+from random import random, uniform
 def random_direction():
-    rtheta = random()* np.pi
+    rtheta = random()* 2*np.pi
     return np.cos(rtheta), np.sin(rtheta)
 from read_data import ReadData
+# Generic function for operating on the data input files as I read and write them using 
+#  separate functions
+def rwoperate(ifile, operate):
+    rdat = ReadData(ifile)
+    keys = rdat.keys
+    lrdat = len(rdat.data[0])
+    outd = OrderedDict()
+    for k in keys:
+        outd[k] = []
+    for i, _ in enumerate(rdat.data[0]):
+        for kn, kv in keys.items():
+            outd[kn].append( rdat.data[kv][i] )
+        if operate:
+            operate(outd, i)
+    return outd
+
+# read the dat files and then adjust the preferred areas to a uniform random distrubution
+def randomise_area(ifile, minmax=[3.0, 3.5]):
+    mn,mx = minmax
+    def rarea(outd, i):
+        # set the area
+        uarea = uniform(mn, mx) 
+        #print 'setting area ', uarea
+        outd['area'][i] = uarea
+    outd = rwoperate(ifile, rarea)
+
+    with open('areaset.input', 'w') as fo:
+        io.dump(outd, fo, htag='keys:')
+
+def shift_area(ifile, shift):
+    def fshift(outd, i):
+        outd['area'][i] += shift
+    outd= rwoperate(ifile, fshift)
+    with open('shifted.input', 'w') as fo:
+        io.dump(outd, fo, htag='keys:')
+
+# hardcoded
+def addtype(ifile):
+    outd = rwoperate(ifile, None)
+    outd['type'] = list(np.zeros(len(outd['id'])))
+    print outd['type'][0]
+    for i, idd in enumerate(outd['id']):
+        if idd < 1000:
+            outd['type'][i] = 1
+        else:
+            outd['type'][i] = 2
+
+    outstr = ' %d\t ' + '%f\t '*(len(outd)-2) + '%d\t ' + '\n'
+    with open('typed.input', 'w') as fo:
+        io.dump(outd, fo, htag='keys:', outstr=outstr)
+
 # cut a piece of an existing input dat file
 #constructmesh.py circleslice epithelial_equilini.dat 
-def circleslice(ifile, radius=6., boundary=False,  center=[0.,0.,0.]):
+def circleslice(ifile, radius=5.5, boundary=False,  center=[0.,0.,0.]):
     rdat = ReadData(ifile)
     keys = rdat.keys
     x = np.array(rdat.data[keys['x']])
@@ -98,15 +149,20 @@ def circleslice(ifile, radius=6., boundary=False,  center=[0.,0.,0.]):
     ids = range(len(outd.values()[0]))
     lz = ids[-1] +1
     outd['id'] = ids
+    # set all the velocities to zero
+    for kn in ['vx', 'vy']:
+        outd[kn] = list(np.zeros(lz))
+
     print [len(v) for v in outd.values()]
     #io.stddict(outd)
 
     # add circular boundary of cells
     if boundary:
-        rr = radius + 0.2
+        rr = radius + 0.5
         bcelldensity = 0.9
         nbcells = round( (2* np.pi * rr) * bcelldensity)
         thetas = np.linspace(0, 2*np.pi, nbcells, False)
+        print 'number of boundary particles', len(thetas)
 
         xb = rr *np.cos(thetas)
         yb = rr *np.sin(thetas)
@@ -125,7 +181,7 @@ def circleslice(ifile, radius=6., boundary=False,  center=[0.,0.,0.]):
             outd['ny'].append(ny)
             for kn in ['z', 'vx', 'vy', 'vz', 'nz', 'nvx', 'nvy']:
                 outd[kn].append(0.)
-
+    print map(len, outd.values())
     print outd['id']
 
     # dump

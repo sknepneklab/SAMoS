@@ -19,7 +19,7 @@ import pickle
         #self.ddump = ddump
 
 
-def _makename(num, fn, ext='.npz'):
+def _makename(num, fn, ext='.pkl'):
     fn = '_'.join([fn, _justifynum(num)])  + ext
     return fn
 def _justifynum(num):
@@ -63,33 +63,11 @@ def plot_radial(*fils):
         #axi.plot(x, rad, marker='o')
         ##axi.draw()
         #time.sleep(0.05)
-
-def plot_radial_all(num, fname):
-    fname = _makename(num, fname, '.npz')
-    plt.xlabel('radial distance')
-    data = np.load(fname)
-    xs = data['simple_rspace']
-    xsh = data['virial_rspace']
-    xdiff = xsh[1] - xsh[0]
-    xh = xsh[:-1] + xdiff/2
-    xdiff = xs[1] - xs[0]
-    x = xs[:-1] + xdiff/2
-
-    k = 'simple_radial_pressure'
-    plt.plot(x, data[k], label=k, marker='o', alpha=0.5)
-    k = 'virial_radial_pressure'
-    plt.plot(x, data[k], label=k, marker='o', alpha=1.5)
-        #plt.plot(xh, data[k], label=k, marker='x', alpha=0.5)
-        
-    plt.legend()
-    #plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-           #ncol=2, mode="expand", borderaxespad=0.)
-    plt.show()
-
 def _outnum(name):
     name = path.basename(name)
     bname, _ = path.splitext(name)
     return int(bname.split('_')[-1])
+
 
 def plot_avg_pressures(fglob='stress_st*.npz'):
     stfiles = sorted(glob(fglob))
@@ -124,8 +102,7 @@ def defaultsave(f):
 def _loadpkl(fname):
     return pickle.load(open(fname, 'rb'))
 
-def _nanmean(arr):
-    return np.mean(arr[~np.isnan(arr)])
+from ioutils import _nanmean
 
 @defaultsave
 def avg_pressures(fglob='stresses*.pkl'):
@@ -147,12 +124,21 @@ def avg_pressures(fglob='stresses*.pkl'):
     if 'hardy_vertices' in stn:
         hpressure= [_nanmean(stress['hardy_vertices'].pressure) for stress in datas]
         plt.plot(xsteps, np.array(hpressure), label='hardy vertex pressure', marker='o')
+    if 'vertices' in stn:
+        hpressure= [_nanmean(stress['vertices'].pressure) for stress in datas]
+        plt.plot(xsteps, np.array(hpressure), label='vertex pressure', marker='o')
     # go ahead and plot the average force magnitude as well
     avgfs = [st['avg_force'] for st in datas]
     plt.plot(xsteps, avgfs, label='average force magnitude', marker='o')
+    if 'avg_vertex_force' in stn:
+        avgfs = [st['avg_vertex_force'] for st in datas]
+        plt.plot(xsteps, avgfs, label='average vertex force', marker='o')
     plt.legend()
 
+#def castresses(dira, dirb):
+    #fglob
 
+@defaultsave
 def avg_stresses(stname='virial', fglob='stresses*.pkl'):
     sfiles = sorted(glob(fglob))
     datas = map(_loadpkl, sfiles)
@@ -167,32 +153,52 @@ def avg_stresses(stname='virial', fglob='stresses*.pkl'):
         plt.title(stname)
         names= [stname]
     for name in names:
-        spressure= [_nanmean(stress[name].pressure) for stress in datas]
-        plt.plot(xsteps, spressure, label=name+' pressure', marker='o')
         vpressure= [_nanmean(stress[name].sstress) for stress in datas]
         plt.plot(xsteps, vpressure, label=name+' shear stress', marker='o')
         hpressure= [_nanmean(stress[name].nstress) for stress in datas]
-        plt.plot(xsteps, np.array(hpressure), label=name+' normal stress', marker='o')
+        plt.plot(xsteps, np.array(hpressure), label=name+' normal stress', marker='o', linestyle='-')
     plt.legend()
-    plt.show()
 
 
-def plot_wls(yname='radial_pressure', fglob='stress_wl*.npz'):
-    #fname = makename(num, fname)
-    npzl = sorted(glob(fglob))
+#cmplotting.py compare_radial 4000 stress_st . ../../rA_2.5/pressure_test/ ../../vpotential_only/pressure_test/
+@defaultsave
+def compare_radial(num, fname, *fdirs):
+    plt.clf()
+    fname = '_'.join([fname, _justifynum(num)])  + '.npz'
+    paths = [path.join(fd, fname) for fd in fdirs]
     plt.xlabel('radial distance')
-    plt.ylabel('radial pressure')
-    print npzl
-    for npz in npzl:
-        data = np.load(npz)
+    plt.ylabel('pressure')
+    for fi in paths:
+        data = np.load(fi)
         xs = data['rspace']
+        assert len(xs) > 1
         xdiff = xs[1] - xs[0]
         x = xs[:-1] + xdiff/2
-        y= data[yname]
-        plt.plot(x, y, label=npz, marker='o')
+        rad = data['radial_pressure']
+        plt.plot(x, rad, marker='o', label=fi)
 
+@defaultsave
+def radial(num=30000, stname='virial'):
+    pklname = _makename(num, 'stresses')
+    data = _loadpkl(pklname)
+
+    stress = data[stname]
+    plt.clf()
+    plt.xlabel('radial distance')
+
+    xs = stress.rspace
+    xdiff = xs[1] - xs[0]
+    x = xs[:-1] + xdiff/2
+
+    k = 'radial_normal_stress'
+    lk = stname + '_' + k
+    plt.plot(x, stress.ravg[k], label=lk, marker='o')
+    k = 'radial_shear_stress'
+    lk = stname + '_' + k
+    plt.plot(x, stress.ravg[k], label=lk, marker='o')
+        
     plt.legend()
-    plt.show()
+
 
 
 #cmplotting.py compare_radial 4000 stress_st . ../../rA_2.5/pressure_test/ ../../vpotential_only/pressure_test/
@@ -213,6 +219,24 @@ def compare_radial(num, fname, *fdirs):
     #http://matplotlib.org/users/legend_guide.html
     plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
            ncol=2, mode="expand", borderaxespad=0.)
+    plt.show()
+
+
+def plot_wls(yname='radial_pressure', fglob='stress_wl*.npz'):
+    #fname = makename(num, fname)
+    npzl = sorted(glob(fglob))
+    plt.xlabel('radial distance')
+    plt.ylabel('radial pressure')
+    print npzl
+    for npz in npzl:
+        data = np.load(npz)
+        xs = data['rspace']
+        xdiff = xs[1] - xs[0]
+        x = xs[:-1] + xdiff/2
+        y= data[yname]
+        plt.plot(x, y, label=npz, marker='o')
+
+    plt.legend()
     plt.show()
 
 def _readdotplot(fi):

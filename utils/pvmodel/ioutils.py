@@ -15,17 +15,21 @@ def readfc(fcfile):
         simp = np.array(faces)
         boundary = 'not implemented'
     return simp, boundary
+
+def _nanmean(arr):
+    return np.mean(arr[~np.isnan(arr)])
             
 
 ### These are general methods copied from my command.py module
 
 #print square data to file, first column is int and rest are floats.
-def dump(dd, fo, htag='#'):
+def dump(dd, fo, htag='#', outstr=None):
     nc = len(dd.keys())
-    fo.write(''.join([htag+' ', '%s\t'*nc, '\n']) % tuple(dd.keys()))
+    fo.write(''.join([htag+' ', '%s\t '*nc, '\n']) % tuple(dd.keys()))
     ddv = dd.values()
     nr = len(ddv[0]) # assumption
-    outstr = '%d\t' + '%f\t'*(nc-1) + '\n' # assumption
+    if not outstr:
+        outstr = ' %d\t ' + '%f\t '*(nc-1) + '\n' # assumption
     for i in range(nr):
         tup = tuple([ddvi[i] for ddvi in ddv])
         fo.write(outstr % tup)

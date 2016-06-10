@@ -31,6 +31,15 @@ def vtk_write(polydata, outfile):
     writer.SetDataModeToAscii()
     writer.Write()
 
+def writepoints(pts, outfile):
+    Points = vtk.vtkPoints()
+    for pt in pts:
+        Points.InsertNextPoint(pt)
+
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(Points)
+    polydata.Modified()
+    vtk_write(polydata, outfile)
 
 # take an openmesh object and write it as .vtk with faces
 def writemesh(mesh, outfile):
@@ -62,17 +71,9 @@ def writemesh(mesh, outfile):
     polydata.SetPolys(Faces)
 
     polydata.Modified()
-    writer = vtk.vtkXMLPolyDataWriter()
-    if vtk.VTK_MAJOR_VERSION <= 5:
-        writer.SetInput(polydata)
-    else:
-        writer.SetInputData(polydata)
 
-    writer.SetFileName(outfile)
-    writer.SetDataModeToAscii()
-    writer.Write()
-
-
+    #print 'writing polygons'
+    vtk_write(polydata, outfile)
 
 # take an openmesh object and write it as .vtk with faces
 def writemeshenergy(pv, outfile):
@@ -90,10 +91,13 @@ def writemeshenergy(pv, outfile):
     force.SetNumberOfComponents(3)
     force.SetName("force")
 
+    area = vtk.vtkDoubleArray()
+    area.SetNumberOfComponents(1)
+    area.SetName("area")
 
-    #pressure = vtk.vtkDoubleArray()
-    #pressure.SetNumberOfComponents(1)
-    #pressure.SetName("pressure")
+    pressure = vtk.vtkDoubleArray()
+    pressure.SetNumberOfComponents(1)
+    pressure.SetName("pressure")
 
     meshpt = mesh.pym
     vforces =mesh.vertex_force
@@ -103,7 +107,14 @@ def writemeshenergy(pv, outfile):
         force.InsertNextTuple3(*vforces[vh.idx()])
     
     # Can actually add the boundary polygons here and show them 
-    for mf in mesh.faces():
+    stress = pv.stresses['virial']
+    press = stress.pressure
+    ar= pv.mesh.areas
+    #for mf in mesh.faces():
+    for vhid in pv.tri.bulk:
+        mfid = pv.tri.to_mesh_face[vhid]
+        mf = pv.mesh.face_handle(mfid)
+
         mvhs = list(mesh.fv(mf))
         n = len(mvhs)
         Polygon = vtk.vtkPolygon()
@@ -111,13 +122,10 @@ def writemeshenergy(pv, outfile):
         for i, mvh in enumerate(mvhs):
             Polygon.GetPointIds().SetId(i, mvh.idx())
         Faces.InsertNextCell(Polygon)
-        
-        #fen = tri.property(enprop, vh)
-        #energy.InsertNextValue(fen)
 
-        #pr = pv.stresses['virial'].pressure[vh.idx()]
-        #prfacevalue = 0. if np.isnan(pr) else pr
-        #pressure.InsertNextValue(prfacevalue)
+        area.InsertNextValue(ar[mfid])
+        pressure.InsertNextValue(press[vhid])
+        
 
 
     polydata = vtk.vtkPolyData()
@@ -125,7 +133,8 @@ def writemeshenergy(pv, outfile):
     polydata.SetPolys(Faces)
 
     #polydata.GetCellData().AddArray(energy)
-    #polydata.GetCellData().AddArray(pressure)
+    polydata.GetCellData().AddArray(area)
+    polydata.GetCellData().AddArray(pressure)
     polydata.GetPointData().AddArray(force)
 
     polydata.Modified()
@@ -250,7 +259,7 @@ def add_ellipse(Points, evals, shift, R, res, pressure, pr=0.):
         Points.InsertNextPoint(xe + x, xy + y, 0.)
         pressure.InsertNextValue(pr)
  
-def write_stress_ellipses(pv, outfile, pvstress, res=20):
+def write_stress_ellipses(pv, outfile, pvstress, res=20, usecentres=True, scale=1.):
     # any visualisation has to do something with None stresses
     alpha = 1. # scaling factor
 
@@ -268,7 +277,9 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
     evalues, evectors = {}, {}
     for i in clist:
         ss = stress[i]
-        if ss[0] is not np.nan:
+        if np.isnan(ss[0][0]):
+            sys.exit('this should not happen')
+        else:
             evalues[i], evectors[i] = eig(ss)
 
     pressure = vtk.vtkDoubleArray()
@@ -281,13 +292,17 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
     maxe = np.max(np.absolute(np.array(evalues.values())))
     if maxe == 0.:
         print evalues
-    #normf = maxe/0.5
-    normf = 1.
-    if verb: print 'adjusting stress ellipses by a factor of ', normf
+    normf = pv.tri.kproperty[0]
+    normf *= 1/scale
+
+    print 'adjusting stress ellipses by a factor of ', normf
     
     ells = vtk.vtkCellArray()
     for ellid, vhid in enumerate(evalues.keys()):
-        pt = tript[vhid]
+        if usecentres:
+            pt = tript[vhid]
+        else:
+            pt = mesh.pym[vhid]
         shift =  pt[:2]
 
         # cut down to two dimensions 
@@ -301,7 +316,7 @@ def write_stress_ellipses(pv, outfile, pvstress, res=20):
 
 
         pr = pvstress.pressure[vhid]
-        prfacevalue = 0. if np.isnan(pr) else pr
+        prfacevalue = pr if vhid in stress else 0.
         pressure.InsertNextValue(prfacevalue)
         add_ellipse(Points, (a,b), shift, R, res,  pressure, pr=prfacevalue )
 

@@ -1,8 +1,0 @@
-k            1.0
-wl           3.0
-L            0.0
-fast           0
-s              0
-gamma        0.0
-input /home/dan/cells/run/rprefA/rA_3.5/cell_0000004500.dat
-dir   /home/dan/tmp/test_cells
