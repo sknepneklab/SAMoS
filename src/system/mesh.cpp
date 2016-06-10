@@ -846,7 +846,7 @@ void Mesh::update_face_properties()
     else m_vertices[E.from].attached = true;
     Face& face = m_faces[Ep.face];
     face.boundary = true;
-    if (face.get_angle(this->opposite_vertex(Ep.id)) < 0.0)
+    if (face.get_angle(this->opposite_vertex(Ep.id)) < -0.017452406437283473)
     {
       face.obtuse = true;
       if (!E.attempted_removal)
@@ -868,9 +868,10 @@ bool Mesh::remove_obtuse_boundary()
   this->update_face_properties();
   while (m_obtuse_boundary.size() > 0)
   {
-    this->remove_edge_pair(*(m_obtuse_boundary.begin()));
+    bool removed = this->remove_edge_pair(*(m_obtuse_boundary.begin()));
     this->update_face_properties();
-    no_removals = false;
+    if (removed)
+      no_removals = false;
   }
   return no_removals;
 }
@@ -1194,7 +1195,7 @@ void Mesh::compute_geometric_centre(int f)
  *  have to be rebuilt.
  *  \param e index of one of the edges
 */
-void Mesh::remove_edge_pair(int e)
+bool Mesh::remove_edge_pair(int e)
 {
   Edge& E = m_edges[e];
   Edge& Ep = m_edges[E.pair];
@@ -1204,7 +1205,7 @@ void Mesh::remove_edge_pair(int e)
   Ep.attempted_removal = true;
   // We can only remove boundary edge pairs
   if (!E.boundary)
-    return;
+    return false;
    
   // Get the face to be removed
   Face& face = m_faces[Ep.face];
@@ -1221,7 +1222,7 @@ void Mesh::remove_edge_pair(int e)
     non_regular = non_regular && m_vertices[face.vertices[v]].boundary;
   
   if (non_regular)
-    return;
+    return false;
   
   Vertex& V1 = m_vertices[E.from];
   Vertex& V2 = m_vertices[Ep.from];
@@ -1364,6 +1365,8 @@ void Mesh::remove_edge_pair(int e)
   // Order affected vertices
   for (unsigned int v = 0; v < affected_vertices.size(); v++)
     this->order_star(affected_vertices[v]);
+    
+  return true;
   
 }
 
