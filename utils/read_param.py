@@ -323,6 +323,7 @@ class Param:
 		else:
 			self.nstepsNVE=0
 		print "NVE steps: " + str(self.nstepsNVE)
+		print "NVE integrators: " + str(nNVE)
 				
 		# Type-wise pair potentials and aligners (careful: types and groups don't have to match!)
 		# square lists of lists of dictionaries or names
@@ -393,6 +394,7 @@ class Param:
 			self.group_integrator=['none' for u in range(self.ngroups)] 
 			self.group_int_params=[{} for u in range(self.ngroups)]
 			nintegrator=len(conf.key_words['integrator'])
+			print "Found " + str(nintegrator) + " intergrators!"
 			for k in range(nNVE,nintegrator): # Excluding the NVE here
 				int_params={}
 				for l in range(len(conf.key_words['integrator'][k].attributes)):
@@ -416,7 +418,7 @@ class Param:
 					groupidx=self.groupnames.index(mygroup)
 					self.group_integrator[groupidx]=conf.key_words['integrator'][k].name
 					self.group_int_params[groupidx]=int_params
-					if nintegrator==2: #only one moving group, for example
+					if (nintegrator-nNVE)==1: #only one moving group, for example
 						self.integrator=conf.key_words['integrator'][k].name
 						print "Main integrator: " + self.integrator
 						self.int_params=int_params
@@ -506,6 +508,7 @@ class Param:
 			self.v0 = self.int_params['v0']
 			self.nu = self.int_params['eta']
 		else:
+			self.dt =self.int_params['dt'] 
 			print "Warning: unknown integrator type " + self.integrator + ". Parameters are stored in the dictionary self.int_params."
 			return 1
 		return 0

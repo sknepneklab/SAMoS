@@ -58,9 +58,10 @@ except:
 	pass
 
 class SimRun:
-	def __init__(self,directory,conffile,inputfile,radiusfile,skip,tracer=False,debug=False):
+	def __init__(self,directory,conffile,inputfile,radiusfile,skip,ignore=False,tracer=False,debug=False):
 		self.debug=debug
 		self.tracer=tracer
+		self.ignore=ignore
 		self.param = Param(directory+conffile)
 		files = sorted(glob(directory + self.param.dumpname+'*.dat'))[skip:]
 		if len(files) == 0:
@@ -80,16 +81,19 @@ class SimRun:
 		# Deal with the radii in an appropriate manner:
 		# First check that the potential actually uses radii:
 		# If yes, read them in from the initial file (to be overwritten if there are separate ones in each file)
-		if self.param.pot_params['use_particle_radii']==True:
-			print "Reading radii from initial file!"
-			data_ini=ReadData(directory+radiusfile)
-			self.monodisperse=False
-			self.radius=data_ini.data[data_ini.keys['radius']]
-			if self.Nvariable==False:
-				self.N=len(self.radius)
-				print "Constant number of " + str(self.N) + " particles!"
-		else:
+		if self.ignore:
 			self.monodisperse=True
+		else:
+			if self.param.pot_params['use_particle_radii']==True:
+				print "Reading radii from initial file!"
+				data_ini=ReadData(directory+radiusfile)
+				self.monodisperse=False
+				self.radius=data_ini.data[data_ini.keys['radius']]
+				if self.Nvariable==False:
+					self.N=len(self.radius)
+					print "Constant number of " + str(self.N) + " particles!"
+			else:
+				self.monodisperse=True
 		# Unfortunately, need a first read-through to gauge what kind of data size we need
 		# I want to use numpy arrays for the analysis due to speed
 		if self.Nvariable:
