@@ -233,6 +233,7 @@ class SimRun:
 		velcorr=np.zeros((npts,))
 		velav=np.zeros((self.Nsnap,3))
 		for u in range(self.Nsnap):
+			print "snapshot " + str(u)
 			velcount=np.zeros((npts,))
 			velcorr0=np.zeros((npts,))
 			velav[u,:]=np.sum(self.vval[u,:,:],axis=0)/self.N
@@ -245,11 +246,8 @@ class SimRun:
 					pts=np.nonzero(drbin==l)[0]
 					velcorr0[l]+=sum(vdot[pts])
 					velcount[l]+=len(pts)
-			print velcount
 			isdata=[index for index, value in enumerate(velcount) if value>0]
-			print isdata
 			velcorr0[isdata]=velcorr0[isdata]/velcount[isdata] - np.sum(velav[u,:]*velav[u,:])
-			print velcorr0
 			velcorr[isdata]+=velcorr0[isdata]/velcorr0[0]
 		velcorr/=self.Nsnap
 		if self.debug:
@@ -259,7 +257,9 @@ class SimRun:
 			#plt.show()
 			plt.xlabel("r-r'")
 			plt.ylabel('Correlation')
-		return bins,velcorr,fig
+			return bins,velcorr,fig
+		else:
+			return bins,velcorr
 	  
 	# Project our displacements or any stuff like that onto the eigenmodes of a hessian matrix, which has been calculated separately
 	# we will need self.eigval and self.eigvec
