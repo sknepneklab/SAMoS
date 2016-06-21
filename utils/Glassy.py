@@ -58,9 +58,10 @@ except:
 	pass
 
 class SimRun:
-	def __init__(self,directory,conffile,inputfile,radiusfile,skip,tracer=False,debug=False):
+	def __init__(self,directory,conffile,inputfile,radiusfile,skip,ignore=False,tracer=False,debug=False):
 		self.debug=debug
 		self.tracer=tracer
+		self.ignore=ignore
 		self.param = Param(directory+conffile)
 		files = sorted(glob(directory + self.param.dumpname+'*.dat'))[skip:]
 		if len(files) == 0:
@@ -80,16 +81,19 @@ class SimRun:
 		# Deal with the radii in an appropriate manner:
 		# First check that the potential actually uses radii:
 		# If yes, read them in from the initial file (to be overwritten if there are separate ones in each file)
-		if self.param.pot_params['use_particle_radii']==True:
-			print "Reading radii from initial file!"
-			data_ini=ReadData(directory+radiusfile)
-			self.monodisperse=False
-			self.radius=data_ini.data[data_ini.keys['radius']]
-			if self.Nvariable==False:
-				self.N=len(self.radius)
-				print "Constant number of " + str(self.N) + " particles!"
-		else:
+		if self.ignore:
 			self.monodisperse=True
+		else:
+			if self.param.pot_params['use_particle_radii']==True:
+				print "Reading radii from initial file!"
+				data_ini=ReadData(directory+radiusfile)
+				self.monodisperse=False
+				self.radius=data_ini.data[data_ini.keys['radius']]
+				if self.Nvariable==False:
+					self.N=len(self.radius)
+					print "Constant number of " + str(self.N) + " particles!"
+			else:
+				self.monodisperse=True
 		# Unfortunately, need a first read-through to gauge what kind of data size we need
 		# I want to use numpy arrays for the analysis due to speed
 		if self.Nvariable:
@@ -229,6 +233,7 @@ class SimRun:
 		velcorr=np.zeros((npts,))
 		velav=np.zeros((self.Nsnap,3))
 		for u in range(self.Nsnap):
+			print "snapshot " + str(u)
 			velcount=np.zeros((npts,))
 			velcorr0=np.zeros((npts,))
 			velav[u,:]=np.sum(self.vval[u,:,:],axis=0)/self.N
@@ -241,11 +246,8 @@ class SimRun:
 					pts=np.nonzero(drbin==l)[0]
 					velcorr0[l]+=sum(vdot[pts])
 					velcount[l]+=len(pts)
-			print velcount
 			isdata=[index for index, value in enumerate(velcount) if value>0]
-			print isdata
 			velcorr0[isdata]=velcorr0[isdata]/velcount[isdata] - np.sum(velav[u,:]*velav[u,:])
-			print velcorr0
 			velcorr[isdata]+=velcorr0[isdata]/velcorr0[0]
 		velcorr/=self.Nsnap
 		if self.debug:
@@ -255,7 +257,9 @@ class SimRun:
 			#plt.show()
 			plt.xlabel("r-r'")
 			plt.ylabel('Correlation')
-		return bins,velcorr,fig
+			return bins,velcorr,fig
+		else:
+			return bins,velcorr
 	  
 	# Project our displacements or any stuff like that onto the eigenmodes of a hessian matrix, which has been calculated separately
 	# we will need self.eigval and self.eigvec

@@ -67,7 +67,7 @@ class Geometry(object):
 	def RotateVectorial(self,v,n,phi):
 		vrot=np.empty(np.shape(v))
 		np.shape(vrot)
-		rotmat=rotate_matrix_vectorial(n,phi)
+		rotmat=self.RotateMatrixVectorial(n,phi)
 		np.shape(rotmat)
 		vrot[:,0]=rotmat[:,0,0]*v[:,0]+rotmat[:,0,1]*v[:,1]+rotmat[:,0,2]*v[:,2]
 		vrot[:,1]=rotmat[:,1,0]*v[:,0]+rotmat[:,1,1]*v[:,1]+rotmat[:,1,2]*v[:,2]
