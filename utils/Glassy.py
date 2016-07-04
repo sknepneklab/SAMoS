@@ -58,8 +58,7 @@ except:
 	pass
 
 class SimRun:
-	def __init__(self,directory,conffile,inputfile,radiusfile,skip,tracer=False,debug=False):
-		self.debug=debug
+	def __init__(self,directory,conffile,inputfile,radiusfile,skip,tracer=False):
 		self.tracer=tracer
 		self.param = Param(directory+conffile)
 		files = sorted(glob(directory + self.param.dumpname+'*.dat'))[skip:]
@@ -190,7 +189,7 @@ class SimRun:
 		#else:
 			#self.rval[u,:,:]=rval_u
 		
-	def getMSD(self):
+	def getMSD(self,verbose=True):
 		self.msd=np.empty((self.Nsnap,))
 		# in case of tracers, simply use the tracer rval isolated above
 		for u in range(self.Nsnap):
@@ -209,17 +208,337 @@ class SimRun:
 				else:
 					self.msd[u]=np.sum(np.sum(np.sum((self.rval[u:,:,:]-self.rval[:smax,:,:])**2,axis=2),axis=1),axis=0)/(self.N*smax)
 		xval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
-		if self.debug:
+		if verbose:
 			fig=plt.figure()
 			plt.loglog(xval,self.msd,'r.-',lw=2)
 			plt.loglog(xval,self.msd[1]/(1.0*xval[1])*xval,'-',lw=2,color=[0.5,0.5,0.5])
 			plt.xlabel('time')
 			plt.ylabel('MSD')
 			
-			plt.show()
+			#plt.show()
 		return xval, self.msd
+	
+	# Definition of the self-intermediate scattering function (Flenner + Szamel)
+	# 1/N <\sum_n exp(iq[r_n(t)-r_n(0)]>_t,n
+	def SelfIntermediate(self,qval,verbose=True):
+		# This is single particle, single q, shifted time step. Equivalent to the MSD, really
+		SelfInt=np.empty((self.Nsnap,),dtype=complex)
+		for u in range(self.Nsnap):
+			smax=self.Nsnap-u
+			if self.Nvariable:
+				if self.tracer:
+					if self.geom.periodic:
+						SelfInt[u]=np.sum(np.sum(np.exp(1.0j*qval[0]*(self.geom.ApplyPeriodicX(-self.rtracers[:smax,:,0]+self.rtracers[u:,:,0]))+1.0j*qval[1]*(self.geom.ApplyPeriodicY(-self.rtracers[:smax,:,1]+self.rtracers[u:,:,1]))+1.0j*qval[2]*(self.geom.ApplyPeriodicZ(-self.rtracers[:smax,:,2]+self.rtracers[u:,:,2]))),axis=1),axis=0)/(self.Ntracer*smax)
+					else:
+						SelfInt[u]=np.sum(np.sum(np.exp(1.0j*qval[0]*(-self.rtracers[:smax,:,0]+self.rtracers[u:,:,0])+1.0j*qval[1]*(-self.rtracers[:smax,:,1]+self.rtracers[u:,:,1])+1.0j*qval[2]*(-self.rtracers[:smax,:,2]+self.rtracers[u:,:,2])),axis=1),axis=0)/(self.Ntracer*smax)
+				else:
+					print "Sorry: Self-intermediate scattering function for dividing particles is ambiguous and currently not implemented!"
+			else:
+				if self.geom.periodic:
+					SelfInt[u]=np.sum(np.sum(np.exp(1.0j*qval[0]*(self.geom.ApplyPeriodicX(-self.rval[:smax,:,0]+self.rval[u:,:,0]))+1.0j*qval[1]*(self.geom.ApplyPeriodicY(-self.rval[:smax,:,1]+self.rval[u:,:,1]))+1.0j*qval[2]*(self.geom.ApplyPeriodicZ(-self.rval[:smax,:,2]+self.rval[u:,:,2]))),axis=1),axis=0)/(self.N*smax)
+				else:
+					SelfInt[u]=np.sum(np.sum(np.exp(1.0j*qval[0]*(-self.rval[:smax,:,0]+self.rval[u:,:,0])+1.0j*qval[1]*(-self.rval[:smax,:,1]+self.rval[u:,:,1])+1.0j*qval[2]*(-self.rval[:smax,:,2]+self.rval[u:,:,2])),axis=1),axis=0)/(self.N*smax)
+		tval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
+		# Looking at the absolute value of it here
+		SelfInt2=(np.real(SelfInt)**2 + np.imag(SelfInt)**2)**0.5
+		qnorm=np.sqrt(qval[0]**2+qval[1]**2+qval[2]**2)
+		if verbose:
+			fig=plt.figure()
+			plt.semilogx(tval,SelfInt2,'.-r',lw=2)
+			plt.xlabel('time')
+			plt.ylabel('F_s(k,t)')
+			plt.title('Self-intermediate, k = ' + str(qnorm))
+			#plt.show()
+		return tval, SelfInt2
+		
+					
+	def FourierTrans(self,whichframe,qmax=0.3,verbose=True):
+		# Note to self: only low q values will be interesting in any case. 
+		# The stepping is in multiples of the inverse box size. Assuming a square box.
+		print "Fourier transforming positions"
+		dq=1.0/self.geom.Lx
+		nq=int(qmax/dq)
+		print "Stepping Fourier transform with step " + str(dq)+ ", resulting in " + str(nq)+ " steps."
+		qx, qy, qrad, ptsx, ptsy=self.makeQrad(dq,qmax,nq)
+		fourierval=np.zeros((nq,nq),dtype=complex)
+		for kx in range(nq):
+			for ky in range(nq):
+				# And, alas, no FFT since we are most definitely off grid. And averaging is going to kill everything.
+				fourierval[kx,ky]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:,0]+qy[ky]*self.rval[whichframe,:,1])))
+		plotval=np.real(fourierval)**2+np.imag(fourierval)**2
+		# Produce a radial averaging to see if anything interesting happens
+		nq2=int(2**0.5*nq)
+		valrad=np.zeros((nq2,))
+		for l in range(nq2):
+			valrad[l]=np.mean(plotval[ptsx[l],ptsy[l]])
+		
+		if verbose:
+			plt.figure()
+			plt.pcolor(qx,qy,plotval)
+			plt.colorbar()
+			plt.title('Positions')
+		return qrad,valrad
+	  
+	def makeQrad(self,dq,qmax,nq):
+		nq2=int(2**0.5*nq)
+		qmax2=2**0.5*qmax
+		qx=np.linspace(0,qmax,nq)
+		qy=np.linspace(0,qmax,nq)
+		qrad=np.linspace(0,qmax2,nq2)
+		# do this silly counting once and for all
+		binval=np.empty((nq,nq))
+		for kx in range(nq):
+			for ky in range(nq):
+				qval=np.sqrt(qx[kx]**2+qy[ky]**2)
+				binval[kx,ky]=round(qval/dq)
+		#print binval
+		ptsx=[]
+		ptsy=[]
+		# do the indexing arrays
+		for l in range(nq2):
+			pts0x=[]
+			pts0y=[]
+			for kx in range(nq):
+				hmm=np.nonzero(binval[kx,:]==l)[0]
+				for v in range(len(hmm)):
+					pts0y.append(hmm[v])
+					pts0x.append(kx)
+			ptsx.append(pts0x)
+			ptsy.append(pts0y)
+		return qx, qy, qrad, ptsx, ptsy
+	  
+	# Well, that seems to do fuck all
+	def getDynStruct(self,qmax,omegamax,verbose=True,nmax=50):
+		# Following the template of Wysocki, Winkler, Gompper
+		dq=1.0/self.geom.Lx
+		nq=int(qmax/dq)
+		if nq>nmax:
+			print "Coarsening q interval to reduce computational load"
+			nq=nmax
+			dq=qmax/nq
+		nq2=int(2**0.5*nq)
+		print "Stepping space Fourier transform with step " + str(dq)+ ", resulting in " + str(nq)+ " steps."
+		dom=1.0/(self.Nsnap*self.param.dt*self.param.dump['freq'])
+		nom1=int(omegamax/dom)
+		nom=2*int(omegamax/dom)+1
+		print "Stepping time Fourier transform with step " + str(dom)+ ", resulting in " + str(nom)+ " steps."
+		# Formally: S(q,omega) = 1/N int dt \rho_q(t) \rho*_q(0) e^i\omega t, where \rho_q(t) = \int dr \rho(r,t) e^iq r
+		# The second part is what we already had for the positional static structure factor
+		# For simplicity reasons, do the radial averaging before taking the time transform
+		qx, qy, qrad, ptsx, ptsy=self.makeQrad(dq,qmax,nq)
+		rhorad=np.zeros((self.Nsnap,nq2),dtype=complex)
+		for u in range(self.Nsnap):
+			if (u%10==0):
+				print u
+			fourierval=np.empty((nq,nq),dtype=complex)
+			for kx in range(nq):
+				for ky in range(nq):
+					# And, alas, no FFT since we are most definitely off grid. And averaging is going to kill everything.
+					fourierval[kx,ky]=np.sum(np.exp(1j*(qx[kx]*self.rval[u,:,0]+qy[ky]*self.rval[u,:,1])))
+			for l in range(nq2):
+				rhorad[u,l]=np.mean(fourierval[ptsx[l],ptsy[l]])
+		# Do our little shifted averaging procedure at constant q now
+		rhocorr=np.zeros((self.Nsnap,nq2),dtype=complex)
+		for u in range(self.Nsnap):
+			smax=self.Nsnap-u
+			rhocorr[u,:]=np.sum(rhorad[u:,:]*rhorad[:smax,:],axis=0)/smax
+		# Cute. Now do the time tranform:
+		DynStruct=np.zeros((nom,nq2),dtype=complex)
+		tval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
+		omega=np.empty((nom,))
+		for no in range(0,nom):
+			omega[no]=(-nom1+no)*dom
+			DynStruct[no,:]=np.einsum('ij,i', rhocorr, np.exp(1j*omega[no]*tval))
+		print omega
+		# OK, what have we got? Take the absolute value and look
+		PlotDynStruct=np.real(DynStruct)**2+np.imag(DynStruct)**2
+		if verbose:
+			plt.figure()
+			plt.pcolor(qrad,omega,np.log10(PlotDynStruct))
+			plt.colorbar()
+			plt.title('Dynamical structure factor')
 			
-	def getVelcorr(self,dx):
+			plt.figure()
+			plt.pcolor(qrad,tval,np.log10(np.real(rhocorr)))
+			plt.colorbar()
+			plt.title('Density correlation function')
+		if verbose:
+			plt.figure()
+			plt.plot(omega,np.log10(PlotDynStruct[:,0]),'.-k')
+			plt.plot(omega,np.log10(PlotDynStruct[:,1]),'.-r')
+			plt.plot(omega,np.log10(PlotDynStruct[:,5]),'.-g')
+			plt.plot(omega,np.log10(PlotDynStruct[:,10]),'.-b')
+			plt.xlabel('omega')
+			plt.ylabel('structure factor')
+			plt.title('Dynamical structure factor')
+			
+			plt.figure()
+			plt.plot(tval,np.log10(rhocorr[:,0]),'.-k')
+			plt.plot(tval,np.log10(rhocorr[:,1]),'.-g')
+			plt.plot(tval,np.log10(rhocorr[:,5]),'.-r')
+			plt.plot(tval,np.log10(rhocorr[:,10]),'.-b')
+			plt.title('Density correlation function')
+		return omega,qrad,DynStruct
+		
+	# Four point structure factor
+	def FourPoint(self,a,qmax=3.14,verbose=True,nmax=20):
+		# As written, this thing only works with tracer particles, since I need to track them through the whole simulation
+		# Following the template of Wysocki, Winkler, Gompper
+		dq=1.0/self.geom.Lx
+		nq=int(qmax/dq)
+		if nq>nmax:
+			print "Coarsening q interval to reduce computational load"
+			nq=nmax
+			dq=qmax/nq
+		nq2=int(2**0.5*nq)
+		print "Stepping space Fourier transform with step " + str(dq)+ ", resulting in " + str(nq)+ " steps."
+		qx, qy, qrad, ptsx, ptsy=self.makeQrad(dq,qmax,nq)
+		FourPoint=np.zeros((nq2,self.Nsnap))
+		for u in range(self.Nsnap):
+			if (u%10==0):
+				print u
+			smax=self.Nsnap-u
+			if self.Nvariable:
+				if self.tracer:
+					# First filter out the particles we are dealing with: only those that have moved less than distance a
+					if self.geom.periodic:
+						dists=np.sqrt(np.sum(self.geom.ApplyPeriodic3d(self.rtracers[u:,:,:]-self.rtracers[:smax,:,:])**2,axis=2))
+					else:
+						dists=np.sqrt(np.sum((self.rtracers[u:,:,:]-self.rtracers[:smax,:,:])**2,axis=2))
+					# So now replace those by 1s or 0s depending on how far they have gone
+					# this is 0 or 1 as we want, except for negative ones where it's gone far
+					hmm=1.0-np.round(dists/a)
+					# remove the negative ones
+					weights=0.5*(hmm+abs(hmm))
+					# Properly: S_4 = 1/N < \sum_n \sum_m w_n(t) w_m(t) e^{iq.(r_n(0)-r_m(0)}>_m,n,t
+					# For us this triple sum over m, n and time shift needs to be done here. 
+					# Then do the radial averaging in the last step.
+					# we can decompose the fourier transform into
+					# S_4 = 1/N < \sum_n w_n(t) e^{iq.r_n(0)} \sum_m w_m(t) e^{-iq r_m(0)}>_t
+					# So do these first, then radially average, finally take the t average 
+					fourierval=np.zeros((nq,nq,smax),dtype=complex)
+					fourierrad=np.zeros((nq2,smax),dtype=complex)
+					for kx in range(nq):
+						for ky in range(nq):
+							fourierval[kx,ky,:]=np.sum(weights*np.exp(1j*qx[kx]*self.rtracers[u:,:,0]+1j*qy[ky]*self.rtracers[u:,:,1]),axis=1)
+					for l in range(nq2):
+						fourierrad[l,:]=np.mean(fourierval[ptsx[l],ptsy[l],:])
+					# So now finally multiply and do the shifted average over time. PBC should have been sorted out right in dists? Or not?
+					# Should be real at that point
+					FourPoint[:,u]=np.real(np.sum(fourierrad*np.conjugate(fourierrad),axis=1))/(self.Ntracer*smax)
+				else:
+					print "Sorry: Four point function for dividing particles is ambiguous and currently not implemented!"
+			else:
+				# First filter out the particles we are dealing with: only those that have moved less than distance a
+				#print "before distances"
+				if self.geom.periodic:
+					dists=np.sqrt(np.sum(self.geom.ApplyPeriodic3d(self.rval[u:,:,:]-self.rval[:smax,:,:])**2,axis=2))
+				else:
+					dists=np.sqrt(np.sum((self.rval[u:,:,:]-self.rval[:smax,:,:])**2,axis=2))
+				# So now replace those by 1s or 0s depending on how far they have gone
+				# this is 0 or 1 as we want, except for negative ones where it's gone far
+				#print "before weights"
+				hmm=1.0-np.round(dists/a)
+				# remove the negative ones
+				weights=0.5*(hmm+abs(hmm))
+				# Properly: S_4 = 1/N < \sum_n \sum_m w_n(t) w_m(t) e^{iq.(r_n(0)-r_m(0)}>_m,n,t
+				# For us this triple sum over m, n and time shift needs to be done here. 
+				# Then do the radial averaging in the last step.
+				# we can decompose the fourier transform into
+				# S_4 = 1/N < \sum_n w_n(t) e^{iq.r_n(0)} \sum_m w_m(t) e^{-iq r_m(0)}>_t
+				# So do these first, then radially average, finally take the t average 
+				#print "before Fourier"
+				fourierval=np.zeros((nq,nq,smax),dtype=complex)
+				fourierrad=np.zeros((nq2,smax),dtype=complex)
+				for kx in range(nq):
+					for ky in range(nq):
+						fourierval[kx,ky,:]=np.sum(weights[:,:]*np.exp(1j*(qx[kx]*self.rval[u:,:,0])+qy[ky]*self.rval[u:,:,1]),axis=1)
+				#print "before radial average"
+				for l in range(nq2):
+					fourierrad[l,:]=np.mean(fourierval[ptsx[l],ptsy[l],:])
+				# So now finally multiply and do the shifted average over time. PBC should have been sorted out right in dists? Or not?
+				# Should be real at that point
+				#print "before fourpoint"
+				FourPoint[:,u]=np.real(np.sum(fourierrad*np.conjugate(fourierrad),axis=1))/(self.N*smax)
+		tval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
+		if verbose:
+			plt.figure()
+			vmap=LinearSegmentedColormap('test',cdict,N=nq2) 
+			for q in range(0,nq2):
+				plt.loglog(tval,FourPoint[q,:],'.-',color=vmap(q))
+			plt.xlabel('t')
+			plt.ylabel('FourPoint')			
+		return tval, FourPoint
+	
+	def FourierTransVel(self,whichframe,qmax=0.3,verbose=True):
+		# Note to self: only low q values will be interesting in any case. 
+		# The stepping is in multiples of the inverse box size. Assuming a square box.
+		print "Fourier transforming velocities"
+		dq=1.0/self.geom.Lx
+		nq=int(qmax/dq)
+		print "Stepping Fourier transform with step " + str(dq)+ ", resulting in " + str(nq)+ " steps."
+		qx, qy, qrad, ptsx, ptsy=self.makeQrad(dq,qmax,nq)
+		fourierval=np.zeros((nq,nq,2),dtype=complex)
+		for kx in range(nq):
+			for ky in range(nq):
+				# And, alas, no FFT since we are most definitely off grid. And averaging is going to kill everything.
+				fourierval[kx,ky,0]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:,0]+qy[ky]*self.rval[whichframe,:,1]))*self.vval[whichframe,:,0])
+				fourierval[kx,ky,1]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:,0]+qy[ky]*self.rval[whichframe,:,1]))*self.vval[whichframe,:,1])
+		# Sq = \vec{v_q}.\vec{v_-q}, assuming real and symmetric
+		# = \vec{v_q}.\vec{v_q*} = v
+		Sq=np.real(fourierval[:,:,0])**2+np.imag(fourierval[:,:,0])**2+np.real(fourierval[:,:,1])**2+np.imag(fourierval[:,:,1])**2
+		plotval_x=np.sqrt(np.real(fourierval[:,:,0])**2+np.imag(fourierval[:,:,0])**2)
+		plotval_y=np.sqrt(np.real(fourierval[:,:,1])**2+np.imag(fourierval[:,:,1])**2)
+		# Produce a radial averaging to see if anything interesting happens
+		nq2=int(2**0.5*nq)
+		valrad=np.zeros((nq2,2))
+		Sqrad=np.zeros((nq2,))
+		for l in range(nq2):
+			valrad[l,0]=np.mean(plotval_x[ptsx[l],ptsy[l]])
+			valrad[l,1]=np.mean(plotval_y[ptsx[l],ptsy[l]])
+			Sqrad[l]=np.mean(Sq[ptsx[l],ptsy[l]])
+		
+		if verbose:
+			plt.figure()
+			plt.pcolor(qx,qy,plotval_x)
+			plt.colorbar()
+			plt.title('Velocities - x')
+			plt.figure()
+			plt.pcolor(qx,qy,plotval_y)
+			plt.colorbar()
+			plt.title('Velocities - y')
+		return qrad,valrad,Sqrad
+	  
+	def getVelcorrSingle(self,whichframe,dx,xmax,verbose=True):
+		# start with the isotropic one - since there is no obvious polar region
+		# and n is not the relevant variable, and v varies too much
+		print "Velocity correlation function for frame " + str(whichframe)
+		npts=int(round(xmax/dx))
+		bins=np.linspace(0,xmax,npts)
+		velcorr=np.zeros((npts,))
+		velcount=np.zeros((npts,))
+		velav=np.sum(self.vval[whichframe,:,:],axis=0)/self.N
+		for k in range(self.N):
+			vdot=np.sum(self.vval[whichframe,k,:]*self.vval[whichframe,:,:],axis=1)
+			dr=self.geom.GeodesicDistance12(self.rval[whichframe,k,:],self.rval[whichframe,:,:])
+			drbin=(np.round(dr/dx)).astype(int)
+			for l in range(npts):
+				pts=np.nonzero(drbin==l)[0]
+				velcorr[l]+=sum(vdot[pts])
+				velcount[l]+=len(pts)
+		isdata=[index for index, value in enumerate(velcount) if value>0]
+		velcorr[isdata]=velcorr[isdata]/velcount[isdata] - np.sum(velav*velav)
+		if verbose:
+			fig=plt.figure()
+			isdata=[index for index, value in enumerate(velcount) if value>0]
+			plt.plot(bins[isdata],velcorr[isdata],'.-')
+			#plt.show()
+			plt.xlabel("r-r'")
+			plt.ylabel('Correlation')
+		return bins,velcorr
+	  
+	# This one is highly impractical
+	def getVelcorr(self,dx,verbose=True):
 		# start with the isotropic one - since there is no obvious polar region
 		# and n is not the relevant variable, and v varies too much
 		rangebin=0.5*np.sqrt(self.param.lx**2+self.param.ly**2)
@@ -248,14 +567,14 @@ class SimRun:
 			print velcorr0
 			velcorr[isdata]+=velcorr0[isdata]/velcorr0[0]
 		velcorr/=self.Nsnap
-		if self.debug:
+		if verbose:
 			fig=plt.figure()
 			isdata=[index for index, value in enumerate(velcount) if value>0]
 			plt.plot(bins[isdata],velcorr[isdata],'.-')
 			#plt.show()
 			plt.xlabel("r-r'")
 			plt.ylabel('Correlation')
-		return bins,velcorr,fig
+		return bins,velcorr
 	  
 	# Project our displacements or any stuff like that onto the eigenmodes of a hessian matrix, which has been calculated separately
 	# we will need self.eigval and self.eigvec
