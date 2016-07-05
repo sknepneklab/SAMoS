@@ -118,6 +118,7 @@
 #include "pair_polar_aligner.hpp"
 #include "pair_nematic_aligner.hpp"
 #include "pair_vicsek_aligner.hpp"
+#include "pair_velocity_aligner.hpp"
 #include "external_aligner.hpp"
 #include "external_ajpolar_aligner.hpp"
 #include "external_field_aligner.hpp"
