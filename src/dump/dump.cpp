@@ -502,6 +502,8 @@ void Dump::dump_data()
       m_out << " boundary ";
     if (m_params.find("stress") != m_params.end())
       m_out << " s_xx  s_xy  s_xz  s_yx  s_yy  s_yz  s_zx  s_zy  s_zz ";
+    if (m_params.find("shape_param") != m_params.end())
+      m_out << " shape_param";
     m_out << endl;
   }
   if (m_print_keys)
@@ -580,7 +582,7 @@ void Dump::dump_data()
       m_out << format(" %3d ") % p.get_parent();
     if (m_params.find("area") != m_params.end())
       m_out << format("%10.6f ") % p.get_A0();
-     if (m_params.find("cell_area") != m_params.end())
+    if (m_params.find("cell_area") != m_params.end())
     {
         if (m_nlist->has_faces())
           m_out << format("%10.6f ") % V.area;
@@ -612,7 +614,12 @@ void Dump::dump_data()
         m_out << format(" %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f ") % p.s_xx % p.s_xy % p.s_xz 
                                                                                    % p.s_yx % p.s_yy % p.s_yz 
                                                                                    % p.s_zx % p.s_zy % p.s_zz;
-      } 
+    }
+    if (m_params.find("shape_param") != m_params.end())
+    {
+      if (m_nlist->has_faces())
+        m_out << format("%10.6f ") % (V.perim/sqrt(V.area));
+    }
     m_out << endl;
   }
 }
