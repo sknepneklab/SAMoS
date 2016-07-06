@@ -142,6 +142,15 @@ public:
       }
       m_msg->write_config("integrator.brownian.tau",lexical_cast<string>(m_tau));
     }
+    if (param.find("velocity_align") == param.end())
+    {
+      m_velocity = false;
+    }
+    else
+    {
+      m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator. Assuming velocity alignment.");
+      m_velocity = true;
+    }
     m_stoch_coeff = sqrt(m_nu*m_dt);
   }
   
@@ -159,6 +168,7 @@ private:
   double  m_stoch_coeff;  //!< Factor for the stochastic part of the equation of motion (\f$ = \nu \sqrt{dt} \f$)
   bool    m_nematic;      //!< If true; assume that the system is nematic, and the velocity will switch direction randomly
   double  m_tau;          //!< Time scale for the direction flip for nematic systems (flip with probability dt/tau)
+  bool    m_velocity;     //!< If true, apply torque to velocity (this is used in simulations with velocity alignmant)
   
 };
 

@@ -112,11 +112,25 @@ class Configuration:
 		return self.x1,self.x2,self.e1,self.e2
 	
 	def rotateFrame(self,axis,rot_angle):
-		self.rval = self.geom.RotateVectorial(self.rval,axis0,-rot_angle)
-		self.vval = self.geom.RotateVectorial(self.vval,axis0,-rot_angle)
-		self.nval = self.geom.RotateVectorial(self.nval,axis0,-rot_angle)
+		self.rval = self.geom.RotateVectorial(self.rval,axis,-rot_angle)
+		self.vval = self.geom.RotateVectorial(self.vval,axis,-rot_angle)
+		self.nval = self.geom.RotateVectorial(self.nval,axis,-rot_angle)
 		self.nval=((self.nval).transpose()/(np.sqrt(np.sum(self.nval**2,axis=1))).transpose()).transpose()
 		self.vel = np.sqrt(self.vval[:,0]**2 + self.vval[:,1]**2 + self.vval[:,2]**2)
+		
+	# Need to redo boxes after something like that
+	def redoCellList(self):
+		del self.clist
+		# Create the cell list
+		cellsize=self.param.nlist_rcut
+		if cellsize>5*self.inter.sigma:
+			cellsize=5*self.inter.sigma
+			print "Warning! Reduced the cell size to manageable proportions (5 times mean radius). Re-check if simulating very long objects!"
+		self.clist=CellList(self.geom,cellsize)
+		# Populate it with all the particles:
+		for k in range(self.N):
+			self.clist.add_particle(self.rval[k,:],k)
+		#self.clist.printMe()
         
 	def getNeighbours(self,i,mult,dmax):
 		# Find potential neighbours from neighbour list first
@@ -128,11 +142,10 @@ class Configuration:
 			neighbours=[cneighbours[index] for index,value in enumerate(dist) if value <mult*dmax]
 		else:
 			neighbours=[cneighbours[index] for index,value in enumerate(dist) if value < mult*(self.radius[i]+self.radius[cneighbours[index]])]
-		neighbours.remove(i)
 		## Stupid one for debugging purposes:
 		#dist=self.geom.GeodesicDistance12(self.rval,self.rval[i,:])
 		#neighbours = [index for index, value in enumerate(dist) if value < mult*(self.radius[i]+self.radius[index])]
-		#neighbours.remove(i)
+		neighbours.remove(i)
 		#print "Contact neighbours: " + str(len(neighbours))
 		#print neighbours
 		drvec=self.geom.ApplyPeriodic2d(self.rval[neighbours,:]-self.rval[i,:])

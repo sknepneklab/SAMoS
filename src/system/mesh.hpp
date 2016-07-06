@@ -265,7 +265,7 @@ private:
   void compute_geometric_centre(int);
   
   //! Remove pair of edges
-  void remove_edge_pair(int);
+  bool remove_edge_pair(int);
   
   //! Compute face area
   double face_area(int);

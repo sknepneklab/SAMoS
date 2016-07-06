@@ -67,7 +67,7 @@ class Geometry(object):
 	def RotateVectorial(self,v,n,phi):
 		vrot=np.empty(np.shape(v))
 		np.shape(vrot)
-		rotmat=rotate_matrix_vectorial(n,phi)
+		rotmat=self.RotateMatrixVectorial(n,phi)
 		np.shape(rotmat)
 		vrot[:,0]=rotmat[:,0,0]*v[:,0]+rotmat[:,0,1]*v[:,1]+rotmat[:,0,2]*v[:,2]
 		vrot[:,1]=rotmat[:,1,0]*v[:,0]+rotmat[:,1,1]*v[:,1]+rotmat[:,1,2]*v[:,2]
@@ -130,7 +130,20 @@ class Geometry(object):
 	def ApplyPeriodic3d(self,dr):
 		dr[:,:,0]-=self.Lx*np.round(dr[:,:,0]/self.Lx)
 		dr[:,:,1]-=self.Ly*np.round(dr[:,:,1]/self.Ly)
-		dr[:,:,2]-=self.Lz*np.round(dr[:,:,3]/self.Lz)
+		dr[:,:,2]-=self.Lz*np.round(dr[:,:,2]/self.Lz)
+		return dr
+	  
+	# Sigh, looks like we need some specific x, y and z ones as well ...
+	def ApplyPeriodicX(self,dr):
+		dr-=self.Lx*np.round(dr/self.Lx)
+		return dr
+	
+	def ApplyPeriodicY(self,dr):
+		dr-=self.Ly*np.round(dr/self.Ly)
+		return dr
+	  
+	def ApplyPeriodicZ(self,dr):
+		dr-=self.Lz*np.round(dr/self.Lz)
 		return dr
 		
 
