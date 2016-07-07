@@ -278,6 +278,8 @@ class Param:
 				print 'Lx and Ly'
 				print self.lx
 				print self.ly  
+				if self.boxtype=='periodic':
+					self.constraint='plane_periodic'
 		except KeyError:
 			self.constraint='none'
 			self.const_params={}
@@ -312,6 +314,16 @@ class Param:
 		print self.pot_params
 		print "Aligner: " +self.aligner
 		print "J: " + str(self.J)
+		
+		# Something for our friends the cells
+		# As written, we only ever read the first potential ... generalise
+		#pair_potential vp { K = 1.0; gamma = 1.0; lambda = -6.283184000}
+		#pair_potential line_tension { lambda = 0.0 }
+		#pair_potential soft {k = 10.0; a=0.5}
+		if self.potential=='vp':
+			self.kappa=float(conf.key_words['pair_potential'][0].attributes[0].val)
+			self.gamma=float(conf.key_words['pair_potential'][0].attributes[1].val)
+			self.lambdaval=float(conf.key_words['pair_potential'][0].attributes[2].val)
 			
 		# NVE integrator
 		# Everything is based on the assumption that there is only one of these, currently ...
