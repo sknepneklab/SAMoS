@@ -502,6 +502,8 @@ void Dump::dump_data()
       m_out << " boundary ";
     if (m_params.find("stress") != m_params.end())
       m_out << " s_xx  s_xy  s_xz  s_yx  s_yy  s_yz  s_zx  s_zy  s_zz ";
+    if (m_params.find("shape_param") != m_params.end())
+      m_out << " shape_param";
     m_out << endl;
   }
   if (m_print_keys)
@@ -580,7 +582,7 @@ void Dump::dump_data()
       m_out << format(" %3d ") % p.get_parent();
     if (m_params.find("area") != m_params.end())
       m_out << format("%10.6f ") % p.get_A0();
-     if (m_params.find("cell_area") != m_params.end())
+    if (m_params.find("cell_area") != m_params.end())
     {
         if (m_nlist->has_faces())
           m_out << format("%10.6f ") % V.area;
@@ -612,7 +614,12 @@ void Dump::dump_data()
         m_out << format(" %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f ") % p.s_xx % p.s_xy % p.s_xz 
                                                                                    % p.s_yx % p.s_yy % p.s_yz 
                                                                                    % p.s_zx % p.s_zy % p.s_zz;
-      } 
+    }
+    if (m_params.find("shape_param") != m_params.end())
+    {
+      if (m_nlist->has_faces())
+        m_out << format("%10.6f ") % (V.perim/sqrt(V.area));
+    }
     m_out << endl;
   }
 }
@@ -909,6 +916,7 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkDoubleArray> ndir =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> dual_area =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> angle_def =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> num_neigh =  vtkSmartPointer<vtkDoubleArray>::New();
     
     ids->SetName("Id");
     ids->SetNumberOfComponents(1);
@@ -932,6 +940,8 @@ void Dump::dump_vtp(int step)
     dual_area->SetNumberOfComponents(1);
     angle_def->SetName("DeficitAngle");
     angle_def->SetNumberOfComponents(1);
+    num_neigh->SetName("NumNeigh");
+    num_neigh->SetNumberOfComponents(1);
       
     for (int i = 0; i < N; i++)
     {
@@ -957,6 +967,7 @@ void Dump::dump_vtp(int step)
         if (V.area > 1e-7)  dual_area->InsertNextValue(V.area);
          else  dual_area->InsertNextValue(0.0);
         angle_def->InsertNextValue(mesh.angle_factor(V.id));
+        num_neigh->InsertNextValue(V.n_edges);
       }
     }
     
@@ -971,6 +982,7 @@ void Dump::dump_vtp(int step)
     polydata->GetPointData()->AddArray(force);
     polydata->GetPointData()->AddArray(dir);
     polydata->GetPointData()->AddArray(ndir);
+    polydata->GetPointData()->AddArray(num_neigh);
     if (mesh.size() > 0)
     {
       polydata->GetPointData()->AddArray(dual_area);
@@ -1065,6 +1077,7 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkIntArray> ids =  vtkSmartPointer<vtkIntArray>::New();
     vtkSmartPointer<vtkDoubleArray> areas =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> perims =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkDoubleArray> p0 =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> circum_radius =  vtkSmartPointer<vtkDoubleArray>::New();
     ids->SetName("Id");
     areas->SetNumberOfComponents(1);
@@ -1074,6 +1087,8 @@ void Dump::dump_vtp(int step)
     perims->SetNumberOfComponents(1);
     circum_radius->SetName("CircumRadius");
     circum_radius->SetNumberOfComponents(1);
+    p0->SetName("p0");
+    p0->SetNumberOfComponents(1);
     
     PlotArea& pa = mesh.plot_area(m_dual_boundary);
     for (unsigned int f = 0; f < pa.points.size(); f++)
@@ -1094,12 +1109,14 @@ void Dump::dump_vtp(int step)
       faces->InsertNextCell(face);
       areas->InsertNextValue(pa.area[f]);
       perims->InsertNextValue(pa.perim[f]);
+      p0->InsertNextValue(pa.perim[f]/sqrt(pa.area[f]));
     }
     
     polydata->SetPolys(faces);
     polydata->GetCellData()->AddArray(ids);
     polydata->GetCellData()->AddArray(areas);
     polydata->GetCellData()->AddArray(perims);
+    polydata->GetCellData()->AddArray(p0);
   }
   
   // Write the file
