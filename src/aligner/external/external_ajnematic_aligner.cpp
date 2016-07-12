@@ -62,12 +62,13 @@ void ExternalAJNematicAlign::compute()
     {
       double vnorm=sqrt(pi.vx*pi.vx+pi.vy*pi.vy+pi.vz*pi.vz);
       if (vnorm>0){
-	  tau_x /=vnorm
-	  tau_y /=vnorm
-	  tau_z /=vnorm
+	  tau_x /=vnorm;
+	  tau_y /=vnorm;
+	  tau_z /=vnorm;
       }
       else {
 	cout << "Warning, singularity in velocities ..." << endl;
+      }
     }
     
     if (m_has_params)

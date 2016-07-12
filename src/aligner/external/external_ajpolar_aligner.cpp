@@ -60,13 +60,15 @@ void ExternalAJPolarAlign::compute()
     if (m_normalise)
     {
       double vnorm=sqrt(pi.vx*pi.vx+pi.vy*pi.vy+pi.vz*pi.vz);
+      //cout << vnorm;
       if (vnorm>0){
-	  tau_x /=vnorm
-	  tau_y /=vnorm
-	  tau_z /=vnorm
+	  tau_x /=vnorm;
+	  tau_y /=vnorm;
+	  tau_z /=vnorm;
       }
       else {
-	cout << "Warning, singularity in velocities ..." << endl;
+	//cout << "Warning, singularity in velocities ..." << endl;
+      }
     }
     
     if (m_has_params)
