@@ -44,7 +44,6 @@ void ExternalAJNematicAlign::compute()
   int N = m_system->size();
   double tau = m_tau;
   
-  
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
@@ -60,14 +59,12 @@ void ExternalAJNematicAlign::compute()
      // Do normalisation here if useful
     if (m_normalise)
     {
-      double vnorm=sqrt(pi.vx*pi.vx+pi.vy*pi.vy+pi.vz*pi.vz);
-      if (vnorm>0){
-	  tau_x /=vnorm;
-	  tau_y /=vnorm;
-	  tau_z /=vnorm;
-      }
-      else {
-	cout << "Warning, singularity in velocities ..." << endl;
+      double vnorm = sqrt(pi.vx*pi.vx + pi.vy*pi.vy + pi.vz*pi.vz);
+      if (vnorm > 0.0)
+      {
+        tau_x /= vnorm;
+	tau_y /= vnorm;
+	tau_z /= vnorm;
       }
     }
     
@@ -77,6 +74,5 @@ void ExternalAJNematicAlign::compute()
     pi.tau_x += ni_dot_vi*tau_x/tau;
     pi.tau_y += ni_dot_vi*tau_y/tau;
     pi.tau_z += ni_dot_vi*tau_z/tau;
-    
   }
 }

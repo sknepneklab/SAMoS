@@ -74,9 +74,12 @@ public:
     if (param.find("normalise") != param.end())
     {
       m_msg->msg(Messenger::INFO,"Velocity alignment is set to use normalised velocity vectors. Alignment strength is independent of v0.");
+      m_msg->write_config("aligner.external.ajnematic.normalise","true");
       m_normalise = true;
     }
-    else {
+    else 
+    {
+      m_msg->write_config("aligner.external.ajnematic.normalise","false");
       m_normalise = false;
     }
     if (param.find("tau") == param.end())
