@@ -87,8 +87,10 @@ void AngleHarmonicPotential::compute()
     if (c < -1.0) c = -1.0;
     
     double s = sqrt(1.0 - c*c);
-    if (s < 1e-3) s = 1e-3;
-    s = 1.0/s;
+    if (s < 1e-7)
+      s = 1e7;
+    else
+      s = 1.0/s;
 
     double dtheta = acos(c) - t0;
     double tk = k * dtheta;
