@@ -68,8 +68,8 @@ void IntegratorLangevin::integrate_baoab()
   double exp_dt = exp(-m_gamma*m_dt);
   double dt2 = 0.5*m_dt;
   vector<int> particles = m_system->get_group(m_group_name)->get_particles();
-  
-  // BAO steps
+
+  // BAOA steps
   for (int i = 0; i < N; i++)
   {
     int pi = particles[i];
@@ -83,6 +83,8 @@ void IntegratorLangevin::integrate_baoab()
     p.x += dt2*p.vx;
     p.y += dt2*p.vy;
     p.z += dt2*p.vz;
+    // Project everything back to the manifold
+    m_constrainer->enforce(p);
     // O step
     p.vx *= exp_dt;
     p.vy *= exp_dt;
@@ -94,6 +96,10 @@ void IntegratorLangevin::integrate_baoab()
       p.vy += stoch_fact*m_rng->gauss_rng(1.0);
       p.vz += stoch_fact*m_rng->gauss_rng(1.0);
     }
+    // A step
+    p.x += dt2*p.vx;
+    p.y += dt2*p.vy;
+    p.z += dt2*p.vz;
     // Project everything back to the manifold
     m_constrainer->enforce(p);
   }
@@ -105,22 +111,15 @@ void IntegratorLangevin::integrate_baoab()
   if (m_potential)
     m_potential->compute(m_dt);
   
-  // AB steps
+  // B step
   for (int i = 0; i < N; i++)
   {
     int pi = particles[i];
     Particle& p = m_system->get_particle(pi);
-    // A step
-    p.x += dt2*p.vx;
-    p.y += dt2*p.vy;
-    p.z += dt2*p.vz;
-    // B step
     double fact = dt2/p.mass;
     p.vx += fact*p.fx;
     p.vy += fact*p.fy;
     p.vz += fact*p.fz;
-    // Project everything back to the manifold
-    m_constrainer->enforce(p);
     p.age += m_dt;
   }
   // Update vertex mesh
@@ -155,6 +154,8 @@ void IntegratorLangevin::integrate_spv()
     p.x += dt2*p.vx;
     p.y += dt2*p.vy;
     p.z += dt2*p.vz;
+    // Project everything back to the manifold
+    m_constrainer->enforce(p);
   }
 
   // reset forces 
@@ -184,6 +185,9 @@ void IntegratorLangevin::integrate_spv()
     p.x += dt2*p.vx;
     p.y += dt2*p.vy;
     p.z += dt2*p.vz;
+    // Project everything back to the manifold
+    m_constrainer->enforce(p);
+    p.age += m_dt;
   }
 }
 
@@ -224,6 +228,8 @@ void IntegratorLangevin::integrate_bbk()
     p.x += m_dt*p.vx;
     p.y += m_dt*p.vy;
     p.z += m_dt*p.vz;
+    // Project everything back to the manifold
+    m_constrainer->enforce(p);
   }
 
   // reset forces 
@@ -250,6 +256,7 @@ void IntegratorLangevin::integrate_bbk()
       p.vx += stoch_fact*m_Rx[i];
       p.vy += stoch_fact*m_Ry[i];
       p.vz += stoch_fact*m_Rz[i];
+      p.age += m_dt;
     }
   }
 }
