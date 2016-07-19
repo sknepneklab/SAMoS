@@ -898,7 +898,7 @@ void System::enforce_periodic(Particle& p)
 {
   if (m_periodic)
   {
-    if (p.x < m_box->xlo) 
+    if (p.x <= m_box->xlo) 
     {
       p.x += m_box->Lx;
       p.ix--;
@@ -908,7 +908,7 @@ void System::enforce_periodic(Particle& p)
       p.x -= m_box->Lx;
       p.ix++;
     }
-    if (p.y < m_box->ylo)
+    if (p.y <= m_box->ylo)
     {
       p.y += m_box->Ly;
       p.iy--;
@@ -918,7 +918,7 @@ void System::enforce_periodic(Particle& p)
       p.y -= m_box->Ly;
       p.iy++;
     }
-    if (p.z < m_box->zlo)
+    if (p.z <= m_box->zlo)
     {
       p.z += m_box->Lz;
       p.iz--;

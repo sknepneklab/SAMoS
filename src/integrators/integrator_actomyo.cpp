@@ -86,7 +86,7 @@ void IntegratorActomyo::integrate()
         if (l < min_dist && pj.get_type() == m_mysoin_site_type)  // Type 3 is active site on myosin
         {
           min_dist = l;
-          min_j = j;
+          min_j = pj.get_id();  // id of the closest neighbour
           found = true;
         }
       }
