@@ -84,8 +84,9 @@ void PopulationActomyosin::divide(int t)
           }
         }
         if (min_dist < m_re)  // If the closest "detached" bead is within cutoff distance re
-          if (find(to_attach.begin(),to_attach.end(),min_id) == to_attach.end())
-            to_attach.push_back(min_id);
+          to_attach.push_back(min_id);
+          //if (find(to_attach.begin(),to_attach.end(),min_id) == to_attach.end())
+          //  to_attach.push_back(min_id);
       }
       if (pi.get_type() == m_type_a)
         to_detach.push_back(pi.get_id());
