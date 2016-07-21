@@ -138,22 +138,10 @@ public:
     }
     m_msg->write_config("population.actomyosin.re",lexical_cast<string>(m_re));
     
-    if (param.find("attached_type") == param.end())
-    {
-      m_msg->msg(Messenger::WARNING,"Actomyosin population control. No type of attachment bead set. Using default 3.");
-      m_type_a = 3;
-    }
-    else
-    {
-      m_msg->msg(Messenger::INFO,"Actomyosin population control. Setting type of attachment bead "+param["attached_type"]+".");
-      m_type_a = lexical_cast<int>(param["attached_type"]);
-    }
-    m_msg->write_config("population.actomyosin.attached_type",lexical_cast<string>(m_type_a));
-    
     if (param.find("detached_type") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Actomyosin population control. No type of detached bead set. Using default 4.");
-      m_type_d = 4;
+      m_type_d = 3;
     }
     else
     {
@@ -162,6 +150,18 @@ public:
     }
     m_msg->write_config("population.actomyosin.detached_type",lexical_cast<string>(m_type_d));
    
+    if (param.find("attached_type") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Actomyosin population control. No type of attachment bead set. Using default 3.");
+      m_type_a = 4;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Actomyosin population control. Setting type of attachment bead "+param["attached_type"]+".");
+      m_type_a = lexical_cast<int>(param["attached_type"]);
+    }
+    m_msg->write_config("population.actomyosin.attached_type",lexical_cast<string>(m_type_a));
+
     if (param.find("actin_type") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Actomyosin population control. No type of actin bead set. Using default 1.");
