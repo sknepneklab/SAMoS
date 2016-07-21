@@ -43,26 +43,6 @@ def plot_radial(*fils):
         axi.show()
         time.sleep(0.05)
 
-## we are using numpys .npz now
-#def plot_radial_all(fglob, *fdirs):
-    #fig = plt.figure()
-    ##axi = fig.add_subplot(111)
-    #npzset = []
-    #for fd in fdirs:
-        #npzset.append([])
-    #npzset.append( sorted(glob(path.join(fd, fglob))) )
-
-    #axi = plt
-    #for i, fi in enumerate(npzset[0]):
-        #data = np.load(fi)
-        #xs = data['rspace']
-        #assert len(xs) > 1
-        #xdiff = xs[1] - xs[0]
-        #x = xs[:-1] + xdiff/2
-        #rad = data['radial_pressure']
-        #axi.plot(x, rad, marker='o')
-        ##axi.draw()
-        #time.sleep(0.05)
 def _outnum(name):
     name = path.basename(name)
     bname, _ = path.splitext(name)
@@ -135,8 +115,8 @@ def avg_pressures(fglob='stresses*.pkl'):
         plt.plot(xsteps, avgfs, label='average vertex force', marker='o')
     plt.legend()
 
-#def castresses(dira, dirb):
-    #fglob
+def castresses(dira, dirb):
+    fglob
 
 @defaultsave
 def avg_stresses(stname='virial', fglob='stresses*.pkl'):
@@ -250,6 +230,16 @@ def _testspace():
     plt.plot(rs1, y1)
     plt.plot(rs2, y2)
     plt.show()
+
+### newfunctions ###
+# just for plotting, no reading
+@defaultsave
+def nttplot(ntt):
+    x = ntt.keys()
+    y = ntt.values()
+    plt.plot(x, y)
+    plt.xlabel('Shape index')
+    plt.ylabel('No. of T1 transitions in 2000 timesteps with v0=0.2')
 
 
 if __name__=='__main__':

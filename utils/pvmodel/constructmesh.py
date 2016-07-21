@@ -129,7 +129,7 @@ def addtype(ifile):
 
 # cut a piece of an existing input dat file
 #constructmesh.py circleslice epithelial_equilini.dat 
-def circleslice(ifile, radius=5.5, boundary=False,  center=[0.,0.,0.]):
+def circleslice(ifile, radius=5.5, boundary=False,  center=[0.,0.,0.], condition='annulus'):
     rdat = ReadData(ifile)
     keys = rdat.keys
     x = np.array(rdat.data[keys['x']])
@@ -141,10 +141,16 @@ def circleslice(ifile, radius=5.5, boundary=False,  center=[0.,0.,0.]):
         outd[k] = []
     for i, xval in enumerate(x):
         cd= norm(center - np.array([x[i],y[i],z[i]]))
-        if cd < radius:
-            # keep this line
-            for kn, kv in keys.items():
-                outd[kn].append( rdat.data[kv][i] )
+        if condition=='circle':
+            if cd > radius:
+                continue
+        elif condition=='annulus':
+            if cd < radius:
+                continue
+
+        # keep this line
+        for kn, kv in keys.items():
+            outd[kn].append( rdat.data[kv][i] )
     # fix the ids
     ids = range(len(outd.values()[0]))
     lz = ids[-1] +1
@@ -210,7 +216,6 @@ single.call = ['single( nsides )']
 
 
 if __name__=='__main__':
-    import argparse
 
     args = sys.argv[1:]
     nargs = len(args)
@@ -251,5 +256,6 @@ if __name__=='__main__':
         with open('test.dat', 'w') as fo:
             print outd
             io.datdump(outd, fo)
+
 
 

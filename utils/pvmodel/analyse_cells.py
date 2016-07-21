@@ -60,22 +60,45 @@ def hash_function(f, linspace):
 
 
 import glob
+def f_outnum(dataf):
+        inp_dir, base_file = path.split(dataf)
+        base_name, ext = path.splitext(base_file)
+        outnum= base_name.split('_')[-1]
+        return outnum 
+
 # The template senario
 class Senario(object):
     def __init__(self, args):
         # Use the args object from argsparse and add to it as necessary to keep
         #  track of all the parameters
         self.args= args
+        # Declare tracking variables
+        self.outnum=None
+        self.inp_dir=None
+        self.dataf=None
+        self.fid = 0
+        # Glob and slice dataset
+        self.infiles =self._process_input(args)
 
+        self.numf = len(self.infiles)
+        self.alog = 'analysis.log'
+
+    def _process_input(self, args):
         inp_file = args.input
-        self.infiles = sorted(glob.glob(inp_file))
-        if self.infiles == []:
+        infiles = sorted(glob.glob(inp_file))
+        if infiles == []:
             print 'Did not find any files using %s', inp_file
             sys.exit()
 
-        self.fid = 0
-        self.numf = len(self.infiles)
-        self.alog = 'analysis.log'
+        if not (args.start or args.stop):
+            return infiles
+        # Use the start and stop numbers to cut down the input files ot a managable number
+        onums = map(lambda s: int(f_outnum(s)), infiles)
+        starti = onums.index(args.start) if args.start else 0
+        stopi = onums.index(args.stop)+1 if args.stop else len(onums)
+        infiles = infiles[starti:stopi]
+        return infiles
+
 
     def __iter__(self):
         return self
@@ -84,7 +107,8 @@ class Senario(object):
         step = self.args.step
         if self.fid < self.numf:
             self.dataf = self.infiles[self.fid]
-            self.outnum = self._outnum() # must call this function
+            self.inp_dir, base_file = path.split(self.dataf)
+            self.outnum = f_outnum(self.dataf)
             print 'working on file number ', self.outnum
             try:
                 self._operate()
@@ -95,14 +119,6 @@ class Senario(object):
         else:
             self._finishup()
             raise StopIteration()
-
-    def _outnum(self):
-        inp_dir, base_file = path.split(self.dataf)
-        self.args.inp_dir = inp_dir
-        base_name, ext = path.splitext(base_file)
-        outnum= base_name.split('_')[-1]
-        self.args.outnum = outnum
-        return outnum
 
     def _operate(self):
         pass # the code to execure on each data file
@@ -118,11 +134,19 @@ class Senario(object):
 
     def _name_vtp(self, name, i=None):
         args= self.args
-        outname = name + args.outnum
+        outname = name + self.outnum
         if i:
              outname += '_' + str(i) 
         outname += '.vtp'
         return path.join(args.dir, outname)
+
+    def _read_pv(self):
+        rdat = ReadData(self.dataf)
+        facefile = path.join(self.inp_dir, 'faces_' + self.outnum + '.fc')
+        simp, _ = io.readfc(facefile)
+        pv = PVmesh.datbuild(rdat, simp)
+        #pv = PVmesh.datbuild(rdat)
+        return pv
 
 
 # template for Tracker objects
@@ -174,8 +198,69 @@ class SPickler(Tracker):
         with open(self.foutname, 'wb') as fo:
             pickle.dump(pv.stresses, fo)
 
+class Transitions(Senario):
+    def __init__(self, args):
+        super(Transitions, self).__init__(args)
+        # we need to start keeping track of all the pv objects we read in
+        self.helist= OrderedDict()
+        self.prevon = None
+        self.totalt1 = 0
 
-set_choice = [844, 707, 960, 606, 958, 801, 864, 859, 870, 302, 500]
+    def _operate(self):
+        args = self.args
+        outnum = self.outnum
+
+        # basic setup
+        facefile = path.join(self.inp_dir, 'faces_' + self.outnum + '.fc')
+        simp, _ = io.readfc(facefile)
+        #self._handle_constants(pv)
+        curr = self._halfedges(simp)
+        prev = self.helist[self.prevon] if self.prevon else None
+        self.helist[outnum] = curr 
+
+        # Now we need to write transition tracking code which takes a list of vertex meshes
+        # and finds the T1 transitions
+        if self.fid == 0:
+            pass # we need two data sets to compare
+        else:
+
+            # the new connections 
+            gained= curr- prev
+            lost = prev - curr
+            try:
+                assert len(gained) % 2 == 0
+                #assert len(gained) == len(lost)
+            except AssertionError:
+                # suppose that the condition only fails when we have boundary movement
+                # find all the pairs
+                rem= []
+                for he in gained:
+                    her = (he[1], he[0])
+                    if her not in gained:
+                        print he
+                        rem.append(he)
+                for he in rem:
+                    gained.remove(he)
+
+            # two halfedges for every edge
+            nt1 = len(gained)/2
+            print 'no. of t1 transitions'
+            print nt1
+            self.totalt1 += nt1
+
+        self.prevon = outnum # the previous outnum
+
+    def _finishup(self):
+        print 'total t1 transitions', self.totalt1
+
+
+    def _halfedges(self, simp):
+        lamhedges = lambda si: zip(si, np.roll(si, -1))
+        hearr = np.array(map(lamhedges, simp))
+        # all halfedges
+        hearr= hearr.reshape(-1, hearr.shape[-1])
+        return set(map(tuple, hearr))
+
 class Stress_Senario(Senario):
     def __init__(self, args):
         super(Stress_Senario, self).__init__(args)
@@ -195,17 +280,9 @@ class Stress_Senario(Senario):
         self.glo = FPickler(os.path.join(args.dir, 'avg'))
         self.pkr = SPickler(os.path.join(args.dir, 'stresses'))
 
-    def _read_pv(self):
-        rdat = ReadData(self.dataf)
-        facefile = path.join(args.inp_dir, 'faces_' + args.outnum + '.fc')
-        simp, _ = io.readfc(facefile)
-        pv = PVmesh.datbuild(rdat, simp)
-        #pv = PVmesh.datbuild(rdat)
-        return pv
-
     def _operate(self):
         args = self.args
-        outnum = self._outnum()
+        outnum = self.outnum
         omega = self.omega
 
         pv = self._read_pv()
@@ -291,10 +368,7 @@ class Stress_Senario(Senario):
             print 'the name of one stress output ', wlout
             wr.write_stress_ellipses(pv, wlout, pv.stress)
 
-if __name__=='__main__':
-
-    epidat = '/home/dan/cells/run/soft_rpatch/epithelial_equilini.dat'
-
+def process_commands():
     parser = argparse.ArgumentParser()
  
     parser.add_argument("-i", "--input", type=str, default='cell*.dat', help="Input dat file")
@@ -305,9 +379,12 @@ if __name__=='__main__':
     parser.add_argument("-k", type=float, default=1., help='Area constant')
     parser.add_argument("-g", '--gamma', type=float, default=0., help='Perimeter constant')
     parser.add_argument("-L",  type=float, default=0., help='Contact length constant')
+    parser.add_argument("-a0",  type=float, default=3., help='Give the target area explicitely')
     parser.add_argument("-w", type=str, default='', 
             help='A list containing start finish and step for wl values')
     parser.add_argument('-step', type=int, default=1, help='Step through time')
+    parser.add_argument('-start', type=int, default=None, help='Start number')
+    parser.add_argument('-stop', type=int, default=None, help='Stop number')
     parser.add_argument('-kf', "--kernel", type=str, default='quartic',
             help = 'the type of smoothing function to use')
     parser.add_argument('--scale', type=float, default=1., 
@@ -321,17 +398,23 @@ if __name__=='__main__':
             help='Only perform simple stress calculation')
     parser.add_argument("--hardy", action='store_true', 
             help='Turn on Hardy stress calculation')
-    parser.add_argument("--exclude", action='store_true', 
+    parser.add_argument("--include", action='store_true', default=False,
             help='Mirrors exclude_boundary flag in samso')
-    #parser.add_argument("--norm", action='store_true', 
-            #help='Noramlize stress ellipses')
-
+    # flags for wildly changing the type of analysis
+    parser.add_argument("--trans", action='store_true',
+            help='Identify transitions.')
+    parser.add_argument("--all", type=str, default=None,
+            help='Run some analysis on every sub-directory')
 
     args = parser.parse_args()
+    
+    # cleanup
+    args.exclude = not args.include 
 
-    if not os.path.exists(args.dir):
-        os.mkdir(args.dir)
 
+    return args 
+
+def configuration(args):
     # find that configuration file
     if '*' in args.conf:
         # probably gave a regular expression to find the configuration file
@@ -353,18 +436,67 @@ if __name__=='__main__':
                 args.exclude = True
     except KeyError:
         raise
+    
+    #target perimeter
+    tperim = -args.L/args.gamma
+    print 'target perimeter', tperim
+    sindex= tperim / np.sqrt(args.a0)
+    print 'shape index', sindex
+    args.sindex = sindex
 
+    return args
+
+
+def print_parameters():
     print 'vertex model parameters'
     print 'k ', args.k
     print 'gamma ',  args.gamma
     print 'L ',args.L
     print 'Excluding the boundary:', args.exclude
-    print 'Using the cell centroids for stress calculation:', args.centroid
     if args.w:
         print 'Calculating stress for wl = ', range(*eval(args.w))
+    print
 
-    stressrun = Stress_Senario(args)
-    stressrun.save_parameters()
-    for _ in stressrun: pass
+if __name__=='__main__':
+
+    epidat = '/home/dan/cells/run/soft_rpatch/epithelial_equilini.dat'
+
+    args = process_commands()
+
+    #stressrun.save_parameters()
+    if not args.all:
+        
+        if not os.path.exists(args.dir):
+            os.mkdir(args.dir)
+        configuration(args)
+        print_parameters()
+        if args.trans:
+            stressrun = Transitions(args)
+        else:
+            stressrun = Stress_Senario(args)
+        for _ in stressrun: pass
+    else:
+        # Want to be able to iterate over all folders in a directory, run analyse and collect data
+        print 'ntt'
+        ntt = OrderedDict()
+        import opdir as op
+        def macro():
+            configuration(args)
+            print_parameters()
+            stressrun = Transitions(args)
+            for _ in stressrun: pass
+            ntrans = stressrun.totalt1
+            ntt[args.sindex] = ntrans
+        op.diriterate(macro, args.all)
+        print ntt
+
+        import cmplotting as cm
+        cm.nttplot(ntt)
+
+
+
+
+    
+
 
 
