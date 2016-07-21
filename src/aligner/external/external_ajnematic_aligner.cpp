@@ -44,7 +44,6 @@ void ExternalAJNematicAlign::compute()
   int N = m_system->size();
   double tau = m_tau;
   
-  
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
@@ -57,12 +56,23 @@ void ExternalAJNematicAlign::compute()
     double tau_y = pi.nz*pi.vx - pi.nx*pi.vz;
     double tau_z = pi.nx*pi.vy - pi.ny*pi.vx;
     
+     // Do normalisation here if useful
+    if (m_normalise)
+    {
+      double vnorm = sqrt(pi.vx*pi.vx + pi.vy*pi.vy + pi.vz*pi.vz);
+      if (vnorm > 0.0)
+      {
+        tau_x /= vnorm;
+	tau_y /= vnorm;
+	tau_z /= vnorm;
+      }
+    }
+    
     if (m_has_params)
       tau = m_type_params[pi.get_type()].tau;
     
     pi.tau_x += ni_dot_vi*tau_x/tau;
     pi.tau_y += ni_dot_vi*tau_y/tau;
     pi.tau_z += ni_dot_vi*tau_z/tau;
-    
   }
 }

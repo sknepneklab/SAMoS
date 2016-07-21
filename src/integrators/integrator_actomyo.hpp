@@ -120,6 +120,17 @@ public:
       m_mysoin_site_type = lexical_cast<int>(param["myosin_site"]);
     }
     m_msg->write_config("integrator.actomyo.myosin_site",lexical_cast<string>(m_actin_type));
+    if (param.find("active_cutoff") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Actomyo dynamics integrator. Active force cutoff was not set. Using default value 1.0.");
+      m_active_cut = 1.0;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Actomyo dynamics integrator. Active force cutoff set to "+param["active_cutoff"]+".");
+      m_active_cut = lexical_cast<double>(param["active_cutoff"]);
+    }
+    m_msg->write_config("integrator.actomyo.active_cutoff",lexical_cast<string>(m_active_cut));
   }
   
   //! Propagate system for a time step
@@ -134,6 +145,8 @@ private:
   double  m_D;                 //!< Diffusion coefficient
   int     m_actin_type;        //!< Type of the particles representing actin
   int     m_mysoin_site_type;  //!< Type of the particles representing active site on myosin
+  double  m_active_cut;        //!< Cutoff for the range of active force
+
   
 };
 

@@ -39,16 +39,18 @@
 #include "population_actomyosin.hpp"
 
 
-/*! This function controls attachement, that is transition from the
- *  detached state (D) to the attached state (A). For simiplicity, we
- *  assume that this happens with proability set by parameter attachment_prob
+/*! This function controls attachement and detachement of myosin beads. This is a
+ *  achieved via chaning types of myosin head groups from attached (type "A") to detached (type "D")a
+ *  and vice versa. 
  *
+ *  \note In order to avoid head groups, e.g. chainging  their type from "A" to "D" and back to "A" in the 
+ *  single time step, we implement both processes in the same function using lists of indices.
  *  \param t current time step
  *  
 */
 void PopulationActomyosin::divide(int t)
 {
-  if (m_freq > 0 && t % m_freq == 0 && m_attach_prob > 0.0)  // Attempt D to A transition only at certain time steps
+  if ((m_freq > 0) && (t % m_freq == 0) && (m_attach_prob > 0.0))  // Attempt D to A transition only at certain time steps
   { 
     if (!m_system->group_ok(m_group_name))
     {
@@ -56,61 +58,53 @@ void PopulationActomyosin::divide(int t)
       throw runtime_error("Group mismatch.");
     }
     int N = m_system->size();
+    vector<int> to_attach;
+    vector<int> to_detach;
     for (int i = 0; i < N; i++)
     {
-      Particle& pi = m_system->get_particle(i); 
-      if (pi.get_type() == m_type_d)
-        if (m_rng->drnd() < m_attach_prob)
-          pi.set_type(m_type_a);
+      Particle& pi = m_system->get_particle(i);                
+      if (pi.get_type() == m_type_actin) 
+      {
+        vector<int>& neigh = m_nlist->get_neighbours(i);
+        double min_dist = 1e10;
+        int min_id = 0; 
+        for (unsigned int j = 0; j < neigh.size(); j++)  // Loop over all neigbours of actin bead i
+        {
+          Particle& pj = m_system->get_particle(neigh[j]);         
+          if (pj.get_type() == m_type_d)   // if the neighbour if of type "detached"
+          {
+            double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
+            m_system->apply_periodic(dx,dy,dz);
+            double r = sqrt(dx*dx + dy*dy + dz*dz);  // compute distance to the neighbour
+            if (r < min_dist)   // if this distance is below current minimum distance record it and the id of the bead itself
+            {
+              min_dist = r;
+              min_id = pj.get_id();
+            }
+          }
+        }
+        if (min_dist < m_re)  // If the closest "detached" bead is within cutoff distance re
+          to_attach.push_back(min_id);
+          //if (find(to_attach.begin(),to_attach.end(),min_id) == to_attach.end())
+          //  to_attach.push_back(min_id);
+      }
+      if (pi.get_type() == m_type_a)
+        to_detach.push_back(pi.get_id());
+    }
+    for (vector<int>::iterator it_a = to_attach.begin(); it_a != to_attach.end(); it_a++)
+      if (m_rng->drnd() < m_attach_prob)  // flip its type to "attached" with probability attach_prob.
+      {
+        Particle& pi = m_system->get_particle(*it_a);
+        pi.set_type(m_type_a);
+      }
+    for (vector<int>::iterator it_d = to_detach.begin(); it_d != to_detach.end(); it_d++)
+    {
+      Particle& pi = m_system->get_particle(*it_d);
+      double f = sqrt(pi.fx*pi.fx + pi.fy*pi.fy + pi.fz*pi.fz);
+      double prob = m_detach_prob*exp(m_lambda*f);
+      if (m_rng->drnd() < prob)  // flip its type to "attached" with probability attach_prob.
+        pi.set_type(m_type_d);  
     }
   }
 }
 
-/*! This function handles detachement. If myosin particle is more than \f$ r_e \f$ away from an
- *  actin bead, it will transition A to D with proability set by paramter detachement_prob.
- *  If it is within \f$ r_e \f$ from an actin bead the detachement proability will be
- *  \f$ a\exp(\lambda f) \f$ where \f$ a \f$ is the bare proability set by "detachement_prob",
- *  \f$ \lambda \f$ is the paramter set in the input file and \f$ f \f$ is the magnitude of the 
- *  force acting on the myosin bead.
- * 
- *  \param t current time step
- * 
-*/
-void PopulationActomyosin::remove(int t)
-{
-  if (!m_has_nlist)
-    throw runtime_error("Actomyosin population control requires neighbour list to be defined.");
-  if (m_freq > 0 && t % m_freq == 0 && m_detach_prob > 0.0)  // Attempt of the A to D transition at certain time steps
-  { 
-    int N = m_system->size();
-    for (int i = 0; i < N; i++)
-    {
-      Particle& pi = m_system->get_particle(i);
-      if (pi.get_type() == m_type_a)
-      {
-        vector<int>& neigh = m_nlist->get_neighbours(i);
-        double min_dist = 1e10;
-        for (unsigned int j = 0; j < neigh.size(); j++)
-        {
-          Particle& pj = m_system->get_particle(neigh[j]);
-          if (pj.get_type() == m_type_actin)
-          {
-            double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
-            m_system->apply_periodic(dx,dy,dz);
-            double r = sqrt(dx*dx + dy*dy + dz*dz);
-            if (r < min_dist)
-              min_dist = r;
-          }
-        }
-        double prob = m_detach_prob;
-        if (min_dist < m_re)
-        {
-          double f = sqrt(pi.fx*pi.fx + pi.fy*pi.fy + pi.fz*pi.fz);
-          prob *= exp(m_lambda*f);
-        }
-        if (m_rng->drnd() < prob)
-          pi.set_type(m_type_d);
-      }
-    }
-  }
-}

@@ -83,11 +83,14 @@ void IntegratorActomyo::integrate()
         double dx = pj.x - p.x, dy = pj.y - p.y, dz = pj.z - p.z; 
         m_system->apply_periodic(dx,dy,dz);
         double l = sqrt(dx*dx + dy*dy + dz*dz);
-        if (l < min_dist && pj.get_type() == m_mysoin_site_type)  // Type 3 is active site on myosin
+        if (l < m_active_cut)  // Only condider myosin beads that are within a cutoff distance
         {
-          min_dist = l;
-          min_j = j;
-          found = true;
+          if (l < min_dist && pj.get_type() == m_mysoin_site_type)  // Type 3 is active site on myosin
+          {
+            min_dist = l;
+            min_j = pj.get_id();  // id of the closest neighbour
+            found = true;
+          }
         }
       }
       if (found)
