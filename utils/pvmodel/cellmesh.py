@@ -118,7 +118,6 @@ def bond_intersection(x_c, wl, x_a, x_b):
             sys.exit('failed to determine bond intersection')
         return outa, outb, line
 
-
 def henonarea(areatri):
     s = sum(areatri)/2
     a,b,c = areatri
@@ -152,6 +151,7 @@ class Pymesh(object):
         pym = tri.pym
         lvec = {}
         ll = {}
+        lle = {}
         for eh in tri.edges():
             heh = tri.halfedge_handle(eh, 0)
             heho = tri.opposite_halfedge_handle(heh)
@@ -165,8 +165,10 @@ class Pymesh(object):
             nve = norm(vedge)
             ll[heh.idx()] = nve
             ll[heho.idx()] = nve
+            lle[eh.idx()] = nve
         self.lvec = lvec 
         self.ll = ll
+        self.lle = lle
 
     def store_llsquared(self):
         ll = self.ll
@@ -378,6 +380,51 @@ class NPolyMesh(PolyMesh, Pymesh):
             cl_dict[heho.idx()] = L
         return cl_dict
 
+    ## Rosettes
+    #def count_rosettes(self):
+        ## A rosette is a collection of two or more cell vertices close together
+        #rosed = {}
+        ## the critical distance that defines a rosette
+        #rdr = 0.01
+        ## we consider that the vertices making any mesh edge with length less than rdr
+        #shortedges = [k for k, v in self.lle.items() if v < rdr]
+        ## assign shortedges to vertices
+        ## each short edge can have a number of vertices and each vertex can have a
+        ##number of short edges
+        #semap = {}
+        #rosettes = []
+        #for eid in shortedges:
+            #he = self.halfedge_handle(eid, 0)
+            #vt = self.to_vertex_handle(he)
+            #vf = self.from_vertex_handle(he)
+            #semap[eid] = (vt.idx(), vf.idx())
+        #for eid, vset in semap.items():
+            #for vs in vset:
+
+        #vmap = []
+        #for eid, vset in semap.items():
+            #for vs in vset:
+                #if vs not in vmap:
+                    #vmap[vs] = [eid]
+                #else:
+                    #vmap[vs].append(eid)
+        ## group vertices
+        ## todo
+        #rosettes = []
+        #for vertex, eid in vmap.items():
+            #eids = [eid]
+            #va, vb = semap[eid]
+            #v = va if vertex != va else vb
+            #veids = vmap[v]
+            #if len(veid) > 1:
+                #neids = [e for e in veids if e is not in eids]
+            ## if neids is not zero, recurse
+            #if neids:
+                #pass
+                #print 'ok'
+            #else:
+                ## collect ids
+                #rosettes.append([va, vb])
 
 class NTriMesh(TriMesh, Pymesh):
 
@@ -454,8 +501,7 @@ class NTriMesh(TriMesh, Pymesh):
         mesh.vedgemap()
         # now map duals
         to_mesh_edge = {}
-        # tmp
-        #mesh.finalize()
+
         for vhid in tri.bulk:
             vhi = tri.vertex_handle(vhid)
             mfid = to_mesh_face[vhid]
@@ -546,9 +592,6 @@ class Vstress(object):
     def _parts(self):
         # suppose we always calculate stresses for the full tri_bulk at the moment
         # still need to save the clist I think
-        # yuck, throw away these nans and deal with ordered dicts
-        # they may be slower but the alteranative is to keep a numpy array
-        #  for values and one for ids. These nans where a terrible idea.
         self.nstress = OrderedDict()
         self.sstress = OrderedDict()
         self.pressure = OrderedDict()
