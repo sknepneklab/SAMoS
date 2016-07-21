@@ -172,14 +172,14 @@ public:
       m_msg->msg(Messenger::INFO,"Actomyosin population control. Setting type of actin bead "+param["actin_type"]+".");
       m_type_actin = lexical_cast<int>(param["actin_type"]);
     }
-    m_msg->write_config("population.actomyosin.actin_type",lexical_cast<string>(m_type_actin));     
+    m_msg->write_config("population.actomyosin.actin_type",lexical_cast<string>(m_type_actin));   
   }
   
   //! This funciton controls attachement (note: function name derives from the intial intent of the population classes to use to treat cell division)
   void divide(int);
   
   //! This function controls detachement
-  void remove(int);
+  void remove(int) { }
   
   //! Not used here
   void add(int t) { }
@@ -201,7 +201,7 @@ private:
   int m_type_d;                  //!< Type when detached
   int m_type_a;                  //!< Type when attached
   int m_type_actin;              //!< Type of the actin beads
-  
+
 };
 
 typedef shared_ptr<PopulationActomyosin> PopulationActomyosinPtr;
