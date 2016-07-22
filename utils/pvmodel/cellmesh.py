@@ -133,7 +133,27 @@ def henonarea(areatri):
 normal = np.array([0.,0., 1.])
 class Pymesh(object):
     # This object just holds methods
-        
+
+    # return the pair of vertices associated with an edge in any order
+    def getvpair(self, eid):
+        eh =self.edge_handle(eid)
+        assert eh.idx() >= 0
+        heh =self.halfedge_handle(eh, 0)
+        aux = frozenset([self.to_vertex_handle(heh).idx(), self.from_vertex_handle(heh).idx()])
+        return aux
+
+    def vedgemap(self):
+        tri = self
+        vedge = {}
+        for eh in tri.edges():
+            heh = tri.halfedge_handle(eh, 0)
+            vt = tri.to_vertex_handle(heh).idx()
+            vf = tri.from_vertex_handle(heh).idx()
+            vedge[(vt, vf)] = heh.idx()
+            heho = tri.halfedge_handle(eh, 1)
+            vedge[(vf, vt)] = heho.idx()
+        self.vedge = vedge
+
     def finalize(self):
         self._pythonise()
         self._helengths()
@@ -298,8 +318,6 @@ class Pymesh(object):
                 ehids.append(eh.idx())
         return set(ehids)
 
-
-
 # can I just subclass Trimesh / Polymesh
 
 class NPolyMesh(PolyMesh, Pymesh):
@@ -310,18 +328,7 @@ class NPolyMesh(PolyMesh, Pymesh):
         self._helengths()
         self.normal = normal
         
-    def vedgemap(self):
-        tri = self
-        vedge = {}
-        for eh in tri.edges():
-            heh = tri.halfedge_handle(eh, 0)
-            vt = tri.to_vertex_handle(heh).idx()
-            vf = tri.from_vertex_handle(heh).idx()
-            vedge[(vt, vf)] = heh.idx()
-            heho = tri.halfedge_handle(eh, 1)
-            vedge[(vf, vt)] = heho.idx()
-        self.vedge = vedge
-
+    
     def _set_face_properties(self):
         # organise the properties we will use
         # mesh area, mesh perimeter, angular defecit
@@ -508,6 +515,7 @@ class NTriMesh(TriMesh, Pymesh):
             mf = mesh.face_handle(mfid)
             nul = [nu.idx() for nu in mesh.fv(mf)]
             for jheh in tri.voh(vhi):
+                jeh = tri.edge_handle(jheh)
                 vhj = tri.to_vertex_handle(jheh)
                 vhjd = vhj.idx()
 
@@ -516,13 +524,11 @@ class NTriMesh(TriMesh, Pymesh):
                 inupre = inu-1 if inu != 0 else len(nul)-1
                 nupre = nul[inupre]
                 vedgek = (nupre, nuplus)
-                #if vedgek not in mesh.vedge:
-                    #print vedgek
-                    #continue
+                
                 mhehid = mesh.vedge[vedgek]
-                to_mesh_edge[jheh.idx()] = mhehid
-                #ht = tri.lvec[jheh.idx()]
-                #hm = mesh.lvec[mhehid]
+                meh = mesh.edge_handle(mesh.halfedge_handle(mhehid))
+                to_mesh_edge[jeh.idx()] = meh.idx()
+
         tri.to_mesh_edge = to_mesh_edge
 
         #### Gonna get rid of most of this at some point
@@ -555,17 +561,17 @@ class NTriMesh(TriMesh, Pymesh):
             halfcells[vhid] = halfcell
 
             # Add vertex
-            vhpt = tript[vhid]
-            mvh = mesh.add_vertex(PolyMesh.Point(*vhpt))
+            #vhpt = tript[vhid]
+            #mvh = mesh.add_vertex(PolyMesh.Point(*vhpt))
 
             # Add face
-            hcf = list(mverts[halfcell])
-            hcf.append(mvh)
-            mfh = mesh.add_face(hcf)
+            #hcf = list(mverts[halfcell])
+            #hcf.append(mvh)
+            #mfh = mesh.add_face(hcf)
 
-            to_boundary_mesh_vertex[vhid] = mvh.idx()
-            to_mesh_face[vhid] = mfh.idx()
-            to_tri_vertex[mfh.idx()] = vh.idx()
+            #to_boundary_mesh_vertex[vhid] = mvh.idx()
+            #to_mesh_face[vhid] = mfh.idx()
+            #to_tri_vertex[mfh.idx()] = vh.idx()
 
         # Assign the dictionaries to their appropriate object
         self.to_mesh_face = to_mesh_face
@@ -721,10 +727,8 @@ class PVmesh(object):
             diagnose(self.mesh)
 
         self.mesh._set_face_properties()
-        self._set_angular_defecit()
+        #self._set_angular_defecit()
 
-         #Use these through out the code in the future instead of idotpt(mesh, v_handle)
-         #So 0 corresponds to the triangulation and 1 corresponts to the vertex mesh
          # want to factor all this out
         self.meshes = {}
         self.meshes[0] = self.tri
@@ -743,6 +747,7 @@ class PVmesh(object):
         self.rcm = np.sum(triptarr, axis=0)/ltript
         self.rcmd = map(norm, triptarr - self.rcm)
 
+    # oou
     def _set_angular_defecit(self):
         tri = self.tri; mesh = self.mesh
         meshpt = mesh.pym
@@ -1546,7 +1551,8 @@ class PVmesh(object):
             vhih = tri.vertex_handle(vhi)
             struct = np.zeros((3,3))
             for jheh in tri.voh(vhih):
-                nuheh = tri.to_mesh_edge[jheh.idx()]
+                nueh = tri.to_mesh_edge[jheh.idx()]
+                nuheh = tri.halfedge_handle(nueh,0)
                 rnumu = mesh.lvec[nuheh]
                 bondouter = np.outer(rnumu,rnumu)/norm(rnumu)
                 struct += bondouter
@@ -1624,7 +1630,8 @@ class PVmesh(object):
             rij = tri.lvec[jheh.idx()]
             lij = norm(rij)
             # get the dual edge
-            nuheh = tri.to_mesh_edge[jheh.idx()]
+            nueh = tri.to_mesh_edge[jheh.idx()]
+            nuheh = tri.halfedge_handle(nueh,0)
             rnumu = mesh.lvec[nuheh]
             lmunu = norm(rnumu)
             #print 'area', 1/4. * lij * lmunu

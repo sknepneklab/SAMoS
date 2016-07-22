@@ -29,17 +29,17 @@ def dump(dd, fo, htag='#', outstr=None):
     ddv = dd.values()
     nr = len(ddv[0]) # assumption
     if not outstr:
-        outstr = ' %d\t ' + '%f\t '*(nc-1) + '\n' # assumption
+        outstr = '{}\t '*nc + '\n' 
     for i in range(nr):
-        tup = tuple([ddvi[i] for ddvi in ddv])
-        fo.write(outstr % tup)
+        dv = [d[i] for d in ddv]
+        fo.write(outstr.format(*dv))
 
 def datdump(dd, fo):
     htag = 'keys:'
     dump(dd, fo, htag=htag)
 
 # This only reads dumps of floats and ints
-def readdump(fo, firstc=int):
+def readdump(fo, firstc=float):
     headers = fo.next()[1:].split()
     dd = OrderedDict()
     for h in headers:
@@ -47,12 +47,7 @@ def readdump(fo, firstc=int):
     for line in fo:
         for i, dat in enumerate(line.split()):
             ev = float
-            if i is 0:
-                ev = firstc
-            try:
-                cdat = ev(dat)
-            except ValueError:
-                cdat = None
+            cdat = ev(dat)
             dd[headers[i]].append( cdat )
     return dd
 

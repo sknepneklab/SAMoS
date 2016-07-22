@@ -18,6 +18,8 @@ import argparse
 import writemesh as wr
 import os.path as path
 
+import glob
+
 divider = '###########  ############'
 
 # Define analysis routines here
@@ -58,8 +60,31 @@ def hash_function(f, linspace):
         return hf[i]
     return nf
 
+# template for Tracker objects
+class Tracker(object):
+    def __init__(self,fileo):
+        # setup
+        self.fileo =fileo
+        self.outd= OrderedDict()
+    
+    def update(self, pv, xxv):
+        fileo = self.fileo
+        foutname = '_'.join([fileo, xxv]) + '.pkl'
+        if verb: print 'saving radial data to ', foutname
+        self.foutname = foutname
+        self._update(pv)
 
-import glob
+    # overwrite this to change behaviour
+    def _update(self, pv):
+        pass
+    
+    def write_whole(self):
+        io.dump(self.outd, self.outf)
+
+    def cleanup(self):
+        self.outf.close()
+
+
 def f_outnum(dataf):
         inp_dir, base_file = path.split(dataf)
         base_name, ext = path.splitext(base_file)
@@ -148,31 +173,6 @@ class Senario(object):
         #pv = PVmesh.datbuild(rdat)
         return pv
 
-
-# template for Tracker objects
-class Tracker(object):
-    def __init__(self,fileo):
-        # setup
-        self.fileo =fileo
-        self.outd= OrderedDict()
-    
-    def update(self, pv, xxv):
-        fileo = self.fileo
-        foutname = '_'.join([fileo, xxv]) + '.pkl'
-        if verb: print 'saving radial data to ', foutname
-        self.foutname = foutname
-        self._update(pv)
-
-    # overwrite this to change behaviour
-    def _update(self, pv):
-        pass
-    
-    def write_whole(self):
-        io.dump(self.outd, self.outf)
-
-    def cleanup(self):
-        self.outf.close()
-
 import pickle
 # Can wrap the whole code in a try: finally: block.
 # This will ensure that relevent quantities are saved
@@ -198,6 +198,257 @@ class SPickler(Tracker):
         with open(self.foutname, 'wb') as fo:
             pickle.dump(pv.stresses, fo)
 
+# Object representing a T1 transition
+class Tone(object):
+
+    def __init__(self, vids, tstamp):
+        # the current state of transition
+        self.vids  = vids 
+        # the flipped state
+        self.xvids = None
+        # The number of times flipped
+        self.nx = 0
+        # the step number when we started tracking
+        self.tstamp = tstamp
+
+    def flipped(self):
+        return self.nx % 2 == 1
+
+    def flip(self, vids):
+        self.xvids = self.vids
+        self.vids = vids
+        self.nx +=  1
+
+# invert a dictionary
+def invert(dct):
+    return dict([(v,k) for k,v in dct.items()])
+
+# a collect functions which operate 
+#import collections.abc.MutableSequence as MutableSequence
+import collections
+import bisect
+class Tlist(collections.MutableMapping):
+
+    tcut = 0.1
+    ttrack = 0.8
+
+    def __init__(self, lst):
+        self.lst = lst
+        self.nt = 0
+
+    def __getitem__(self, i):
+        return self.lst[i]
+
+    def __setitem__(self, i, v):
+        self.lst[i] = v
+
+    #def insert(self, i, v):
+        #self.lst[i] = v
+
+    def __iter__(self):
+        return self
+
+    def __len__(self):
+        return len(self.lst)
+
+    def __delitem__(self, i):
+        del self.lst[i]
+
+    def append(self, tone):
+        assert self.keyinc not in self.lst
+        self.lst[self.keyinc] = tone
+        self.byvids[tone.vids] = self.keyinc
+        self.keyinc += 1
+
+    def remove(self, vpair):
+        i = self.byvids[vpair]
+        xvids = self.lst[i].xvids
+        if xvids and xvids in self.byvids:
+            del self.byvids[xvids]
+        del self.lst[i]
+        del self.byvids[vpair]
+
+    # helper methods for the populate and update functions
+    @staticmethod
+    def _find_short(pv):
+        lls = sorted(pv.mesh.lle.items(), key= lambda t: t[1])
+        eids, llen = zip(*lls)
+        short = eids[:bisect.bisect_left(llen, Tlist.ttrack)]
+        #short = eids[:bisect.bisect_left(llen, 3.1)]
+
+        rshort = []
+        dual_to_tri = invert(pv.tri.to_mesh_edge)
+        #assert set(dual_to_tri.keys()) == set(pv.tri.to_mesh_edge.values())
+        # Need to remove boundary trimesh edges
+        for se in short:
+            if se in dual_to_tri:
+                rshort.append(se)
+            else:
+                #print 'boundary', se
+                pass #boundary edge
+
+        pv.mesh.dual_to_tri = dual_to_tri
+        return rshort
+    @staticmethod
+    def _maketovpair(pv):
+        #dual_to_tri = invert(pv.tri.to_mesh_edge)
+        dual_to_tri = pv.mesh.dual_to_tri
+        return dict([(eid, pv.tri.getvpair(teid)) for eid, teid in dual_to_tri.items()])
+
+    # constructor which takes pv object
+    @classmethod
+    def populate(cls, pv, outnum):
+
+        short = cls._find_short(pv)
+        # dual to tri edges
+        tovpair = cls._maketovpair(pv)
+        lst = dict(enumerate([Tone(tovpair[eid], outnum) for eid in short]))
+        byvids = dict([(tone.vids, i) for i, tone in lst.items()])
+
+        print 'started tracking {} edges'.format(len(lst))
+        tt = cls(lst)
+
+        tt.last_tovpair = tovpair
+        tt.byvids = byvids
+        tt.keyinc = len(lst)
+        return tt
+
+    def get_aux(self, tri, vpair):
+        vid = tuple(vpair)
+        heh = tri.halfedge_handle(tri.vedge[vid])
+        oheh = tri.opposite_halfedge_handle(heh)
+        ft =tri.face_handle(heh)
+        fto = tri.face_handle(oheh)
+        adjv = [v.idx() for v in tri.fv(ft)]
+        adjvo = [v.idx() for v in tri.fv(fto)]
+        tquad = set(adjv).union(set(adjvo))
+        auxvids = frozenset(set(adjv).union(set(adjvo)) - vpair)
+        return auxvids
+
+    # now we need methods to update this list whenever edges change length or flip
+    def update(self, pv, outnum):
+        # setup
+        pv.tri.vedgemap()
+        tri = pv.tri; mesh = pv.mesh
+
+        # assume that any edge that is created on this step is below track
+        # Just check all edges every time to start with
+        short = Tlist._find_short(pv)
+
+        # Important! remeber that the mesh ids may not be consistent
+        #  We are sure that the cell centre ids are consistent, that is all.
+
+        tovpair = Tlist._maketovpair(pv)
+
+        vidsls = [tovpair[eid] for eid in short]
+        # look for new pairs of vertices
+        newvids = set(tovpair.values()) - set(self.last_tovpair.values())
+        # find which vid pairs that the new pairs correspond to (flips have occured)
+        print 'new', len(newvids)
+        unaccounted = []
+        for vpair in newvids:
+            # Either auxvids is being tracked or 
+            auxvids = self.get_aux(tri, vpair)
+            if vpair in self.byvids:
+                continue
+            if auxvids not in self.byvids:
+                unaccounted.append(vpair)
+                continue
+            tt = self.lst[self.byvids[auxvids]]
+            # Keeping both references to the transition object
+            self.byvids[vpair] = self.byvids[auxvids]
+            tt.flip(vpair)
+        
+        ### deal with the unaccounted edges
+        ppairs = []
+        pairwith = newvids - set(unaccounted)
+        #print pairwith
+        #print unaccounted
+        for vpair in unaccounted:
+            # pair them up by finding the common vertices
+            va, vb = vpair
+            pairw = None
+            for pair in pairwith:
+                if va in pair or vb in pair:
+                    pairw = pair
+                    break
+            if not pairw:
+                print 'warning, was looking for a pair of edges, only found 1'
+                print 'Need to track more egdes'
+                print vpair
+            ppairs.append((vpair, pairw))
+
+        # Now we have the edge pairs, going to attempt to flip both of them and
+        # see which pair of flips recovers a pair of edges which are being tracked
+
+        # we want to find the flipped edge of the second pair given that the first
+        # edge is flipped
+        
+        # going to assume that the connectivity of the triangulation is such that
+        #  there is a loop of 5 vertices with two central edges.
+        for vpair, pairw in ppairs:
+            vd, vb = vpair # this the edge we want to flip
+            ive, ivb = pairw # the edge we want to ignore (pre-flip)
+            # we can obtain all the vertices in the loop by tracing the three
+            #  faces associated with the two internal edges
+            hehv_id= tri.vedge[(vd,vb)]
+            hehi_id= tri.vedge[(ive, ivb)]
+            hehv =tri.halfedge_handle(hehv_id)
+            hehi =tri.halfedge_handle(hehi_id)
+            # find the third face
+            ovid = tri.opposite_halfedge_handle(hehv)
+            oiid = tri.opposite_halfedge_handle(hehi)
+            hhfaces = [hehv, hehi, ovid, oiid] # should be one duplicate face
+            loop = set()
+            for heh in hhfaces:
+                fh = tri.face_handle(heh)
+                verts = [v.idx() for v in tri.fv(fh)]
+                loop = loop.union( set(verts) )
+            assert len(loop) == 5
+            # now identify the remaining edge by process of elimination
+            original = loop - set(pairw)
+            original = original- set(vpair)
+            original = frozenset(original)
+            # finally found the missing transition so count it and remove it
+            assert original in self.byvids
+            self.remove(original)
+            self.nt += 1
+
+
+        # resolve edges which aren't short anymore
+        for tone in self.lst.values():
+            #tmp 
+            try:
+                hehid = tri.vedge[tuple(tone.vids)]
+            except KeyError:
+                print 'dropped a tone object'
+                self.remove(tone.vids)
+                continue
+            el = tri.ll[hehid]
+            if el > Tlist.tcut:
+                if tone.xvids:
+                    tri.ll[hehid]
+                    # count this transition
+                    self.nt += 1
+                self.remove(tone.vids)
+
+        #Find which of the entries in short are newvids and which arent
+        shortpairs = [tovpair[eid] for eid in short]
+        newshort = set(shortpairs) - set(newvids)
+        #find the ones we aren't tracking yet
+        untracked= newshort - set(self.byvids.keys())
+        print 'transitions', self.nt
+        print 'untracked', len(untracked)
+        print 'unaccounted', len(unaccounted)
+        # track any short edges
+        for i, vpair in enumerate(untracked):
+            self.append(Tone(vpair, outnum))
+
+        # finishup
+        self.last_tovpair = tovpair
+
+
+
 class Transitions(Senario):
     def __init__(self, args):
         super(Transitions, self).__init__(args)
@@ -206,53 +457,34 @@ class Transitions(Senario):
         self.prevon = None
         self.totalt1 = 0
 
+        # set the length under which we start to track edges
+        self.ltracking = 0.1
+        # main object for dealing with transistions
+        self.tlist = None
+
     def _operate(self):
         args = self.args
         outnum = self.outnum
 
         # basic setup
+        rdat = ReadData(self.dataf)
         facefile = path.join(self.inp_dir, 'faces_' + self.outnum + '.fc')
         simp, _ = io.readfc(facefile)
-        #self._handle_constants(pv)
-        curr = self._halfedges(simp)
-        prev = self.helist[self.prevon] if self.prevon else None
-        self.helist[outnum] = curr 
-
-        # Now we need to write transition tracking code which takes a list of vertex meshes
-        # and finds the T1 transitions
+        pv = PVmesh.datbuild(rdat, simp)
         if self.fid == 0:
-            pass # we need two data sets to compare
+            self.tlist = Tlist.populate(pv, outnum)
         else:
+            self.tlist.update(pv, outnum)
 
-            # the new connections 
-            gained= curr- prev
-            lost = prev - curr
-            try:
-                assert len(gained) % 2 == 0
-                #assert len(gained) == len(lost)
-            except AssertionError:
-                # suppose that the condition only fails when we have boundary movement
-                # find all the pairs
-                rem= []
-                for he in gained:
-                    her = (he[1], he[0])
-                    if her not in gained:
-                        print he
-                        rem.append(he)
-                for he in rem:
-                    gained.remove(he)
-
-            # two halfedges for every edge
-            nt1 = len(gained)/2
-            print 'no. of t1 transitions'
-            print nt1
-            self.totalt1 += nt1
-
-        self.prevon = outnum # the previous outnum
+            ## two halfedges for every edge
+            #nt1 = len(gained)/2
+            #print 'no. of t1 transitions'
+            #print nt1
+            #self.totalt1 += nt1
 
     def _finishup(self):
-        print 'total t1 transitions', self.totalt1
-
+        print 'finished'
+        #print 'total t1 transitions', self.tlist.nt
 
     def _halfedges(self, simp):
         lamhedges = lambda si: zip(si, np.roll(si, -1))
@@ -390,6 +622,9 @@ def process_commands():
     parser.add_argument('--scale', type=float, default=1., 
         help='scale stress ellipses')
 
+    parser.add_argument('-lt', '--ltransition', type=float, default=0.02, 
+            help = 'Threshold length for a t1 transition')
+
     valid_smoothing_functions = ['uniform', 'quartic']
     # flags
     parser.add_argument("--centroid", action='store_true', 
@@ -485,13 +720,13 @@ if __name__=='__main__':
             print_parameters()
             stressrun = Transitions(args)
             for _ in stressrun: pass
-            ntrans = stressrun.totalt1
+            ntrans = stressrun.tlist.nt
             ntt[args.sindex] = ntrans
         op.diriterate(macro, args.all)
         print ntt
 
         import cmplotting as cm
-        cm.nttplot(ntt)
+        cm.nttplot(ntt, log=True)
 
 
 

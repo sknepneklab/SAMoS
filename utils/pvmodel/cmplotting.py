@@ -9,6 +9,7 @@ import time
 from glob import glob
 import os.path as path
 import pickle
+from collections import OrderedDict
 
 # is building a class on top of matplotlib which manages the graph formatting 
 #overengineering the problem?
@@ -17,6 +18,30 @@ import pickle
 #class Extfigure(object):
     #def __init__(self, ddump):
         #self.ddump = ddump
+
+# descriptor for saving the plots to a default name under plots/
+import os
+def defaultsave(f):
+    def saved(*args, **kw):
+        outd = f(*args, **kw)
+
+        pdir = 'plots/'
+        if not os.path.exists(pdir):
+            os.mkdir(pdir)
+
+        out = os.path.join(pdir, f.__name__+'.png')
+        if outd:
+            ddir = os.path.join(pdir, 'data/')
+            if not os.path.exists(ddir):
+                os.mkdir(ddir)
+            datout = os.path.join(ddir, f.__name__+'.dat')
+            with open(datout, 'w') as fo:
+                io.dump(outd, fo)
+
+        plt.savefig(out)
+        #plt.show()
+    return saved
+
 
 
 def _makename(num, fn, ext='.pkl'):
@@ -63,21 +88,6 @@ def plot_avg_pressures(fglob='stress_st*.npz'):
     #plt.plot(xsteps, hpressure, label='hardy pressure', marker='o')
     plt.legend()
     plt.show()
-
-# descriptor for saving the plots to a default name under plots/
-import os
-def defaultsave(f):
-    def saved(*args, **kw):
-        f(*args, **kw)
-
-        pdir = 'plots/'
-        if not os.path.exists(pdir):
-            os.mkdir(pdir)
-        
-        out = os.path.join(pdir, f.__name__+'.png')
-        plt.savefig(out)
-        plt.show()
-    return saved
 
 def _loadpkl(fname):
     return pickle.load(open(fname, 'rb'))
@@ -234,12 +244,41 @@ def _testspace():
 ### newfunctions ###
 # just for plotting, no reading
 @defaultsave
-def nttplot(ntt):
+def nttplot(ntt, log=False):
     x = ntt.keys()
     y = ntt.values()
-    plt.plot(x, y)
+    #plt.plot(x, y)
+    if log:
+        plt.loglog(x, y)
+    else:
+        plt.plot(x, y)
     plt.xlabel('Shape index')
-    plt.ylabel('No. of T1 transitions in 2000 timesteps with v0=0.2')
+    plt.ylabel('No. of T1 transitions in 3000 timesteps with v0=0.2')
+    plt.show()
+    outd =  OrderedDict()
+    outd['sindex'] = x
+    outd['No._T1_transitions'] = y
+    return outd
+
+# want to collect data for every subdirectory
+
+def nttcompare():
+    ptname= 'nttplot'
+    pldirs = sorted(glob('./*/plots/data/'))
+    print 'reading data from', pldirs
+    def reader(di):
+        datf = os.path.join(di, ptname+'.dat')
+        pld = {}
+        with open(datf, 'r') as fo:
+            ind = io.readdump(fo)
+            print ind
+            pld['x'], pld['y']  = ind.values()
+        return pld
+    pldata = map(reader, pldirs)
+    v0l= [0.01, 0.05, 0.10, 0.20]
+    for v0, pld in zip(v0l, pldata):
+        plt.plot(pld['x'], pld['y'], label='v0 {}'.format(v0))
+    plt.show()
 
 
 if __name__=='__main__':
