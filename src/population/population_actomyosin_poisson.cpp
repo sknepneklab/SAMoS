@@ -30,27 +30,27 @@
  * ************************************************************* */
 
 /*!
- * \file population_actomyosin.cpp
+ * \file population_actomyosin_poisson.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 08-Jun-2016
- * \brief Implementation of PopulationActomyosin class.
+ * \date 26-Jul-2016
+ * \brief Implementation of PopulationActomyosinPoisson class.
  */ 
 
-#include "population_actomyosin.hpp"
+#include "population_actomyosin_poisson.hpp"
 
 
 /*! This function controls attachement and detachement of myosin beads. This is a
  *  achieved via chaning types of myosin head groups from attached (type "A") to detached (type "D")a
- *  and vice versa. 
+ *  and vice versa. In this implementation we use a Poisson process. 
  *
  *  \note In order to avoid head groups, e.g. chainging  their type from "A" to "D" and back to "A" in the 
  *  single time step, we implement both processes in the same function using lists of indices.
  *  \param t current time step
  *  
 */
-void PopulationActomyosin::divide(int t)
+void PopulationActomyosinPoisson::divide(int t)
 {
-  if ((m_freq > 0) && (t % m_freq == 0) && (m_attach_prob > 0.0 || m_detach_prob > 0.0))  // Attempt D to A transition only at certain time steps
+  if ((m_freq > 0) && (t % m_freq == 0) && (m_attach_rate > 0.0 || m_detach_rate > 0.0))  // Attempt D to A transition only at certain time steps
   { 
     if (!m_system->group_ok(m_group_name))
     {
@@ -92,16 +92,17 @@ void PopulationActomyosin::divide(int t)
         to_detach.push_back(pi.get_id());
     }
     for (vector<int>::iterator it_a = to_attach.begin(); it_a != to_attach.end(); it_a++)
-      if (m_rng->drnd() < m_attach_prob)  // flip its type to "attached" with probability attach_prob.
-      {
-        Particle& pi = m_system->get_particle(*it_a);
+    {
+      Particle& pi = m_system->get_particle(*it_a);
+      double prob = 1.0 - exp(-m_attach_rate*pi.age);
+      if (m_rng->drnd() < prob)  // flip its type to "attached" with probability attach_prob.
         pi.set_type(m_type_a);
-      }
+    }
     for (vector<int>::iterator it_d = to_detach.begin(); it_d != to_detach.end(); it_d++)
     {
       Particle& pi = m_system->get_particle(*it_d);
       double f = sqrt(pi.fx*pi.fx + pi.fy*pi.fy + pi.fz*pi.fz);
-      double prob = m_detach_prob*exp(m_lambda*f);
+      double prob = 1.0 - exp(-(m_detach_rate+m_lambda*f)*pi.age);
       if (m_rng->drnd() < prob)  // flip its type to "attached" with probability attach_prob.
         pi.set_type(m_type_d);  
     }

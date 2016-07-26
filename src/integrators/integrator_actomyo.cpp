@@ -119,5 +119,6 @@ void IntegratorActomyo::integrate()
     p.z += m_dt*p.vz + m_stoch_coeff*m_rng->gauss_rng(1.0);
     // Project everything back to the manifold
     m_constrainer->enforce(p);
+    p.age += m_dt;
   }
 }

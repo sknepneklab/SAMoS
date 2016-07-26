@@ -80,9 +80,9 @@ public:
       m_msg->write_config("population.actomyosin.seed",param["seed"]);
     }
     
-    if (param.find("detachement_prob") == param.end())
+    if (param.find("detachment_prob") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Actomyosin population control. No detachement proability set. Using default 0.5.");
+      m_msg->msg(Messenger::WARNING,"Actomyosin population control. No detachment probability set. Using default 0.5.");
       m_detach_prob = 0.5;
     }
     else
