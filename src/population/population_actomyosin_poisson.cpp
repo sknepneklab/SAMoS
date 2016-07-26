@@ -96,7 +96,10 @@ void PopulationActomyosinPoisson::divide(int t)
       Particle& pi = m_system->get_particle(*it_a);
       double prob = 1.0 - exp(-m_attach_rate*pi.age);
       if (m_rng->drnd() < prob)  // flip its type to "attached" with probability attach_prob.
+      {
         pi.set_type(m_type_a);
+        pi.age = 0.0;
+      }
     }
     for (vector<int>::iterator it_d = to_detach.begin(); it_d != to_detach.end(); it_d++)
     {
@@ -104,7 +107,10 @@ void PopulationActomyosinPoisson::divide(int t)
       double f = sqrt(pi.fx*pi.fx + pi.fy*pi.fy + pi.fz*pi.fz);
       double prob = 1.0 - exp(-(m_detach_rate+m_lambda*f)*pi.age);
       if (m_rng->drnd() < prob)  // flip its type to "attached" with probability attach_prob.
+      {
         pi.set_type(m_type_d);  
+        pi.age = 0.0;
+      }
     }
   }
 }

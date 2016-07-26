@@ -82,12 +82,12 @@ public:
     if (param.find("detachment_rate") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Actomyosin Poisson population control. No detachment rate set. Using default 0.5.");
-      m_detach_rate = 0.5/static_cast<double>(m_freq);
+      m_detach_rate = 0.5/(static_cast<double>(m_freq)*m_system->get_integrator_step());
     }
     else
     {
       m_msg->msg(Messenger::INFO,"Actomyosin Poisson population control. Setting detachment rate "+param["detachment_rate"]+".");
-      m_detach_rate = lexical_cast<double>(param["detachment_rate"])/static_cast<double>(m_freq);  
+      m_detach_rate = lexical_cast<double>(param["detachment_rate"])/(static_cast<double>(m_freq)*m_system->get_integrator_step());  
       if (m_detach_rate < 0.0)
       {
         m_msg->msg(Messenger::ERROR,"Actomyosin Poisson population control. Detachment rate has to be greater than 0.");
@@ -99,12 +99,12 @@ public:
     if (param.find("attachment_rate") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Actomyosin Poisson population control. No attachment rate set. Using default 0.5.");
-      m_attach_rate = 0.5/static_cast<double>(m_freq);
+      m_attach_rate = 0.5/(static_cast<double>(m_freq)*m_system->get_integrator_step());
     }
     else
     {
       m_msg->msg(Messenger::INFO,"Actomyosin Poisson population control. Setting attachment rate "+param["attachment_rate"]+".");
-      m_attach_rate = lexical_cast<double>(param["attachment_rate"])/static_cast<double>(m_freq);
+      m_attach_rate = lexical_cast<double>(param["attachment_rate"])/(static_cast<double>(m_freq)*m_system->get_integrator_step());
       if (m_attach_rate < 0.0)
       {
         m_msg->msg(Messenger::ERROR,"Actomyosin Poisson population control. Attachment rate has to be greater than 0.");
