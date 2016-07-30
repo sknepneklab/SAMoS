@@ -77,7 +77,7 @@ void PopulationDensity::divide(int t)
     {
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi); 
-      if (m_rng->drnd() < prob_div*(1.0-p.coordination/m_rho_max) )
+      if (m_rng->drnd() < prob_div*(1.0-p.coordination/m_rho_max))
       {
         Particle p_new(m_system->size(), p.get_type(), p.get_radius());
         p_new.x = p.x + m_alpha*m_split_distance*p.get_radius()*p.nx;
@@ -94,11 +94,10 @@ void PopulationDensity::divide(int t)
         p_new.nx = p.nx; p_new.ny = p.ny; p_new.nz = p.nz;
         p_new.vx = p.vx; p_new.vy = p.vy; p_new.vz = p.vz;
         p_new.Nx = p.Nx; p_new.Ny = p.Ny; p_new.Nz = p.Nz;
-        p.age = 0.0; // age of parent is 0
-        p_new.age = 0.0; // age of child is 0: make sure age-dependent potentials are consistent with this
+        p.age = 0.0;     // age of parent is 0
+        p_new.age = 0.0; // age of child is 0
         for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)
           p_new.groups.push_back(*it_g);
-		// Breaking backwards compatibility on never used functionality: Only ever attempt to change the radius of the second child
         if (m_rng->drnd() < m_type_change_prob_1)  // Attempt to change type and group for first child
         {
           if (m_new_type == 0)
@@ -121,17 +120,17 @@ void PopulationDensity::divide(int t)
         }
         // For the polydispersity function: Change radius of second child.
         if (m_new_radius==0.0)
-		   new_r = pr.get_radius(); 
+		      new_r = pr.get_radius(); 
         else 
-		{
-		  if (m_poly == 0.0)
-			new_r = m_new_radius;
-		  else 
-		  {
-			  new_r = m_new_radius*(1+m_poly*(m_rng->drnd()-0.5));
-			  //cout << "new radius " << new_r << endl;
-		  }
-		}
+		    {
+		      if (m_poly == 0.0)
+            new_r = m_new_radius;
+		      else 
+          {
+            new_r = m_new_radius*(1+m_poly*(m_rng->drnd()-0.5));
+            //cout << "new radius " << new_r << endl;
+          }
+		    }
         pr.set_radius(new_r);
       }
     }
@@ -158,7 +157,7 @@ void PopulationDensity::remove(int t)
   { 
     if (!m_system->group_ok(m_group_name))
     {
-      cout << "Before Remove P: Group info mismatch for group : " << m_group_name << endl;
+      cerr << "Before Remove P: Group info mismatch for group : " << m_group_name << endl;
       throw runtime_error("Group mismatch.");
     }
     int N = m_system->get_group(m_group_name)->get_size();
@@ -166,16 +165,16 @@ void PopulationDensity::remove(int t)
     vector<int> to_remove;
     double prob_death = m_death_rate*m_freq*m_system->get_integrator_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
     if (prob_death>1.0)
-      {
-	cout << "Error: death rate " << prob_death << " is too large for current time step and attempt rate!" << endl;
-	throw runtime_error("Too high death.");
-      }
+    {
+	    cerr << "Error: death rate " << prob_death << " is too large for current time step and attempt rate!" << endl;
+	    throw runtime_error("Too high death.");
+    }
     for (int i = 0; i < N; i++)
     {
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi);
       if (m_rng->drnd() < prob_death)
-          to_remove.push_back(p.get_id());
+        to_remove.push_back(p.get_id());
     }
     int offset = 0;
     for (vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); it++)

@@ -49,6 +49,7 @@
 
 using std::list;
 using std::runtime_error;
+using std::cerr;
 
 /*! PopulationDensity class handles density dependant particle division and death. 
  *  We set division rate and death rate. Particles are divided based on their local density and removed
@@ -151,13 +152,13 @@ public:
       m_new_radius =  lexical_cast<double>(param["new_r"]);
     }
     m_msg->write_config("population.density.new_radius",lexical_cast<string>(m_new_radius));
-	if (param.find("poly")== param.end())
-	{
-	  m_msg->msg(Messenger::WARNING,"Density population control. No polydispersity set. Using default 0.");
-	  m_poly = 0.0;  // no polydispersity (added)
-	}
-	else
-	{
+    if (param.find("poly")== param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Density population control. No polydispersity set. Using default 0.");
+      m_poly = 0.0;  // no polydispersity (added)
+    }
+    else
+    {
       m_msg->msg(Messenger::INFO,"Density population control. Polydispersity of new particles set to "+param["poly"]+".");
       m_poly =  lexical_cast<double>(param["poly"]);
     }
@@ -249,7 +250,7 @@ private:
   double m_split_distance;       //!< Fraction of the particle radius to split after the division
   double m_rho_max;              //!< Maximum local density where division rate decays 
   double m_alpha;                //!< When dividing particles, move new one to alpha*m_split_distance and the old one to (1-alpha)*split_distance
-  double m_poly;				 //!< When dividing particles, give the daughter a radius of m_new_radius with polydispersity poly. To avoid selecting for small radii.
+  double m_poly;				         //!< When dividing particles, give the daughter a radius of m_new_radius with polydispersity poly. To avoid selecting for small radii.
    
 };
 
