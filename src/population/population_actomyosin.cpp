@@ -50,7 +50,7 @@
 */
 void PopulationActomyosin::divide(int t)
 {
-  if ((m_freq > 0) && (t % m_freq == 0) && (m_attach_prob > 0.0 || m_detach_prob > 0.0))  // Attempt D to A transition only at certain time steps
+  if ((m_freq > 0) && (t % m_freq == 0) && (m_attach_rate > 0.0 || m_detach_rate > 0.0))  // Attempt D to A transition only at certain time steps
   { 
     if (!m_system->group_ok(m_group_name))
     {
@@ -60,6 +60,10 @@ void PopulationActomyosin::divide(int t)
     int N = m_system->size();
     vector<int> to_attach;
     vector<int> to_detach;
+    // Probability of attachment/detachment for a given perticle is rate per particle multiplied with time,
+    // where time is equal to m_freq*integrator_time_step.    
+    double attach_prob = m_attach_rate*m_freq*m_system->get_integrator_step();  
+    double detach_prob = m_detach_rate*m_freq*m_system->get_integrator_step();  
     for (int i = 0; i < N; i++)
     {
       Particle& pi = m_system->get_particle(i);                
@@ -92,7 +96,7 @@ void PopulationActomyosin::divide(int t)
         to_detach.push_back(pi.get_id());
     }
     for (vector<int>::iterator it_a = to_attach.begin(); it_a != to_attach.end(); it_a++)
-      if (m_rng->drnd() < m_attach_prob)  // flip its type to "attached" with probability attach_prob.
+      if (m_rng->drnd() < attach_prob)  // flip its type to "attached" with probability attach_prob.
       {
         Particle& pi = m_system->get_particle(*it_a);
         pi.set_type(m_type_a);
@@ -100,9 +104,10 @@ void PopulationActomyosin::divide(int t)
     for (vector<int>::iterator it_d = to_detach.begin(); it_d != to_detach.end(); it_d++)
     {
       Particle& pi = m_system->get_particle(*it_d);
-      double f = sqrt(pi.fx*pi.fx + pi.fy*pi.fy + pi.fz*pi.fz);
-      double prob = m_detach_prob*exp(m_lambda*f);
-      if (m_rng->drnd() < prob)  // flip its type to "attached" with probability attach_prob.
+      // TODO: Figure out how to incorporate forces
+      //double f = sqrt(pi.fx*pi.fx + pi.fy*pi.fy + pi.fz*pi.fz);
+      //double prob = m_detach_prob*exp(m_lambda*f);
+      if (m_rng->drnd() < detach_prob)  // flip its type to "attached" with probability attach_prob.
         pi.set_type(m_type_d);  
     }
   }

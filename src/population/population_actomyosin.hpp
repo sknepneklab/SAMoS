@@ -80,39 +80,29 @@ public:
       m_msg->write_config("population.actomyosin.seed",param["seed"]);
     }
     
-    if (param.find("detachment_prob") == param.end())
+    if (param.find("detachment_rate") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Actomyosin population control. No detachment probability set. Using default 0.5.");
-      m_detach_prob = 0.5;
+      m_msg->msg(Messenger::WARNING,"Actomyosin population control. No detachment rate per particle set. Using default 0.1.");
+      m_detach_rate = 0.1;
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Actomyosin population control. Setting detachement proability "+param["detachement_prob"]+".");
-      m_detach_prob = lexical_cast<double>(param["detachement_prob"]);
-      if (m_detach_prob < 0.0 || m_detach_prob > 1.0)
-      {
-        m_msg->msg(Messenger::ERROR,"Actomyosin population control. Detachment probability has to be greater than 0 and less than 1.");
-        throw runtime_error("Wrong detached proability.");
-      }
+      m_msg->msg(Messenger::INFO,"Actomyosin population control. Setting detachment rate per particle "+param["detachment_rate"]+".");
+      m_detach_rate = lexical_cast<double>(param["detachment_rate"]);
     }
-    m_msg->write_config("population.actomyosin.detachement_prob",lexical_cast<string>(m_detach_prob));
+    m_msg->write_config("population.actomyosin.detachment_rate",lexical_cast<string>(m_detach_rate));
     
-    if (param.find("attachment_prob") == param.end())
+    if (param.find("attachment_rate") == param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Actomyosin population control. No attachment proability set. Using default 0.5.");
-      m_attach_prob = 0.5;
+      m_msg->msg(Messenger::WARNING,"Actomyosin population control. No attachment rate per particle set. Using default 0.1.");
+      m_attach_rate = 0.1;
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Actomyosin population control. Setting attachment proability "+param["attachment_prob"]+".");
-      m_attach_prob = lexical_cast<double>(param["attachment_prob"]);
-      if (m_attach_prob < 0.0 || m_attach_prob > 1.0)
-      {
-        m_msg->msg(Messenger::ERROR,"Actomyosin population control. Attachment probability has to be greater than 0 and less than 1.");
-        throw runtime_error("Wrong attachment proability.");
-      }
+      m_msg->msg(Messenger::INFO,"Actomyosin population control. Setting attachment rate per particle "+param["attachment_rate"]+".");
+      m_attach_rate = lexical_cast<double>(param["attachment_rate"]);
     }
-    m_msg->write_config("population.actomyosin.attachment_prob",lexical_cast<string>(m_attach_prob));
+    m_msg->write_config("population.actomyosin.attachment_rate",lexical_cast<string>(m_attach_rate));
     
     if (param.find("lambda") == param.end())
     {
@@ -172,13 +162,17 @@ public:
       m_msg->msg(Messenger::INFO,"Actomyosin population control. Setting type of actin bead "+param["actin_type"]+".");
       m_type_actin = lexical_cast<int>(param["actin_type"]);
     }
-    m_msg->write_config("population.actomyosin.actin_type",lexical_cast<string>(m_type_actin));   
+    m_msg->write_config("population.actomyosin.actin_type",lexical_cast<string>(m_type_actin));  
+    if (m_attach_rate*m_freq*m_system->get_integrator_step() > 1.0)
+      m_msg->msg(Messenger::WARNING,"Actomyosin population control. Attachement rate per particle is too high. Particles will always attach."); 
+    if (m_detach_rate*m_freq*m_system->get_integrator_step() > 1.0)
+      m_msg->msg(Messenger::WARNING,"Actomyosin population control. Detachment rate per particle is too high. Particles will always detach.");
   }
   
   //! This funciton controls attachement (note: function name derives from the intial intent of the population classes to use to treat cell division)
   void divide(int);
   
-  //! This function controls detachement
+  //! This function controls detachment
   void remove(int) { }
   
   //! Not used here
@@ -194,10 +188,10 @@ public:
 private:
   
   RNGPtr m_rng;                  //!< Actomyosin number generator
-  double m_detach_prob;          //!< Bare proability of detachement
-  double m_lambda;               //!< Lambda parameter for detachement in the presence of force
-  double m_re;                   //!< Range over which the detachement is affected by the force
-  double m_attach_prob;          //!< Proability of attachment
+  double m_detach_rate;          //!< Rate of detachment, defined per particle
+  double m_lambda;               //!< Lambda parameter for detachment in the presence of force
+  double m_re;                   //!< Range over which the detachment is affected by the force
+  double m_attach_rate;          //!< Rate of attchment, defined per particle 
   int m_type_d;                  //!< Type when detached
   int m_type_a;                  //!< Type when attached
   int m_type_actin;              //!< Type of the actin beads
