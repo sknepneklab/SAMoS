@@ -292,7 +292,10 @@ public:
   
   // Does actual contact and face building 
   void build_mesh();
+   
+  void append_contact(int i, int j) { m_contact_list[i].push_back(j); }
     
+  void update_ghosts(vector<pair<int,int> > ghost_neighbours);
   
 private:
   

@@ -42,6 +42,7 @@
 #include "vertex.hpp"
 #include "edge.hpp"
 #include "face.hpp"
+#include "vector3d.hpp"
 
 #include <vector>
 #include <map>
@@ -111,6 +112,13 @@ public:
   //! Get list of faces
   vector<Face>& get_faces() { return m_faces; }
   
+  //! Get a list of the boundary edges where ghosts need to be added
+  vector<int>& get_future_ghost_edges() { return m_future_ghost_edges; } 
+  void clear_future_ghost_edges() { 
+    m_future_ghost_edges.clear();
+    has_future_ghosts = false;
+  }
+
   //! Get edge-face data structure
   map<pair<int,int>, int>& get_edge_face() { return m_edge_face; }
   
@@ -202,6 +210,9 @@ public:
   //! Opposite vertex
   int opposite_vertex(int);
   
+  //! Compute edge vector
+  Vector3d compute_edge_vector(int);
+
   //! Flip edge
   void edge_flip(int);
   
@@ -217,6 +228,9 @@ public:
   //! Remove obtuse boundary faces
   bool remove_obtuse_boundary();
   
+  //! Update face properties and return the obtuse boundary edges
+  vector<int> get_obtuse_boundary();
+
   //! Remove edge triangles
   bool remove_edge_triangles();
   
@@ -230,14 +244,18 @@ public:
   //! Compute angle area scaling factor for boundary vertices
   double angle_factor(int);
   
-  //! Compute derivatives of the angle factor for boudnary vertices
+  //! Compute derivatives of the angle factor for boundary vertices
   void angle_factor_deriv(int);
   
   //! Compute radius of a circumscribed circle
   double circum_radius(int);
   
-  //! Compute data for ploting polyons
+  //! Compute data for plotting polyons
   PlotArea& plot_area(bool);
+
+  bool has_future_ghosts;
+  
+  bool insert_ghost(int p_id, int e_id);
      
 private:  
   
@@ -256,6 +274,7 @@ private:
   vector<pair<int,int> > m_boundary;   //!< List of vertex pair that are on the boundary
   vector<int> m_boundary_edges;        //!< List of all edges that are at the boundary
   vector<int> m_obtuse_boundary;       //!< List of all boundary edges that have obtuse angle opposite to them  
+  vector<int> m_future_ghost_edges; 
   PlotArea m_plot_area;                //!< Used to preapre polygonal data for plotting
   
   //! Compute face circumcentre
@@ -282,6 +301,9 @@ private:
   //! Remove edge face
   bool remove_edge_face(int);
   
+  //! Add edge face
+  bool add_edge_face(int p_id, int e_id);
+
   //! Functor used to compare lengths of two edges
   struct CompareEdgeLens
   {

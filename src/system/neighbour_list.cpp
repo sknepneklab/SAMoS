@@ -89,7 +89,6 @@ void NeighbourList::build()
       m_old_state.push_back(PartPos(pi.x,pi.y,pi.z));
     }
  }
-  
  this->build_mesh();
 }
 
@@ -374,12 +373,17 @@ void NeighbourList::build_faces(bool flag)
   mesh.generate_faces();
   mesh.generate_dual_mesh();
   mesh.postprocess(flag);
-  // Here we remove obtuse and edge trianges
+
+  // Actually adding particles to the system
+  m_system->add_boundary_ghosts();
+
+  // Here we remove obtuse and edge triangles
   // Strictly speaking, we should do this iteratively, until 
   // there are no more triangles or edges to remove. This would be
   // simple to implement, but we postpone it unless it causes problems in
   // actual simulations. 
-  mesh.remove_obtuse_boundary();
+  
+  //mesh.remove_obtuse_boundary();
   mesh.remove_edge_triangles();
   m_system->update_mesh();
 }
@@ -473,25 +477,25 @@ void NeighbourList::remove_dangling()
  *  rest of the tissue. This is clearly only possible is triangulation has been set, i.e., for
  *  tissue simulations. 
  */
- void NeighbourList::remove_detached()
+void NeighbourList::remove_detached()
+{
+ Mesh& mesh = m_system->get_mesh();
+ if (mesh.size() == 0) return; 
+ 
+ vector<int> to_remove;
+ int offset = 0;  // We need to shift vertex ids to match them in the removal
+ for (int v = 0; v < mesh.size(); v++)
  {
-   Mesh& mesh = m_system->get_mesh();
-   if (mesh.size() == 0) return; 
-   
-   vector<int> to_remove;
-   int offset = 0;  // We need to shift vertex ids to match them in the removal
-   for (int v = 0; v < mesh.size(); v++)
+   Vertex& V = mesh.get_vertices()[v];
+   if (!V.attached)
    {
-     Vertex& V = mesh.get_vertices()[v];
-     if (!V.attached)
-     {
-       to_remove.push_back(V.id-offset);
-       offset++;
-     }
+     to_remove.push_back(V.id-offset);
+     offset++;
    }
-   for (unsigned int i = 0; i < to_remove.size(); i++)
-     m_system->remove_particle(to_remove[i]);
- } 
+ }
+ for (unsigned int i = 0; i < to_remove.size(); i++)
+   m_system->remove_particle(to_remove[i]);
+} 
 
 /*! Aufiliary function which checks if all negbours are on the same side a line connecting two 
  *  particles. This is used in constructing meshes to make sure that some edges are not 
@@ -521,6 +525,13 @@ bool NeighbourList::same_side_line(Particle& pi, Particle& pj, vector<int>& neig
       }
   }
   return same;
+}
+
+void NeighbourList::update_ghosts(vector<pair<int,int> ghost_neighbours)
+{
+  for (int i = 0; i < ghost_neighbours.size(); i++)
+    pair<int,int>& p_id_ij = ghost_neighbours[i];
+    this->append_contact(p_id_ij.first, p_id_ij.second);
 }
 
 

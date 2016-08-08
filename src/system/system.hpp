@@ -300,7 +300,21 @@ public:
   //! Set the number of mesh iteration 
   //! \param iter number of iteration 
   void set_max_mesh_iterations(int iter) { m_max_mesh_iter = iter; }
+
+  bool is_future_ghosts() { return m_mesh.has_future_ghosts; }
+  
+  vector<pair<int,int> > ghost_neighbours;
+  vector<pair<int,int> > get_ghost_neighbours() { return ghost_neighbours; }
+  // this doesn't work
+  vector<pair<Particle*,int> > ghost_pid_eid;
+  vector<pair<Particle*,int> > get_ghost_pid_eid() { return ghost_pid_eid; }
+  bool prepared_ghosts;
     
+  //! Adds new particles at the boundary of the system 
+  void add_boundary_ghosts();
+  
+  void prepare_boundary_ghosts();
+
 private:
   
   vector<Particle> m_particles;         //!< Contains all particle in the system 

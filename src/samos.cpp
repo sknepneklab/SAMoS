@@ -924,6 +924,14 @@ int main(int argc, char* argv[])
                     }
                   }
                 }
+                // Sys can only talk to nlist at this level in the program.
+                // But we want to make mesh changes by adding ghosts and flipping boundary edges
+                // (I hope) These particular flips don't impact the convergence of the equiangulation routine
+                if (sys->is_future_ghosts())
+                {
+                  nlist->update_ghosts(sys->get_ghost_neighbours());
+                  sys->add_boundary_ghosts();
+                }
                 // Check the neighbour list rebuild only if necessary 
                 if ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist()))
                 {

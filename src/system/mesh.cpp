@@ -33,10 +33,11 @@
  * \file mesh.cpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
  * \date 18-Nov-2015
- * \brief Implementation of Mesh class memebr functions
+ * \brief Implementation of Mesh class member functions
  */ 
 
 #include "mesh.hpp"
+#include "vector3d.hpp"
 
 #include <iostream>
 
@@ -555,6 +556,18 @@ int Mesh::opposite_vertex(int e)
   return -1;  // If edge is boundary, return -1.
 }
 
+Vector3d Mesh::compute_edge_vector(int e)
+{
+  Edge& E = m_edges[e];
+  Vertex& v_from = m_vertices[E.from];
+  Vertex& v_to = m_vertices[E.to];
+  Vector3d edge_vector = (v_to.r - v_from.r);
+  return edge_vector;
+  //return (v_to.r - v_from.r);
+
+}
+
+
 /*! This is one of the simplest mesh moves that changes it topology. 
  *  Namely we flip an edge (pair of half-edges) shred by two trangles. Needless to say,
  *  this move is only defiened for triangulations.
@@ -723,6 +736,18 @@ bool Mesh::equiangulate()
           no_flips = false;
         }
       }
+      else
+      {
+        // one of E and Ep is a boundary half-edge
+        Edge& Ei = (!E.boundary) ? E : Ep;
+        Edge& Eb = (E.boundary) ? E : Ep;
+        Vertex& Vi = m_vertices[this->opposite_vertex(E.id)];
+        Face& Fi = m_faces[Eb.face];
+        if (Fi.get_angle(Vi.id) > M_PI/2.)
+          // add a place holder for a ghost particle
+          m_future_ghost_edges.push_back(Eb.id);
+          has_future_ghosts = true
+      }
     }
   }
   return no_flips;
@@ -853,8 +878,14 @@ void Mesh::update_face_properties()
         m_obtuse_boundary.push_back(E.id);
     }
   }
-  
 }
+
+vector<int> Mesh::get_obtuse_boundary()
+{
+  this->update_face_properties();
+  return m_obtuse_boundary;
+}
+
 
 /*! Loop over all boundary faces. If the face is obtuse,
  *  remove the edge boundary edge. This leaves the face 
@@ -875,10 +906,9 @@ bool Mesh::remove_obtuse_boundary()
   }
   return no_removals;
 }
-
 /*! Remove edge triangles.
  *  A triangle is considered an edge triangle if it has at least 
- *  to of its edges with having boundary pairs. That is, if on of 
+ *  two of its edges with having boundary pairs. That is, if on of 
  *  its vertices have only two neighbours.
 */
 bool Mesh::remove_edge_triangles()
@@ -1511,9 +1541,104 @@ void Mesh::remove_face(int f)
   }
 } 
 
+// Use the new ghost particle to add a face
+// Then we will be ready to t1 flip a boundary edge
+//
+// There are a lot of useful convenience that would be helpful but keep it simple for now
+bool Mesh::add_edge_face(Particle& p, int e_id)
+{
+  // Add all the mesh components, Vertex, Face and Edges
+  int vid = m_vertices.size();
+  this->add_vertex(vid, p.x, p.y, p.z);
+  Vertex& vnew = m_vertices[vid];
+  vnew.boundary = true
+  Edge& Eb = m_edges[e_id];
+  if (!Eb.boundary) Eb = m_edges[Eb.pair];
+  assert(Eb.boundary);
+
+  // Add 4 halfedges, edges aren't ordered to start with
+  // add_edge should return the edge id 
+  this->add_edge(Eb.to, vid);
+  Edge& e_to_vid = m_edges[n_edges];
+  m_edge_map[make_pair(Eb.to, vid)] = e_to_vid.id;
+  this->add_edge(vid, Eb.to);
+  Edge& e_vid_to = m_edges[n_edges];
+  m_edge_map[make_pair(vid, Eb.to)] = e_vid_to.id;
+
+  this->add_edge(Eb.from, vid);
+  Edge& e_from_vid = m_edges[n_edges];
+  m_edge_map[make_pair(Eb.from, vid)] = e_from_vid.id;
+  this->add_edge(vid, Eb.from);
+  Edge& e_vid_form = m_edges[n_edges];
+  m_edge_map[make_pair(vid, Eb.from)] = e_vid_from.id;
+
+  e_to_vid.pair = e_vid_to.id;
+  e_vid_to.pair = e_to_vid.id;
+  e_from_vid.pair = e_vid_from.id;
+  e_vid_from.pair = e_from_vid.id;
+  Eb.next = e_to_vid.id;
+  e_to_vid.next = e_vid_from.id;
+  e_vid_from.next = Eb.id
+  e_vid_to.boundary = true;
+  e_from_vid.boundary = true;
+  //e_from_vid.next = e_vid_to.id
+
+  // Add the face
+  Face fnew = Face(m_nface);
+  fnew.boundary = true;
+  fnew.ordered = true;
+  fnew.add_vertex(vid);
+  fnew.add_vertex(Eb.to);
+  fnew.add_vertex(Eb.from);
+  fnew.add_edge(Eb.id);
+  fnew.add_edge(e_to_vid);
+  fnew.add_edge(e_vid_from);
+
+  Eb.face = fnew.id;
+  e_to_vid.face = fnew.id;
+  e_vid_from.face = fnew.id;
+
+  vnew.add_neighbour(Eb.to);
+  vnew.add_edge(e_vid_to.id);
+  vnew.add_neighbour(Eb.from);
+  vnew.add_edge(e_vid_from.id);
+  Vertex& v_to = m_vertices[E.to];
+  Vertex& v_from = m_vertices[E.from];
+  v_to.add_neighbour(vid);
+  v_to.add_edge(e_to_vid.id);
+  v_from.add_neighbour(vid);
+  v_from.add_edge(e_from_vid);
+
+  this->compute_angles(fnew.id)
+
+  // Update neighbours (?)
+  Ei = m_edges[Eb.pair];
+  Ei.boundary = false;
+  Face& f_inner = m_faces[Ei.face];
+  f_inner.boundary = false;
+
+  // Update boundary face
+  Face& hole = m_faces[Eb.face];
+  vector<int>::iterator it = find(hole.edges.begin(), hole.edges.end(), Eb.id);
+  int edex = it - hole.edges.begin();
+  hole.edges[edex] = e_from_vid.id;
+  hole.edges.insert(edex+1, e_vid_to.id);
+  
+  // Order affected vertices
+  vector<int> affected_vertices; 
+  affected_vertices.push_pack(vid);
+  affected_vertices.push_pack(to);
+  affected_vertices.push_pack(from);
+  for (unsigned int v = 0; v < affected_vertices.size(); v++)
+    this->order_star(affected_vertices[v]);
+   
+  //tmp
+  return true
+
+}
 /*! Remove edge face.
  *  This funcion is used in conjunction with remove_edge_triangles function 
- *  to remove all trianges that live at the bounday and and have one 
+ *  to remove all trianges that live at the boundary and have one 
  *  of its vertices having only two neighbours. This situation leads to 
  *  ill-defined angle deficits.
  *  \param f id of the face to remove
@@ -1618,5 +1743,12 @@ bool Mesh::remove_edge_face(int f)
     
   return true;
   
+}
+
+//Add ghosts at the location where we would do a boundary t1 transition
+void Mesh::insert_ghost(Particle& p, int e_id)
+{
+  this->add_edge_face(p, e_id);
+  this->edge_flip(e_id);
 }
 

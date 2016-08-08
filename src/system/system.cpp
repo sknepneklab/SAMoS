@@ -37,6 +37,7 @@
  */ 
 
 #include "system.hpp"
+#include "vector3d.hpp"
 
 
 // Set of auxiliary functions that help parse lines of the input file and
@@ -349,6 +350,7 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   this->disable_per_particle_eng();
   
   m_has_exclusions = false;
+  prepare_boundary_ghosts = false;
 }
 
 /*! Generate a group of particles
@@ -945,23 +947,89 @@ void System::update_mesh()
     {
       //cout << "iteration : " << iter++ << endl;
       converged = true;
-      converged = converged && m_mesh.remove_obtuse_boundary();
+      //
+      //converged = converged && m_mesh.remove_obtuse_boundary();
       converged = converged && m_mesh.remove_edge_triangles();
       m_mesh.update_dual_mesh();
       m_mesh.update_face_properties();
       converged = converged && m_mesh.equiangulate();
+      if (m_mesh.has_future_ghosts && !prepared_ghosts)
+        // yeah, this is inside the equiangulation loop but just do it once ok?
+        this->prepare_boundary_ghosts();
       iter++;
     }
     if (iter >= m_max_mesh_iter)
     {
       cout << "Exceeded maximum number of itrations in boundary build. Most likely something is wrong with input paramters. Results will not be reliable." << endl;
-      throw runtime_error("Exceeded maximum number of itrations in boundary build.");
+      throw runtime_error("Exceeded maximum number of iterations in boundary build.");
     }
     for (int i = 0; i < m_mesh.size(); i++)
     {
-      m_mesh.order_dual(i);
+      m_mesh.order_dual(i); // todo: Remove this -- dan
       m_mesh.dual_perimeter(i);
       m_mesh.dual_area(i); 
     }
   }
+}
+
+
+void System::prepare_boundary_ghosts()
+{
+  cout << "ghosts" << endl;
+  vector<int> future_ghosts = m_mesh.get_future_ghost_edges();
+  cout << future_ghosts.size() << endl;
+
+  for (int i = 0; i < future_ghosts.size(); i++)
+  {
+    int e_id = future_ghosts[i];
+    Vertex& v_obtuse = m_mesh.get_vertices()[m_mesh.opposite_vertex(e_id)];
+    Vector3d e_vector = m_mesh.compute_edge_vector(e_id);
+    Edge& E = m_mesh.get_edges()[e_id];
+    Vector3d ref = m_mesh.get_vertices()[E.to].r;
+
+    Vector3d r_ghost = mirror(ref, e_vector, v_obtuse.r);
+    cout << "ghost position ";
+    cout << ref << endl;
+    cout << e_vector << endl;
+    cout << v_obtuse.r << endl;
+    cout << r_ghost <<  endl;
+    int id_ghost = m_particles.size();
+    // Seems that ghost particles should have a type associated with them (?)
+    // In the mean time just make them type 1 (first type)
+    // Set particle radius to 1.0
+    Particle ghost(id_ghost, 1, 1.0);
+    ghost.x = r_ghost.x;
+    ghost.y = r_ghost.y;
+    ghost.z = r_ghost.z;
+    // Default constraint vector is the zero vector. 
+    ghost.Nz = 1.0;
+    this->add_particle(ghost);
+    // populate the lists
+    Particle& p_to = m_particles[E.to];
+    Particle& p_from = m_particles[E.from];
+
+    ghost_neighbours.push_back(make_pair(ghost.id, p_to.id));
+    ghost_neighbours.push_back(make_pair(p_to.id, ghost.id));
+    ghost_neighbours.push_back(make_pair(ghost.id, p_from.id));
+    ghost_neighbours.push_back(make_pair(p_from.id, ghost.id));
+
+    ghost_pid_eid.push_back(make_pair(ghost, e_id));
+
+  }
+  prepared_ghosts = true;
+}
+
+void System::add_boundary_ghosts()
+{
+  for (int i = 0; i < ghost_pid_eid.size(); i++)
+  {
+    pair<int,int>& pideid = ghost_pid_eid[i];
+    m_mesh.insert_ghost(pideid.first, pideid.second);
+    //Particle& ghost 
+  }
+  ghost_neighbours.clear();
+  ghost_pid_eid.clear();
+  m_mesh.clear_future_ghost_edges();
+  m_mesh.has_future_ghosts = false;
+  prepared_ghosts = false;
 }
