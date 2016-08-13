@@ -57,6 +57,18 @@ ostream& operator<<(ostream& out, const Particle& p)
   << format("groups : ");
   for (list<string>::const_iterator it = p.groups.begin(); it != p.groups.end(); it++)
     out << format(" %s ") % (*it);
+  if (p.bonds.size() > 0)
+  {
+    out << endl << format("bonds : ");
+    for (vector<int>::const_iterator it_b = p.bonds.begin(); it_b != p.bonds.end(); it_b++)
+      out << format(" %d ") % (*it_b);
+  }
+  if (p.angles.size() > 0)
+  {
+    out << endl << format("angles : ");
+    for (vector<int>::const_iterator it_a = p.angles.begin(); it_a != p.angles.end(); it_a++)
+      out << format(" %d ") % (*it_a);
+  }
   out << endl;
   out << "----------------------------";
   out << endl;

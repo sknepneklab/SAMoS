@@ -71,6 +71,10 @@ void IntegratorBrownian::integrate()
       if (m_rng->drnd() < m_tau)  // Flip direction n with probability m_tua (dt/tau, where tau is the parameter given in the input file).
       {
         p.nx = -p.nx;  p.ny = -p.ny;  p.nz = -p.nz;
+        if (m_velocity)
+        {
+          p.vx = -p.vx;  p.vy = -p.vy;  p.vz = -p.vz;
+        }
       }
     }
   
@@ -119,6 +123,8 @@ void IntegratorBrownian::integrate()
     double dtheta = m_dt*p.omega + m_stoch_coeff*m_rng->gauss_rng(1.0);
     //double dtheta = m_dt*m_constraint->project_torque(p) + m_stoch_coeff*m_rng->gauss_rng(1.0);
     m_constrainer->rotate_director(p,dtheta);
+    if (m_velocity)
+      m_constrainer->rotate_velocity(p,dtheta);  
     //p.omega = dtheta*m_dt;
     p.age += m_dt;
   }

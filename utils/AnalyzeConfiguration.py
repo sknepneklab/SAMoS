@@ -55,7 +55,7 @@ parser.add_argument("--writeP",action='store_true', default=False, help="Output 
 parser.add_argument("--writeT",action='store_true', default=False, help="Output tesselation")
 parser.add_argument("--writeD",action='store_true', default=False, help="Output defects")
 parser.add_argument("--getStatsBasic",action='store_true',default=False, help="Output basic stats (v2av, packing fraction, energy, pressure)")
-parser.add_argument("--prefix",type=str,default='frame',help="prefix of vtp output files")
+parser.add_argument("--prefix",type=str,default='frame',help="prefix of vtp output files and pickle output")
 args = parser.parse_args()
 
 
@@ -158,9 +158,15 @@ if ((args.writeD) or (args.getStatsBasic)):
 		dataS={'vel2av':vel2av,'phival':phival,'ndensity':ndensity,'pressure':pressure,'fmoment':fmoment,'energy':energy,'energytot':energytot,'zav':zav}
 		data.update(dataS)
 	if args.writeD:	
-		outpickle=args.directory+'defect_data.p'
+		if args.prefix=='frame':
+			outpickle=args.directory+'defect_data.p'
+		else:
+			outpickle=args.directory+args.prefix+'_defect_data.p'
 	else:
-		outpickle=args.directory+'configuration_data.p'
+		if args.prefix=='frame':
+			outpickle=args.directory+'configuration_data.p'
+		else:
+			outpickle=args.directory+args.prefix+'_configuration_data.p'
 	print outpickle
 	pickle.dump(data,open(outpickle,'wb'))
 	

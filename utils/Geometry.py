@@ -130,7 +130,20 @@ class Geometry(object):
 	def ApplyPeriodic3d(self,dr):
 		dr[:,:,0]-=self.Lx*np.round(dr[:,:,0]/self.Lx)
 		dr[:,:,1]-=self.Ly*np.round(dr[:,:,1]/self.Ly)
-		dr[:,:,2]-=self.Lz*np.round(dr[:,:,3]/self.Lz)
+		dr[:,:,2]-=self.Lz*np.round(dr[:,:,2]/self.Lz)
+		return dr
+	  
+	# Sigh, looks like we need some specific x, y and z ones as well ...
+	def ApplyPeriodicX(self,dr):
+		dr-=self.Lx*np.round(dr/self.Lx)
+		return dr
+	
+	def ApplyPeriodicY(self,dr):
+		dr-=self.Ly*np.round(dr/self.Ly)
+		return dr
+	  
+	def ApplyPeriodicZ(self,dr):
+		dr-=self.Lz*np.round(dr/self.Lz)
 		return dr
 		
 
@@ -217,7 +230,47 @@ class GeometrySphere(Geometry):
 		rs = np.sqrt(rval[:,0]**2 + rval[:,1]**2 + rval[:,2]**2)
 		rhat=((rval).transpose()/(rs).transpose()).transpose()
 		return rhat
-        
+       
+       
+# Plane without periodic boundary conditions
+class GeometryPlane(Geometry):
+	def __init__(self,param):
+		self.Lx=param.lx
+		self.Ly=param.ly
+		self.periodic=False
+		self.area=self.Lx*self.Ly
+		print "GeometryPlane: Created new geometry plane with Lx = " + str(self.Lx) + " and Ly = " +str(self.Ly)
+		super(GeometryPlane,self).__init__('plane',param.box,self.periodic,self.area)
+		
+		
+	def TangentBundle(self,rval):
+		x=rval[:,0]
+		y=rval[:,1]
+		ex = np.empty(np.shape(rval))
+		ex[:,0]=1.0*np.ones(len(rval))
+		ex[:,1]=1.0*np.zeros(len(rval))
+		ex[:,2]=1.0*np.zeros(len(rval))
+		ey = np.empty(np.shape(rval))
+		ey[:,0]=1.0*np.zeros(len(rval))
+		ey[:,1]=1.0*np.ones(len(rval))
+		ey[:,2]=1.0*np.zeros(len(rval))
+		return x,y,ex,ey
+	
+	# Unit normal: just the z direction
+	def UnitNormal(self,rval):
+		nvec=np.zeros(np.shape(rval))
+		nvec[:,2]=1.0
+		return nvec
+		
+		
+	def GeodesicDistance12(self,r1,r2):
+		dr=r2-r1
+		return np.sqrt(dr[:,0]**2+dr[:,1]**2)
+	
+	def GeodesicDistance11(self,r1,r2):
+		dr=r2-r1
+		return np.sqrt(dr[0]**2+dr[1]**2)
+	      
 # Plane with periodic boundary conditions. By default, the plane is along x and y
 class GeometryPeriodicPlane(Geometry):
 	def __init__(self,param):

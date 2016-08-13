@@ -64,7 +64,11 @@ public:
   }
   
   //! Enforce constraint
-  void enforce(Particle& p) { }
+  void enforce(Particle& p) 
+  { 
+    if (m_system->get_periodic())
+      m_system->enforce_periodic(p);
+  }
   
   //! Rotate director around normal vector to the plane (z axis)
   void rotate_director(Particle& p, double phi) { }

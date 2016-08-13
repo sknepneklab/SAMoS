@@ -789,27 +789,25 @@ void System::compute_tangent(int i, double& tx, double& ty, double& tz)
   Particle& pi = m_particles[i];
   if (pi.bonds.size() > 0)
   {
-    int j = *(min_element(pi.bonds.begin(), pi.bonds.end()));
-    if (j < pi.get_id())
+    int min_j = 10000000;   // some really large number 
+    for (vector<int>::iterator it_b = pi.bonds.begin(); it_b != pi.bonds.end(); it_b++)
     {
-      Particle& pj = m_particles[j];
-      double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
-      if (m_periodic)
-      {
-        if (dx > m_box->xhi) dx -= m_box->Lx;
-        else if (dx < m_box->xlo) dx += m_box->Lx;
-        if (dy > m_box->yhi) dy -= m_box->Ly;
-        else if (dy < m_box->ylo) dy += m_box->Ly;
-        if (dz > m_box->zhi) dz -= m_box->Lz;
-        else if (dz < m_box->zlo) dz += m_box->Lz;
-      }
-      double l = sqrt(dx*dx + dy*dy + dz*dz);
-      tx = dx/l;
-      ty = dy/l;
-      tz = dz/l;
+      Bond& bond = m_bonds[*it_b];
+      int j = (bond.i == pi.get_id()) ? bond.j : bond.i;
+      if (j < min_j) min_j = j;
     }
+    Particle& pj = m_particles[min_j];
+    double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
+    this->apply_periodic(dx,dy,dz);
+    double l = sqrt(dx*dx + dy*dy + dz*dz);
+    double fact = 1.0;
+    if (min_j > pi.get_id()) fact = -1.0;
+    tx = fact*dx/l;
+    ty = fact*dy/l;
+    tz = fact*dz/l;
   }
 }
+
 
 //! Compute system area by adding up areas of all cells (makse sense only for cell systems)
 double System::compute_area()
@@ -898,7 +896,7 @@ void System::enforce_periodic(Particle& p)
 {
   if (m_periodic)
   {
-    if (p.x < m_box->xlo) 
+    if (p.x <= m_box->xlo) 
     {
       p.x += m_box->Lx;
       p.ix--;
@@ -908,7 +906,7 @@ void System::enforce_periodic(Particle& p)
       p.x -= m_box->Lx;
       p.ix++;
     }
-    if (p.y < m_box->ylo)
+    if (p.y <= m_box->ylo)
     {
       p.y += m_box->Ly;
       p.iy--;
@@ -918,7 +916,7 @@ void System::enforce_periodic(Particle& p)
       p.y -= m_box->Ly;
       p.iy++;
     }
-    if (p.z < m_box->zlo)
+    if (p.z <= m_box->zlo)
     {
       p.z += m_box->Lz;
       p.iz--;

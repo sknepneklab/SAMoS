@@ -82,6 +82,18 @@ public:
       m_msg->msg(Messenger::INFO,"Global coupling constant (tau) for active jamming polar alignment is set to "+param["tau"]+".");
       m_tau = lexical_cast<double>(param["tau"]);
     }
+    
+    if (param.find("normalise") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Velocity alignment is set to use normalised velocity vectors. Alignment strength is independent of v0.");
+      m_msg->write_config("aligner.external.ajpolar.normalise","true");
+      m_normalise = true;
+    }
+    else
+    {
+      m_msg->write_config("aligner.external.ajpolar.normalise","true");
+      m_normalise = false;
+    }
     m_msg->write_config("aligner.external.ajpolar.tau",lexical_cast<string>(m_tau));
     m_type_params = new PolarAJAlignParameters[ntypes];
     for (int i = 0; i < ntypes; i++)
@@ -109,7 +121,6 @@ public:
     
     type = lexical_cast<int>(self_param["type"]);
     
-    
     if (self_param.find("tau") != self_param.end())
     {
       m_msg->msg(Messenger::INFO,"External active jamming polar aligner. Setting coupling constant to "+self_param["tau"]+" for particle pair of type ("+lexical_cast<string>(type)+").");
@@ -135,6 +146,7 @@ public:
 private:
        
   double m_tau;                             //!< Coupling constant
+  bool m_normalise;                        //!< Whether to normalise the velocity in the alignment term
   PolarAJAlignParameters* m_type_params;   //!< type specific pair parameters 
      
 };
