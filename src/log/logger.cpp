@@ -80,6 +80,7 @@ Logger::Logger(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr ali
   m_logger["area"] = boost::make_shared<LogArea>(LogArea(sys, msg, pot, align));
   m_logger["avg_perim"] = boost::make_shared<LogPerim>(LogPerim(sys, msg, pot, align));
   m_logger["size"] = boost::make_shared<LogSize>(LogSize(sys, msg, pot, align));
+  m_logger["kinetic_energy"] = boost::make_shared<LogKineticEng>(LogKineticEng(sys, msg, pot, align));
 
   // ------------------------------------------------------------------
     

@@ -71,8 +71,9 @@ public:
   {
     align = (
                 qi::as_string[keyword["polar"]][phx::bind(&AlignData::type, phx::ref(align_data)) = qi::_1 ]       /*! Handles polar alignment */
-              | qi::as_string[keyword["nematic"]][phx::bind(&AlignData::type, phx::ref(align_data)) = qi::_1 ]       /*! Handles nematic alignment */
-              | qi::as_string[keyword["vicsek"]][phx::bind(&AlignData::type, phx::ref(align_data)) = qi::_1 ]       /*! Handles Vicsek alignment */
+              | qi::as_string[keyword["nematic"]][phx::bind(&AlignData::type, phx::ref(align_data)) = qi::_1 ]     /*! Handles nematic alignment */
+              | qi::as_string[keyword["vicsek"]][phx::bind(&AlignData::type, phx::ref(align_data)) = qi::_1 ]      /*! Handles Vicsek alignment */
+              | qi::as_string[keyword["velocity"]][phx::bind(&AlignData::type, phx::ref(align_data)) = qi::_1 ]    /*! Handles velocity alignment */
              /* to add new potential: | qi::as_string[keyword["newalign"]][phx::bind(&AlignData::type, phx::ref(align_data)) = qi::_1 ] */
             )
             >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&AlignData::params, phx::ref(align_data)) = qi::_1 ]

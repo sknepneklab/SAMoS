@@ -64,6 +64,7 @@
 #include "log_area.hpp"
 #include "log_perim.hpp"
 #include "log_size.hpp"
+#include "log_kinetic_eng.hpp"
 
 using std::string;
 using std::ofstream;

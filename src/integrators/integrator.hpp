@@ -110,6 +110,8 @@ public:
     }
     m_msg->write_config("integrator.group",lexical_cast<string>(m_group_name));
   }
+
+  virtual ~Integrator() { }
   
   //! Propagate system for a time step
   virtual void integrate() = 0;

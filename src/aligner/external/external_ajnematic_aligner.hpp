@@ -71,6 +71,17 @@ public:
   ExternalAJNematicAlign(SystemPtr sys, MessengerPtr msg, pairs_type& param) : ExternalAlign(sys,msg,param)
   {
     int ntypes = m_system->get_ntypes();
+    if (param.find("normalise") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Velocity alignment is set to use normalised velocity vectors. Alignment strength is independent of v0.");
+      m_msg->write_config("aligner.external.ajnematic.normalise","true");
+      m_normalise = true;
+    }
+    else 
+    {
+      m_msg->write_config("aligner.external.ajnematic.normalise","false");
+      m_normalise = false;
+    }
     if (param.find("tau") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No coupling constant (tau) specified for active jamming nematic alignment. Setting it to 1.");
@@ -134,6 +145,7 @@ public:
 private:
        
   double m_tau;                             //!< Coupling constant
+  bool m_normalise;                        //!< Whether to normalise the velocity in the alignment term
   NematicAJAlignParameters* m_type_params;   //!< type specific pair parameters 
      
 };
