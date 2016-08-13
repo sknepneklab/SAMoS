@@ -222,6 +222,10 @@ class SimRun:
 			
 			plt.show()
 		return xval, self.msd
+		
+	# use the geodesic distance on the surface to calculate the MSD	
+	def getMSD_Surface(self):
+		self.msd=np.empty((self.Nsnap,))
 			
 	def getVelcorr(self,dx):
 		# start with the isotropic one - since there is no obvious polar region

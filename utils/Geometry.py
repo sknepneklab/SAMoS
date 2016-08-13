@@ -81,10 +81,10 @@ class Geometry(object):
 	def ParallelTransportSingle(self,r1,r2,a2):
 		return a2
 		
-	def GeodesicDistance11(self,r1,r2):
-		return np.sqrt(np.sum((r2-r1)**2,axis=1))
+	def GeodesicDistance1d(self,r1,r2):
+		return np.sqrt(np.sum((r2-r1)**2,axis=0))
 	
-	def GeodesicDistance12(self,r1,r2):
+	def GeodesicDistance2d(self,r1,r2):
 		return np.sqrt(np.sum((r2-r1)**2,axis=1))
 	
 		
@@ -180,6 +180,18 @@ class GeometrySphere(Geometry):
 		phi = np.arccos(dot_r1r2/(lenr1*lenr2))
 		a2trans=rotate_vectorial(a2,n,-phi)
 		return a2trans
+		
+	def GeodesicDistance1d(self,r1,r2):
+		# That is the arc length for a sphere. Take the dot product, that's the cosine.
+		# Invert with arccos and multiply by 2\pi R
+		cosval=np.sum(r1*r2)/(np.sqrt(np.sum(r1**2))*np.sqrt(np.sum(r2**2)))
+		return np.abs(np.arccos(cosval))*self.R
+		
+	def GeodesicDistance2d(self,r1,r2):
+		# That is the arc length for a sphere. Take the dot product, that's the cosine.
+		# Invert with arccos and multiply by 2\pi R
+		cosval=np.sum(r1*r2,axis=1)/(np.sqrt(np.sum(r1**2,axis=1))*np.sqrt(np.sum(r2**2,axis=1)))
+		return np.abs(np.arccos(cosval))*self.R
 		
 	# Determine the Euler angles, essentially. Find theta and phi for each particle,
 	def TangentBundle(self,rval):
