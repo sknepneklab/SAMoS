@@ -127,6 +127,7 @@ class Profiles:
 		theta_bin=np.linspace(0,np.pi,nbin+1)
 		dtheta=theta_bin[1]-theta_bin[0]
 		theta_out=theta_bin[:nbin]+dtheta/2-np.pi/2
+		print theta_out
 		
 		rho_profile, bin_edges = np.histogram(self.theta, bins=theta_bin,density=True)
 		isdata=[index for index,value in enumerate(rho_profile) if (value >0)]
