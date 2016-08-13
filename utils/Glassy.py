@@ -58,7 +58,7 @@ except:
 	pass
 
 class SimRun:
-	def __init__(self,directory,conffile,inputfile,radiusfile,skip,tracer=False):
+	def __init__(self,directory,conffile,inputfile,radiusfile,skip,tracer=False,ignore=False):
 		self.tracer=tracer
 		self.ignore=ignore
 		self.param = Param(directory+conffile)
@@ -73,10 +73,12 @@ class SimRun:
 		# Number of files that we are dealing with
 		self.Nsnap=len(files)
 		# Find out if this is a simulation with a variable number of particles:
-		if self.param.npopulation>0:
-			self.Nvariable=True
-		else:
-			self.Nvariable=False
+		# For now, otherwise we get a mess ...
+		self.Nvariable=True
+		#if self.param.npopulation>0:
+			#self.Nvariable=True
+		#else:
+			#self.Nvariable=False
 		# Deal with the radii in an appropriate manner:
 		# First check that the potential actually uses radii:
 		# If yes, read them in from the initial file (to be overwritten if there are separate ones in each file)
