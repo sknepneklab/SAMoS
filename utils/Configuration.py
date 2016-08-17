@@ -136,7 +136,9 @@ class Configuration:
 		# Find potential neighbours from neighbour list first
 		cneighbours=self.clist.get_neighbours(self.rval[i,:])
 		#print "Cell list neighbours: " + str(len(cneighbours))
-		dist=self.geom.GeodesicDistance12(self.rval[cneighbours,:],self.rval[i,:])
+		drvec0=self.geom.ApplyPeriodic2d(self.rval[cneighbours,:]-self.rval[i,:])
+		dist=np.sqrt(drvec0[:,0]**2+drvec0[:,1]**2+drvec0[:,2]**2)
+		#dist=self.geom.GeodesicDistance12(self.rval[cneighbours,:],self.rval[i,:])
 		#print "Mean cutoff: " + str(mult*dmax)
 		if self.monodisperse: 
 			neighbours=[cneighbours[index] for index,value in enumerate(dist) if value <mult*dmax]
