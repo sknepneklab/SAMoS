@@ -300,6 +300,10 @@ public:
   //! Set the number of mesh iteration 
   //! \param iter number of iteration 
   void set_max_mesh_iterations(int iter) { m_max_mesh_iter = iter; }
+
+  //! Set value of the boundary type of particles in cell simulations 
+  //! \param type boundary particle type
+  void set_boundary_type(int type) { m_boundary_type = type; }
     
 private:
   
@@ -325,6 +329,7 @@ private:
   bool m_has_exclusions;                //!< If true, there are bonded interactions in the system and therefore those are accompanied with exclusions
   int m_max_mesh_iter;                  //!< Maximum number of iterations when cleaning up boundaries in the tissue simulations
   vector<vector<int> > m_exclusions;    //!< Which particles to be excluded from computing non bonded interactions (basically everything in bonds and angles)
+  int m_boundary_type;                  //!< Type of the boundary particles that are added for cell simulations
    
 };
 

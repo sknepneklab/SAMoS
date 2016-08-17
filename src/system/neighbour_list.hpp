@@ -231,6 +231,12 @@ public:
       m_msg->write_config("nlist.max_iter",param["max_iter"]);
       m_system->set_max_mesh_iterations(lexical_cast<int>(param["max_iter"]));
     }
+    if (param.find("boundary_type") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Neighbour list. Setting typo of boundary particles in tissue simulations to "+param["boundary_type"]+".");
+      m_msg->write_config("nlist.boundary_type",param["boundary_type"]);
+      m_system->set_boundary_type(lexical_cast<int>(param["boundary_type"]));
+    }
     this->build();
   }
   

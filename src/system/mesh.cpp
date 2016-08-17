@@ -548,8 +548,6 @@ int Mesh::opposite_vertex(int e)
     for (int i = 0; i < f.n_sides; i++)
       if ((f.vertices[i] != edge.from) && (f.vertices[i] != edge.to))
         return f.vertices[i];
-    cout << edge << endl;
-    cout << f << endl;
     throw runtime_error("Vertex opposite to an edge: Mesh is not consistent. Paramters are likley wrong and there are overlapping vertices causing face construction to fail.");
   }
   return -1;  // If edge is boundary, return -1.
@@ -846,7 +844,7 @@ void Mesh::update_face_properties()
     else m_vertices[E.from].attached = true;
     Face& face = m_faces[Ep.face];
     face.boundary = true;
-    if (face.get_angle(this->opposite_vertex(Ep.id)) < -0.017452406437283473)
+    if (face.get_angle(this->opposite_vertex(Ep.id)) < 0)
     {
       face.obtuse = true;
       if (!E.attempted_removal)
@@ -874,6 +872,87 @@ bool Mesh::remove_obtuse_boundary()
       no_removals = false;
   }
   return no_removals;
+}
+
+/*! Loop over all boundary edges. If the angle oposite to the boundary 
+ * edge is obtuse, mirror the vertex belonging to the obtuse angle across the 
+ * boundary and and two edges and one triangle. In the next step, equiangulation 
+ * move will pick and flip this edge. This prevents sudden jumps in the force. 
+ * This function returns list of newly added vertices, which will be used to 
+ * add actual particles to the system. 
+*/
+vector<Vector3d> Mesh::fix_obtuse_boundary()
+{
+  vector<Vector3d> new_verts;
+  for (vector<int>::iterator it_b = m_obtuse_boundary.begin(); it_b != m_obtuse_boundary.end(); it_b++)
+  {
+    Edge& E = m_edges[*it_b];
+    Edge& Ep  = m_edges[E.pair];
+    Vertex& Vfrom = m_vertices[E.from];
+    Vertex& Vto = m_vertices[E.to];
+    Vector3d v = this->mirror_vertex(this->opposite_vertex(Ep.id));
+    new_verts.push_back(v);
+    // add vertex
+    this->add_vertex(m_size,v.x,v.y,v.z);
+    Vertex& V = *(m_vertices.end() - 1);
+    V.neigh.push_back(Vfrom.id);
+    V.neigh.push_back(Vto.id);
+    Vfrom.neigh.push_back(V.id);
+    Vto.neigh.push_back(V.id);
+    // add two edges 
+    this->add_edge(Vto.id,V.id);
+    this->add_edge(V.id,Vto.id);
+    Edge& E1 = *(m_edges.end()-1);
+    Edge& E2 = *(m_edges.end()-2);
+    Vto.edges.push_back(E2.id);
+    V.edges.push_back(E1.id);
+    E1.boundary = true;
+    E2.boundary = false;
+    E1.pair = E2.id; 
+    E2.pair = E1.id; 
+    // add two more edges
+    this->add_edge(V.id,Vfrom.id);
+    this->add_edge(Vfrom.id,V.id);
+    Edge& E3 = *(m_edges.end()-1);
+    Edge& E4 = *(m_edges.end()-2);
+    Vfrom.edges.push_back(E4.id);
+    V.edges.push_back(E3.id);
+    E3.boundary = true;
+    E4.boundary = false;
+    E3.pair = E4.id; 
+    E4.pair = E3.id;
+    E.boundary = false;
+    // update list of boundary edges
+    m_boundary_edges.erase(find(m_boundary_edges.begin(),m_boundary_edges.end(),E.id));
+    m_boundary_edges.push_back(E1.id);
+    m_boundary_edges.push_back(E3.id);
+    // handle new face 
+    Face face = Face(m_nface++);
+    face.add_vertex(Vfrom.id);
+    face.add_vertex(V.id);
+    face.add_vertex(Vto.id);
+    face.add_edge(E2.id);
+    face.add_edge(E4.id); 
+    E2.face = face.id; 
+    E4.face = face.id; 
+    E1.face = E.face; 
+    E3.face = E.face;
+    V.faces.push_back(face.id);
+    Vto.faces.push_back(face.id);
+    Vfrom.faces.push_back(face.id);
+    m_faces[E.face].edges.push_back(E1.id);
+    m_faces[E.face].edges.push_back(E3.id);
+    m_faces[E.face].vertices.push_back(V.id);
+    E.face = face.id;
+    this->order_star(V.id);
+    this->order_star(Vfrom.id);
+    this->order_star(Vto.id);
+    face.n_sides = 3;
+    m_faces.push_back(face);
+  }
+  this->update_face_properties();
+  this->update_dual_mesh();
+  return new_verts;
 }
 
 /*! Remove edge triangles.
@@ -1620,3 +1699,20 @@ bool Mesh::remove_edge_face(int f)
   
 }
 
+/*! Compute coordinates of a vertex that is a mirror image (with respect to an edge)
+ *  of a vetex opposite to a boundary edge edge.
+ *  
+ *  \param edge index of the edge 
+ */
+ Vector3d Mesh::mirror_vertex(int edge)
+ {
+   Edge& E = m_edges[edge];
+   Vertex& V0 = m_vertices[this->opposite_vertex(edge)];
+   Vertex& V1 = m_vertices[E.from];
+   Vertex& V2 = m_vertices[E.to];
+   Vector3d r21 = V2.r - V1.r;
+   Vector3d r01 = V0.r - V1.r; 
+   Vector3d rp = (dot(r21,r01)/r21.len2())*r21;
+   Vector3d rn = r01 - rp;
+   return Vector3d(V1.r + (r01 - 2*rn));
+ }

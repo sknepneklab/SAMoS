@@ -216,6 +216,9 @@ public:
   
   //! Remove obtuse boundary faces
   bool remove_obtuse_boundary();
+
+  //! Fix obtuse boundary 
+  vector<Vector3d> fix_obtuse_boundary();
   
   //! Remove edge triangles
   bool remove_edge_triangles();
@@ -281,6 +284,9 @@ private:
   
   //! Remove edge face
   bool remove_edge_face(int);
+
+  //! Returns coordinates of the mirror image of a vertex opposite to a boundary edge
+  Vector3d mirror_vertex(int);
   
   //! Functor used to compare lengths of two edges
   struct CompareEdgeLens

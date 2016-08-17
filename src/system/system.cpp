@@ -78,7 +78,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
                                                                              m_nlist_rescale(1.0),
                                                                              m_current_particle_flag(0),
                                                                              m_dt(0.0),
-                                                                             m_max_mesh_iter(100)
+                                                                             m_max_mesh_iter(100),
+                                                                             m_boundary_type(1)
 {
   vector<int> types;
   vector<string> s_line;
@@ -170,12 +171,10 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         // read particle type
         if (has_keys)
         {
-          if (column_key.find("type") != column_key.end()) {
+          if (column_key.find("type") != column_key.end()) 
             tp = lexical_cast<int>(s_line[column_key["type"]]);
-	  }
-          else {
+          else 
             tp = 1;
-	  }
         }
         else
           tp = lexical_cast<int>(s_line[1]);
@@ -271,7 +270,7 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
           if (column_key.find("omega") != column_key.end())   p.omega = lexical_cast<double>(s_line[column_key["omega"]]);            
         }
         else
-	  if (s_line.size() > 12)
+	      if (s_line.size() > 12)
             p.omega = lexical_cast<double>(s_line[12]);
         // read length
         p.set_length(1.0);
@@ -945,11 +944,26 @@ void System::update_mesh()
     {
       //cout << "iteration : " << iter++ << endl;
       converged = true;
-      converged = converged && m_mesh.remove_obtuse_boundary();
+      //converged = converged && m_mesh.remove_obtuse_boundary();
+      vector<Vector3d> vecs = m_mesh.fix_obtuse_boundary();
+      if (vecs.size() > 0)
+      {
+        for (vector<Vector3d>::iterator it_v = vecs.begin(); it_v != vecs.end(); it_v++)
+        {
+          Vector3d& v = *it_v;
+          Particle p(this->size(),m_boundary_type,1.0);  
+          p.x = v.x; 
+          p.y = v.y; 
+          p.z = v.z; 
+          this->add_particle(p);
+        }
+        converged = false;
+      }
+      converged = converged && m_mesh.equiangulate();
       converged = converged && m_mesh.remove_edge_triangles();
       m_mesh.update_dual_mesh();
       m_mesh.update_face_properties();
-      converged = converged && m_mesh.equiangulate();
+      //converged = converged && m_mesh.equiangulate();
       iter++;
     }
     if (iter >= m_max_mesh_iter)
