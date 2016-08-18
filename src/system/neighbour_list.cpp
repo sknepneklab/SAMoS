@@ -379,8 +379,8 @@ void NeighbourList::build_faces(bool flag)
   // there are no more triangles or edges to remove. This would be
   // simple to implement, but we postpone it unless it causes problems in
   // actual simulations. 
-  mesh.remove_obtuse_boundary();
-  mesh.remove_edge_triangles();
+  //mesh.remove_obtuse_boundary();
+  //mesh.remove_edge_triangles();
   m_system->update_mesh();
 }
 

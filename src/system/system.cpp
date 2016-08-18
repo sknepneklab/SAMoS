@@ -960,7 +960,7 @@ void System::update_mesh()
         converged = false;
       }
       converged = converged && m_mesh.equiangulate();
-      converged = converged && m_mesh.remove_edge_triangles();
+      //converged = converged && m_mesh.remove_edge_triangles();
       m_mesh.update_dual_mesh();
       m_mesh.update_face_properties();
       //converged = converged && m_mesh.equiangulate();

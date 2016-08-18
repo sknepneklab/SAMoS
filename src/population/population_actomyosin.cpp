@@ -60,10 +60,10 @@ void PopulationActomyosin::divide(int t)
     int N = m_system->size();
     vector<int> to_attach;
     vector<int> to_detach;
-    // Probability of attachment/detachment for a given perticle is rate per particle multiplied with time,
-    // where time is equal to m_freq*integrator_time_step.    
-    double attach_prob = m_attach_rate*m_freq*m_system->get_integrator_step();  
-    double detach_prob = m_detach_rate*m_freq*m_system->get_integrator_step();  
+    // Probability of attachment/detachment for a given particle is rate per particle multiplied with time,
+    // where time is equal to m_freq*integrator_time_step.   
+    double attach_prob = m_attach_rate*m_system->get_integrator_step();
+    double detach_prob = m_detach_rate*m_system->get_integrator_step();
     for (int i = 0; i < N; i++)
     {
       Particle& pi = m_system->get_particle(i);                
