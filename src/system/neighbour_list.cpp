@@ -392,6 +392,7 @@ void NeighbourList::build_faces(bool flag)
 bool NeighbourList::build_triangulation()
 {
   vector< pair<Point,unsigned> > points;
+  vector<int> on_convex_hull;
   int N = m_system->size();
   for (int i = 0; i < N; i++)
   {
@@ -404,8 +405,18 @@ bool NeighbourList::build_triangulation()
     points.push_back( make_pair( Point(pi.x,pi.y), pi.get_id() ) );
   }
 
-  Delaunay triangulation;
+  Delaunay triangulation;  
   triangulation.insert(points.begin(),points.end());
+  Vertex_circulator vc = triangulation.incident_vertices(triangulation.infinite_vertex()), done(vc);
+  if (vc != 0) 
+  {
+    do 
+    { 
+      Delaunay::Vertex_handle vert = vc;
+      on_convex_hull.push_back(vert->info());
+    } 
+    while(++vc != done);
+  }
 
   for(Delaunay::Finite_faces_iterator fit = triangulation.finite_faces_begin(); fit != triangulation.finite_faces_end(); fit++)
   {
@@ -521,6 +532,45 @@ bool NeighbourList::same_side_line(Particle& pi, Particle& pj, vector<int>& neig
       }
   }
   return same;
+}
+
+/*! Auxiliary function for computing dot product between two vectors defined by three points.
+ *  This is used to to determine if a particle needs to be mirrored when building the intial triangulation.
+ *  \param p1 particle 1
+ *  \param p2 particle 2
+ *  \param p3 particle 3
+ *  Dot product is computed between vector (p2-p1) and vector (p3-p1)
+*/
+double dot(const Particle& p1, const Particle& p2, const Particle& p3)
+{
+  double x21 = p2.x - p1.x, y21 = p2.y - p1.y, z21 = p2.z - p1.z;
+  double x31 = p3.x - p1.x, y31 = p3.y - p1.y, z31 = p3.z - p1.z;
+  return (x21*x31 + y21*y31 + z21*z31); 
+}
+
+/*! Auxiliary function for finding a mirror image of a point relative to the edge defined by two other points
+ *  This is used to to determine the position of the mirrored particle that sits opposite to a boundary edge 
+ *  and has its associated angle being obtuse. 
+ *  \param p1 particle 1 (mirror this particle)
+ *  \param p2 particle 2 (with repsect to a line connecting this)
+ *  \param p3 particle 3 (and this particle)
+ *  \param x x coordiante of the mirrored particle
+ *  \param y y coordiante of the mirrored particle
+ *  \param z z coordiante of the mirrored particle
+*/
+void mirror(const Particle& p1, const Particle& p2, const Particle& p3, double& x, double& y, double& z)
+{
+  double x32 = p3.x - p2.x, y32 = p3.y - p2.y, z32 = p3.z - p2.z;
+  double len = sqrt(x32*x32 + y32*y32 + z32*z32);
+  double Nx = x32/len, Ny = y32/len, Nz = z32/len;
+  double n_xx = Nx*Nx, n_xy = Nx*Ny, n_xz = Nx*Nz;
+  double n_yx = Ny*Nx, n_yy = Ny*Ny, n_yz = Ny*Nz;
+  double n_zx = Nz*Nx, n_zy = Nz*Ny, n_zz = Nz*Nz;
+  
+  double P_m_Q_x = p2.x - p1.x, P_m_Q_y = p2.y - p1.y, P_m_Q_z = p2.z - p1.z;
+  x = p1.x + 2.0*((1.0 - n_xx)*P_m_Q_x         - n_xy*P_m_Q_y -         n_xz*P_m_Q_z);
+  y = p1.y + 2.0*(      - n_yx*P_m_Q_x + (1.0 - n_yy)*P_m_Q_y -         n_yz*P_m_Q_z); 
+  z = p1.z + 2.0*(      - n_zx*P_m_Q_x         - n_zy*P_m_Q_y + (1.0 - n_zz)*P_m_Q_z); 
 }
 
 

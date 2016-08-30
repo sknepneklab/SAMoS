@@ -317,6 +317,15 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         }
         if (has_keys)
           if (column_key.find("mass") != column_key.end())  p.mass = lexical_cast<double>(s_line[column_key["mass"]]);
+        if (has_keys && (column_key.find("boundary") != column_key.end()))  
+        {
+          if (lexical_cast<int>(s_line[column_key["boundary"]]) != 0)  
+          {
+            p.boundary = true;
+            m_boundary.push_back(p.get_id());
+          }
+          else p.boundary = false;
+        }
         p.set_flag(m_current_particle_flag);
         m_current_particle_flag++;
         m_particles.push_back(p);
@@ -479,6 +488,7 @@ void System::add_particle(Particle& p)
   m_particles.push_back(p);
   for (list<string>::iterator it = p.groups.begin(); it != p.groups.end(); it++)
     m_group[*it]->add_particle(p.get_id());
+  if (p.boundary) m_boundary.push_back(p.get_id());
   // We need to force neighbour list rebuild
   m_force_nlist_rebuild = true;
   m_current_particle_flag++;
@@ -500,13 +510,10 @@ void System::remove_particle(int id)
   // Update all groups
   for(map<string, GroupPtr>::iterator it_g = m_group.begin(); it_g != m_group.end(); it_g++)
     (*it_g).second->shift(id);
-//   for(map<string, GroupPtr>::iterator it_g = m_group.begin(); it_g != m_group.end(); it_g++)
-//   {
-//     if (!this->group_ok((*it_g).first))
-//       cout << "Group " << (*it_g).first << " not OK." << endl;
-//     throw runtime_error("Group not OK.");
-//   }
-  // We need to force neighbour list rebuild
+  for (unsigned int i = 0; i < m_boundary.size(); i++)
+    if (m_boundary[i] > id) m_boundary[i]--;
+  vector<int>::iterator it = find(m_boundary.begin(), m_boundary.end(),id);
+  if (it != m_boundary.end()) m_boundary.erase(it);
   m_force_nlist_rebuild = true;
 }
 

@@ -304,6 +304,9 @@ public:
   //! Set value of the boundary type of particles in cell simulations 
   //! \param type boundary particle type
   void set_boundary_type(int type) { m_boundary_type = type; }
+  
+  //! Get list of all boundary particles
+  vector<int>& get_boundary() { return m_boundary; }
     
 private:
   
@@ -329,6 +332,7 @@ private:
   bool m_has_exclusions;                //!< If true, there are bonded interactions in the system and therefore those are accompanied with exclusions
   int m_max_mesh_iter;                  //!< Maximum number of iterations when cleaning up boundaries in the tissue simulations
   vector<vector<int> > m_exclusions;    //!< Which particles to be excluded from computing non bonded interactions (basically everything in bonds and angles)
+  vector<int> m_boundary;               //!< Contains all particles that belong to the boundary (for tissue simulations)
   int m_boundary_type;                  //!< Type of the boundary particles that are added for cell simulations
    
 };
