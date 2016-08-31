@@ -100,6 +100,7 @@ public:
                  | qi::as_string[keyword["angle_param"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]     /*! Handles angle potential parameters. */
                  | qi::as_string[keyword["read_bonds"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]      /*! Handles bonds file. */
                  | qi::as_string[keyword["read_angles"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]     /*! Handles angles file. */
+                 | qi::as_string[keyword["read_cell_boundary"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]    /*! Handles cell boundary connectivity file. */
                  | qi::as_string[keyword["ntypes"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]          /*! Handles number of types. */
                  | qi::as_string[keyword["config"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]          /*! Handles configuration file. */
                  | qi::as_string[keyword["pair_type_param"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ] /*! Handles particle type parameters for the pair potentials */

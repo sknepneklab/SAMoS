@@ -245,6 +245,9 @@ public:
   //! Read in all angles from the angles file
   void read_angles(const string&);
   
+  //! Read in all boundary neighbours in tissue simulations 
+  void read_boundary_neighbours(const string&);
+  
   //! Get list of exclusions for a given particle
   //! \param i particle index
   vector<int>& get_exclusions(int i) { return m_exclusions[i]; }

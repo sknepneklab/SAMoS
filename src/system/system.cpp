@@ -499,6 +499,14 @@ void System::add_particle(Particle& p)
  */ 
 void System::remove_particle(int id)
 {
+  Particle& pi = m_particles[id];
+  if (pi.boundary)
+  {
+    Particle& pj = m_particles[pi.boundary_neigh[0]];
+    Particle& pk = m_particles[pi.boundary_neigh[1]];
+    pj.boundary_neigh[(pj.boundary_neigh[0] == id) ? 0 : 1] = pk.get_id();
+    pk.boundary_neigh[(pk.boundary_neigh[0] == id) ? 0 : 1] = pj.get_id();
+  }
   m_particles.erase(m_particles.begin() + id);
   // Shift down all ids
   for (unsigned int i = 0; i < m_particles.size(); i++)
@@ -783,6 +791,78 @@ void System::read_angles(const string& angle_file)
   m_n_angle_types = types.size();
 }
 
+/*! Read in conectivity information for boundary particles in tissue simulations
+ *  Boundary neighbours file has the following structure
+ *  # - comments
+ *  id i j
+ *  where id is unique bond id (starts with 0)
+ *  i is the index of boundary particle
+ *  j is the index of its neighbour
+ *  \note only one pair has to be specified, the other one is set atomatically
+ *  
+ *  \param bound_neigh_file name of the file containing boundary connectivity information 
+*/
+void System::read_boundary_neighbours(const string& bound_neigh_file)
+{
+  vector<string> s_line;
+  ifstream inp;
+  inp.exceptions ( std::ifstream::failbit | std::ifstream::badbit );
+  try
+  {
+    inp.open(bound_neigh_file.c_str());
+  }
+  catch (exception& e)
+  {
+    m_msg->msg(Messenger::ERROR,"Problem opening (boundary connectivity) file "+bound_neigh_file);
+    throw e;
+  }
+  
+  string line;
+  m_msg->msg(Messenger::INFO,"Reading boundary connectivity information from file: "+bound_neigh_file);
+  m_msg->write_config("system.bound_neigh_file",bound_neigh_file);
+  
+  
+  inp.exceptions ( std::ifstream::badbit ); // need to reset ios exceptions to avoid EOF failure of getline
+  while ( getline(inp, line) )
+  {
+    trim(line);
+    to_lower(line);
+    if (line[0] != '#' && line.size() > 0)
+    {
+      s_line = split_line(line);
+      if (s_line.size() < 3)
+      {
+        m_msg->msg(Messenger::ERROR,"Insufficient number of parameters to define a bondary neighbours. " + lexical_cast<string>(s_line.size()) + " given, but " + lexical_cast<string>(3) + " expected.");
+        throw runtime_error("Insufficient number of parameters in the boundary connectivity file.");
+      }
+      unsigned int id = lexical_cast<int>(s_line[0]);  // read bond id
+      unsigned int i = lexical_cast<int>(s_line[1]);   // read id of first particle
+      unsigned int j = lexical_cast<int>(s_line[2]);   // read id of second particle
+      if (i >= m_particles.size())
+      {
+        m_msg->msg(Messenger::ERROR,"Index of first particle "+lexical_cast<string>(i)+" is larger than the total number of particles.");
+        throw runtime_error("Wrong particle index.");
+      }
+      if (j >= m_particles.size())
+      {
+        m_msg->msg(Messenger::ERROR,"Index of second particle "+lexical_cast<string>(j)+" is larger than the total number of particles.");
+        throw runtime_error("Wrong particle index.");
+      }
+      Particle& pi = m_particles[i];
+      Particle& pj = m_particles[j];
+      if (!(pi.boundary && pj.boundary))
+      {
+        m_msg->msg(Messenger::ERROR,"Both particles have to be boundary particles in order to define them as boundary neighbours.");
+        throw runtime_error("Inconsistent boundary connectivity information.");
+      }
+      pi.boundary_neigh.push_back(j);
+      pj.boundary_neigh.push_back(i);
+    }
+  }
+  inp.close();
+}
+
+
 //! Compute tangent in the direction of the neighbour with the smallest index
 //! Used for simulation of actomyosin
 //! \param i particle at which we want to compute tangent vector
@@ -952,6 +1032,7 @@ void System::update_mesh()
       //cout << "iteration : " << iter++ << endl;
       converged = true;
       //converged = converged && m_mesh.remove_obtuse_boundary();
+      /*
       vector<Vector3d> vecs = m_mesh.fix_obtuse_boundary();
       if (vecs.size() > 0)
       {
@@ -966,10 +1047,13 @@ void System::update_mesh()
         }
         converged = false;
       }
+      */
       converged = converged && m_mesh.equiangulate();
       //converged = converged && m_mesh.remove_edge_triangles();
       m_mesh.update_dual_mesh();
       m_mesh.update_face_properties();
+      if (m_mesh.has_obtuse_boundary())
+        this->set_force_nlist_rebuild(true);
       //converged = converged && m_mesh.equiangulate();
       iter++;
     }

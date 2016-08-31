@@ -393,6 +393,7 @@ bool NeighbourList::build_triangulation()
 {
   vector< pair<Point,unsigned> > points;
   vector<int> on_convex_hull;
+  //vector<int>& boundary = m_system->get_boundary();
   int N = m_system->size();
   for (int i = 0; i < N; i++)
   {
@@ -429,36 +430,114 @@ bool NeighbourList::build_triangulation()
     Particle& pk = m_system->get_particle(k);
     double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
     m_system->apply_periodic(dx,dy,dz);
-    if (std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
+    // check if all particles are on boundary
+    bool all_boundary;
+    if (pi.boundary && pj.boundary && pk.boundary) 
+      all_boundary = true;
+    else
+      all_boundary = false;
+    // check if all particles are on hull
+    bool all_hull = (find(on_convex_hull.begin(), on_convex_hull.end(), pi.get_id()) != on_convex_hull.end());
+    all_hull = all_hull && (find(on_convex_hull.begin(), on_convex_hull.end(), pj.get_id()) != on_convex_hull.end());
+    all_hull = all_hull && (find(on_convex_hull.begin(), on_convex_hull.end(), pk.get_id()) != on_convex_hull.end());
+    if (all_boundary  && !(all_hull))
     {
-      if (find(m_contact_list[i].begin(),m_contact_list[i].end(),j) == m_contact_list[i].end()) m_contact_list[i].push_back(j);
-      if (find(m_contact_list[j].begin(),m_contact_list[j].end(),i) == m_contact_list[j].end()) m_contact_list[j].push_back(i);
+      if ((pi.boundary_neigh.size() != 2) || (pj.boundary_neigh.size() != 2) || (pk.boundary_neigh.size() != 2))
+        throw runtime_error("Boundary neighbours are not set.");
+      if (find(pi.boundary_neigh.begin(),pi.boundary_neigh.end(),j) != pi.boundary_neigh.end())
+      {
+        if (find(m_contact_list[i].begin(),m_contact_list[i].end(),j) == m_contact_list[i].end()) m_contact_list[i].push_back(j);
+        if (find(m_contact_list[j].begin(),m_contact_list[j].end(),i) == m_contact_list[j].end()) m_contact_list[j].push_back(i);
+      }
+      if (find(pj.boundary_neigh.begin(),pj.boundary_neigh.end(),k) != pj.boundary_neigh.end())
+      {
+        if (find(m_contact_list[j].begin(),m_contact_list[j].end(),k) == m_contact_list[j].end()) m_contact_list[j].push_back(k);
+        if (find(m_contact_list[k].begin(),m_contact_list[k].end(),j) == m_contact_list[k].end()) m_contact_list[k].push_back(j);
+      }
+      if (find(pk.boundary_neigh.begin(),pk.boundary_neigh.end(),i) != pk.boundary_neigh.end())
+      {
+        if (find(m_contact_list[k].begin(),m_contact_list[k].end(),i) == m_contact_list[k].end()) m_contact_list[k].push_back(i);
+        if (find(m_contact_list[i].begin(),m_contact_list[i].end(),k) == m_contact_list[i].end()) m_contact_list[i].push_back(k);
+      }
     }
-    dx = pj.x - pk.x, dy = pj.y - pk.y, dz = pj.z - pk.z;
-    m_system->apply_periodic(dx,dy,dz);
-    if (std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
+    else
     {
-      if (find(m_contact_list[j].begin(),m_contact_list[j].end(),k) == m_contact_list[j].end()) m_contact_list[j].push_back(k);
-      if (find(m_contact_list[k].begin(),m_contact_list[k].end(),j) == m_contact_list[k].end()) m_contact_list[k].push_back(j);
-    }
-    dx = pk.x - pi.x, dy = pk.y - pi.y, dz = pk.z - pi.z;
-    m_system->apply_periodic(dx,dy,dz);
-    if (std::sqrt(dx*dx + dy*dy + dz*dz) < m_max_edge_len)
-    {
-      if (find(m_contact_list[k].begin(),m_contact_list[k].end(),i) == m_contact_list[k].end()) m_contact_list[k].push_back(i);
-      if (find(m_contact_list[i].begin(),m_contact_list[i].end(),k) == m_contact_list[i].end()) m_contact_list[i].push_back(k);
+      bool simple_add = true;
+      int i1, i2, i3;
+      if (pi.boundary && pj.boundary && !(pk.boundary))
+      {
+        if (dot(pk, pi, pj) < 0)
+        {
+          i1 = i; i2 = j; i3 = k;
+          simple_add = false;
+        }
+      }
+      else if (pi.boundary && !(pj.boundary) && pk.boundary)
+      {
+        if (dot(pj, pk, pi) < 0)
+        {
+          i1 = k; i2 = i; i3 = j;
+          simple_add = false;
+        }
+      }
+      else if (!(pi.boundary) && pj.boundary && pk.boundary)
+      {
+        if (dot(pi, pj, pk) < 0)
+        {
+          i1 = j; i2 = k; i3 = i;
+          simple_add = false;
+        }
+      }
+      if (!simple_add)
+      {
+        Particle& p1 = m_system->get_particle(i1);
+        Particle& p2 = m_system->get_particle(i2);
+        Particle& p3 = m_system->get_particle(i3);
+        
+        double x, y, z;
+        mirror(p3, p1, p2, x, y, z);
+        Particle p(m_system->size(),p1.get_type(), p1.get_radius());
+        int i4 = p.get_id();
+        p.x = x; p.y = y; p.z = z;
+        p.Nx = p1.Nx;  p.Ny = p1.Ny;  p.Nz = p1.Nz;
+        p.boundary = true;
+        p1.boundary_neigh[(p1.boundary_neigh[0] == i2) ? 0 : 1] = i4;
+        p2.boundary_neigh[(p2.boundary_neigh[0] == i1) ? 0 : 1] = i4;
+        p.boundary_neigh.push_back(i1);
+        p.boundary_neigh.push_back(i2);
+        m_system->add_particle(p);
+        
+        if (find(m_contact_list[i3].begin(),m_contact_list[i3].end(),i1) == m_contact_list[i3].end()) m_contact_list[i3].push_back(i1);
+        if (find(m_contact_list[i1].begin(),m_contact_list[i1].end(),i3) == m_contact_list[i1].end()) m_contact_list[i1].push_back(i3);
+        
+        if (find(m_contact_list[i3].begin(),m_contact_list[i3].end(),i2) == m_contact_list[i3].end()) m_contact_list[i3].push_back(i2);
+        if (find(m_contact_list[i2].begin(),m_contact_list[i2].end(),i3) == m_contact_list[i2].end()) m_contact_list[i2].push_back(i3);
+        
+        if (find(m_contact_list[i4].begin(),m_contact_list[i4].end(),i1) == m_contact_list[i4].end()) m_contact_list[i4].push_back(i1);
+        if (find(m_contact_list[i1].begin(),m_contact_list[i1].end(),i4) == m_contact_list[i1].end()) m_contact_list[i1].push_back(i4);
+        
+        if (find(m_contact_list[i4].begin(),m_contact_list[i4].end(),i2) == m_contact_list[i4].end()) m_contact_list[i4].push_back(i2);
+        if (find(m_contact_list[i2].begin(),m_contact_list[i2].end(),i4) == m_contact_list[i2].end()) m_contact_list[i2].push_back(i4);
+      }
+      else
+      {
+        if (find(m_contact_list[i].begin(),m_contact_list[i].end(),j) == m_contact_list[i].end()) m_contact_list[i].push_back(j);
+        if (find(m_contact_list[j].begin(),m_contact_list[j].end(),i) == m_contact_list[j].end()) m_contact_list[j].push_back(i);
+        if (find(m_contact_list[j].begin(),m_contact_list[j].end(),k) == m_contact_list[j].end()) m_contact_list[j].push_back(k);
+        if (find(m_contact_list[k].begin(),m_contact_list[k].end(),j) == m_contact_list[k].end()) m_contact_list[k].push_back(j);
+        if (find(m_contact_list[k].begin(),m_contact_list[k].end(),i) == m_contact_list[k].end()) m_contact_list[k].push_back(i);
+        if (find(m_contact_list[i].begin(),m_contact_list[i].end(),k) == m_contact_list[i].end()) m_contact_list[i].push_back(k);
+      }
     }
   }
   
   this->remove_dangling();
-  
   return true;
-  
 }
 #endif
 
 
-//! Remove all edges that have one contanct
+//! Remove all edges that have two or less contacts
 void NeighbourList::remove_dangling()
 {
   bool done = false;
@@ -468,11 +547,14 @@ void NeighbourList::remove_dangling()
     done = true;
     for (int i = 0; i < N; i++)
     {
-      if (m_contact_list[i].size() == 1)
+      if (m_contact_list[i].size() <= 2)
       {
-        vector<int>& v = m_contact_list[m_contact_list[i][0]];
-        vector<int>::iterator it = find(v.begin(),v.end(),i);
-        if (it != v.end()) v.erase(it);
+        for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
+        {
+          vector<int>& v = m_contact_list[m_contact_list[i][j]];
+          vector<int>::iterator it = find(v.begin(),v.end(),i);
+          if (it != v.end()) v.erase(it);
+        }
         m_contact_list[i].clear();
         done = false;
       }
@@ -491,6 +573,13 @@ void NeighbourList::remove_dangling()
    
    vector<int> to_remove;
    int offset = 0;  // We need to shift vertex ids to match them in the removal
+   for (unsigned int i = 0; i < m_contact_list.size(); i++)
+     if (m_contact_list[i].size() == 0)
+     {
+       to_remove.push_back(i-offset);
+       offset++;       
+     }
+   /*
    for (int v = 0; v < mesh.size(); v++)
    {
      Vertex& V = mesh.get_vertices()[v];
@@ -500,6 +589,7 @@ void NeighbourList::remove_dangling()
        offset++;
      }
    }
+   */
    for (unsigned int i = 0; i < to_remove.size(); i++)
      m_system->remove_particle(to_remove[i]);
  } 

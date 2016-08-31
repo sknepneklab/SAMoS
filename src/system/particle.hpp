@@ -229,6 +229,7 @@ public:
   list<string> groups;         //!< List of all groups particle belongs to.
   vector<int> bonds;           //!< List of all bonds this particle belongs to
   vector<int> angles;          //!< List of all angles this particle belongs to
+  vector<int> boundary_neigh;  //!< For a boundary particle (tissue simulation) list all its boundary neighbours
   int coordination;            //!< Keeps track of the number of neighbours
   double mass;                 //!< Particle mass
   

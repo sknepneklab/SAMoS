@@ -239,8 +239,15 @@ public:
   //! Compute radius of a circumscribed circle
   double circum_radius(int);
   
-  //! Compute data for ploting polyons
+  //! Compute data for plotting polygons
   PlotArea& plot_area(bool);
+  
+  //! Return true if the mesh has at least one obruse boundary triangle
+  bool has_obtuse_boundary() 
+  {
+    if (m_obtuse_boundary.size() != 0) return true;
+    else return false;
+  }
      
 private:  
   
