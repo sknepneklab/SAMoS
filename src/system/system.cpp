@@ -519,7 +519,12 @@ void System::remove_particle(int id)
   for(map<string, GroupPtr>::iterator it_g = m_group.begin(); it_g != m_group.end(); it_g++)
     (*it_g).second->shift(id);
   for (unsigned int i = 0; i < m_boundary.size(); i++)
+  {
     if (m_boundary[i] > id) m_boundary[i]--;
+    Particle& p = m_particles[m_boundary[i]];
+    if (p.boundary_neigh[0] > id) p.boundary_neigh[0]--;
+    if (p.boundary_neigh[1] > id) p.boundary_neigh[1]--;
+  }
   vector<int>::iterator it = find(m_boundary.begin(), m_boundary.end(),id);
   if (it != m_boundary.end()) m_boundary.erase(it);
   m_force_nlist_rebuild = true;

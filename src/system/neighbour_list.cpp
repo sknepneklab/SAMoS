@@ -391,6 +391,7 @@ void NeighbourList::build_faces(bool flag)
 */
 bool NeighbourList::build_triangulation()
 {
+  cout << "Building trianulation." << endl;
   vector< pair<Point,unsigned> > points;
   vector<int> on_convex_hull;
   //vector<int>& boundary = m_system->get_boundary();
@@ -500,12 +501,14 @@ bool NeighbourList::build_triangulation()
         int i4 = p.get_id();
         p.x = x; p.y = y; p.z = z;
         p.Nx = p1.Nx;  p.Ny = p1.Ny;  p.Nz = p1.Nz;
+        p.coordination = 3;
         p.boundary = true;
         p1.boundary_neigh[(p1.boundary_neigh[0] == i2) ? 0 : 1] = i4;
         p2.boundary_neigh[(p2.boundary_neigh[0] == i1) ? 0 : 1] = i4;
         p.boundary_neigh.push_back(i1);
         p.boundary_neigh.push_back(i2);
         m_system->add_particle(p);
+        
         
         if (find(m_contact_list[i3].begin(),m_contact_list[i3].end(),i1) == m_contact_list[i3].end()) m_contact_list[i3].push_back(i1);
         if (find(m_contact_list[i1].begin(),m_contact_list[i1].end(),i3) == m_contact_list[i1].end()) m_contact_list[i1].push_back(i3);
@@ -547,7 +550,7 @@ void NeighbourList::remove_dangling()
     done = true;
     for (int i = 0; i < N; i++)
     {
-      if (m_contact_list[i].size() <= 2)
+      if ((m_contact_list[i].size() > 0) && (m_contact_list[i].size() <= 2))
       {
         for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
         {
@@ -591,7 +594,10 @@ void NeighbourList::remove_dangling()
    }
    */
    for (unsigned int i = 0; i < to_remove.size(); i++)
+   {
+     cout << "Removing : " << to_remove[i] << endl;
      m_system->remove_particle(to_remove[i]);
+   }
  } 
 
 /*! Aufiliary function which checks if all negbours are on the same side a line connecting two 
