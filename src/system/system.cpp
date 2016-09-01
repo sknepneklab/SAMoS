@@ -522,6 +522,8 @@ void System::remove_particle(int id)
   {
     if (m_boundary[i] > id) m_boundary[i]--;
     Particle& p = m_particles[m_boundary[i]];
+    if (!p.boundary)
+      throw runtime_error("Not a boundary particle.");
     if (p.boundary_neigh[0] > id) p.boundary_neigh[0]--;
     if (p.boundary_neigh[1] > id) p.boundary_neigh[1]--;
   }

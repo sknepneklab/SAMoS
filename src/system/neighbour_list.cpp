@@ -132,6 +132,12 @@ void NeighbourList::build_nsq()
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
+    pi.coordination = 0;
+  }
+  
+  for (int i = 0; i < N; i++)
+  {
+    Particle& pi = m_system->get_particle(i);
     for (int j = i + 1; j < N; j++)
     {
       Particle& pj = m_system->get_particle(j);
@@ -174,6 +180,12 @@ void NeighbourList::build_cell()
   m_old_state.clear();
   
   m_cell_list->populate();
+  
+  for (int i = 0; i < N; i++)
+  {
+    Particle& pi = m_system->get_particle(i);
+    pi.coordination = 0;
+  }
   
   for (int i = 0; i < N; i++)
   {
@@ -491,24 +503,66 @@ bool NeighbourList::build_triangulation()
       }
       if (!simple_add)
       {
+        cout << "Needs flip." << endl;
         Particle& p1 = m_system->get_particle(i1);
         Particle& p2 = m_system->get_particle(i2);
         Particle& p3 = m_system->get_particle(i3);
         
-        double x, y, z;
-        mirror(p3, p1, p2, x, y, z);
-        Particle p(m_system->size(),p1.get_type(), p1.get_radius());
-        int i4 = p.get_id();
+        double x, y, z;                  // contains coordinates of mirrored particles 
+        mirror(p3, p1, p2, x, y, z);     // compute poistion of mirrored particle 
+        Particle p(m_system->size(),p1.get_type(), p1.get_radius());    // generate new particle with the "last" id and inhereted type and radus from p1
+        int i4 = p.get_id();                                            
+        // set parameters for the new particle
         p.x = x; p.y = y; p.z = z;
         p.Nx = p1.Nx;  p.Ny = p1.Ny;  p.Nz = p1.Nz;
-        p.coordination = 3;
+        p.coordination = 0;
+        p.groups.push_back("all");
         p.boundary = true;
         p1.boundary_neigh[(p1.boundary_neigh[0] == i2) ? 0 : 1] = i4;
         p2.boundary_neigh[(p2.boundary_neigh[0] == i1) ? 0 : 1] = i4;
         p.boundary_neigh.push_back(i1);
         p.boundary_neigh.push_back(i2);
+        // add it to the system
         m_system->add_particle(p);
+        m_system->add_boundary(p.get_id());
+        // Extend the contact and neighbour list
+        m_contact_list.push_back(vector<int>());
+        m_list.push_back(vector<int>());
         
+        // update neighbour list
+        double cut = m_cut+m_pad;
+        double cut2 = cut*cut;
+        for (int part = 0; part < m_system->size()-1; part++)
+        {
+          Particle& p_n = m_system->get_particle(part);
+          bool exclude = false;
+          double dx = p.x - p_n.x;
+          double dy = p.y - p_n.y;
+          double dz = p.z - p_n.z;
+          m_system->apply_periodic(dx,dy,dz);
+          double d2 = dx*dx + dy*dy + dz*dz;
+          if (m_system->has_exclusions())
+            if (m_system->in_exclusion(p.get_id(), p_n.get_id()))
+              exclude = true;
+          if (d2 < cut2 && (!exclude))
+            m_list[part].push_back(p.get_id());
+          if (d2 < cut2)
+          {
+            double r = p.get_radius() + p_n.get_radius();
+            if (d2 < r*r)
+            {
+              p.coordination++;
+              p_n.coordination++;
+            }
+          }
+        }
+        m_old_state.push_back(PartPos(p.x,p.y,p.z));
+        
+        cout << p1 << endl;
+        cout << p2 << endl;
+        cout << p3 << endl;
+        cout << p << endl;
+        cout << m_system->size() << endl;
         
         if (find(m_contact_list[i3].begin(),m_contact_list[i3].end(),i1) == m_contact_list[i3].end()) m_contact_list[i3].push_back(i1);
         if (find(m_contact_list[i1].begin(),m_contact_list[i1].end(),i3) == m_contact_list[i1].end()) m_contact_list[i1].push_back(i3);
@@ -521,6 +575,9 @@ bool NeighbourList::build_triangulation()
         
         if (find(m_contact_list[i4].begin(),m_contact_list[i4].end(),i2) == m_contact_list[i4].end()) m_contact_list[i4].push_back(i2);
         if (find(m_contact_list[i2].begin(),m_contact_list[i2].end(),i4) == m_contact_list[i2].end()) m_contact_list[i2].push_back(i4);
+        
+        if (find(m_contact_list[i4].begin(),m_contact_list[i4].end(),i3) == m_contact_list[i4].end()) m_contact_list[i4].push_back(i3);
+        if (find(m_contact_list[i3].begin(),m_contact_list[i3].end(),i4) == m_contact_list[i3].end()) m_contact_list[i3].push_back(i4);
       }
       else
       {
@@ -535,6 +592,7 @@ bool NeighbourList::build_triangulation()
   }
   
   this->remove_dangling();
+  this->remove_detached();
   return true;
 }
 #endif
@@ -552,6 +610,7 @@ void NeighbourList::remove_dangling()
     {
       if ((m_contact_list[i].size() > 0) && (m_contact_list[i].size() <= 2))
       {
+        cout << "Remove dangling : " << i << "  " << m_contact_list[i].size() << endl;
         for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
         {
           vector<int>& v = m_contact_list[m_contact_list[i][j]];
@@ -597,6 +656,17 @@ void NeighbourList::remove_dangling()
    {
      cout << "Removing : " << to_remove[i] << endl;
      m_system->remove_particle(to_remove[i]);
+     if (m_contact_list[to_remove[i]].size() != 0)
+       throw runtime_error("Trying to remove connected particle.");
+     else
+     {
+       m_contact_list.erase(m_contact_list.begin() + to_remove[i]);
+       for (unsigned int j = 0; j < m_contact_list.size(); j++)
+       {
+         for (unsigned int k = 0; k < m_contact_list[j].size(); k++)
+           if (m_contact_list[j][k] > to_remove[i]) m_contact_list[j][k]--;
+       }
+     }
    }
  } 
 

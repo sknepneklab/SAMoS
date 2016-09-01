@@ -310,6 +310,10 @@ public:
   
   //! Get list of all boundary particles
   vector<int>& get_boundary() { return m_boundary; }
+  
+  //! Add particle to the list of boundary particles
+  //! \param id particle id
+  void add_boundary(int id) { m_boundary.push_back(id); }
     
 private:
   
