@@ -1016,11 +1016,14 @@ void Dump::dump_vtp(int step)
       vtkSmartPointer<vtkLine> edge =  vtkSmartPointer<vtkLine>::New();
       vtkSmartPointer<vtkDoubleArray> lens =  vtkSmartPointer<vtkDoubleArray>::New();
       vtkSmartPointer<vtkDoubleArray> boundary =  vtkSmartPointer<vtkDoubleArray>::New();
+      vtkSmartPointer<vtkDoubleArray> boundary_part =  vtkSmartPointer<vtkDoubleArray>::New();
       vtkSmartPointer<vtkIntArray> boundary_edges =  vtkSmartPointer<vtkIntArray>::New();
       lens->SetName("Length");
       lens->SetNumberOfComponents(1);
       boundary->SetName("Boundary");
       boundary->SetNumberOfComponents(1);
+      boundary_part->SetName("BoundaryPart");
+      boundary_part->SetNumberOfComponents(1);
       boundary_edges->SetName("Boundary");
       boundary_edges->SetNumberOfComponents(1);
       // Edited for this to be backwards for better paraview plotting
@@ -1035,6 +1038,15 @@ void Dump::dump_vtp(int step)
           boundary->InsertNextValue(2);
       }
       polydata->GetPointData()->AddArray(boundary);
+      for (int i = 0; i < N; i++)
+      {
+        Particle& pi = m_system->get_particle(particles[i]);
+        if (pi.boundary)
+          boundary_part->InsertNextValue(0);
+        else
+          boundary_part->InsertNextValue(1);
+      }
+      polydata->GetPointData()->AddArray(boundary_part);
       for (int e = 0; e < mesh.nedges(); e++)
       {
         Edge& ee = mesh.get_edges()[e];

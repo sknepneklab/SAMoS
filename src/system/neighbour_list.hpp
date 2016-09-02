@@ -323,8 +323,8 @@ private:
   vector<vector<int> >  m_contact_list;    //!< Holds the contact list for each particle
     
   // Actual neighbour list builds
-  void build_nsq();    //!< Build with N^2 algorithm
-  void build_cell();   //!< Build using cells list
+  void build_nsq(int);    //!< Build with N^2 algorithm
+  void build_cell();      //!< Build using cells list
   
   // Does contact list build
   void build_contacts();
