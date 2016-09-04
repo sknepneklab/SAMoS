@@ -332,8 +332,8 @@ void Mesh::order_star(int v)
     // Vertex star is not ordered
     V.ordered = true;
     // Make sure that the star of boudaries is in proper order
-    //if (V.boundary)
-    //  this->order_boundary_star(V.id);
+    if (V.boundary)
+      this->order_boundary_star(V.id);
     this->order_dual(v);
   }
   
@@ -397,7 +397,7 @@ void Mesh::order_dual(int v)
   int i = 0;
   while(V.dual.size() < V.faces.size())
   {
-    Face& Fi = m_faces[V.dual[i++]];
+    Face& Fi = m_faces[V.dual[i]];
     Vector3d ri;
     if (V.boundary)
       ri = Fi.rc - V.r;
@@ -405,6 +405,7 @@ void Mesh::order_dual(int v)
       ri = Fi.rc - fc;
     double min_angle = 2.0*M_PI;
     int next_dual;
+    bool can_add = false;
     for (unsigned int f = 0; f < V.faces.size(); f++)
     {
       Face& Fj = m_faces[V.faces[f]];
@@ -423,11 +424,23 @@ void Mesh::order_dual(int v)
           {
             min_angle = ang;
             next_dual = Fj.id;
+            can_add = true;
           }
         }
       }
     }
-    V.dual.push_back(next_dual);
+    if (can_add)
+    {
+      V.dual.push_back(next_dual);
+      i++;
+    }
+    else
+    {
+      cout << V << endl;
+      for (unsigned int f = 0; f < V.faces.size(); f++)
+        cout << m_faces[V.faces[f]] << endl;
+      //throw runtime_error("Unable to order vertex.");
+    }
     // for boundary vertices add the hole to the end
     if (V.boundary && (V.dual.size() == V.n_faces-1))
       V.dual.push_back(V.faces[V.n_faces-1]);
@@ -455,8 +468,9 @@ double Mesh::dual_area(int v)
     cout << V << endl;
     throw runtime_error("Vertex star has to be ordered before dual area can be computed.");
   }
-  
+
   V.area = 0.0;
+  if (V.dual.size() < 3) return V.area;
   if (!V.boundary)
   {
     for (int f = 0; f < V.n_faces; f++)
@@ -1511,7 +1525,7 @@ void Mesh::order_boundary_star(int v)
     }
   }
   rotate(V.edges.begin(), V.edges.begin()+pos, V.edges.end());
-  rotate(V.dual.begin(), V.dual.begin()+pos, V.dual.end());
+  //rotate(V.dual.begin(), V.dual.begin()+pos, V.dual.end());
   rotate(V.neigh.begin(), V.neigh.begin()+pos, V.neigh.end());
   rotate(V.faces.begin(), V.faces.begin()+pos, V.faces.end());
   
