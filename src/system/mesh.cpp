@@ -434,12 +434,13 @@ void Mesh::order_dual(int v)
       V.dual.push_back(next_dual);
       i++;
     }
-    else
+    if (!can_add && V.boundary && (V.dual.size() != V.n_faces-1))
     {
       cout << V << endl;
       for (unsigned int f = 0; f < V.faces.size(); f++)
         cout << m_faces[V.faces[f]] << endl;
-      //throw runtime_error("Unable to order vertex.");
+      this->debug_dump("test.off");
+      throw runtime_error("Unable to order vertex.");
     }
     // for boundary vertices add the hole to the end
     if (V.boundary && (V.dual.size() == V.n_faces-1))
@@ -1747,3 +1748,32 @@ bool Mesh::remove_edge_face(int f)
    Vector3d rn = r01 - rp;
    return Vector3d(V1.r + (r01 - 2*rn));
  }
+
+
+/*! Dump entire mesh into an OFF file for debugging purposes. 
+ *  \param name file name for output 
+ */
+void Mesh::debug_dump(const string& name)
+{
+  ofstream out(name.c_str());
+  out << "OFF" << endl;
+  out << "# SAMoS debug OFF file." << endl;
+  out << m_vertices.size() << " " << m_faces.size()-1 << " 0" << endl;
+  for (unsigned int v = 0; v < m_vertices.size(); v++)
+  {
+    Vertex& V = m_vertices[v];
+    out << V.r.x << " " << V.r.y << " " << V.r.z << endl;
+  }
+  for (unsigned int f = 0; f < m_faces.size(); f++)
+  {
+    Face& F = m_faces[f];
+    if (F.n_sides < 7)  // some number larger than 3 to catch bugs but omit outter face
+    {
+      out << F.n_sides << " ";
+      for (int v = 0; v < F.n_sides; v++)
+        out << F.vertices[v] << " ";
+      out << endl;
+    }
+  }
+  out.close();
+}

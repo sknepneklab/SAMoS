@@ -514,21 +514,21 @@ void System::remove_particle(int id)
     Particle& p = m_particles[i];
     if (p.get_id() > id)
       p.set_id(p.get_id() - 1);
+    if (p.boundary)
+    {
+      if (p.boundary_neigh[0] > id) p.boundary_neigh[0]--;
+      if (p.boundary_neigh[1] > id) p.boundary_neigh[1]--;
+    }
   }
   // Update all groups
   for(map<string, GroupPtr>::iterator it_g = m_group.begin(); it_g != m_group.end(); it_g++)
     (*it_g).second->shift(id);
-  for (unsigned int i = 0; i < m_boundary.size(); i++)
-  {
-    if (m_boundary[i] > id) m_boundary[i]--;
-    Particle& p = m_particles[m_boundary[i]];
-    if (!p.boundary)
-      throw runtime_error("Not a boundary particle.");
-    if (p.boundary_neigh[0] > id) p.boundary_neigh[0]--;
-    if (p.boundary_neigh[1] > id) p.boundary_neigh[1]--;
-  }
+  
   vector<int>::iterator it = find(m_boundary.begin(), m_boundary.end(),id);
   if (it != m_boundary.end()) m_boundary.erase(it);
+  for (unsigned int i = 0; i < m_boundary.size(); i++)  
+    if (m_boundary[i] > id) m_boundary[i]--;
+  
   m_force_nlist_rebuild = true;
 }
 

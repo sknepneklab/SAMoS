@@ -42,6 +42,8 @@
 #include <vector>
 #include <stdexcept>
 #include <utility>
+#include <string>
+#include <fstream>
 
 //#include <boost/property_map/property_map.hpp>
 //#include <boost/ref.hpp>
@@ -59,6 +61,8 @@
 
 using std::vector;
 using std::pair;
+using std::string;
+using std::ofstream;
 
 #ifdef HAS_CGAL
 /*! Typdefs for CGAL library */
@@ -349,6 +353,9 @@ private:
   // Check if all particles are on the same side
   bool same_side_line(Particle&, Particle&, vector<int>&);
   
+  //! Dump particles and connectivity into a MOL2 file for debugging
+  void debug_dump(const string&);
+
 };
 
 typedef shared_ptr<NeighbourList> NeighbourListPtr;
@@ -358,5 +365,6 @@ double dot(const Particle&, const Particle&, const Particle&);
 
 //! Mirror image of a point with respect to an edge
 void mirror(const Particle&, const Particle&, const Particle&, double&, double&, double&);
+
 
 #endif

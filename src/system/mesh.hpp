@@ -50,6 +50,7 @@
 #include <algorithm>
 #include <exception>
 #include <cassert>
+#include <fstream>
 
 #include <boost/format.hpp>
 
@@ -65,6 +66,7 @@ using std::sort;
 using std::reverse;
 using std::rotate;
 using std::runtime_error;
+using std::ofstream;
 
 typedef pair<int,int> VertexPair;
 
@@ -248,6 +250,9 @@ public:
     if (m_obtuse_boundary.size() != 0) return true;
     else return false;
   }
+
+  //! Dump mesh into off file for debugging purposes
+  void debug_dump(const string&);
      
 private:  
   
