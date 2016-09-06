@@ -434,6 +434,28 @@ bool NeighbourList::build_triangulation()
   }
   */
   
+  ofstream out("dela.off");
+  out << "OFF" << endl;
+  out << "# SAMoS debug OFF file." << endl;
+  int del_size = 0;
+  for(Delaunay::Finite_faces_iterator fit = triangulation.finite_faces_begin(); fit != triangulation.finite_faces_end(); fit++)
+    del_size++;
+  out << m_system->size() << " " << del_size << " 0" << endl;
+  for (int i = 0; i < m_system->size(); i++)
+  {
+    Particle& p = m_system->get_particle(i);
+    out << p.x << " " << p.y << " " << p.z << endl;
+  }
+  for(Delaunay::Finite_faces_iterator fit = triangulation.finite_faces_begin(); fit != triangulation.finite_faces_end(); fit++)
+  {
+    Delaunay::Face_handle face = fit;
+    int i = face->vertex(0)->info();
+    int j = face->vertex(1)->info();
+    int k = face->vertex(2)->info();
+    out << 3 << " " << i << " " << j << " " << k << endl;
+  }
+  out.close();
+  
   for(Delaunay::Finite_faces_iterator fit = triangulation.finite_faces_begin(); fit != triangulation.finite_faces_end(); fit++)
   {
     Delaunay::Face_handle face = fit;
@@ -511,19 +533,22 @@ bool NeighbourList::build_triangulation()
 
         double x, y, z;                  // contains coordinates of mirrored particles 
         mirror(p3, p1, p2, x, y, z);     // compute poistion of mirrored particle 
-        Particle p(m_system->size(),p1.get_type(), p1.get_radius());    // generate new particle with the "last" id and inhereted type and radus from p1
+        Particle p(m_system->size(),p3.get_type(), p3.get_radius());    // generate new particle with the "last" id and inhereted type and radus from p3
         int i4 = p.get_id();                                            
         // set parameters for the new particle
         p.x = x; p.y = y; p.z = z;
-        p.Nx = p1.Nx;  p.Ny = p1.Ny;  p.Nz = p1.Nz;
-        p.nx = p1.nx;  p.ny = p1.ny;  p.nz = p1.nz;
+        p.Nx = p3.Nx;  p.Ny = p3.Ny;  p.Nz = p3.Nz;
+        p.nx = p3.nx;  p.ny = p3.ny;  p.nz = p3.nz;
         p.coordination = 0;
         p.groups.push_back("all");
+        // Note: Make sure that new particle is added to all necessary groups. 
         p.boundary = true;
         p1.boundary_neigh[(p1.boundary_neigh[0] == i2) ? 0 : 1] = i4;
         p2.boundary_neigh[(p2.boundary_neigh[0] == i1) ? 0 : 1] = i4;
         p.boundary_neigh.push_back(i1);
         p.boundary_neigh.push_back(i2);
+        p3.boundary = false; 
+        p3.boundary_neigh.clear();
         // add it to the system
         m_system->add_particle(p);
         // Extend the contact and neighbour list
@@ -552,8 +577,10 @@ bool NeighbourList::build_triangulation()
       {
         if (find(m_contact_list[i].begin(),m_contact_list[i].end(),j) == m_contact_list[i].end()) m_contact_list[i].push_back(j);
         if (find(m_contact_list[j].begin(),m_contact_list[j].end(),i) == m_contact_list[j].end()) m_contact_list[j].push_back(i);
+        
         if (find(m_contact_list[j].begin(),m_contact_list[j].end(),k) == m_contact_list[j].end()) m_contact_list[j].push_back(k);
         if (find(m_contact_list[k].begin(),m_contact_list[k].end(),j) == m_contact_list[k].end()) m_contact_list[k].push_back(j);
+        
         if (find(m_contact_list[k].begin(),m_contact_list[k].end(),i) == m_contact_list[k].end()) m_contact_list[k].push_back(i);
         if (find(m_contact_list[i].begin(),m_contact_list[i].end(),k) == m_contact_list[i].end()) m_contact_list[i].push_back(k);
       }
