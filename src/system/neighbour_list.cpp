@@ -531,6 +531,12 @@ bool NeighbourList::build_triangulation()
         Particle& p2 = m_system->get_particle(i2);
         Particle& p3 = m_system->get_particle(i3);
 
+        // Check is the contact between p1 and p2 exists and if so remove if 
+        vector<int>::iterator it_p = find(m_contact_list[i1].begin(),m_contact_list[i1].end(),i2);
+        if (it_p != m_contact_list[i1].end()) m_contact_list[i1].erase(it_p);
+        it_p = find(m_contact_list[i2].begin(),m_contact_list[i2].end(),i1);
+        if (it_p != m_contact_list[i2].end()) m_contact_list[i2].erase(it_p);
+
         double x, y, z;                  // contains coordinates of mirrored particles 
         mirror(p3, p1, p2, x, y, z);     // compute poistion of mirrored particle 
         Particle p(m_system->size(),p3.get_type(), p3.get_radius());    // generate new particle with the "last" id and inhereted type and radus from p3
