@@ -57,6 +57,28 @@ static int check_projection(Particle& pi, Particle& pj, Particle& pk)
   return (t >= 0.0 && t <= 1.0);
 }
 
+/* Get neighbour opposite to an edge
+*/
+static int get_opposite(const Delaunay::Face_handle f, const int i, const int j)
+{
+  int I = f->vertex(0)->info(), J = f->vertex(1)->info(), K = f->vertex(2)->info();
+  if (I == i)
+  {
+    if (J == j) return K;
+    else return J;
+  }
+  else if (J == i)
+  {
+    if (I == j) return K;
+    else return I;
+  }
+  else
+  {
+    if (J == j) return I;
+    else return J;
+  }
+}
+
 /*! Build neighbour list.
 */
 void NeighbourList::build()
@@ -421,19 +443,8 @@ bool NeighbourList::build_triangulation()
   
   Delaunay triangulation;  
   triangulation.insert(points.begin(),points.end());
-  /*
-  Vertex_circulator vc = triangulation.incident_vertices(triangulation.infinite_vertex()), done(vc);
-  if (vc != 0) 
-  {
-    do 
-    { 
-      Delaunay::Vertex_handle vert = vc;
-      on_convex_hull.push_back(vert->info());
-    } 
-    while(++vc != done);
-  }
-  */
   
+  /*
   ofstream out("dela.off");
   out << "OFF" << endl;
   out << "# SAMoS debug OFF file." << endl;
@@ -455,92 +466,89 @@ bool NeighbourList::build_triangulation()
     out << 3 << " " << i << " " << j << " " << k << endl;
   }
   out.close();
-  
-  for(Delaunay::Finite_faces_iterator fit = triangulation.finite_faces_begin(); fit != triangulation.finite_faces_end(); fit++)
+  int idx = 1; 
+  for(Delaunay::Finite_edges_iterator eit = triangulation.finite_edges_begin(); eit != triangulation.finite_edges_end(); eit++)
   {
-    Delaunay::Face_handle face = fit;
-    int i = face->vertex(0)->info();
-    int j = face->vertex(1)->info();
-    int k = face->vertex(2)->info();
-    Particle& pi = m_system->get_particle(i);
-    Particle& pj = m_system->get_particle(j);
-    Particle& pk = m_system->get_particle(k);
-
-    // check if all particles are on boundary
-    bool all_boundary;
-    if (pi.boundary && pj.boundary && pk.boundary) 
-      all_boundary = true;
-    else
-      all_boundary = false;
-    // check if all particles are on hull
-    //bool all_hull = (find(on_convex_hull.begin(), on_convex_hull.end(), pi.get_id()) != on_convex_hull.end());
-    //all_hull = all_hull && (find(on_convex_hull.begin(), on_convex_hull.end(), pj.get_id()) != on_convex_hull.end());
-    //all_hull = all_hull && (find(on_convex_hull.begin(), on_convex_hull.end(), pk.get_id()) != on_convex_hull.end());
-    //if (all_boundary  && !(all_hull))
-    if (all_boundary)
+    Delaunay::Face_handle f1 = eit->first;
+    Delaunay::Face_handle f2 = f1->neighbor(eit->second);
+    int i = f1->vertex(f1->cw(eit->second))->info();
+    int j = f1->vertex(f1->ccw(eit->second))->info();
+    if (triangulation.is_infinite(f1) || triangulation.is_infinite(f2))
+      cout << idx++ << " " << i << " " << j << " " << triangulation.is_infinite(f1) << " " << triangulation.is_infinite(f2) << endl;
+  }
+  */
+  for(Delaunay::Finite_edges_iterator eit = triangulation.finite_edges_begin(); eit != triangulation.finite_edges_end(); eit++)
+  {
+    Delaunay::Face_handle f1 = eit->first;
+    Delaunay::Face_handle f2 = f1->neighbor(eit->second);
+    int i = f1->vertex(f1->cw(eit->second))->info();
+    int j = f1->vertex(f1->ccw(eit->second))->info();
+    int k, l;
+    int to_flip;
+    bool can_add = false;
+    bool simple_add = true;
+    // if f1 or f2 are boudnary handle this first
+    if (triangulation.is_infinite(f1) || triangulation.is_infinite(f2))
     {
-      if ((pi.boundary_neigh.size() != 2) || (pj.boundary_neigh.size() != 2) || (pk.boundary_neigh.size() != 2))
-        throw runtime_error("Boundary neighbours are not set.");
-      if (find(pi.boundary_neigh.begin(),pi.boundary_neigh.end(),j) != pi.boundary_neigh.end())
+      if (triangulation.is_infinite(f2))
+        k = f1->vertex(eit->second)->info();                //  k is the index of the index opposite to the edge (i,j)
+      else
+        k = get_opposite(f2, i, j);
+      Particle& pi = m_system->get_particle(i);
+      Particle& pj = m_system->get_particle(j);
+      Particle& pk = m_system->get_particle(k);
+      can_add = !(pi.boundary && pj.boundary && pk.boundary);        // We can add this edge only if at least of the vertices is not boundary
+      if (can_add && dot(pk, pi, pj) < 0)    // In this case, we know that the Internal vertex in pk, so we compute angle at it
       {
-        if (find(m_contact_list[i].begin(),m_contact_list[i].end(),j) == m_contact_list[i].end()) m_contact_list[i].push_back(j);
-        if (find(m_contact_list[j].begin(),m_contact_list[j].end(),i) == m_contact_list[j].end()) m_contact_list[j].push_back(i);
-      }
-      if (find(pj.boundary_neigh.begin(),pj.boundary_neigh.end(),k) != pj.boundary_neigh.end())
-      {
-        if (find(m_contact_list[j].begin(),m_contact_list[j].end(),k) == m_contact_list[j].end()) m_contact_list[j].push_back(k);
-        if (find(m_contact_list[k].begin(),m_contact_list[k].end(),j) == m_contact_list[k].end()) m_contact_list[k].push_back(j);
-      }
-      if (find(pk.boundary_neigh.begin(),pk.boundary_neigh.end(),i) != pk.boundary_neigh.end())
-      {
-        if (find(m_contact_list[k].begin(),m_contact_list[k].end(),i) == m_contact_list[k].end()) m_contact_list[k].push_back(i);
-        if (find(m_contact_list[i].begin(),m_contact_list[i].end(),k) == m_contact_list[i].end()) m_contact_list[i].push_back(k);
+        simple_add = false;       
+        to_flip = k;
       }
     }
     else
     {
-      bool simple_add = true;
-      int i1, i2, i3;
-      if (pi.boundary && pj.boundary && !(pk.boundary))
+      k = f1->vertex(eit->second)->info();                //  k is the index of the index opposite to the edge (i,j) for face f1
+      l = get_opposite(f2, i, j);                         //  l is the index of the index opposite to the edge (i,j) for face f2 
+      Particle& pi = m_system->get_particle(i);
+      Particle& pj = m_system->get_particle(j);
+      Particle& pk = m_system->get_particle(k);
+      Particle& pl = m_system->get_particle(l);
+      bool all_f1_boundary = pi.boundary && pj.boundary && pk.boundary;
+      bool all_f2_boundary = pi.boundary && pj.boundary && pl.boundary;
+      can_add = !(all_f1_boundary && all_f2_boundary);
+      if (can_add)
       {
-        if (dot(pk, pi, pj) < 0)
-        {
-          i1 = i; i2 = j; i3 = k;
-          simple_add = false;
-        }
+        if ((all_f1_boundary && !all_f2_boundary))
+          if (dot(pl, pi, pj) < 0) 
+          {
+            simple_add = false; 
+            to_flip = l;
+          }
+        if ((!all_f1_boundary && all_f2_boundary))
+          if (dot(pk, pi, pj) < 0) 
+          {
+            simple_add = false; 
+            to_flip = k;
+          }
       }
-      else if (pi.boundary && !(pj.boundary) && pk.boundary)
+    }
+    if (can_add)
+    {
+      if (simple_add)
       {
-        if (dot(pj, pk, pi) < 0)
-        {
-          i1 = k; i2 = i; i3 = j;
-          simple_add = false;
-        }
+        if (find(m_contact_list[i].begin(),m_contact_list[i].end(),j) == m_contact_list[i].end()) m_contact_list[i].push_back(j);
+        if (find(m_contact_list[j].begin(),m_contact_list[j].end(),i) == m_contact_list[j].end()) m_contact_list[j].push_back(i);
       }
-      else if (!(pi.boundary) && pj.boundary && pk.boundary)
+      else
       {
-        if (dot(pi, pj, pk) < 0)
-        {
-          i1 = j; i2 = k; i3 = i;
-          simple_add = false;
-        }
-      }
-      if (!simple_add)
-      {
+        int i1 = i, i2 = j, i3 = to_flip, i4;
         Particle& p1 = m_system->get_particle(i1);
         Particle& p2 = m_system->get_particle(i2);
         Particle& p3 = m_system->get_particle(i3);
 
-        // Check is the contact between p1 and p2 exists and if so remove if 
-        vector<int>::iterator it_p = find(m_contact_list[i1].begin(),m_contact_list[i1].end(),i2);
-        if (it_p != m_contact_list[i1].end()) m_contact_list[i1].erase(it_p);
-        it_p = find(m_contact_list[i2].begin(),m_contact_list[i2].end(),i1);
-        if (it_p != m_contact_list[i2].end()) m_contact_list[i2].erase(it_p);
-
         double x, y, z;                  // contains coordinates of mirrored particles 
         mirror(p3, p1, p2, x, y, z);     // compute poistion of mirrored particle 
         Particle p(m_system->size(),p3.get_type(), p3.get_radius());    // generate new particle with the "last" id and inhereted type and radus from p3
-        int i4 = p.get_id();                                            
+        i4 = p.get_id();                                            
         // set parameters for the new particle
         p.x = x; p.y = y; p.z = z;
         p.Nx = p3.Nx;  p.Ny = p3.Ny;  p.Nz = p3.Nz;
@@ -549,8 +557,8 @@ bool NeighbourList::build_triangulation()
         p.groups.push_back("all");
         // Note: Make sure that new particle is added to all necessary groups. 
         p.boundary = true;
-        p1.boundary_neigh[(p1.boundary_neigh[0] == i2) ? 0 : 1] = i4;
-        p2.boundary_neigh[(p2.boundary_neigh[0] == i1) ? 0 : 1] = i4;
+        if (p1.boundary_neigh.size() == 2)  p1.boundary_neigh[(p1.boundary_neigh[0] == i2) ? 0 : 1] = i4;
+        if (p2.boundary_neigh.size() == 2)  p2.boundary_neigh[(p2.boundary_neigh[0] == i1) ? 0 : 1] = i4;
         p.boundary_neigh.push_back(i1);
         p.boundary_neigh.push_back(i2);
         p3.boundary = false; 
@@ -579,26 +587,15 @@ bool NeighbourList::build_triangulation()
         if (find(m_contact_list[i4].begin(),m_contact_list[i4].end(),i3) == m_contact_list[i4].end()) m_contact_list[i4].push_back(i3);
         if (find(m_contact_list[i3].begin(),m_contact_list[i3].end(),i4) == m_contact_list[i3].end()) m_contact_list[i3].push_back(i4);
       }
-      else
-      {
-        if (find(m_contact_list[i].begin(),m_contact_list[i].end(),j) == m_contact_list[i].end()) m_contact_list[i].push_back(j);
-        if (find(m_contact_list[j].begin(),m_contact_list[j].end(),i) == m_contact_list[j].end()) m_contact_list[j].push_back(i);
-        
-        if (find(m_contact_list[j].begin(),m_contact_list[j].end(),k) == m_contact_list[j].end()) m_contact_list[j].push_back(k);
-        if (find(m_contact_list[k].begin(),m_contact_list[k].end(),j) == m_contact_list[k].end()) m_contact_list[k].push_back(j);
-        
-        if (find(m_contact_list[k].begin(),m_contact_list[k].end(),i) == m_contact_list[k].end()) m_contact_list[k].push_back(i);
-        if (find(m_contact_list[i].begin(),m_contact_list[i].end(),k) == m_contact_list[i].end()) m_contact_list[i].push_back(k);
-      }
     }
+
   }
-  
-  this->debug_dump("after_contact_build.mol2");
+  //this->debug_dump("after_contact_build.mol2");
 
   this->remove_dangling();
   this->remove_detached();
   
-  this->debug_dump("after_cleanup.mol2");
+  //this->debug_dump("after_cleanup.mol2");
 
   return true;
 }
@@ -786,7 +783,7 @@ void mirror(const Particle& p1, const Particle& p2, const Particle& p3, double& 
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
-    for (int j = 0; j < m_contact_list[i].size(); j++)
+    for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
     {
       Particle& pj = m_system->get_particle(m_contact_list[i][j]);
       if (pj.get_id() != m_contact_list[i][j])
