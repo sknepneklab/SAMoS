@@ -436,11 +436,11 @@ void Mesh::order_dual(int v)
     }
     if (!can_add && V.boundary && (V.dual.size() != V.n_faces-1))
     {
-      cout << V << endl;
-      for (unsigned int f = 0; f < V.faces.size(); f++)
-        cout << m_faces[V.faces[f]] << endl;
-      this->debug_dump("test.off");
-      throw runtime_error("Unable to order vertex.");
+      cerr << endl;
+      cerr << "Unable to order dual vertices of vertex " << V.id << ". There is likely a problem with the mesh itself. ";
+      cerr << "Such problems typically arise if the paramters lead to situations such as very thin (one-cell-wide) neck of cells or ";
+      cerr << "a part of the system trying to detach from the bulk, which is currently not supported. " << endl;
+      throw runtime_error("Unable to order vertex dual.");
     }
     // for boundary vertices add the hole to the end
     if (V.boundary && (V.dual.size() == V.n_faces-1))
@@ -496,14 +496,6 @@ double Mesh::dual_area(int v)
   
   V.area *= 0.5;
   
-  
-  if (V.area < 0)
-  {
-    cout << "Negative area for vertex " << V << endl;
-    for (unsigned int f = 0; f < V.faces.size(); f++)
-      cout << m_faces[V.dual[f]].id << " " << m_faces[V.dual[f]].rc << endl;
-  }
-
   return V.area;
 }
 

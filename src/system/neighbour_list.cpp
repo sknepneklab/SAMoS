@@ -58,6 +58,9 @@ static int check_projection(Particle& pi, Particle& pj, Particle& pk)
 }
 
 /* Get neighbour opposite to an edge
+ * \note This is extremly unelegant. However, I cannot figure out
+ * a simple way to tall CGAL directly to get me the other vertex 
+ * opposite to an edge.
 */
 static int get_opposite(const Delaunay::Face_handle f, const int i, const int j)
 {
@@ -395,27 +398,14 @@ void NeighbourList::build_faces(bool flag)
     for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
       mesh.add_edge(i,m_contact_list[i][j]);
   }
-  
-  try
-  {
+
   mesh.set_circumcenter(m_circumcenter);
   mesh.set_max_face_perim(m_max_perim);
   mesh.generate_faces();
   mesh.generate_dual_mesh();
   mesh.postprocess(flag);
-  // Here we remove obtuse and edge trianges
-  // Strictly speaking, we should do this iteratively, until 
-  // there are no more triangles or edges to remove. This would be
-  // simple to implement, but we postpone it unless it causes problems in
-  // actual simulations. 
-  //mesh.remove_obtuse_boundary();
-  //mesh.remove_edge_triangles();
   m_system->update_mesh();
-  }   catch (...)
-      {
-        mesh.debug_dump("mesh_dump.off");
-        throw runtime_error("Still an error.");
-      }
+  
 }
 
 #ifdef HAS_CGAL
