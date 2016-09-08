@@ -38,25 +38,6 @@
 
 #include "neighbour_list.hpp"
 
-/* Auxiliary function which checks the side particle is on with respect to a line
-*/
-static int check_side(Particle& pi, Particle& pj, Particle& pk)
-{
-  double val = (pj.x-pi.x)*(pk.y-pi.y) - (pj.y-pi.y)*(pk.x-pi.x);
-  return (val < 0.0) ? -1 : 1;
-}
-
-/* Auxiliary function which checks if the projection onto the segment is within the segment
-*/
-static int check_projection(Particle& pi, Particle& pj, Particle& pk)
-{
-  double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
-  double p_dot_AB = (pk.x-pi.x)*dx+(pk.y-pi.y)*dy+(pk.z-pi.z)*dz;
-  double AB_2 = dx*dx + dy*dy + dz*dz;
-  double t = p_dot_AB/AB_2;
-  return (t >= 0.0 && t <= 1.0);
-}
-
 /* Get neighbour opposite to an edge
  * \note This is extremly unelegant. However, I cannot figure out
  * a simple way to tall CGAL directly to get me the other vertex 
@@ -92,11 +73,7 @@ void NeighbourList::build()
    this->remove_detached();
   
  for (int i = 0; i < m_system->size(); i++)
- {
    m_list.push_back(vector<int>());
-   if (m_build_contacts)
-     m_contact_list.push_back(vector<int>());
- }
  
  if (!m_disable_nlist)
  {
@@ -125,22 +102,21 @@ void NeighbourList::build()
 /*! Build faces of the mesh from the particle locations */
 void NeighbourList::build_mesh()
 {
-  if (m_build_contacts)
+#ifdef HAS_CGAL
+  if (m_triangulation)
   {
+    if (!m_system->has_boundary_neighbours())
+    {
+      m_msg->msg(Messenger::INFO,"Boundary neighrours have to be defined in a tissue simulations. Please use command \"read_cell_boundary\" in the config file.");
+      throw runtime_error("Boundary neighbours not defined.");
+    }
     m_contact_list.clear();
     for (int i = 0; i < m_system->size(); i++)
       m_contact_list.push_back(vector<int>());
-#ifdef HAS_CGAL
-    if (m_triangulation)
-    {
-      this->build_triangulation();
-    }
-    else
-#endif
-      this->build_contacts();
-  }
-  if (m_build_faces)
+    this->build_triangulation();
     this->build_faces(true);
+  }
+#endif
 }
 
 // Private methods below
@@ -275,112 +251,6 @@ bool NeighbourList::need_update(Particle& p)
     return true;
 }
 
-//! Builds contact list based on particle distance
-void NeighbourList::build_contacts()
-{
-  if (m_disable_nlist)
-    throw runtime_error("Nlist build has to be enabled to build contacts.");
-  int N = m_system->size();
-  double dist = m_contact_dist;
-  for (int i = 0; i < N; i++)
-  {
-    Particle& pi = m_system->get_particle(i);
-    double ri = pi.get_radius();
-    vector<int>& neigh = this->get_neighbours(i);
-    for (unsigned int j = 0; j < neigh.size(); j++)
-    {
-      Particle& pj = m_system->get_particle(neigh[j]);
-      double rj = pj.get_radius();
-      if (m_contact_dist == 0.0)  dist = ri+rj;
-      double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
-      m_system->apply_periodic(dx,dy,dz);
-      double r_sq = dx*dx + dy*dy + dz*dz;
-      if (r_sq <= dist*dist)
-      {
-          m_contact_list[i].push_back(pj.get_id());
-          m_contact_list[pj.get_id()].push_back(i);
-      }
-    }
-  }
-  
-  this->remove_dangling();
-}
-
-//! Check if two edges intersect
-//! \param i index of fist particle
-//! \param j index of second particle
-bool NeighbourList::contact_intersects(int i, int j)
-{
-  Particle& v1_i = m_system->get_particle(i);
-  Vector3d p(v1_i.x, v1_i.y, v1_i.z);
-  Particle& v1_j = m_system->get_particle(j);
-  Vector3d s(v1_j.x-v1_i.x, v1_j.y-v1_i.y, v1_j.z-v1_i.z);
-  
-  
-  //! Check all contacts of neighbours of particle i
-  vector<int>& neigh_i = this->get_neighbours(i);
-  for (unsigned int n = 0; n < neigh_i.size(); n++)
-  {
-    if (!(i == neigh_i[n] || j == neigh_i[n]))
-    {
-      cout << i << " , " << j << " --> " << neigh_i[n] << endl;
-      Particle& v2_i = m_system->get_particle(neigh_i[n]);
-      Vector3d q(v2_i.x, v2_i.y, v2_i.z);
-      Vector3d q_m_p = q - p;
-      for (unsigned int k = 0; k < m_contact_list[neigh_i[n]].size(); k++)
-      {
-        if (!(i == m_contact_list[neigh_i[n]][k] || j == m_contact_list[neigh_i[n]][k]))
-        {
-          Particle& v2_j = m_system->get_particle(m_contact_list[neigh_i[n]][k]);
-          Vector3d r(v2_j.x-v2_i.x, v2_j.y-v2_i.y, v2_j.z-v2_i.z);
-          double r_cross_s = cross(r,s).len();
-          cout << r_cross_s << endl;
-          if (r_cross_s != 0)
-          {
-            double t = cross(q_m_p,s).len()/r_cross_s;
-            double u = cross(q_m_p,r).len()/r_cross_s;
-            cout << t << " " << u << endl;
-            if ((t >= 0.0 && t <= 1.0) && (u >= 0.0 && u <= 1.0))
-              return true;
-          }
-        }
-      }
-    }
-  }
-  
-  //! Check all contacts of neighbours of particle i
-  vector<int>& neigh_j = this->get_neighbours(j);
-  for (unsigned int n = 0; n < neigh_j.size(); n++)
-  {
-    if (!(i == neigh_j[n] || j == neigh_j[n]))
-    {
-      cout << i << " , " << j << " --> " << neigh_j[n] << endl;
-      Particle& v2_i = m_system->get_particle(neigh_j[n]);
-      Vector3d q(v2_i.x, v2_i.y, v2_i.z);
-      Vector3d q_m_p = q - p;
-      for (unsigned int k = 0; k < m_contact_list[neigh_j[n]].size(); k++)
-      {
-        if (!(i == m_contact_list[neigh_j[n]][k] || j == m_contact_list[neigh_j[n]][k]))
-        {
-          Particle& v2_j = m_system->get_particle(m_contact_list[neigh_j[n]][k]);
-          Vector3d r(v2_j.x-v2_i.x, v2_j.y-v2_i.y, v2_j.z-v2_i.z);
-          double r_cross_s = cross(r,s).len();
-          cout << r_cross_s << endl;
-          if (r_cross_s != 0)
-          {
-            double t = cross(q_m_p,s).len()/r_cross_s;
-            double u = cross(q_m_p,r).len()/r_cross_s;
-            cout << t << " " << u << endl;
-            if ((t >= 0.0 && t <= 1.0) && (u >= 0.0 && u <= 1.0))
-              return true;
-          }
-        }
-      }
-    }
-  }
-
-  return false;
-}
 
 /*! Build faces using contact network 
  *  Assumes that contacts have been built. 
@@ -621,17 +491,7 @@ void NeighbourList::remove_dangling()
        to_remove.push_back(i-offset);
        offset++;       
      }
-   /*
-   for (int v = 0; v < mesh.size(); v++)
-   {
-     Vertex& V = mesh.get_vertices()[v];
-     if (!V.attached)
-     {
-       to_remove.push_back(V.id-offset);
-       offset++;
-     }
-   }
-   */
+  
    for (unsigned int i = 0; i < to_remove.size(); i++)
    {
      m_system->remove_particle(to_remove[i]);
@@ -649,35 +509,6 @@ void NeighbourList::remove_dangling()
    }
  } 
 
-/*! Aufiliary function which checks if all negbours are on the same side a line connecting two 
- *  particles. This is used in constructing meshes to make sure that some edges are not 
- *  removed by accident
-**/
-bool NeighbourList::same_side_line(Particle& pi, Particle& pj, vector<int>& neigh)
-{
-  int side = 0;
-  bool same = true;
-  for (unsigned int n = 0; n < neigh.size(); n++)
-  {
-    Particle& pk = m_system->get_particle(neigh[n]);
-    if (pi.get_id() != pk.get_id() && pj.get_id() != pk.get_id())
-      if (check_projection(pi,pj,pk))
-      {
-        if (side == 0)
-          side = check_side(pi,pj,pk);
-        else
-        {
-          if (side != check_side(pi,pj,pk))
-          {
-            //cout << pi.get_id() << " " <<  pj.get_id()  << " " << pk.get_id() << " " <<  side << "  " << check_side(pi,pj,pk) << endl;
-            same = false;
-            break;
-          }
-        }
-      }
-  }
-  return same;
-}
 
 /*! Auxiliary function for computing dot product between two vectors defined by three points.
  *  This is used to to determine if a particle needs to be mirrored when building the intial triangulation.

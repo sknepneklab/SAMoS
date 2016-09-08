@@ -51,6 +51,8 @@
 #include <exception>
 #include <cassert>
 #include <fstream>
+#include <iostream>
+
 
 #include <boost/format.hpp>
 
@@ -67,6 +69,9 @@ using std::reverse;
 using std::rotate;
 using std::runtime_error;
 using std::ofstream;
+using std::cerr;
+using std::cout;
+using std::endl;
 
 typedef pair<int,int> VertexPair;
 
@@ -231,12 +236,6 @@ public:
   {
     return m_vertices[v].boundary;
   }
-  
-  //! Compute angle area scaling factor for boundary vertices
-  double angle_factor(int);
-  
-  //! Compute derivatives of the angle factor for boudnary vertices
-  void angle_factor_deriv(int);
   
   //! Compute radius of a circumscribed circle
   double circum_radius(int);

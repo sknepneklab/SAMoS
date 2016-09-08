@@ -38,11 +38,6 @@
 
 #include "mesh.hpp"
 
-#include <iostream>
-
-using std::cerr;
-using std::cout;
-using std::endl;
 using std::unique;
 using std::sort;
 
@@ -173,8 +168,6 @@ void Mesh::update_dual_mesh()
     }
     this->fc_jacobian(f);
   }   
-  for (int v = 0; v < m_size; v++)
-    this->angle_factor_deriv(v);
 }
 
 
@@ -434,16 +427,16 @@ void Mesh::order_dual(int v)
       V.dual.push_back(next_dual);
       i++;
     }
-    if (!can_add && V.boundary && (V.dual.size() != V.n_faces-1))
+    if (!can_add && (static_cast<int>(V.dual.size()) != V.n_faces-1))
     {
       cerr << endl;
       cerr << "Unable to order dual vertices of vertex " << V.id << ". There is likely a problem with the mesh itself. ";
-      cerr << "Such problems typically arise if the paramters lead to situations such as very thin (one-cell-wide) neck of cells or ";
+      cerr << "Such problems typically arise if the parametrs lead to situations such as a very thin (one-cell-wide) neck of cells or ";
       cerr << "a part of the system trying to detach from the bulk, which is currently not supported. " << endl;
       throw runtime_error("Unable to order vertex dual.");
     }
     // for boundary vertices add the hole to the end
-    if (V.boundary && (V.dual.size() == V.n_faces-1))
+    if (V.boundary && (static_cast<int>(V.dual.size()) == V.n_faces-1))
       V.dual.push_back(V.faces[V.n_faces-1]);
   }
   // And update area
@@ -684,12 +677,7 @@ void Mesh::edge_flip(int e)
   this->compute_centre(F.id);
   this->compute_angles(Fp.id);
   this->compute_centre(Fp.id);
-  
-  // Update angle deficit
-  this->angle_factor_deriv(V1.id);
-  this->angle_factor_deriv(V2.id);
-  this->angle_factor_deriv(V3.id);
-  this->angle_factor_deriv(V4.id);  
+    
 }
 
 /*! Implements the equiangulation of the mesh. This is a procedure where 
@@ -1000,145 +988,6 @@ bool Mesh::remove_edge_triangles()
       }
   }
   return no_removals;
-}
-
-/*! Find the factor to scale the native area with for the boundary vertices.
- *  This factor is computed as \f$ \zeta = \frac{2\pi - \Delta\theta}{2\pi} \f$,
- *  where \f$ \Delta\theta \f$ is the angle deficit at the vertex.
- *  \param v vertex id
-*/
-double Mesh::angle_factor(int v)
-{
-  Vertex& Vi = m_vertices[v];
-  if (!Vi.boundary)
-    return 1.0;
-
-  if (Vi.n_faces < 3)
-    return 0.0;
-    
-  if (!Vi.attached)
-    return 0.0;
- 
-  Face& f1 = m_faces[Vi.dual[0]];
-  Face& fn = m_faces[Vi.dual[Vi.n_faces-2]];
-  
-  Vector3d r_nu_1_i = f1.rc - Vi.r;
-  Vector3d r_nu_n_i = fn.rc - Vi.r;
-  
-  double angle = std::acos(dot(r_nu_1_i,r_nu_n_i)/(r_nu_1_i.len()*r_nu_n_i.len()));
-  bool complementary_angle = dot(cross(r_nu_1_i,r_nu_n_i),Vi.N) > 0.0;
-    
-  if (complementary_angle) 
-    angle = 2*M_PI - angle;
-  
-  return (2.0*M_PI-angle)/(2.0*M_PI);
-}
-
-/*! Compute derivatives of the angle defict factor for boundary vertices.
- *  \param v index of the vertex
-*/
-void Mesh::angle_factor_deriv(int v)
-{
-  Vertex& V = m_vertices[v]; 
-  if (!V.boundary)
-    return;
-  
-  V.angle_def.clear();
-  
-  Face& f1 = m_faces[V.dual[0]];
-  Face& fn = m_faces[V.dual[V.n_faces-2]];
-  
-  
-  if (f1.n_sides != 3 || fn.n_sides != 3)
-    return;
-  
-  Vector3d  r_nu_1_ri = f1.rc - V.r;
-  Vector3d  r_nu_n_ri = fn.rc - V.r;
-  
-  double sign = (dot(cross(r_nu_1_ri,r_nu_n_ri),V.N) < 0.0) ? 1.0 : -1.0;
-  
-  double len_r_nu_1_ri = r_nu_1_ri.len();
-  double len_r_nu_n_ri = r_nu_n_ri.len();
-  double len_r_nu_1_ri_2 = len_r_nu_1_ri*len_r_nu_1_ri;
-  double len_r_nu_n_ri_2 = len_r_nu_n_ri*len_r_nu_n_ri;
-  double r_nu_1_ri_dot_r_nu_n_ri = dot(r_nu_1_ri,r_nu_n_ri);
-  
-  // We first handle vertex itself
-  double fact = 0.0;
-  try
-  {
-    Vector3d d_ri = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_n_ri*f1.get_jacobian(V.id)-r_nu_n_ri + r_nu_1_ri*fn.get_jacobian(V.id) - r_nu_1_ri)
-                    -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_1_ri*(r_nu_n_ri.unit())*fn.get_jacobian(V.id) - len_r_nu_1_ri*r_nu_n_ri.unit()
-                                                                                + len_r_nu_n_ri*(r_nu_1_ri.unit())*f1.get_jacobian(V.id) - len_r_nu_n_ri*r_nu_1_ri.unit());
-    
-    if (fabs(r_nu_1_ri_dot_r_nu_n_ri*r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)) < 1.0)
-      fact = sign/(2.0*M_PI)*1.0/sqrt(1.0 - r_nu_1_ri_dot_r_nu_n_ri*r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2));               
-    
-    
-    V.angle_def.push_back(fact*d_ri);
-  }
-  catch (...)
-  {
-    cout << "Warning! Jacobians were not properly computed. This suggests problems with the mesh most likley due to poor choice of parameters. Results of this simulation are NOT reliable!" << endl;
-    cout << f1 << endl;
-    cout << fn << endl;
-    cout << V << endl;
-    V.angle_def.push_back(Vector3d(0,0,0));
-  }
-  
-  // Now we handle all neighbours
-  for (int e = 0; e < V.n_edges; e++)
-    V.angle_def.push_back(Vector3d(0.0,0.0,0.0));
-  
-  for (int e = 0; e < V.n_edges; e++)
-  {
-    //if (e <= 1)
-    if (m_faces[m_edges[V.edges[e]].face].id == f1.id)
-    {
-      Vertex& Vj = m_vertices[m_edges[V.edges[e]].to];
-      try
-      {
-        Vector3d d_rj = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_n_ri*f1.get_jacobian(Vj.id))
-                 -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_n_ri*(r_nu_1_ri.unit())*f1.get_jacobian(Vj.id));
-
-        V.angle_def[e+1] = V.angle_def[e+1] + fact*d_rj;
-      } 
-      catch (...)
-      {
-        cout << "Warning! Jacobians were not properly computed. This suggests problems with the mesh most likley due to poor choice of parameters. Results of this simulation are NOT reliable!" << endl;
-        cout << f1 << endl;
-        cout << Vj << endl;
-        cout << V << endl;
-        for (int f = 0; f < V.n_faces; f++)
-          cout << m_faces[V.faces[f]] << endl;
-        for (int e = 0; e < V.n_edges; e++)
-          cout << m_edges[V.edges[e]] << endl;
-      }
-    }
-    //if (e >= V.n_edges-2)
-    if (m_faces[m_edges[V.edges[e]].face].id == fn.id)
-    {
-      Vertex& Vk = m_vertices[m_edges[V.edges[e]].to];
-      try
-      {
-        Vector3d d_rk = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_1_ri*fn.get_jacobian(Vk.id))
-                  -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_1_ri*(r_nu_n_ri.unit())*fn.get_jacobian(Vk.id));
-        V.angle_def[e+1] = V.angle_def[e+1] + fact*d_rk;
-      }
-      catch (...)
-      {
-        cout << "Warning! Jacobians were not properly computed. This suggests problems with the mesh most likley due to poor choice of parameters. Results of this simulation are NOT reliable!" << endl;
-        cout << fn << endl;
-        cout << Vk << endl;
-        cout << V << endl;
-        for (int f = 0; f < V.n_faces; f++)
-          cout << m_faces[V.faces[f]] << endl;
-        for (int e = 0; e < V.n_edges; e++)
-          cout << m_edges[V.edges[e]] << endl;
-      }
-    }
-  }
-  
 }
 
 /*! Compute radius of a circumscribed circle 

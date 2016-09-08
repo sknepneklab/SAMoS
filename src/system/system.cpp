@@ -79,7 +79,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
                                                                              m_current_particle_flag(0),
                                                                              m_dt(0.0),
                                                                              m_max_mesh_iter(100),
-                                                                             m_boundary_type(1)
+                                                                             m_boundary_type(1),
+                                                                             m_has_boundary_neighbours(false)
 {
   vector<int> types;
   vector<string> s_line;
@@ -842,7 +843,6 @@ void System::read_boundary_neighbours(const string& bound_neigh_file)
         m_msg->msg(Messenger::ERROR,"Insufficient number of parameters to define a bondary neighbours. " + lexical_cast<string>(s_line.size()) + " given, but " + lexical_cast<string>(3) + " expected.");
         throw runtime_error("Insufficient number of parameters in the boundary connectivity file.");
       }
-      unsigned int id = lexical_cast<int>(s_line[0]);  // read bond id
       unsigned int i = lexical_cast<int>(s_line[1]);   // read id of first particle
       unsigned int j = lexical_cast<int>(s_line[2]);   // read id of second particle
       if (i >= m_particles.size())
@@ -866,6 +866,7 @@ void System::read_boundary_neighbours(const string& bound_neigh_file)
       pj.boundary_neigh.push_back(i);
     }
   }
+  m_has_boundary_neighbours = true;
   inp.close();
 }
 

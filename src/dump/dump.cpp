@@ -915,7 +915,6 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkDoubleArray> dir =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> ndir =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> dual_area =  vtkSmartPointer<vtkDoubleArray>::New();
-    vtkSmartPointer<vtkDoubleArray> angle_def =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> num_neigh =  vtkSmartPointer<vtkDoubleArray>::New();
     
     ids->SetName("Id");
@@ -938,8 +937,6 @@ void Dump::dump_vtp(int step)
     ndir->SetNumberOfComponents(3);
     dual_area->SetName("DualArea");
     dual_area->SetNumberOfComponents(1);
-    angle_def->SetName("DeficitAngle");
-    angle_def->SetNumberOfComponents(1);
     num_neigh->SetName("NumNeigh");
     num_neigh->SetNumberOfComponents(1);
       
@@ -966,7 +963,6 @@ void Dump::dump_vtp(int step)
         // This is just a workaround a bug in some versions of Paraview that do not properly parse numbers in scientific notation
         if (V.area > 1e-7)  dual_area->InsertNextValue(V.area);
          else  dual_area->InsertNextValue(0.0);
-        angle_def->InsertNextValue(mesh.angle_factor(V.id));
         num_neigh->InsertNextValue(V.n_edges);
       }
     }
@@ -986,7 +982,6 @@ void Dump::dump_vtp(int step)
     if (mesh.size() > 0)
     {
       polydata->GetPointData()->AddArray(dual_area);
-      polydata->GetPointData()->AddArray(angle_def);
     }
         
     if (m_system->num_bonds() > 0 && m_group == "all")

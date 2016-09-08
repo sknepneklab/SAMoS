@@ -92,8 +92,7 @@ void PairVertexParticlePotential::compute(double dt)
         gamma = m_particle_params[vi.type-1].gamma;
       }
       double dA = 0.0; 
-      if (!vi.boundary) dA = (vi.area - pi.A0);
-      else dA = (vi.area - mesh.angle_factor(i)*pi.A0);
+      dA = (vi.area - pi.A0);
       double area_term = 0.5*K*dA;
       double perim_term = gamma*vi.perim;
       pot_eng = 0.5*(K*dA*dA+gamma*vi.perim*vi.perim);
@@ -113,52 +112,25 @@ void PairVertexParticlePotential::compute(double dt)
         Vector3d& r_nu_m = f_nu_m.rc; 
         Vector3d& r_nu   = f_nu.rc; 
         Vector3d& r_nu_p = f_nu_p.rc; 
-        Vector3d r_nu_i = r_nu - vi.r;
         
         Vector3d cross_prod_1(0.0,0.0,0.0);
         if (!(f_nu.is_hole || f_nu_p.is_hole)) cross_prod_1 = (cross(r_nu_p, Nvec))*f_nu.get_jacobian(i);
         if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_1 = cross_prod_1 - (cross(r_nu_m, Nvec))*f_nu.get_jacobian(i);
         area_vec = area_vec + cross_prod_1;  
         
-        if (vi.boundary)
-        {
-          if (f == 0)
-            area_vec = area_vec + cross(r_nu,Nvec) - (cross(vi.r,Nvec))*f_nu.get_jacobian(i);
-          else if (f == vi.n_faces - 2)
-            area_vec = area_vec - cross(r_nu,Nvec) + (cross(vi.r,Nvec))*f_nu.get_jacobian(i);
-        }
         Vector3d cross_prod_2(0.0,0.0,0.0);
         if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_2 = ((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i);
         if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_2 -= (((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i));
         perim_vec = perim_vec + cross_prod_2; 
-        if (vi.boundary)
-        {
-          if (f == 0 || (f == vi.n_faces - 2))
-          {
-            Vector3d r_nu_i_unit = r_nu_i.unit();
-            perim_vec = perim_vec + r_nu_i_unit*f_nu.get_jacobian(i) - r_nu_i_unit;
-          }
-        }
-        //if (m_has_pair_params)
-        //  lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[E.to].type - 1].lambda;
+        
         Vector3d cross_prod_3(0.0,0.0,0.0);
         if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_3 = lambda*(((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i));
         con_vec = con_vec + cross_prod_3; 
-        //if (m_has_pair_params)
-        //  lambda = m_pair_params[vi.type - 1][mesh.get_vertices()[En.to].type - 1].lambda;
+        
         Vector3d cross_prod_4(0.0,0.0,0.0);
         if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_4 = lambda*(((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i));
         con_vec = con_vec - cross_prod_4; 
-        if (vi.boundary)
-        {
-          if (f == 0 || (f == vi.n_faces - 2))
-          {
-            if (m_has_pair_params)
-              lambda = m_pair_params[vi.type - 1][vi.type - 1].lambda;
-            Vector3d r_nu_i_unit = r_nu_i.unit();
-            con_vec = con_vec + lambda*(r_nu_i_unit*f_nu.get_jacobian(i) - r_nu_i_unit);
-          }
-        }
+        
         pot_eng += lambda*(r_nu - r_nu_m).len();
       }
       // area term
@@ -166,14 +138,6 @@ void PairVertexParticlePotential::compute(double dt)
       pi.fx += area_fact*area_vec.x;
       pi.fy += area_fact*area_vec.y;
       pi.fz += area_fact*area_vec.z;
-      if (vi.boundary)
-      {
-        double add_area = -2.0*area_fact*pi.A0;
-        Vector3d& ang_def = vi.get_angle_def(vi.id);
-        pi.fx += add_area*ang_def.x;
-        pi.fy += add_area*ang_def.y;
-        pi.fz += add_area*ang_def.z;
-      }
       // perimeter term 
       double perim_fact = -alpha*perim_term;
       pi.fx += perim_fact*perim_vec.x;
@@ -199,8 +163,7 @@ void PairVertexParticlePotential::compute(double dt)
           gamma = m_particle_params[vj.type-1].gamma;
         }
         double dA = 0.0;
-        if (!vj.boundary) dA = (vj.area - pj.A0);
-        else dA = (vj.area -  mesh.angle_factor(vj.id)*pj.A0);
+        dA = (vj.area - pj.A0);
         double area_term = 0.5*K*dA;
         double perim_term = gamma*vj.perim;
         Vector3d area_vec(0.0,0.0,0.0);
@@ -221,52 +184,25 @@ void PairVertexParticlePotential::compute(double dt)
             Vector3d& r_nu_m = f_nu_m.rc; 
             Vector3d& r_nu   = f_nu.rc; 
             Vector3d& r_nu_p = f_nu_p.rc; 
-            Vector3d r_nu_i = r_nu - vi.r;
 
             Vector3d cross_prod_1(0.0,0.0,0.0);
             if (!(f_nu.is_hole || f_nu_p.is_hole)) cross_prod_1 = cross(r_nu_p, Nvec)*f_nu.get_jacobian(i);
             if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_1 = cross_prod_1 - cross(r_nu_m, Nvec)*f_nu.get_jacobian(i);
             area_vec = area_vec + cross_prod_1; 
-            //if (vi.boundary && vj.boundary)
-            if (vj.boundary)
-            {
-               if (f == 0)
-                 area_vec = area_vec - (cross(vj.r,Nvec))*f_nu.get_jacobian(i);
-               else if (f == vj.n_faces - 2)
-                 area_vec = area_vec + (cross(vj.r,Nvec))*f_nu.get_jacobian(i);
-            }
+            
             Vector3d cross_prod_2(0.0,0.0,0.0);
             if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_2 = ((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i);
             if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_2 -= ((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i);
             perim_vec = perim_vec + cross_prod_2; 
-            if (vj.boundary)
-            {
-              if (f == 0 || (f == vj.n_faces - 2))
-              {
-                Vector3d r_nu_j = r_nu - vj.r;
-                perim_vec = perim_vec + r_nu_j.unit()*f_nu.get_jacobian(i);
-              }
-            }
-            //if (m_has_pair_params)
-            //  lambda = m_pair_params[vj.type - 1][mesh.get_vertices()[E.to].type - 1].lambda;
+            
             Vector3d cross_prod_3(0.0,0.0,0.0);
             if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_3 = lambda*(((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i));
             con_vec = con_vec + cross_prod_3; 
-            //if (m_has_pair_params)
-            //  lambda = m_pair_params[vj.type - 1][mesh.get_vertices()[Ep.to].type - 1].lambda;
+
             Vector3d cross_prod_4(0.0,0.0,0.0);
             if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_4 = lambda*(((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i));
             con_vec = con_vec - cross_prod_4; 
-            if (vj.boundary)
-            {
-              if (f == 0 || (f == vj.n_faces - 2))
-              {
-                if (m_has_pair_params)
-                  lambda = m_pair_params[vj.type - 1][vj.type - 1].lambda;
-                Vector3d r_nu_j = r_nu - vj.r;
-                con_vec = con_vec + lambda*(r_nu_j.unit()*f_nu.get_jacobian(i));
-              }
-            }
+            
           }
         }
         // area term
@@ -274,14 +210,6 @@ void PairVertexParticlePotential::compute(double dt)
         pi.fx += area_fact*area_vec.x;
         pi.fy += area_fact*area_vec.y;
         pi.fz += area_fact*area_vec.z;
-        if (vj.boundary)
-        {
-          double add_area = -2.0*area_fact*pj.A0;
-          Vector3d& ang_def = vj.get_angle_def(vi.id);
-          pi.fx += add_area*ang_def.x;
-          pi.fy += add_area*ang_def.y;
-          pi.fz += add_area*ang_def.z;
-        }
         // perimeter term
         double perim_fact = -alpha*perim_term;
         pi.fx += perim_fact*perim_vec.x;
