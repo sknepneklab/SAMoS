@@ -50,8 +50,10 @@
 
 #ifdef HAS_CGAL
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-#include <CGAL/Delaunay_triangulation_2.h>
+//#include <CGAL/Delaunay_triangulation_2.h>
+#include <CGAL/Constrained_Delaunay_triangulation_2.h>
 #include <CGAL/Triangulation_vertex_base_with_info_2.h>
+#include <CGAL/Triangulation_face_base_with_info_2.h>
 #endif
 
 #include "messenger.hpp"
@@ -65,13 +67,32 @@ using std::string;
 using std::ofstream;
 
 #ifdef HAS_CGAL
+
+//! Auxiliary data structure for CGAL-enebled cleanup of the vertices outside the boundary.
+struct FaceInfo2
+{
+  FaceInfo2(){}
+  bool in_domain()
+  { 
+    return nesting_level%2 == 1;
+  }
+  int nesting_level;
+};
+
 /*! Typdefs for CGAL library */
 typedef CGAL::Exact_predicates_inexact_constructions_kernel               Kernel;
 typedef CGAL::Triangulation_vertex_base_with_info_2<unsigned int, Kernel> Vb;
-typedef CGAL::Triangulation_data_structure_2<Vb>                          Tds;
-typedef CGAL::Delaunay_triangulation_2<Kernel, Tds>                       Delaunay;
-typedef Delaunay::Vertex_circulator                                       Vertex_circulator;
-typedef Kernel::Point_2                                                   Point;
+typedef CGAL::Triangulation_face_base_with_info_2<FaceInfo2,Kernel>       Fbb;
+typedef CGAL::Constrained_triangulation_face_base_2<Kernel,Fbb>           Fb;
+typedef CGAL::Triangulation_data_structure_2<Vb,Fb>                       TDS;
+typedef CGAL::Exact_predicates_tag                                        Itag;
+typedef CGAL::Constrained_Delaunay_triangulation_2<Kernel, TDS, Itag>     Delaunay;
+typedef Delaunay::Point                                                   Point;
+
+//typedef CGAL::Triangulation_data_structure_2<Vb>                          Tds;
+//typedef CGAL::Delaunay_triangulation_2<Kernel, Tds>                       Delaunay;
+//typedef Delaunay::Vertex_circulator                                       Vertex_circulator;
+//typedef Kernel::Point_2                                                   Point;
 using std::make_pair;
 using std::pair;
 #endif

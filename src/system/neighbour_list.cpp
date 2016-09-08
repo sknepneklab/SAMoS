@@ -416,8 +416,9 @@ void NeighbourList::build_faces(bool flag)
 bool NeighbourList::build_triangulation()
 {
   vector< pair<Point,unsigned> > points;
-  //vector<int> on_convex_hull;
-  //vector<int>& boundary = m_system->get_boundary();
+  vector< Point > points_for_boundary;  // need to double the data strcuture do the the way CGAL constrained traingulations work
+  vector< pair<int,int> > boundary_indices;  // pairs of edges at the boundary 
+
   int N = m_system->size();
   for (int i = 0; i < N; i++)
   {
@@ -428,45 +429,19 @@ bool NeighbourList::build_triangulation()
       throw runtime_error("Unable to build Delaunay triangulation for non-planar systems.");
     }
     points.push_back( make_pair( Point(pi.x,pi.y), pi.get_id() ) );
+    points_for_boundary.push_back(Point(pi.x,pi.y));
+    if (pi.boundary)
+    {
+      boundary_indices.push_back(make_pair(pi.get_id(),pi.boundary_neigh[0]));
+      boundary_indices.push_back(make_pair(pi.get_id(),pi.boundary_neigh[1]));
+    }
   }
 
   
   Delaunay triangulation;  
+  triangulation.insert_constraints(points_for_boundary.begin(), points_for_boundary.end(), boundary_indices.begin(), boundary_indices.end());
   triangulation.insert(points.begin(),points.end());
-  
-  /*
-  ofstream out("dela.off");
-  out << "OFF" << endl;
-  out << "# SAMoS debug OFF file." << endl;
-  int del_size = 0;
-  for(Delaunay::Finite_faces_iterator fit = triangulation.finite_faces_begin(); fit != triangulation.finite_faces_end(); fit++)
-    del_size++;
-  out << m_system->size() << " " << del_size << " 0" << endl;
-  for (int i = 0; i < m_system->size(); i++)
-  {
-    Particle& p = m_system->get_particle(i);
-    out << p.x << " " << p.y << " " << p.z << endl;
-  }
-  for(Delaunay::Finite_faces_iterator fit = triangulation.finite_faces_begin(); fit != triangulation.finite_faces_end(); fit++)
-  {
-    Delaunay::Face_handle face = fit;
-    int i = face->vertex(0)->info();
-    int j = face->vertex(1)->info();
-    int k = face->vertex(2)->info();
-    out << 3 << " " << i << " " << j << " " << k << endl;
-  }
-  out.close();
-  int idx = 1; 
-  for(Delaunay::Finite_edges_iterator eit = triangulation.finite_edges_begin(); eit != triangulation.finite_edges_end(); eit++)
-  {
-    Delaunay::Face_handle f1 = eit->first;
-    Delaunay::Face_handle f2 = f1->neighbor(eit->second);
-    int i = f1->vertex(f1->cw(eit->second))->info();
-    int j = f1->vertex(f1->ccw(eit->second))->info();
-    if (triangulation.is_infinite(f1) || triangulation.is_infinite(f2))
-      cout << idx++ << " " << i << " " << j << " " << triangulation.is_infinite(f1) << " " << triangulation.is_infinite(f2) << endl;
-  }
-  */
+ 
   for(Delaunay::Finite_edges_iterator eit = triangulation.finite_edges_begin(); eit != triangulation.finite_edges_end(); eit++)
   {
     Delaunay::Face_handle f1 = eit->first;
