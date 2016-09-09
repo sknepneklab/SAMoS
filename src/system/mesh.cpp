@@ -433,6 +433,7 @@ void Mesh::order_dual(int v)
       cerr << "Unable to order dual vertices of vertex " << V.id << ". There is likely a problem with the mesh itself. ";
       cerr << "Such problems typically arise if the parametrs lead to situations such as a very thin (one-cell-wide) neck of cells or ";
       cerr << "a part of the system trying to detach from the bulk, which is currently not supported. " << endl;
+      //this->debug_dump("test.off");
       throw runtime_error("Unable to order vertex dual.");
     }
     // for boundary vertices add the hole to the end

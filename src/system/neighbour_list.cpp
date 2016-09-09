@@ -36,6 +36,8 @@
  * \brief Definition of the NeighbourList class
 */
 
+#include <list>
+
 #include "neighbour_list.hpp"
 
 /* Get neighbour opposite to an edge
@@ -62,6 +64,64 @@ static int get_opposite(const Delaunay::Face_handle f, const int i, const int j)
     else return J;
   }
 }
+
+// Following two functions are used to determine which trainges are inside the boundary. 
+// These are adopted from: http://doc.cgal.org/latest/Triangulation_2/index.html#title29
+// Example: Triangulating a Polygonal Domain
+static void mark_domains(Delaunay& ct, Delaunay::Face_handle start, int index, std::list<Delaunay::Edge>& border )
+{
+  if(start->info().nesting_level != -1)
+  {
+    return;
+  }
+  std::list<Delaunay::Face_handle> queue;
+  queue.push_back(start);
+  while(! queue.empty())
+  {
+    Delaunay::Face_handle fh = queue.front();
+    queue.pop_front();
+    if(fh->info().nesting_level == -1)
+    {
+      fh->info().nesting_level = index;
+      for(int i = 0; i < 3; i++)
+      {
+        Delaunay::Edge e(fh,i);
+        Delaunay::Face_handle n = fh->neighbor(i);
+        if(n->info().nesting_level == -1)
+        {
+          if(ct.is_constrained(e)) border.push_back(e);
+          else queue.push_back(n);
+        }
+      }
+    }
+  }
+}
+//explore set of facets connected with non constrained edges,
+//and attribute to each such set a nesting level.
+//We start from facets incident to the infinite vertex, with a nesting
+//level of 0. Then we recursively consider the non-explored facets incident 
+//to constrained edges bounding the former set and increase the nesting level by 1.
+//Facets in the domain are those with an odd nesting level.
+void mark_domains(Delaunay& cdt)
+{
+  for(Delaunay::All_faces_iterator it = cdt.all_faces_begin(); it != cdt.all_faces_end(); ++it)
+  {
+    it->info().nesting_level = -1;
+  }
+  std::list<Delaunay::Edge> border;
+  mark_domains(cdt, cdt.infinite_face(), 0, border);
+  while(! border.empty())
+  {
+    Delaunay::Edge e = border.front();
+    border.pop_front();
+    Delaunay::Face_handle n = e.first->neighbor(e.second);
+    if(n->info().nesting_level == -1)
+    {
+      mark_domains(cdt, n, e.first->info().nesting_level+1, border);
+    }
+  }
+}
+
 
 /*! Build neighbour list.
 */
@@ -311,7 +371,8 @@ bool NeighbourList::build_triangulation()
   Delaunay triangulation;  
   triangulation.insert_constraints(points_for_boundary.begin(), points_for_boundary.end(), boundary_indices.begin(), boundary_indices.end());
   triangulation.insert(points.begin(),points.end());
- 
+  mark_domains(triangulation);
+
   for(Delaunay::Finite_edges_iterator eit = triangulation.finite_edges_begin(); eit != triangulation.finite_edges_end(); eit++)
   {
     Delaunay::Face_handle f1 = eit->first;
@@ -349,21 +410,24 @@ bool NeighbourList::build_triangulation()
       Particle& pl = m_system->get_particle(l);
       bool all_f1_boundary = pi.boundary && pj.boundary && pk.boundary;
       bool all_f2_boundary = pi.boundary && pj.boundary && pl.boundary;
-      can_add = !(all_f1_boundary && all_f2_boundary);
+      can_add = !(all_f1_boundary && all_f2_boundary) || f1->info().in_domain() || f2->info().in_domain();
       if (can_add)
       {
-        if ((all_f1_boundary && !all_f2_boundary))
-          if (dot(pl, pi, pj) < 0) 
-          {
-            simple_add = false; 
-            to_flip = l;
-          }
-        if ((!all_f1_boundary && all_f2_boundary))
-          if (dot(pk, pi, pj) < 0) 
-          {
-            simple_add = false; 
-            to_flip = k;
-          }
+        if (find(pi.boundary_neigh.begin(),pi.boundary_neigh.end(),pj.get_id()) != pi.boundary_neigh.end()) // Flip only if edge (i,j) is a boundary edge
+        {
+          if ((all_f1_boundary && !all_f2_boundary))
+            if (dot(pl, pi, pj) < 0) 
+            {
+              simple_add = false; 
+              to_flip = l;
+            }
+          if ((!all_f1_boundary && all_f2_boundary))
+            if (dot(pk, pi, pj) < 0) 
+            {
+              simple_add = false; 
+              to_flip = k;
+            }
+        }
       }
     }
     if (can_add)
