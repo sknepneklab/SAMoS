@@ -36,8 +36,6 @@
  * \brief Definition of the NeighbourList class
 */
 
-#include <list>
-
 #include "neighbour_list.hpp"
 
 /* Get neighbour opposite to an edge
@@ -68,13 +66,13 @@ static int get_opposite(const Delaunay::Face_handle f, const int i, const int j)
 // Following two functions are used to determine which trainges are inside the boundary. 
 // These are adopted from: http://doc.cgal.org/latest/Triangulation_2/index.html#title29
 // Example: Triangulating a Polygonal Domain
-static void mark_domains(Delaunay& ct, Delaunay::Face_handle start, int index, std::list<Delaunay::Edge>& border )
+static void mark_domains(Delaunay& ct, Delaunay::Face_handle start, int index, list<Delaunay::Edge>& border )
 {
   if(start->info().nesting_level != -1)
   {
     return;
   }
-  std::list<Delaunay::Face_handle> queue;
+  list<Delaunay::Face_handle> queue;
   queue.push_back(start);
   while(! queue.empty())
   {
@@ -108,9 +106,9 @@ void mark_domains(Delaunay& cdt)
   {
     it->info().nesting_level = -1;
   }
-  std::list<Delaunay::Edge> border;
+  list<Delaunay::Edge> border;
   mark_domains(cdt, cdt.infinite_face(), 0, border);
-  while(! border.empty())
+  while(!border.empty())
   {
     Delaunay::Edge e = border.front();
     border.pop_front();
@@ -121,7 +119,7 @@ void mark_domains(Delaunay& cdt)
     }
   }
 }
-
+// End for functions imported from CGAL documentation. 
 
 /*! Build neighbour list.
 */

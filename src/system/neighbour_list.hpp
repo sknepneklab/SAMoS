@@ -44,6 +44,7 @@
 #include <utility>
 #include <string>
 #include <fstream>
+#include <list>
 
 //#include <boost/property_map/property_map.hpp>
 //#include <boost/ref.hpp>
@@ -65,6 +66,7 @@ using std::vector;
 using std::pair;
 using std::string;
 using std::ofstream;
+using std::list;
 
 #ifdef HAS_CGAL
 
