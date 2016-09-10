@@ -75,7 +75,7 @@ void PopulationCell::divide(int t)
 	    // In the limits where we can linearise both this and the growth rate, this gives:
 	    // P_div = (attempt_freq * dt) [1+m_div_rate*m_growth_rate t]. This division coefficient is dimensionless now.
 	    double prob_div = m_freq*m_system->get_integrator_step()*exp(m_div_rate*(V.area/m_max_A0-1.0));
-      if (!V.boundary && m_rng->drnd() < prob_div)  // Only internal verices can divide
+      if (!p.boundary && m_rng->drnd() < prob_div)  // Only internal verices can divide
       {
         //cout << t << " " << V.area << " " << p.A0 << " " << exp((V.area-p.A0)/m_div_rate) << endl;
         Particle p_new(m_system->size(), p.get_type(), p.get_radius());
@@ -138,15 +138,15 @@ void PopulationCell::remove(int t)
     {
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi);
-	  // actual probability of dying now: (attempt_freq * dt) exp[(age-max_age)*m_death_rate] 
-	  // In the limits where we can linearise this it gives:
-	  // P_div = (attempt_freq * dt) [1+m_death_rate*(age-age_max)]. This death rate is an inverse time scale
-	  //double prob_death =m_freq*m_system->get_integrator_step()*exp((p.age-m_max_age)*m_death_rate); 
-	  // Trying a very simple, linearly increasing death chance
-	  //double prob_death = m_freq*m_system->get_integrator_step()*p.age/m_max_age;
-	  // Trying something even simpler (so as to have a chance of homeostasis): a constant death rate
-	  double prob_death = m_freq*m_system->get_integrator_step()/m_max_age;
-      if (m_rng->drnd() < prob_death)
+      // actual probability of dying now: (attempt_freq * dt) exp[(age-max_age)*m_death_rate] 
+      // In the limits where we can linearise this it gives:
+      // P_div = (attempt_freq * dt) [1+m_death_rate*(age-age_max)]. This death rate is an inverse time scale
+      //double prob_death =m_freq*m_system->get_integrator_step()*exp((p.age-m_max_age)*m_death_rate); 
+      // Trying a very simple, linearly increasing death chance
+      //double prob_death = m_freq*m_system->get_integrator_step()*p.age/m_max_age;
+      // Trying something even simpler (so as to have a chance of homeostasis): a constant death rate
+      double prob_death = m_freq*m_system->get_integrator_step()/m_max_age;
+      if (!p.boundary && m_rng->drnd() < prob_death)
           to_remove.push_back(p.get_id());
     }
     int offset = 0;
