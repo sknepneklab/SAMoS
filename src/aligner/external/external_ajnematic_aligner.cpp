@@ -63,8 +63,8 @@ void ExternalAJNematicAlign::compute()
       if (vnorm > 0.0)
       {
         tau_x /= vnorm;
-	tau_y /= vnorm;
-	tau_z /= vnorm;
+	      tau_y /= vnorm;
+	      tau_z /= vnorm;
       }
     }
     
