@@ -50,6 +50,9 @@
 #include <algorithm>
 #include <exception>
 #include <cassert>
+#include <fstream>
+#include <iostream>
+
 
 #include <boost/format.hpp>
 
@@ -65,6 +68,10 @@ using std::sort;
 using std::reverse;
 using std::rotate;
 using std::runtime_error;
+using std::ofstream;
+using std::cerr;
+using std::cout;
+using std::endl;
 
 typedef pair<int,int> VertexPair;
 
@@ -216,6 +223,9 @@ public:
   
   //! Remove obtuse boundary faces
   bool remove_obtuse_boundary();
+
+  //! Fix obtuse boundary 
+  vector<Vector3d> fix_obtuse_boundary();
   
   //! Remove edge triangles
   bool remove_edge_triangles();
@@ -227,17 +237,21 @@ public:
     return m_vertices[v].boundary;
   }
   
-  //! Compute angle area scaling factor for boundary vertices
-  double angle_factor(int);
-  
-  //! Compute derivatives of the angle factor for boudnary vertices
-  void angle_factor_deriv(int);
-  
   //! Compute radius of a circumscribed circle
   double circum_radius(int);
   
-  //! Compute data for ploting polyons
+  //! Compute data for plotting polygons
   PlotArea& plot_area(bool);
+  
+  //! Return true if the mesh has at least one obruse boundary triangle
+  bool has_obtuse_boundary() 
+  {
+    if (m_obtuse_boundary.size() != 0) return true;
+    else return false;
+  }
+
+  //! Dump mesh into off file for debugging purposes
+  void debug_dump(const string&);
      
 private:  
   
@@ -281,6 +295,9 @@ private:
   
   //! Remove edge face
   bool remove_edge_face(int);
+
+  //! Returns coordinates of the mirror image of a vertex opposite to a boundary edge
+  Vector3d mirror_vertex(int);
   
   //! Functor used to compare lengths of two edges
   struct CompareEdgeLens

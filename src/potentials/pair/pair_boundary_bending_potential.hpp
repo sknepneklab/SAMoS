@@ -67,7 +67,7 @@ public:
   //! \param nlist Pointer to the global neighbour list
   //! \param val Value control object (for phasing in)
   //! \param param Contains information about all parameters (k)
-  PairBoundaryBendingPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param), m_has_part_params(false), m_theta0(M_PI)
+  PairBoundaryBendingPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param), m_kappa(1.0), m_theta0(M_PI), m_has_part_params(false)
   {
     if (param.find("kappa") == param.end())
     {

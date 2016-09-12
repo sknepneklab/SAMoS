@@ -38,11 +38,6 @@
 
 #include "mesh.hpp"
 
-#include <iostream>
-
-using std::cerr;
-using std::cout;
-using std::endl;
 using std::unique;
 using std::sort;
 
@@ -173,8 +168,6 @@ void Mesh::update_dual_mesh()
     }
     this->fc_jacobian(f);
   }   
-  for (int v = 0; v < m_size; v++)
-    this->angle_factor_deriv(v);
 }
 
 
@@ -332,8 +325,8 @@ void Mesh::order_star(int v)
     // Vertex star is not ordered
     V.ordered = true;
     // Make sure that the star of boudaries is in proper order
-    //if (V.boundary)
-    //  this->order_boundary_star(V.id);
+    if (V.boundary)
+      this->order_boundary_star(V.id);
     this->order_dual(v);
   }
   
@@ -397,7 +390,7 @@ void Mesh::order_dual(int v)
   int i = 0;
   while(V.dual.size() < V.faces.size())
   {
-    Face& Fi = m_faces[V.dual[i++]];
+    Face& Fi = m_faces[V.dual[i]];
     Vector3d ri;
     if (V.boundary)
       ri = Fi.rc - V.r;
@@ -405,6 +398,7 @@ void Mesh::order_dual(int v)
       ri = Fi.rc - fc;
     double min_angle = 2.0*M_PI;
     int next_dual;
+    bool can_add = false;
     for (unsigned int f = 0; f < V.faces.size(); f++)
     {
       Face& Fj = m_faces[V.faces[f]];
@@ -423,13 +417,27 @@ void Mesh::order_dual(int v)
           {
             min_angle = ang;
             next_dual = Fj.id;
+            can_add = true;
           }
         }
       }
     }
-    V.dual.push_back(next_dual);
+    if (can_add)
+    {
+      V.dual.push_back(next_dual);
+      i++;
+    }
+    if (!can_add && (static_cast<int>(V.dual.size()) != V.n_faces-1))
+    {
+      cerr << endl;
+      cerr << "Unable to order dual vertices of vertex " << V.id << ". There is likely a problem with the mesh itself. ";
+      cerr << "Such problems typically arise if the parametrs lead to situations such as a very thin (one-cell-wide) neck of cells or ";
+      cerr << "a part of the system trying to detach from the bulk, which is currently not supported. " << endl;
+      //this->debug_dump("test.off");
+      throw runtime_error("Unable to order vertex dual.");
+    }
     // for boundary vertices add the hole to the end
-    if (V.boundary && (V.dual.size() == V.n_faces-1))
+    if (V.boundary && (static_cast<int>(V.dual.size()) == V.n_faces-1))
       V.dual.push_back(V.faces[V.n_faces-1]);
   }
   // And update area
@@ -455,8 +463,9 @@ double Mesh::dual_area(int v)
     cout << V << endl;
     throw runtime_error("Vertex star has to be ordered before dual area can be computed.");
   }
-  
+
   V.area = 0.0;
+  if (V.dual.size() < 3) return V.area;
   if (!V.boundary)
   {
     for (int f = 0; f < V.n_faces; f++)
@@ -481,14 +490,6 @@ double Mesh::dual_area(int v)
   
   V.area *= 0.5;
   
-  
-  if (V.area < 0)
-  {
-    cout << "Negative area for vertex " << V << endl;
-    for (unsigned int f = 0; f < V.faces.size(); f++)
-      cout << m_faces[V.dual[f]].id << " " << m_faces[V.dual[f]].rc << endl;
-  }
-
   return V.area;
 }
 
@@ -548,8 +549,6 @@ int Mesh::opposite_vertex(int e)
     for (int i = 0; i < f.n_sides; i++)
       if ((f.vertices[i] != edge.from) && (f.vertices[i] != edge.to))
         return f.vertices[i];
-    cout << edge << endl;
-    cout << f << endl;
     throw runtime_error("Vertex opposite to an edge: Mesh is not consistent. Paramters are likley wrong and there are overlapping vertices causing face construction to fail.");
   }
   return -1;  // If edge is boundary, return -1.
@@ -679,12 +678,7 @@ void Mesh::edge_flip(int e)
   this->compute_centre(F.id);
   this->compute_angles(Fp.id);
   this->compute_centre(Fp.id);
-  
-  // Update angle deficit
-  this->angle_factor_deriv(V1.id);
-  this->angle_factor_deriv(V2.id);
-  this->angle_factor_deriv(V3.id);
-  this->angle_factor_deriv(V4.id);  
+    
 }
 
 /*! Implements the equiangulation of the mesh. This is a procedure where 
@@ -846,7 +840,7 @@ void Mesh::update_face_properties()
     else m_vertices[E.from].attached = true;
     Face& face = m_faces[Ep.face];
     face.boundary = true;
-    if (face.get_angle(this->opposite_vertex(Ep.id)) < -0.017452406437283473)
+    if (face.get_angle(this->opposite_vertex(Ep.id)) < 0)
     {
       face.obtuse = true;
       if (!E.attempted_removal)
@@ -876,6 +870,104 @@ bool Mesh::remove_obtuse_boundary()
   return no_removals;
 }
 
+/*! Loop over all boundary edges. If the angle oposite to the boundary 
+ * edge is obtuse, mirror the vertex belonging to the obtuse angle across the 
+ * boundary and and two edges and one triangle. In the next step, equiangulation 
+ * move will pick and flip this edge. This prevents sudden jumps in the force. 
+ * This function returns list of newly added vertices, which will be used to 
+ * add actual particles to the system. 
+*/
+vector<Vector3d> Mesh::fix_obtuse_boundary()
+{
+  vector<Vector3d> new_verts;
+  for (vector<int>::iterator it_b = m_obtuse_boundary.begin(); it_b != m_obtuse_boundary.end(); it_b++)
+  {
+    Edge& E = m_edges[*it_b];
+    Edge& Ep  = m_edges[E.pair];
+    m_faces[Ep.face].boundary = false;
+    Vertex& Vf = m_vertices[E.from];
+    Vertex& Vt = m_vertices[E.to];
+    Vector3d v = this->mirror_vertex(this->opposite_vertex(Ep.id));
+    new_verts.push_back(v);
+    // add vertex
+    this->add_vertex(m_size,v.x,v.y,v.z);
+    Vertex& V = *(m_vertices.end() - 1);
+    V.boundary = true;
+    V.neigh.push_back(Vt.id);
+    V.neigh.push_back(Vf.id);
+    Vt.neigh.insert(Vt.neigh.begin(),V.id);
+    Vf.neigh.push_back(V.id);
+    // add two edges 
+    this->add_edge(Vt.id,V.id);
+    this->add_edge(V.id,Vt.id);
+    Edge& E1 = *(m_edges.end()-2);
+    Edge& E2 = *(m_edges.end()-1);
+    Vt.edges.insert(Vt.edges.begin(),E1.id);
+    V.edges.push_back(E2.id);
+    E1.boundary = false;
+    E2.boundary = true;
+    E1.pair = E2.id; 
+    E2.pair = E1.id; 
+    // add two more edges
+    this->add_edge(V.id,Vf.id);
+    this->add_edge(Vf.id,V.id);
+    Edge& E3 = *(m_edges.end()-2);
+    Edge& E4 = *(m_edges.end()-1);
+    Vf.edges.push_back(E4.id);
+    V.edges.push_back(E3.id);
+    E3.boundary = false;
+    E4.boundary = true;
+    E3.pair = E4.id; 
+    E4.pair = E3.id;
+    E.boundary = false;
+    // update list of boundary edges
+    m_boundary_edges.erase(find(m_boundary_edges.begin(),m_boundary_edges.end(),E.id));
+    m_boundary_edges.push_back(E4.id);
+    m_boundary_edges.push_back(E2.id);
+    // handle new face 
+    Face face = Face(m_nface++);
+    face.boundary = true;
+    face.add_vertex(Vt.id);
+    face.add_vertex(V.id);
+    face.add_vertex(Vf.id);
+    face.add_edge(E.id);
+    face.add_edge(E1.id);
+    face.add_edge(E3.id); 
+    E1.face = face.id; 
+    E3.face = face.id; 
+    E2.face = E.face; 
+    E4.face = E.face;
+    V.faces.push_back(face.id);
+    V.faces.push_back(E.face);
+    V.n_faces = 2;
+    Vt.faces.insert(Vt.faces.begin(),face.id);
+    vector<int>::iterator it_v = find(Vf.faces.begin(),Vf.faces.end(),E.face);
+    Vf.faces.insert(it_v,face.id);
+    V.dual.push_back(face.id);
+    V.dual.push_back(E.face);
+    Vt.dual.insert(Vt.dual.begin(),face.id);
+    Vf.dual.push_back(face.id);
+    // Insert two new edges and new vertex into the hole face making sure ordering is not messed up
+    vector<int>::iterator it_e = find(m_faces[E.face].edges.begin(),m_faces[E.face].edges.end(),E.id);
+    m_faces[E.face].edges.insert(it_e,E4.id);
+    it_e = find(m_faces[E.face].edges.begin(),m_faces[E.face].edges.end(),E.id);
+    m_faces[E.face].edges.insert(it_e,E2.id);
+    it_e = find(m_faces[E.face].edges.begin(),m_faces[E.face].edges.end(),E.id);
+    m_faces[E.face].edges.erase(it_e);
+    it_v = find(m_faces[E.face].vertices.begin(),m_faces[E.face].vertices.end(),Vt.id);
+    m_faces[E.face].vertices.insert(it_v,V.id);
+    E.face = face.id;
+    face.n_sides = 3;
+    m_faces.push_back(face);
+    this->compute_angles(face.id);
+    this->compute_centre(face.id);  
+    cout << "Adding vertex : " << V << endl;
+  }
+  this->update_face_properties();
+  this->update_dual_mesh();
+  return new_verts;
+}
+
 /*! Remove edge triangles.
  *  A triangle is considered an edge triangle if it has at least 
  *  to of its edges with having boundary pairs. That is, if on of 
@@ -897,145 +989,6 @@ bool Mesh::remove_edge_triangles()
       }
   }
   return no_removals;
-}
-
-/*! Find the factor to scale the native area with for the boundary vertices.
- *  This factor is computed as \f$ \zeta = \frac{2\pi - \Delta\theta}{2\pi} \f$,
- *  where \f$ \Delta\theta \f$ is the angle deficit at the vertex.
- *  \param v vertex id
-*/
-double Mesh::angle_factor(int v)
-{
-  Vertex& Vi = m_vertices[v];
-  if (!Vi.boundary)
-    return 1.0;
-
-  if (Vi.n_faces < 3)
-    return 0.0;
-    
-  if (!Vi.attached)
-    return 0.0;
- 
-  Face& f1 = m_faces[Vi.dual[0]];
-  Face& fn = m_faces[Vi.dual[Vi.n_faces-2]];
-  
-  Vector3d r_nu_1_i = f1.rc - Vi.r;
-  Vector3d r_nu_n_i = fn.rc - Vi.r;
-  
-  double angle = std::acos(dot(r_nu_1_i,r_nu_n_i)/(r_nu_1_i.len()*r_nu_n_i.len()));
-  bool complementary_angle = dot(cross(r_nu_1_i,r_nu_n_i),Vi.N) > 0.0;
-    
-  if (complementary_angle) 
-    angle = 2*M_PI - angle;
-  
-  return (2.0*M_PI-angle)/(2.0*M_PI);
-}
-
-/*! Compute derivatives of the angle defict factor for boundary vertices.
- *  \param v index of the vertex
-*/
-void Mesh::angle_factor_deriv(int v)
-{
-  Vertex& V = m_vertices[v]; 
-  if (!V.boundary)
-    return;
-  
-  V.angle_def.clear();
-  
-  Face& f1 = m_faces[V.dual[0]];
-  Face& fn = m_faces[V.dual[V.n_faces-2]];
-  
-  
-  if (f1.n_sides != 3 || fn.n_sides != 3)
-    return;
-  
-  Vector3d  r_nu_1_ri = f1.rc - V.r;
-  Vector3d  r_nu_n_ri = fn.rc - V.r;
-  
-  double sign = (dot(cross(r_nu_1_ri,r_nu_n_ri),V.N) < 0.0) ? 1.0 : -1.0;
-  
-  double len_r_nu_1_ri = r_nu_1_ri.len();
-  double len_r_nu_n_ri = r_nu_n_ri.len();
-  double len_r_nu_1_ri_2 = len_r_nu_1_ri*len_r_nu_1_ri;
-  double len_r_nu_n_ri_2 = len_r_nu_n_ri*len_r_nu_n_ri;
-  double r_nu_1_ri_dot_r_nu_n_ri = dot(r_nu_1_ri,r_nu_n_ri);
-  
-  // We first handle vertex itself
-  double fact = 0.0;
-  try
-  {
-    Vector3d d_ri = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_n_ri*f1.get_jacobian(V.id)-r_nu_n_ri + r_nu_1_ri*fn.get_jacobian(V.id) - r_nu_1_ri)
-                    -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_1_ri*(r_nu_n_ri.unit())*fn.get_jacobian(V.id) - len_r_nu_1_ri*r_nu_n_ri.unit()
-                                                                                + len_r_nu_n_ri*(r_nu_1_ri.unit())*f1.get_jacobian(V.id) - len_r_nu_n_ri*r_nu_1_ri.unit());
-    
-    if (fabs(r_nu_1_ri_dot_r_nu_n_ri*r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)) < 1.0)
-      fact = sign/(2.0*M_PI)*1.0/sqrt(1.0 - r_nu_1_ri_dot_r_nu_n_ri*r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2));               
-    
-    
-    V.angle_def.push_back(fact*d_ri);
-  }
-  catch (...)
-  {
-    cout << "Warning! Jacobians were not properly computed. This suggests problems with the mesh most likley due to poor choice of parameters. Results of this simulation are NOT reliable!" << endl;
-    cout << f1 << endl;
-    cout << fn << endl;
-    cout << V << endl;
-    V.angle_def.push_back(Vector3d(0,0,0));
-  }
-  
-  // Now we handle all neighbours
-  for (int e = 0; e < V.n_edges; e++)
-    V.angle_def.push_back(Vector3d(0.0,0.0,0.0));
-  
-  for (int e = 0; e < V.n_edges; e++)
-  {
-    //if (e <= 1)
-    if (m_faces[m_edges[V.edges[e]].face].id == f1.id)
-    {
-      Vertex& Vj = m_vertices[m_edges[V.edges[e]].to];
-      try
-      {
-        Vector3d d_rj = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_n_ri*f1.get_jacobian(Vj.id))
-                 -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_n_ri*(r_nu_1_ri.unit())*f1.get_jacobian(Vj.id));
-
-        V.angle_def[e+1] = V.angle_def[e+1] + fact*d_rj;
-      } 
-      catch (...)
-      {
-        cout << "Warning! Jacobians were not properly computed. This suggests problems with the mesh most likley due to poor choice of parameters. Results of this simulation are NOT reliable!" << endl;
-        cout << f1 << endl;
-        cout << Vj << endl;
-        cout << V << endl;
-        for (int f = 0; f < V.n_faces; f++)
-          cout << m_faces[V.faces[f]] << endl;
-        for (int e = 0; e < V.n_edges; e++)
-          cout << m_edges[V.edges[e]] << endl;
-      }
-    }
-    //if (e >= V.n_edges-2)
-    if (m_faces[m_edges[V.edges[e]].face].id == fn.id)
-    {
-      Vertex& Vk = m_vertices[m_edges[V.edges[e]].to];
-      try
-      {
-        Vector3d d_rk = 1.0/(len_r_nu_1_ri*len_r_nu_n_ri)*(r_nu_1_ri*fn.get_jacobian(Vk.id))
-                  -r_nu_1_ri_dot_r_nu_n_ri/(len_r_nu_1_ri_2*len_r_nu_n_ri_2)*(len_r_nu_1_ri*(r_nu_n_ri.unit())*fn.get_jacobian(Vk.id));
-        V.angle_def[e+1] = V.angle_def[e+1] + fact*d_rk;
-      }
-      catch (...)
-      {
-        cout << "Warning! Jacobians were not properly computed. This suggests problems with the mesh most likley due to poor choice of parameters. Results of this simulation are NOT reliable!" << endl;
-        cout << fn << endl;
-        cout << Vk << endl;
-        cout << V << endl;
-        for (int f = 0; f < V.n_faces; f++)
-          cout << m_faces[V.faces[f]] << endl;
-        for (int e = 0; e < V.n_edges; e++)
-          cout << m_edges[V.edges[e]] << endl;
-      }
-    }
-  }
-  
 }
 
 /*! Compute radius of a circumscribed circle 
@@ -1415,7 +1368,7 @@ void Mesh::order_boundary_star(int v)
     }
   }
   rotate(V.edges.begin(), V.edges.begin()+pos, V.edges.end());
-  rotate(V.dual.begin(), V.dual.begin()+pos, V.dual.end());
+  //rotate(V.dual.begin(), V.dual.begin()+pos, V.dual.end());
   rotate(V.neigh.begin(), V.neigh.begin()+pos, V.neigh.end());
   rotate(V.faces.begin(), V.faces.begin()+pos, V.faces.end());
   
@@ -1620,3 +1573,49 @@ bool Mesh::remove_edge_face(int f)
   
 }
 
+/*! Compute coordinates of a vertex that is a mirror image (with respect to an edge)
+ *  of a vetex opposite to a boundary edge edge.
+ *  
+ *  \param edge index of the edge 
+ */
+ Vector3d Mesh::mirror_vertex(int edge)
+ {
+   Edge& E = m_edges[edge];
+   Vertex& V0 = m_vertices[this->opposite_vertex(edge)];
+   Vertex& V1 = m_vertices[E.from];
+   Vertex& V2 = m_vertices[E.to];
+   Vector3d r21 = V2.r - V1.r;
+   Vector3d r01 = V0.r - V1.r; 
+   Vector3d rp = (dot(r21,r01)/r21.len2())*r21;
+   Vector3d rn = r01 - rp;
+   return Vector3d(V1.r + (r01 - 2*rn));
+ }
+
+
+/*! Dump entire mesh into an OFF file for debugging purposes. 
+ *  \param name file name for output 
+ */
+void Mesh::debug_dump(const string& name)
+{
+  ofstream out(name.c_str());
+  out << "OFF" << endl;
+  out << "# SAMoS debug OFF file." << endl;
+  out << m_vertices.size() << " " << m_faces.size()-1 << " 0" << endl;
+  for (unsigned int v = 0; v < m_vertices.size(); v++)
+  {
+    Vertex& V = m_vertices[v];
+    out << V.r.x << " " << V.r.y << " " << V.r.z << endl;
+  }
+  for (unsigned int f = 0; f < m_faces.size(); f++)
+  {
+    Face& F = m_faces[f];
+    if (F.n_sides < 7)  // some number larger than 3 to catch bugs but omit outter face
+    {
+      out << F.n_sides << " ";
+      for (int v = 0; v < F.n_sides; v++)
+        out << F.vertices[v] << " ";
+      out << endl;
+    }
+  }
+  out.close();
+}

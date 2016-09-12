@@ -29,6 +29,7 @@
 # * 
 # * ***************************************************************
 
+from numpy import linalg as LA
 from Geometry import *
 from Configuration import *
 try:
@@ -53,17 +54,33 @@ class Profiles:
 		# Otherwise we can't do this since it's going to be close to 0
 		else:
 			print "doing nematic case!"
+			# Be a bit better here. The moment of inertia tensor should have *some* kind of signature
+			# Take this as an initial guess of the axis. Compare the two later.
+			Itensor=np.einsum('ik,ij->kj',conf.rval,conf.rval)
+			#print Itensor
+			# Compute its eigenvalues and eigenvectors
+			eigval,eigvec=LA.eig(Itensor)
+			#print eigval
+			# Careful, eigenvectors are defined this way round
+			#print eigvec[:,0]
+			#print eigvec[:,1]
+			#print eigvec[:,2]
+			# The eigenvector we want is the one with the *smallest* eigenvalue, as our shape
+			# is a squashed thing with the z axis in the squattest direction
+			idx=np.argmin(eigval)
+			inertialz=eigvec[:,idx]
+			print inertialz 
+			
 			directions=np.cross(conf.rval,conf.vval)
 			# Those should then now be mostly either aligned or antialigned
 			# Hope for the best and rectify them ...
-			# Take the first one and hope that it's typical
+			# Use the guess from the inertia tensor now
 			normdir=np.sqrt(directions[:,0]**2+directions[:,1]**2+directions[:,2]**2)
 			dirnorm=((directions).transpose()/(normdir).transpose()).transpose()
-			orient=np.round(dirnorm[:,0]*dirnorm[1,0]+dirnorm[:,1]*dirnorm[1,1]+dirnorm[:,2]*dirnorm[1,2])
+			orient=np.round(dirnorm[:,0]*inertialz[0]+dirnorm[:,1]*inertialz[1]+dirnorm[:,2]*inertialz[2])
 			print orient
 			print sum(orient)
-			print sum(orient**2)
-			print len(conf.rval)
+			print sum(orient**2)/len(conf.rval)
 			self.direction=np.einsum('ij,i->j',directions,orient)
 			#self.direction=np.empty((len(conf.vval),3))
 			#self.direction[:,0]=directions[:,0]*orient
@@ -71,7 +88,8 @@ class Profiles:
 			#self.direction[:,2]=directions[:,2]*orient
 		self.orderpar=self.direction/len(conf.rval)
 		print self.orderpar
-		self.direction = self.direction/np.linalg.norm(self.direction)
+		#self.direction = self.direction/np.linalg.norm(self.direction)
+		self.direction=inertialz
 		print self.direction
 		# to plot, make this a line ...
 		
@@ -120,6 +138,7 @@ class Profiles:
 		s_pt=np.sum(self.ephi*np.einsum('...ij,...j->...i',stress,self.etheta),axis=1)
 		s_pp=np.sum(self.ephi*np.einsum('...ij,...j->...i',stress,self.ephi),axis=1)
 		
+		
 		# Setting up the binning. I changed this to go from -pi/2 to pi/2 consistently. This maybe makes less pretty pictures,
 		# but the edges are going to be a lot cleaner. Also only one bin to handle accross multiple v0/J.
 		# Can always rebin to less resolution if necessary
@@ -127,7 +146,6 @@ class Profiles:
 		theta_bin=np.linspace(0,np.pi,nbin+1)
 		dtheta=theta_bin[1]-theta_bin[0]
 		theta_out=theta_bin[:nbin]+dtheta/2-np.pi/2
-		print theta_out
 		
 		rho_profile, bin_edges = np.histogram(self.theta, bins=theta_bin,density=True)
 		isdata=[index for index,value in enumerate(rho_profile) if (value >0)]

@@ -42,14 +42,19 @@
 #include <vector>
 #include <stdexcept>
 #include <utility>
+#include <string>
+#include <fstream>
+#include <list>
 
 //#include <boost/property_map/property_map.hpp>
 //#include <boost/ref.hpp>
 
 #ifdef HAS_CGAL
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-#include <CGAL/Delaunay_triangulation_2.h>
+//#include <CGAL/Delaunay_triangulation_2.h>
+#include <CGAL/Constrained_Delaunay_triangulation_2.h>
 #include <CGAL/Triangulation_vertex_base_with_info_2.h>
+#include <CGAL/Triangulation_face_base_with_info_2.h>
 #endif
 
 #include "messenger.hpp"
@@ -59,14 +64,37 @@
 
 using std::vector;
 using std::pair;
+using std::string;
+using std::ofstream;
+using std::list;
 
 #ifdef HAS_CGAL
+
+//! Auxiliary data structure for CGAL-enebled cleanup of the vertices outside the boundary.
+struct FaceInfo2
+{
+  FaceInfo2(){}
+  bool in_domain()
+  { 
+    return nesting_level%2 == 1;
+  }
+  int nesting_level;
+};
+
 /*! Typdefs for CGAL library */
 typedef CGAL::Exact_predicates_inexact_constructions_kernel               Kernel;
 typedef CGAL::Triangulation_vertex_base_with_info_2<unsigned int, Kernel> Vb;
-typedef CGAL::Triangulation_data_structure_2<Vb>                          Tds;
-typedef CGAL::Delaunay_triangulation_2<Kernel, Tds>                       Delaunay;
-typedef Kernel::Point_2                                                   Point;
+typedef CGAL::Triangulation_face_base_with_info_2<FaceInfo2,Kernel>       Fbb;
+typedef CGAL::Constrained_triangulation_face_base_2<Kernel,Fbb>           Fb;
+typedef CGAL::Triangulation_data_structure_2<Vb,Fb>                       TDS;
+typedef CGAL::Exact_predicates_tag                                        Itag;
+typedef CGAL::Constrained_Delaunay_triangulation_2<Kernel, TDS, Itag>     Delaunay;
+typedef Delaunay::Point                                                   Point;
+
+//typedef CGAL::Triangulation_data_structure_2<Vb>                          Tds;
+//typedef CGAL::Delaunay_triangulation_2<Kernel, Tds>                       Delaunay;
+//typedef Delaunay::Vertex_circulator                                       Vertex_circulator;
+//typedef Kernel::Point_2                                                   Point;
 using std::make_pair;
 using std::pair;
 #endif
@@ -106,15 +134,11 @@ public:
                                                                                                  m_msg(msg),
                                                                                                  m_cut(cutoff), 
                                                                                                  m_pad(pad), 
-                                                                                                 m_build_contacts(false),
-                                                                                                 m_build_faces(false),
                                                                                                  m_triangulation(false),
-                                                                                                 m_contact_dist(0.0),
                                                                                                  m_max_perim(20.0),
-                                                                                                 m_max_edge_len(7.0),
                                                                                                  m_circumcenter(true),
                                                                                                  m_disable_nlist(false),
-                                                                                                 m_remove_detached(false)
+                                                                                                 m_remove_detached(true)
   {
     m_msg->write_config("nlist.cut",lexical_cast<string>(m_cut));
     m_msg->write_config("nlist.pad",lexical_cast<string>(m_pad));
@@ -132,62 +156,16 @@ public:
       m_msg->msg(Messenger::INFO,"Box dimensions are too small to be able to use cell lists. Neighbour list will be built using N^2 algorithm.");
       m_msg->write_config("nlist.build_type","n_square");
     }
-    if (param.find("build_contacts") != param.end())
-    {
-      m_build_contacts = true;
-      m_msg->msg(Messenger::INFO,"Neighbour list will also build contact network.");
-      m_msg->write_config("nlist.contact_network","true"); 
-    }
     if (param.find("triangulation") != param.end())
-    {
-      m_triangulation = true;
-      m_msg->msg(Messenger::INFO,"Faces will be build using Delaunay triangulation.");
-      m_msg->write_config("nlist.triangulation","true"); 
-      if (param.find("max_edge_len") == param.end())
-      {
-        m_msg->msg(Messenger::WARNING,"Neighbour list. No maximum edge lenght set. Assuming default value of 7.");
-        m_msg->write_config("nlist.max_edge_len","7.0");
-        m_max_edge_len = 7.0;
-      }
-      else    
-      {
-        m_msg->msg(Messenger::INFO,"Neighbour list. Setting maximum edge length "+param["max_edge_len"]+".");
-        m_msg->write_config("nlist.max_edge_len",param["max_edge_len"]);
-        m_max_edge_len =  lexical_cast<double>(param["max_edge_len"]);
-      }
-    }
-    if (param.find("build_faces") != param.end())
     {
       if (m_system->get_periodic())
       {
-        m_msg->msg(Messenger::ERROR,"Building faces is not supported for periodic boundary conditions.");
-        throw runtime_error("Faces not supported in periodic sytems.");
+        m_msg->msg(Messenger::ERROR,"Delaunay triangulation is not supported for periodic systems.");
+        throw runtime_error("Delaunay triangulation not supported in periodic systems.");
       }
-      m_build_contacts = true;
-      m_build_faces = true;
-      m_msg->msg(Messenger::INFO,"Neighbour list will also build faces.");
-      m_msg->write_config("nlist.faces","true"); 
-    }
-    if (param.find("contact_distance") == param.end())
-    {
-      m_msg->msg(Messenger::WARNING,"Neighbour list. No contact distance set. Assuming default sum of particle radii.");
-      m_msg->write_config("nlist.contact_distance","0.0"); 
-    }
-    else
-    {
-      
-      m_contact_dist = lexical_cast<double>(param["contact_distance"]);
-      if (m_contact_dist > m_cut)
-      {
-        m_msg->msg(Messenger::WARNING,"Neighbour list. Contact distance "+param["contact_distance"]+" is larger than the neighbour list cuttoff distance. Using neigbour list cuttoff instead.");
-        m_msg->write_config("nlist.contact_distance",lexical_cast<string>(m_cut)); 
-        m_contact_dist = m_cut;
-      }
-      else
-      {
-        m_msg->msg(Messenger::INFO,"Neighbour list.  Setting contact distance to "+param["contact_distance"]+".");
-        m_msg->write_config("nlist.contact_distance",param["contact_distance"]); 
-      }
+      m_triangulation = true;
+      m_msg->msg(Messenger::INFO,"Faces will be build using Delaunay triangulation.");
+      m_msg->write_config("nlist.triangulation","true"); 
     }
     if (param.find("max_perimeter") == param.end())
     {
@@ -219,17 +197,23 @@ public:
       m_msg->write_config("nlist.disable_nlist","true");
       m_disable_nlist = true;
     }
-    if (param.find("remove_detached") != param.end())
+    if (param.find("keep_detached") != param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Neighbour list. Particles detached from the mesh (tissue) will be erased.");
-      m_msg->write_config("nlist.remove_detached","true");
-      m_remove_detached = true;
+      m_msg->msg(Messenger::WARNING,"Neighbour list. Particles detached from the mesh (tissue) will be kept.");
+      m_msg->write_config("nlist.remove_detached","false");
+      m_remove_detached = false;
     }
     if (param.find("max_iter") != param.end())
     {
       m_msg->msg(Messenger::INFO,"Neighbour list. Setting maximum number of iterations for boundary builds in tissue simulations to "+param["max_iter"]+".");
       m_msg->write_config("nlist.max_iter",param["max_iter"]);
       m_system->set_max_mesh_iterations(lexical_cast<int>(param["max_iter"]));
+    }
+    if (param.find("boundary_type") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Neighbour list. Setting type of boundary particles in tissue simulations to "+param["boundary_type"]+".");
+      m_msg->write_config("nlist.boundary_type",param["boundary_type"]);
+      m_system->set_boundary_type(lexical_cast<int>(param["boundary_type"]));
     }
     this->build();
   }
@@ -247,7 +231,7 @@ public:
   bool need_update(Particle&);
   
   //! Returns true is faces list exists
-  bool has_faces() { return m_build_faces; }
+  bool has_faces() { return m_triangulation; }
   
   //! Get neighbour list for a give particle
   //! \param id Particle id
@@ -270,7 +254,6 @@ public:
   void rescale_cutoff(double scale)
   {
     m_cut *= scale;
-    m_contact_dist *= scale;
     if (m_use_cell_list && m_system->get_box()->Lx > 2.0*(m_cut+m_pad) && m_system->get_box()->Ly > 2.0*(m_cut+m_pad) && m_system->get_box()->Lz > 2.0*(m_cut+m_pad))
     {
       m_cell_list = boost::shared_ptr<CellList>(new CellList(m_system,m_msg,m_cut+m_pad));
@@ -304,26 +287,16 @@ private:
   double m_cut;                    //!< List build cutoff distance 
   double m_pad;                    //!< Padding distance (m_cut should be set to potential cutoff + m_pad)
   bool m_use_cell_list;            //!< If true, use cell list to speed up neighbour list builds
-  bool m_build_contacts;           //!< If true, build list of contacts
-  bool m_build_faces;              //!< If true, build list of faces based on contact network
   bool m_triangulation;            //!< If true, build Delaunay triangulation for faces
-  double m_contact_dist;           //!< Distance over which to assume particles to be in contact 
   double m_max_perim;              //!< Maximum value of the perimeter beyond which face becomes a hole.
-  double m_max_edge_len;           //!< Maximum value of the edge beyond which we drop it (for triangulations)
   bool m_circumcenter;             //!< If true, use cell circumcenters when computing duals. 
   bool m_disable_nlist;            //!< If true, neigbour list is not built (only used for cell simulations)
   bool m_remove_detached;          //!< If true, remove detached particles (vertices) before rebuilding neighbour list (for cell simulations)
   vector<vector<int> >  m_contact_list;    //!< Holds the contact list for each particle
     
   // Actual neighbour list builds
-  void build_nsq();    //!< Build with N^2 algorithm
-  void build_cell();   //!< Build using cells list
-  
-  // Does contact list build
-  void build_contacts();
-  
-  // Checks if the contact is intersecting with other contacts
-  bool contact_intersects(int, int);
+  void build_nsq(int);    //!< Build with N^2 algorithm
+  void build_cell();      //!< Build using cells list
   
    //! Build faces
   void build_faces(bool);
@@ -338,12 +311,19 @@ private:
   // Build Delaunay triangulation
   bool build_triangulation();
 #endif
-   
-  // Check if all particles are on the same side
-  bool same_side_line(Particle&, Particle&, vector<int>&);
-  
+    
+  //! Dump particles and connectivity into a MOL2 file for debugging
+  void debug_dump(const string&);
+
 };
 
 typedef shared_ptr<NeighbourList> NeighbourListPtr;
+
+//! Dot product between two vectors given by three particles
+double dot(const Particle&, const Particle&, const Particle&);
+
+//! Mirror image of a point with respect to an edge
+void mirror(const Particle&, const Particle&, const Particle&, double&, double&, double&);
+
 
 #endif

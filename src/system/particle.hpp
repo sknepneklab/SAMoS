@@ -86,6 +86,7 @@ public:
     m_parent = -1;
     m_A0 = A0;
     mass = 1.0;
+    boundary = false;
   }
   
   //! Get particle id
@@ -224,9 +225,11 @@ public:
   double omega;                //!< Magnitude of the angular velocity (in the direction of the normal to the surface)
   double age;                  //!< Particle age (used when deciding to remove and split the particle)
   double A0;                   //!< Native area for cell simulations
+  bool boundary;               //!< Flag used to distinguish particle at the boundary for tissue simulations
   list<string> groups;         //!< List of all groups particle belongs to.
   vector<int> bonds;           //!< List of all bonds this particle belongs to
   vector<int> angles;          //!< List of all angles this particle belongs to
+  vector<int> boundary_neigh;  //!< For a boundary particle (tissue simulation) list all its boundary neighbours
   int coordination;            //!< Keeps track of the number of neighbours
   double mass;                 //!< Particle mass
   

@@ -175,18 +175,6 @@ struct Vertex
      return (id == val);
   }
   
-  //! Get the corresponding angle deficit derivative
-  Vector3d& get_angle_def(int v)
-  {
-    if (v == id) return angle_def[0];  
-    else
-    {
-      for (int n = 0; n < n_edges; n++)
-        if (v == neigh[n])
-          return angle_def[n+1];
-    }
-    throw runtime_error("Vertex angle derivative mismatch.");
-  }
    
   int id;                      //!< Vertex id
   int type;                    //!< Vertex type 
@@ -208,7 +196,7 @@ struct Vertex
   vector<int> edges;           //!< Contains indices of all edges that originate at this vertex
   vector<int> faces;           //!< Contains indices of faces this vertex belongs to
   vector<int> dual;            //!< Centres of all faces surrounding it, ordered counterclockwise
-  vector<Vector3d> angle_def;  //!< Contains derivatives with respect to three coordinates at the boundary 
+  
     
 };
 

@@ -307,6 +307,27 @@ int main(int argc, char* argv[])
               throw std::runtime_error("Could not parse read_angles command.");
             }
           }
+          else if (command_data.command == "read_cell_boundary")       // if command is read_cell_boundary, parse it and read in the cell boundary connectivity information, if possible
+          {
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), input_parser, qi::space))  
+            {
+              if (!defined["input"])  // We need to have system defined before we can add any angle potentials
+              {
+                if (defined["messages"])
+                  msg->msg(Messenger::ERROR,"System has not been defined. Please define system using \"input\" command before reading cell boundary connectivity information.");
+                else
+                  std::cerr << "System has not been defined. Please define system using \"input\" command before reading cell boundary connectivity infromation." << std::endl;
+                throw std::runtime_error("System not defined.");
+              }
+              sys->read_boundary_neighbours(input_data.name);
+              msg->msg(Messenger::INFO,"Finished reading boundary connectivity data from "+input_data.name+".");
+            }
+            else
+            {
+              std::cerr << "Could not parse read_cell_boundary command." << std::endl;
+              throw std::runtime_error("Could not parse read_cell_boundary command.");
+            }
+          }
           else if (command_data.command == "pair_potential")       // if command is pair potential, parse it and add this pair potential to the list of pair potentials
           {
             if (!defined["input"])  // We need to have system defined before we can add any external potential 

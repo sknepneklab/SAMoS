@@ -70,6 +70,8 @@ ostream& operator<<(ostream& out, const Particle& p)
       out << format(" %d ") % (*it_a);
   }
   out << endl;
+  if (p.boundary)
+    out << "particle belongs to the tissue boundary" << endl;
   out << "----------------------------";
   out << endl;
   return out;

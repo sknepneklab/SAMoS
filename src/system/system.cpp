@@ -78,7 +78,9 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
                                                                              m_nlist_rescale(1.0),
                                                                              m_current_particle_flag(0),
                                                                              m_dt(0.0),
-                                                                             m_max_mesh_iter(100)
+                                                                             m_max_mesh_iter(100),
+                                                                             m_boundary_type(1),
+                                                                             m_has_boundary_neighbours(false)
 {
   vector<int> types;
   vector<string> s_line;
@@ -170,12 +172,10 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         // read particle type
         if (has_keys)
         {
-          if (column_key.find("type") != column_key.end()) {
+          if (column_key.find("type") != column_key.end()) 
             tp = lexical_cast<int>(s_line[column_key["type"]]);
-	  }
-          else {
+          else 
             tp = 1;
-	  }
         }
         else
           tp = lexical_cast<int>(s_line[1]);
@@ -271,7 +271,7 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
           if (column_key.find("omega") != column_key.end())   p.omega = lexical_cast<double>(s_line[column_key["omega"]]);            
         }
         else
-	  if (s_line.size() > 12)
+	      if (s_line.size() > 12)
             p.omega = lexical_cast<double>(s_line[12]);
         // read length
         p.set_length(1.0);
@@ -318,6 +318,15 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         }
         if (has_keys)
           if (column_key.find("mass") != column_key.end())  p.mass = lexical_cast<double>(s_line[column_key["mass"]]);
+        if (has_keys && (column_key.find("boundary") != column_key.end()))  
+        {
+          if (lexical_cast<int>(s_line[column_key["boundary"]]) != 0)  
+          {
+            p.boundary = true;
+            m_boundary.push_back(p.get_id());
+          }
+          else p.boundary = false;
+        }
         p.set_flag(m_current_particle_flag);
         m_current_particle_flag++;
         m_particles.push_back(p);
@@ -480,6 +489,7 @@ void System::add_particle(Particle& p)
   m_particles.push_back(p);
   for (list<string>::iterator it = p.groups.begin(); it != p.groups.end(); it++)
     m_group[*it]->add_particle(p.get_id());
+  if (p.boundary) m_boundary.push_back(p.get_id());
   // We need to force neighbour list rebuild
   m_force_nlist_rebuild = true;
   m_current_particle_flag++;
@@ -490,6 +500,14 @@ void System::add_particle(Particle& p)
  */ 
 void System::remove_particle(int id)
 {
+  Particle& pi = m_particles[id];
+  if (pi.boundary)
+  {
+    Particle& pj = m_particles[pi.boundary_neigh[0]];
+    Particle& pk = m_particles[pi.boundary_neigh[1]];
+    pj.boundary_neigh[(pj.boundary_neigh[0] == id) ? 0 : 1] = pk.get_id();
+    pk.boundary_neigh[(pk.boundary_neigh[0] == id) ? 0 : 1] = pj.get_id();
+  }
   m_particles.erase(m_particles.begin() + id);
   // Shift down all ids
   for (unsigned int i = 0; i < m_particles.size(); i++)
@@ -497,17 +515,21 @@ void System::remove_particle(int id)
     Particle& p = m_particles[i];
     if (p.get_id() > id)
       p.set_id(p.get_id() - 1);
+    if (p.boundary)
+    {
+      if (p.boundary_neigh[0] > id) p.boundary_neigh[0]--;
+      if (p.boundary_neigh[1] > id) p.boundary_neigh[1]--;
+    }
   }
   // Update all groups
   for(map<string, GroupPtr>::iterator it_g = m_group.begin(); it_g != m_group.end(); it_g++)
     (*it_g).second->shift(id);
-//   for(map<string, GroupPtr>::iterator it_g = m_group.begin(); it_g != m_group.end(); it_g++)
-//   {
-//     if (!this->group_ok((*it_g).first))
-//       cout << "Group " << (*it_g).first << " not OK." << endl;
-//     throw runtime_error("Group not OK.");
-//   }
-  // We need to force neighbour list rebuild
+  
+  vector<int>::iterator it = find(m_boundary.begin(), m_boundary.end(),id);
+  if (it != m_boundary.end()) m_boundary.erase(it);
+  for (unsigned int i = 0; i < m_boundary.size(); i++)  
+    if (m_boundary[i] > id) m_boundary[i]--;
+  
   m_force_nlist_rebuild = true;
 }
 
@@ -777,6 +799,78 @@ void System::read_angles(const string& angle_file)
   m_n_angle_types = types.size();
 }
 
+/*! Read in conectivity information for boundary particles in tissue simulations
+ *  Boundary neighbours file has the following structure
+ *  # - comments
+ *  id i j
+ *  where id is unique bond id (starts with 0)
+ *  i is the index of boundary particle
+ *  j is the index of its neighbour
+ *  \note only one pair has to be specified, the other one is set atomatically
+ *  
+ *  \param bound_neigh_file name of the file containing boundary connectivity information 
+*/
+void System::read_boundary_neighbours(const string& bound_neigh_file)
+{
+  vector<string> s_line;
+  ifstream inp;
+  inp.exceptions ( std::ifstream::failbit | std::ifstream::badbit );
+  try
+  {
+    inp.open(bound_neigh_file.c_str());
+  }
+  catch (exception& e)
+  {
+    m_msg->msg(Messenger::ERROR,"Problem opening (boundary connectivity) file "+bound_neigh_file);
+    throw e;
+  }
+  
+  string line;
+  m_msg->msg(Messenger::INFO,"Reading boundary connectivity information from file: "+bound_neigh_file);
+  m_msg->write_config("system.bound_neigh_file",bound_neigh_file);
+  
+  
+  inp.exceptions ( std::ifstream::badbit ); // need to reset ios exceptions to avoid EOF failure of getline
+  while ( getline(inp, line) )
+  {
+    trim(line);
+    to_lower(line);
+    if (line[0] != '#' && line.size() > 0)
+    {
+      s_line = split_line(line);
+      if (s_line.size() < 3)
+      {
+        m_msg->msg(Messenger::ERROR,"Insufficient number of parameters to define a bondary neighbours. " + lexical_cast<string>(s_line.size()) + " given, but " + lexical_cast<string>(3) + " expected.");
+        throw runtime_error("Insufficient number of parameters in the boundary connectivity file.");
+      }
+      unsigned int i = lexical_cast<int>(s_line[1]);   // read id of first particle
+      unsigned int j = lexical_cast<int>(s_line[2]);   // read id of second particle
+      if (i >= m_particles.size())
+      {
+        m_msg->msg(Messenger::ERROR,"Index of first particle "+lexical_cast<string>(i)+" is larger than the total number of particles.");
+        throw runtime_error("Wrong particle index.");
+      }
+      if (j >= m_particles.size())
+      {
+        m_msg->msg(Messenger::ERROR,"Index of second particle "+lexical_cast<string>(j)+" is larger than the total number of particles.");
+        throw runtime_error("Wrong particle index.");
+      }
+      Particle& pi = m_particles[i];
+      Particle& pj = m_particles[j];
+      if (!(pi.boundary && pj.boundary))
+      {
+        m_msg->msg(Messenger::ERROR,"Both particles have to be boundary particles in order to define them as boundary neighbours.");
+        throw runtime_error("Inconsistent boundary connectivity information.");
+      }
+      pi.boundary_neigh.push_back(j);
+      pj.boundary_neigh.push_back(i);
+    }
+  }
+  m_has_boundary_neighbours = true;
+  inp.close();
+}
+
+
 //! Compute tangent in the direction of the neighbour with the smallest index
 //! Used for simulation of actomyosin
 //! \param i particle at which we want to compute tangent vector
@@ -945,11 +1039,30 @@ void System::update_mesh()
     {
       //cout << "iteration : " << iter++ << endl;
       converged = true;
-      converged = converged && m_mesh.remove_obtuse_boundary();
-      converged = converged && m_mesh.remove_edge_triangles();
+      //converged = converged && m_mesh.remove_obtuse_boundary();
+      /*
+      vector<Vector3d> vecs = m_mesh.fix_obtuse_boundary();
+      if (vecs.size() > 0)
+      {
+        for (vector<Vector3d>::iterator it_v = vecs.begin(); it_v != vecs.end(); it_v++)
+        {
+          Vector3d& v = *it_v;
+          Particle p(this->size(),m_boundary_type,1.0);  
+          p.x = v.x; 
+          p.y = v.y; 
+          p.z = v.z; 
+          this->add_particle(p);
+        }
+        converged = false;
+      }
+      */
+      converged = converged && m_mesh.equiangulate();
+      //converged = converged && m_mesh.remove_edge_triangles();
       m_mesh.update_dual_mesh();
       m_mesh.update_face_properties();
-      converged = converged && m_mesh.equiangulate();
+      if (m_mesh.has_obtuse_boundary())
+        this->set_force_nlist_rebuild(true);
+      //converged = converged && m_mesh.equiangulate();
       iter++;
     }
     if (iter >= m_max_mesh_iter)

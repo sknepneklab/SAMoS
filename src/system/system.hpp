@@ -245,6 +245,9 @@ public:
   //! Read in all angles from the angles file
   void read_angles(const string&);
   
+  //! Read in all boundary neighbours in tissue simulations 
+  void read_boundary_neighbours(const string&);
+  
   //! Get list of exclusions for a given particle
   //! \param i particle index
   vector<int>& get_exclusions(int i) { return m_exclusions[i]; }
@@ -300,6 +303,19 @@ public:
   //! Set the number of mesh iteration 
   //! \param iter number of iteration 
   void set_max_mesh_iterations(int iter) { m_max_mesh_iter = iter; }
+
+  //! Set value of the boundary type of particles in cell simulations 
+  //! \param type boundary particle type
+  void set_boundary_type(int type) { m_boundary_type = type; }
+  
+  //! Get list of all boundary particles
+  vector<int>& get_boundary() { return m_boundary; }
+  
+  //! Add particle to the list of boundary particles
+  //! \param id particle id
+  void add_boundary(int id) { m_boundary.push_back(id); }
+  
+  bool has_boundary_neighbours() { return m_has_boundary_neighbours; }
     
 private:
   
@@ -325,6 +341,9 @@ private:
   bool m_has_exclusions;                //!< If true, there are bonded interactions in the system and therefore those are accompanied with exclusions
   int m_max_mesh_iter;                  //!< Maximum number of iterations when cleaning up boundaries in the tissue simulations
   vector<vector<int> > m_exclusions;    //!< Which particles to be excluded from computing non bonded interactions (basically everything in bonds and angles)
+  vector<int> m_boundary;               //!< Contains all particles that belong to the boundary (for tissue simulations)
+  int m_boundary_type;                  //!< Type of the boundary particles that are added for cell simulations
+  bool m_has_boundary_neighbours;       //!< If true, systems contains boundary neighbours (used in cells simulations)
    
 };
 

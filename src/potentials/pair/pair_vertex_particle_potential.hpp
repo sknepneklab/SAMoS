@@ -67,7 +67,7 @@ public:
   //! \param nlist Pointer to the global neighbour list
   //! \param val Value control object (for phasing in)
   //! \param param Contains information about all parameters (k)
-  PairVertexParticlePotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param), m_has_part_params(false), m_include_boundary(true)
+  PairVertexParticlePotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param), m_has_part_params(false), m_include_boundary(false)
   {
     if (param.find("K") == param.end())
     {
@@ -129,16 +129,16 @@ public:
     }
     m_msg->write_config("potential.pair.vertex_particle.mesh_update_steps",lexical_cast<string>(m_mesh_update_steps));
     
-    if (param.find("exclude_boundary") != param.end())
+    if (param.find("include_boundary") != param.end())
     {
-      m_msg->msg(Messenger::WARNING,"Vertex-particle pair potential does NOT include additional terms arrising at the boundary.");
-      m_include_boundary = false;
-      m_msg->write_config("potential.pair.vertex_particle.include_boundary","false");
+      m_msg->msg(Messenger::WARNING,"Vertex-particle pair potential INCLUDES additional terms arising at the boundary. This is a future feature, likely not to work.");
+      m_include_boundary = true;
+      m_msg->write_config("potential.pair.vertex_particle.include_boundary","true");
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Vertex-particle pair potential includes additional terms arrising at the boundary.");
-      m_msg->write_config("potential.pair.vertex_particle.include_boundary","true");
+      m_msg->msg(Messenger::INFO,"Vertex-particle pair potential does not include additional terms arising at the boundary.");
+      m_msg->write_config("potential.pair.vertex_particle.include_boundary","false");
     }
     
     m_particle_params = new VertexParticleParameters[m_ntypes];
