@@ -55,28 +55,24 @@ void ExternalShapeAlign::compute()
       Particle& pi = m_system->get_particle(i);
       if (!pi.boundary)
       {
-        // compute centre of the face 
         Vertex& V = vertices[pi.get_id()];
-        Vector3d rcm(0.0,0.0,0.0);
-        for (int f = 0; f < V.n_faces; f++)
-        {
-          Face& face = faces[V.faces[f]];
-          rcm += face.rc;
-        }
-        rcm.scale(1.0/V.n_faces);
-        // Now compute components of the gyration tensor
+        // Compute components of the shape tensor defined by outter product of cell edges
         double A = 0.0; // xx component
         double B = 0.0; // xy component 
         double C = 0.0; // yy component
-        for (int f = 0; f < V.n_faces; f++)
+        for (unsigned int d = 0; d < V.dual.size(); d++)
         {
-          Face& face = faces[V.faces[f]];
-          Vector3d r = face.rc - rcm;
-          A += r.x*r.x;  B += r.x*r.y;  C += r.y*r.y;
-        } 
-        A /= V.n_faces;  B /= V.n_faces;  C /= V.n_faces;
+          Face& f1 = faces[V.dual[d]];
+          int d_p_1 = (d == V.dual.size()-1) ? 0 : d + 1;
+          Face& f2 = faces[V.dual[d_p_1]];
+          Vector3d dr = f2.rc - f1.rc;
+          A += dr.x*dr.x;  B += dr.x*dr.y;   C += dr.y*dr.y;
+        }
+        A /= V.dual.size();  B /= V.dual.size();  C /= V.dual.size();
         // Maximum eigenvalue is 
-        double lambda = 0.5*(A+C + sqrt((A-C)*(A-C)+4*B*B));
+        double l1 = 0.5*(A+C + sqrt((A-C)*(A-C)+4*B*B));
+        double l2 = 0.5*(A+C - sqrt((A-C)*(A-C)+4*B*B));
+        double lambda = (l1 > l2) ? l1 : l2;
         // compute corresponding eigen vector
         ay = -(A-lambda)/B;
         // normalise it
