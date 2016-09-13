@@ -428,6 +428,8 @@ bool NeighbourList::build_triangulation()
         }
       }
     }
+    if (m_static_boundary)  // In case boundary is static, ignore all addition of new vertices
+      simple_add = true;
     if (can_add)
     {
       if (simple_add)
