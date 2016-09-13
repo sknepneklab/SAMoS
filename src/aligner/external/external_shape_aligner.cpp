@@ -49,7 +49,7 @@ void ExternalShapeAlign::compute()
   {
     vector<Vertex>& vertices = mesh.get_vertices();
     vector<Face>& faces = mesh.get_faces();
-    double ax = 1.0, ay;  // components of the shape eigenvector
+    double ax, ay;  // components of the shape eigenvector
     for  (int i = 0; i < N; i++)
     {
       Particle& pi = m_system->get_particle(i);
@@ -74,7 +74,8 @@ void ExternalShapeAlign::compute()
         double l2 = 0.5*(A+C - sqrt((A-C)*(A-C)+4*B*B));
         double lambda = (l1 > l2) ? l1 : l2;
         // compute corresponding eigen vector
-        ay = -(A-lambda)/B;
+        ax = B;
+        ay = lambda-A;
         // normalise it
         double len_a = sqrt(ax*ax + ay*ay);
         ax /= len_a;  ay /= len_a;
