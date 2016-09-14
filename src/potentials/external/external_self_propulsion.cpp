@@ -47,10 +47,13 @@ void ExternalSelfPropulsion::compute()
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(i);
-    if (m_has_params)
-      alpha = m_type_params[p.get_type()]["alpha"];
-    p.fx += alpha*p.nx;
-    p.fy += alpha*p.ny;
-    p.fz += alpha*p.nz;
+    if (!(m_exclude_boundary && p.boundary))
+    {
+      if (m_has_params)
+        alpha = m_type_params[p.get_type()]["alpha"];
+      p.fx += alpha*p.nx;
+      p.fy += alpha*p.ny;
+      p.fz += alpha*p.nz;
+    }
   }
 }
