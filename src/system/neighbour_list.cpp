@@ -452,7 +452,7 @@ bool NeighbourList::build_triangulation()
         p.x = x; p.y = y; p.z = z;
         p.Nx = p3.Nx;  p.Ny = p3.Ny;  p.Nz = p3.Nz;
         p.nx = p3.nx;  p.ny = p3.ny;  p.nz = p3.nz;
-        p.vx = p3.vx;  p.vy = p3.vy;  p.vz = p3.vz;
+        p.vx = 0.5*(p1.vx+p2.vx);  p.vy = 0.5*(p1.vy+p2.vy);  p.vz = 0.5*(p1.vz+p2.vz);
         p.coordination = 0;
         p.groups.push_back("all");
         if (m_system->has_group("boundary"))
