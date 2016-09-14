@@ -454,6 +454,8 @@ bool NeighbourList::build_triangulation()
         p.nx = p3.nx;  p.ny = p3.ny;  p.nz = p3.nz;
         p.coordination = 0;
         p.groups.push_back("all");
+        if (m_system->has_group("boundary"))
+          p.groups.push_back("boundary");
         // Note: Make sure that new particle is added to all necessary groups. 
         p.boundary = true;
         if (p1.boundary_neigh.size() == 2)  p1.boundary_neigh[(p1.boundary_neigh[0] == i2) ? 0 : 1] = i4;
