@@ -599,16 +599,11 @@ void Dump::dump_data()
     }
     if (m_params.find("boundary") != m_params.end())
     {
-        if (m_nlist->has_contacts())
-        {
-          if (V.boundary)
-            m_out << " 1 ";
-          else if (!V.attached)
-            m_out << " 2 ";
-          else
-            m_out << " 0 ";
-        }
-    }
+      if (p.boundary)
+        m_out << " 1 ";
+      else
+        m_out << " 0 ";
+    }    
     if (m_params.find("stress") != m_params.end())
     {
         m_out << format(" %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f ") % p.s_xx % p.s_xy % p.s_xz 
