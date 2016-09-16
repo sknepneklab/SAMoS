@@ -446,7 +446,7 @@ bool NeighbourList::build_triangulation()
 
         double x, y, z;                  // contains coordinates of mirrored particles 
         mirror(p3, p1, p2, x, y, z);     // compute poistion of mirrored particle 
-        Particle p(m_system->size(),p3.get_type(), p3.get_radius());    // generate new particle with the "last" id and inhereted type and radus from p3
+        Particle p(m_system->size(),p1.get_type(), p3.get_radius());    // generate new particle with the "last" id and inhereted type and radus from p3
         i4 = p.get_id();                                            
         // set parameters for the new particle
         p.x = x; p.y = y; p.z = z;
