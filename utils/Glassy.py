@@ -66,7 +66,9 @@ class SimRun:
 		if len(files) == 0:
   			files = sorted(glob(directory + self.param.dumpname+'*.dat.gz'))[skip:]
 		# Read the local data
-		geometries={'sphere':GeometrySphere,'plane':GeometryPeriodicPlane,'none':Geometry,'tube':GeometryTube,'peanut':GeometryPeanut,'hourglass':GeometryHourglass}
+		# Outdated list of geometries
+		#geometries={'sphere':GeometrySphere,'plane':GeometryPeriodicPlane,'none':Geometry,'tube':GeometryTube,'peanut':GeometryPeanut,'hourglass':GeometryHourglass}
+		geometries={'sphere':GeometrySphere,'plane':GeometryPlane,'plane_periodic':GeometryPeriodicPlane,'none':Geometry,'tube':GeometryTube,'peanut':GeometryPeanut,'hourglass':GeometryHourglass}
 		# Create the right geometry environment (TBC):
 		self.geom=geometries[self.param.constraint](self.param)
 		print self.geom
