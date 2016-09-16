@@ -87,6 +87,7 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   map<string, int> column_key;
   bool has_keys = false;
   bool write_keys = false;
+  bool has_boundary = false;   // flag that determines is boundary particles are present
   int id = -1, tp;
   double r;
   // Here we list keys that appear in the old input file format
@@ -110,7 +111,13 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
     msg->msg(Messenger::ERROR,"Problem opening file "+input_filename);
     throw e;
   }
+
+  // Create group "all"
+  m_group["all"] = make_shared<Group>(Group(0,"all"));
+  m_num_groups = 1;
   
+  m_msg->msg(Messenger::INFO,"Generated group 'all' containing all particles.");
+
   string line;
   m_msg->msg(Messenger::INFO,"Reading particle coordinates from file: "+input_filename);
   m_msg->write_config("system.input_file",input_filename);
@@ -131,7 +138,15 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
           m_msg->msg(Messenger::INFO,"Column " + lexical_cast<string>(col_idx) + " of input file is : " + s_line[col_idx] + ".");
           cout << "Column " << lexical_cast<string>(col_idx) <<  " of input file is : " << s_line[col_idx] << endl;
         }
-        write_keys=false;
+        if (column_key.find("boundary") != column_key.end())  // Create two groups for boundary and internal particles
+        {
+          m_group["boundary"] = make_shared<Group>(Group(1,"boundary"));
+          m_group["internal"] = make_shared<Group>(Group(2,"internal"));
+          m_num_groups = 3;
+          m_msg->msg(Messenger::INFO,"Generated groups 'boundary' and 'internal' to distinguish particles on inside and on the boundary.");
+          has_boundary = true;
+        }
+        write_keys = false;
       }
       s_line = split_line(line);
       // Some variability in input files: a lot of them have the syntax # id type ... etc. This should also be read as keys!
@@ -340,15 +355,26 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   inp.close();
   
   // Populate group 'all'
-  m_group["all"] = make_shared<Group>(Group(0,"all"));
+  // As well as boundary and internal groups, is those are present
   for (unsigned int i = 0; i < m_particles.size(); i++)
   {
     m_group["all"]->add_particle(i);
     m_particles[i].groups.push_back("all");
+    if (has_boundary)
+    {
+      Particle& p = m_particles[i];
+      if (p.boundary)
+      {
+        m_group["boundary"]->add_particle(i);
+        m_particles[i].groups.push_back("boundary");
+      }
+      else
+      {
+        m_group["internal"]->add_particle(i);
+        m_particles[i].groups.push_back("internal");
+      }
+    }
   }
-  m_num_groups = 1;
-  
-  m_msg->msg(Messenger::INFO,"Generated group 'all' containing all particles.");
   
   m_n_types = types.size();
    

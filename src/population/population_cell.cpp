@@ -62,47 +62,49 @@ void PopulationCell::divide(int t)
       cout << "Before cell division: Group info mismatch for group : " << m_group_name << endl;
       throw runtime_error("Group mismatch.");
     }
+    double fact = m_freq*m_div_rate*m_system->get_integrator_step();
     Mesh& mesh = m_system->get_mesh();
     int N = m_system->get_group(m_group_name)->get_size();
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();
-    BoxPtr box = m_system->get_box();
     for (int i = 0; i < N; i++)
     {
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi); 
       Vertex& V = mesh.get_vertices()[p.get_id()];
-	    // actual probability of dividing now: (attempt_freq * dt) exp[(A-A_max)*m_div_rate/A_max] 
-	    // In the limits where we can linearise both this and the growth rate, this gives:
-	    // P_div = (attempt_freq * dt) [1+m_div_rate*m_growth_rate t]. This division coefficient is dimensionless now.
-	    double prob_div = m_freq*m_system->get_integrator_step()*exp(m_div_rate*(V.area/m_max_A0-1.0));
-      if (!p.boundary && m_rng->drnd() < prob_div)  // Only internal verices can divide
-      {
-        //cout << t << " " << V.area << " " << p.A0 << " " << exp((V.area-p.A0)/m_div_rate) << endl;
-        Particle p_new(m_system->size(), p.get_type(), p.get_radius());
-        p_new.x = p.x + m_alpha*m_split_distance*p.get_radius()*p.nx;
-        p_new.y = p.y + m_alpha*m_split_distance*p.get_radius()*p.ny;
-        p_new.z = p.z + m_alpha*m_split_distance*p.get_radius()*p.nz;
-        p_new.set_parent(p.get_flag());
-        m_system->apply_periodic(p_new.x,p_new.y,p_new.z);
-        
-        p.x -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.nx;
-        p.y -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.ny;
-        p.z -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.nz;
-        p.age = 0.0;
-        p.A0 = p.get_A0();
-        m_system->apply_periodic(p.x,p.y,p.z);
-        
-        p_new.nx = p.nx; p_new.ny = p.ny; p_new.nz = p.nz;
-        p_new.vx = p.vx; p_new.vy = p.vy; p_new.vz = p.vz;
-        p_new.Nx = p.Nx; p_new.Ny = p.Ny; p_new.Nz = p.Nz;
-        p_new.age = 0.0;
-        p_new.A0 = p.get_A0();
-        p_new.set_radius(p.get_radius());
-        p_new.set_type(p.get_type());
-        p_new.set_default_area(p.get_A0());
-        for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)
-          p_new.groups.push_back(*it_g);
-        m_system->add_particle(p_new);
+	    // actual probability of dividing now: (attempt_freq * dt) * m_div_rate * (V.area - max_area) 
+	    // here m_div_rate is a scaling factor which controls the actual division rate
+      if (!p.boundary && V.area > m_max_A0)
+      { 
+        double prob_div = fact*(V.area - m_max_A0); // Bell model of division
+        if (m_rng->drnd() < prob_div)  // Only internal verices can divide
+        {
+          //cout << t << " " << V.area << " " << p.A0 << " " << exp((V.area-p.A0)/m_div_rate) << endl;
+          Particle p_new(m_system->size(), p.get_type(), p.get_radius());
+          p_new.x = p.x + m_alpha*m_split_distance*p.get_radius()*p.nx;
+          p_new.y = p.y + m_alpha*m_split_distance*p.get_radius()*p.ny;
+          p_new.z = p.z + m_alpha*m_split_distance*p.get_radius()*p.nz;
+          p_new.set_parent(p.get_flag());
+          m_system->apply_periodic(p_new.x,p_new.y,p_new.z);
+          
+          p.x -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.nx;
+          p.y -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.ny;
+          p.z -= (1.0-m_alpha)*m_split_distance*p.get_radius()*p.nz;
+          p.age = 0.0;
+          p.A0 = p.get_A0();
+          m_system->apply_periodic(p.x,p.y,p.z);
+          
+          p_new.nx = p.nx; p_new.ny = p.ny; p_new.nz = p.nz;
+          p_new.vx = p.vx; p_new.vy = p.vy; p_new.vz = p.vz;
+          p_new.Nx = p.Nx; p_new.Ny = p.Ny; p_new.Nz = p.Nz;
+          p_new.age = 0.0;
+          p_new.A0 = p.get_A0();
+          p_new.set_radius(p.get_radius());
+          p_new.set_type(p.get_type());
+          p_new.set_default_area(p.get_A0());
+          for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)
+            p_new.groups.push_back(*it_g);
+          m_system->add_particle(p_new);
+        }
       }
     }
     if (!m_system->group_ok(m_group_name))
@@ -126,6 +128,7 @@ void PopulationCell::remove(int t)
 {
   if (m_freq > 0 && t % m_freq == 0 && m_death_rate > 0.0)  // Attempt removal only at certain time steps
   { 
+    double fact = m_freq*m_system->get_integrator_step();
     if (!m_system->group_ok(m_group_name))
     {
       cout << "Before Cell Remove: Group info mismatch for group : " << m_group_name << endl;
@@ -143,9 +146,7 @@ void PopulationCell::remove(int t)
       // P_div = (attempt_freq * dt) [1+m_death_rate*(age-age_max)]. This death rate is an inverse time scale
       //double prob_death =m_freq*m_system->get_integrator_step()*exp((p.age-m_max_age)*m_death_rate); 
       // Trying a very simple, linearly increasing death chance
-      //double prob_death = m_freq*m_system->get_integrator_step()*p.age/m_max_age;
-      // Trying something even simpler (so as to have a chance of homeostasis): a constant death rate
-      double prob_death = m_freq*m_system->get_integrator_step()/m_max_age;
+      double prob_death = fact*p.age/m_max_age;
       if (!p.boundary && m_rng->drnd() < prob_death)
           to_remove.push_back(p.get_id());
     }
@@ -178,6 +179,7 @@ void PopulationCell::grow(int t)
 {
   if (m_freq > 0 && t % m_freq == 0 && m_growth_rate > 0.0) 
   { 
+    double fact = m_freq*m_system->get_integrator_step()*m_growth_rate;
     int N = m_system->get_group(m_group_name)->get_size();
     vector<int> particles = m_system->get_group(m_group_name)->get_particles();
     for (int i = 0; i < N; i++)
@@ -187,11 +189,11 @@ void PopulationCell::grow(int t)
       {
         int pi = particles[i];
         Particle& p = m_system->get_particle(pi); 
-        p.A0 *= (1.0+m_freq*m_system->get_integrator_step()*m_growth_rate);
+        p.A0 *= (1.0+fact);
       }
     }
     m_system->set_force_nlist_rebuild(true);
     if (m_rescale_contacts)
-      m_system->set_nlist_rescale(sqrt(1.0+m_growth_rate));
+      m_system->set_nlist_rescale(sqrt(1.0+fact));
   }
 }

@@ -138,7 +138,8 @@ public:
                                                                                                  m_max_perim(20.0),
                                                                                                  m_circumcenter(true),
                                                                                                  m_disable_nlist(false),
-                                                                                                 m_remove_detached(true)
+                                                                                                 m_remove_detached(true),
+                                                                                                 m_static_boundary(false)
   {
     m_msg->write_config("nlist.cut",lexical_cast<string>(m_cut));
     m_msg->write_config("nlist.pad",lexical_cast<string>(m_pad));
@@ -214,6 +215,12 @@ public:
       m_msg->msg(Messenger::INFO,"Neighbour list. Setting type of boundary particles in tissue simulations to "+param["boundary_type"]+".");
       m_msg->write_config("nlist.boundary_type",param["boundary_type"]);
       m_system->set_boundary_type(lexical_cast<int>(param["boundary_type"]));
+    }
+    if (param.find("static_boundary") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Neighbour list. Using static boundaries in the tissue simulation.");
+      m_msg->write_config("nlist.static_boundary","true");
+      m_static_boundary = true;
     }
     this->build();
   }
@@ -292,6 +299,7 @@ private:
   bool m_circumcenter;             //!< If true, use cell circumcenters when computing duals. 
   bool m_disable_nlist;            //!< If true, neigbour list is not built (only used for cell simulations)
   bool m_remove_detached;          //!< If true, remove detached particles (vertices) before rebuilding neighbour list (for cell simulations)
+  bool m_static_boundary;          //!< If true, treat tissue boundary as static, i.e., do not add new boundary particles 
   vector<vector<int> >  m_contact_list;    //!< Holds the contact list for each particle
     
   // Actual neighbour list builds

@@ -68,8 +68,15 @@ public:
   //! \param param Contains information about all parameters 
   ExternalPotential(SystemPtr sys, MessengerPtr msg, pairs_type& param) : m_system(sys), m_msg(msg),
                                                                           m_param(param),
-                                                                          m_has_params(false)
-                                                                          { }
+                                                                          m_has_params(false),
+                                                                          m_exclude_boundary(false)
+  {
+    if (param.find("exclude_boundary") != param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"External potential/force will not be applied onto boundary particles.");
+      m_exclude_boundary = true;
+    }
+   }
                                                                                                                 
   //! Get the total potential energy
   double get_potential_energy() { return m_potential_energy; } //!< \return value of the total potential energy
@@ -89,6 +96,7 @@ protected:
   ExternData m_type_params;        //!< Handles specific parameters for a given particle type
   bool m_has_params;               //!< Flag that controls if pair parameters are set
   double m_potential_energy;       //!< Total potential energy
+  bool m_exclude_boundary;         //!< If true, do not apply external potentail to praticle with boundary flag set to true
   
 };
 

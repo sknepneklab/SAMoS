@@ -46,4 +46,6 @@ void register_external_aligners(ExternalAlignerMap& external_aligners)
   external_aligners["field"] = boost::factory<ExternalFieldAlignPtr>();
   // Register active jamming nematic external alignment to the external align class factory
   external_aligners["ajnematic"] = boost::factory<ExternalAJNematicAlignPtr>();
+  // Register cell shape external alignment to the external align class factory
+  external_aligners["cell_shape"] = boost::factory<ExternalShapeAlignPtr>();
 }

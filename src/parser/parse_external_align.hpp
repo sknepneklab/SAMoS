@@ -74,6 +74,7 @@ public:
                      | qi::as_string[keyword["ajpolar"]][phx::bind(&ExternalAlignData::type, phx::ref(external_align_data)) = qi::_1 ]       /*! Handles active jamming polar alignment */
                      | qi::as_string[keyword["ajnematic"]][phx::bind(&ExternalAlignData::type, phx::ref(external_align_data)) = qi::_1 ]       /*! Handles active jamming nematic alignment */
                      | qi::as_string[keyword["field"]][phx::bind(&ExternalAlignData::type, phx::ref(external_align_data)) = qi::_1 ]    /*! Handles alignment to external vector field */
+                     | qi::as_string[keyword["cell_shape"]][phx::bind(&ExternalAlignData::type, phx::ref(external_align_data)) = qi::_1 ]    /*! Handles alignment to cell shape */
                        /* to add new potential: | qi::as_string[keyword["newpotential"]][phx::bind(&ExternalAlignData::type, phx::ref(external_align_data)) = qi::_1 ] */
                      )
                      >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&ExternalAlignData::params, phx::ref(external_align_data)) = qi::_1 ]
