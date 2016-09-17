@@ -73,7 +73,7 @@ void PopulationCell::divide(int t)
       Vertex& V = mesh.get_vertices()[p.get_id()];
 	    // actual probability of dividing now: (attempt_freq * dt) * m_div_rate * (V.area - max_area) 
 	    // here m_div_rate is a scaling factor which controls the actual division rate
-      if (!p.boundary && V.area > m_max_A0)
+      if (p.in_tissue && !p.boundary && V.area > m_max_A0)
       { 
         double prob_div = fact*(V.area - m_max_A0); // Bell model of division
         if (m_rng->drnd() < prob_div)  // Only internal verices can divide
@@ -147,7 +147,7 @@ void PopulationCell::remove(int t)
       //double prob_death =m_freq*m_system->get_integrator_step()*exp((p.age-m_max_age)*m_death_rate); 
       // Trying a very simple, linearly increasing death chance
       double prob_death = fact*p.age/m_max_age;
-      if (!p.boundary && m_rng->drnd() < prob_death)
+      if (p.in_tissue && !p.boundary && m_rng->drnd() < prob_death)
           to_remove.push_back(p.get_id());
     }
     int offset = 0;
@@ -189,7 +189,8 @@ void PopulationCell::grow(int t)
       {
         int pi = particles[i];
         Particle& p = m_system->get_particle(pi); 
-        p.A0 *= (1.0+fact);
+        if (p.in_tissue)
+          p.A0 *= (1.0+fact);
       }
     }
     m_system->set_force_nlist_rebuild(true);
