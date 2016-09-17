@@ -78,6 +78,9 @@ public:
                                                                                                             m_phase_in(false),
                                                                                                             m_compute_stress(false)
   {  
+    m_known_params.push_back("min_val");
+    m_known_params.push_back("max_val");
+    m_known_params.push_back("ntypes");
     if (param.find("min_val") != param.end())
     {
       if (lexical_cast<double>(param["min_val"]) != 0.0)

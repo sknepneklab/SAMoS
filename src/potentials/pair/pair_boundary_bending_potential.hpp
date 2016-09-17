@@ -69,6 +69,14 @@ public:
   //! \param param Contains information about all parameters (k)
   PairBoundaryBendingPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param), m_kappa(1.0), m_theta0(M_PI), m_has_part_params(false)
   {
+    m_known_params.push_back("kappa");
+    m_known_params.push_back("theta");
+    string param_test = this->params_ok(param);
+    if (param_test != "")
+    {
+      m_msg->msg(Messenger::ERROR,"Parameter \""+param_test+"\" is not a valid parameter for boundary bending potential.");
+      throw runtime_error("Unknown parameter \""+param_test+"\" in boundary potential.");
+    }
     if (param.find("kappa") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No bending rigidity (kappa) specified for boundary bending pair potential. Setting it to 1.");

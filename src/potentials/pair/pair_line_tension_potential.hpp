@@ -70,6 +70,14 @@ public:
   //! \param param Contains information about all parameters (k)
   PairLineTensionPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param)
   {
+    m_known_params.push_back("lambda");
+    m_known_params.push_back("l0");
+    string param_test = this->params_ok(param);
+    if (param_test != "")
+    {
+      m_msg->msg(Messenger::ERROR,"Parameter \""+param_test+"\" is not a valid parameter for line tension potential.");
+      throw runtime_error("Unknown parameter \""+param_test+"\" in line tension potential.");
+    }
     if (param.find("lambda") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No line tension (lambda) specified for line tension pair potential. Setting it to 1.");

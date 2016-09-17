@@ -79,8 +79,8 @@ public:
     string param_test = this->params_ok(param);
     if (param_test != "")
     {
-      m_msg->msg(Messenger::ERROR,"Parameter "+param_test+" is not a valid parameter for vertex-particle pair potential.");
-      throw runtime_error("Unknown parameter "+param_test+" in vertex-particle model.");
+      m_msg->msg(Messenger::ERROR,"Parameter \""+param_test+"\" is not a valid parameter for vertex-particle pair potential.");
+      throw runtime_error("Unknown parameter \""+param_test+"\" in vertex-particle model.");
     }
     if (param.find("K") == param.end())
     {
