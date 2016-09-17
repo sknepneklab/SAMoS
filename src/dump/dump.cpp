@@ -543,6 +543,8 @@ void Dump::dump_data()
       m_out << " cont_num ";
     if (m_params.find("boundary") != m_params.end())
       m_out << " boundary ";
+    if (m_params.find("in_tissue") != m_params.end())
+      m_out << " in_tissue ";  
     if (m_params.find("stress") != m_params.end())
       m_out << " s_xx  s_xy  s_xz  s_yx  s_yy  s_yz  s_zx  s_zy  s_zz ";
     m_out << endl;
@@ -603,7 +605,14 @@ void Dump::dump_data()
         m_out << " 1 ";
       else
         m_out << " 0 ";
-    }    
+    }   
+    if (m_params.find("in_tissue") != m_params.end())
+    {
+      if (p.in_tissue)
+        m_out << " 1 ";
+      else
+        m_out << " 0 ";
+    }  
     if (m_params.find("stress") != m_params.end())
     {
         m_out << format(" %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f ") % p.s_xx % p.s_xy % p.s_xz 
@@ -1033,8 +1042,10 @@ void Dump::dump_vtp(int step)
         Particle& pi = m_system->get_particle(particles[i]);
         if (pi.boundary)
           boundary_part->InsertNextValue(0);
-        else
+        else if (!pi.boundary && pi.in_tissue)
           boundary_part->InsertNextValue(1);
+        else
+          boundary_part->InsertNextValue(2);    // non-tissue (environment) particles have flag 2
       }
       polydata->GetPointData()->AddArray(boundary_part);
       for (int e = 0; e < mesh.nedges(); e++)

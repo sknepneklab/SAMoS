@@ -84,7 +84,7 @@ void PairVertexParticlePotential::compute(double dt)
     if (m_phase_in)
       alpha = m_val->get_val(static_cast<int>(pi.age/dt));
     // First handle the vertex itself
-    if (vi.attached && (m_include_boundary || !vi.boundary))
+    if (pi.in_tissue && (m_include_boundary || !vi.boundary))
     {
       if (m_has_part_params) 
       {
@@ -155,7 +155,7 @@ void PairVertexParticlePotential::compute(double dt)
     {
       Particle& pj = m_system->get_particle(vi.neigh[j]);
       Vertex& vj = mesh.get_vertices()[vi.neigh[j]];
-      if (vj.attached && (m_include_boundary || !vj.boundary))  
+      if (pj.in_tissue && (m_include_boundary || !vj.boundary))  
       {
         if (m_has_part_params) 
         {

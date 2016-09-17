@@ -356,15 +356,17 @@ bool NeighbourList::build_triangulation()
       m_msg->msg(Messenger::ERROR,"Delaunay triangulation is only supported in plane. All z components must be set to zero.");
       throw runtime_error("Unable to build Delaunay triangulation for non-planar systems.");
     }
-    points.push_back( make_pair( Point(pi.x,pi.y), pi.get_id() ) );
-    points_for_boundary.push_back(Point(pi.x,pi.y));
-    if (pi.boundary)
+    if (pi.in_tissue)
+    {
+      points.push_back( make_pair( Point(pi.x,pi.y), pi.get_id() ) );
+      points_for_boundary.push_back(Point(pi.x,pi.y));
+    }
+    if (pi.boundary && pi.in_tissue)
     {
       boundary_indices.push_back(make_pair(pi.get_id(),pi.boundary_neigh[0]));
       boundary_indices.push_back(make_pair(pi.get_id(),pi.boundary_neigh[1]));
     }
   }
-
   
   Delaunay triangulation;  
   triangulation.insert_constraints(points_for_boundary.begin(), points_for_boundary.end(), boundary_indices.begin(), boundary_indices.end());
@@ -446,7 +448,7 @@ bool NeighbourList::build_triangulation()
 
         double x, y, z;                  // contains coordinates of mirrored particles 
         mirror(p3, p1, p2, x, y, z);     // compute poistion of mirrored particle 
-        Particle p(m_system->size(),p1.get_type(), p3.get_radius());    // generate new particle with the "last" id and inhereted type and radus from p3
+        Particle p(m_system->size(), p1.get_type(), p1.get_radius());    // generate new particle with the "last" id and inhereted type and radus from p1
         i4 = p.get_id();                                            
         // set parameters for the new particle
         p.x = x; p.y = y; p.z = z;
@@ -456,9 +458,13 @@ bool NeighbourList::build_triangulation()
         p.coordination = 0;
         p.groups.push_back("all");
         if (m_system->has_group("boundary"))
+        {
           p.groups.push_back("boundary");
+          p.groups.push_back("tissue");
+        }
         // Note: Make sure that new particle is added to all necessary groups. 
         p.boundary = true;
+        p.in_tissue = true;
         if (p1.boundary_neigh.size() == 2)  p1.boundary_neigh[(p1.boundary_neigh[0] == i2) ? 0 : 1] = i4;
         if (p2.boundary_neigh.size() == 2)  p2.boundary_neigh[(p2.boundary_neigh[0] == i1) ? 0 : 1] = i4;
         p.boundary_neigh.push_back(i1);
@@ -553,12 +559,15 @@ void NeighbourList::remove_dangling()
    vector<int> to_remove;
    int offset = 0;  // We need to shift vertex ids to match them in the removal
    for (unsigned int i = 0; i < m_contact_list.size(); i++)
-     if (m_contact_list[i].size() == 0)
+   {
+     Particle& pi = m_system->get_particle(i);
+     if (pi.in_tissue && m_contact_list[i].size() == 0)
      {
        to_remove.push_back(i-offset);
        offset++;       
      }
-  
+   }
+
    for (unsigned int i = 0; i < to_remove.size(); i++)
    {
      m_system->remove_particle(to_remove[i]);
