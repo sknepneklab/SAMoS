@@ -348,6 +348,9 @@ bool NeighbourList::build_triangulation()
   vector< pair<int,int> > boundary_indices;  // pairs of edges at the boundary 
 
   int N = m_system->size();
+  vector<int> tissue_id;   // Bookgkeeping vector for building triangulation
+  vector<int> index_map(N,-1);
+  int tissue_count = 0;
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
@@ -358,13 +361,21 @@ bool NeighbourList::build_triangulation()
     }
     if (pi.in_tissue)
     {
-      points.push_back( make_pair( Point(pi.x,pi.y), pi.get_id() ) );
+      //points.push_back( make_pair( Point(pi.x,pi.y), pi.get_id() ) );
+      points.push_back( make_pair( Point(pi.x,pi.y), tissue_count ) );
       points_for_boundary.push_back(Point(pi.x,pi.y));
+      tissue_id.push_back(pi.get_id());
+      index_map[pi.get_id()] = tissue_count;
+      tissue_count++;
     }
+  }
+  for (int i = 0; i < N; i++)
+  {
+    Particle& pi = m_system->get_particle(i);
     if (pi.boundary && pi.in_tissue)
     {
-      boundary_indices.push_back(make_pair(pi.get_id(),pi.boundary_neigh[0]));
-      boundary_indices.push_back(make_pair(pi.get_id(),pi.boundary_neigh[1]));
+      boundary_indices.push_back( make_pair(index_map[pi.get_id()],index_map[pi.boundary_neigh[0]]) );
+      boundary_indices.push_back( make_pair(index_map[pi.get_id()],index_map[pi.boundary_neigh[1]]) );
     }
   }
   
@@ -377,8 +388,8 @@ bool NeighbourList::build_triangulation()
   {
     Delaunay::Face_handle f1 = eit->first;
     Delaunay::Face_handle f2 = f1->neighbor(eit->second);
-    int i = f1->vertex(f1->cw(eit->second))->info();
-    int j = f1->vertex(f1->ccw(eit->second))->info();
+    int i = tissue_id[f1->vertex(f1->cw(eit->second))->info()];
+    int j = tissue_id[f1->vertex(f1->ccw(eit->second))->info()];
     int k, l;
     int to_flip;
     bool can_add = false;
@@ -387,9 +398,9 @@ bool NeighbourList::build_triangulation()
     if (triangulation.is_infinite(f1) || triangulation.is_infinite(f2))
     {
       if (triangulation.is_infinite(f2))
-        k = f1->vertex(eit->second)->info();                //  k is the index of the index opposite to the edge (i,j)
+        k = tissue_id[f1->vertex(eit->second)->info()];                //  k is the index of the index opposite to the edge (i,j)
       else
-        k = get_opposite(f2, i, j);
+        k = tissue_id[get_opposite(f2, f1->vertex(f1->cw(eit->second))->info(), f1->vertex(f1->ccw(eit->second))->info())];
       Particle& pi = m_system->get_particle(i);
       Particle& pj = m_system->get_particle(j);
       Particle& pk = m_system->get_particle(k);
@@ -402,8 +413,10 @@ bool NeighbourList::build_triangulation()
     }
     else
     {
-      k = f1->vertex(eit->second)->info();                //  k is the index of the index opposite to the edge (i,j) for face f1
-      l = get_opposite(f2, i, j);                         //  l is the index of the index opposite to the edge (i,j) for face f2 
+      //  k is the index of the index opposite to the edge (i,j) for face f1
+      k = tissue_id[f1->vertex(eit->second)->info()];                
+      //  l is the index of the index opposite to the edge (i,j) for face f2
+      l = tissue_id[get_opposite(f2, f1->vertex(f1->cw(eit->second))->info(), f1->vertex(f1->ccw(eit->second))->info())];   
       Particle& pi = m_system->get_particle(i);
       Particle& pj = m_system->get_particle(j);
       Particle& pk = m_system->get_particle(k);
