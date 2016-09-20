@@ -63,6 +63,17 @@ public:
   //! \param param Contains information about all parameters 
   IntegratorBrownianAlign(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstrainerPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
   { 
+    m_known_params.push_back("nu");
+    m_known_params.push_back("mur");
+    m_known_params.push_back("seed");
+    m_known_params.push_back("nematic");
+    m_known_params.push_back("tau");
+    string param_test = this->params_ok(param);
+    if (param_test != "")
+    {
+      m_msg->msg(Messenger::ERROR,"Parameter \""+param_test+"\" is not a valid parameter for brownian_align integrator.");
+      throw runtime_error("Unknown parameter \""+param_test+"\" in brownian_align integrator.");
+    }
     if (param.find("nu") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator for alignment. Rotational diffusion rate not set. Using default value 1.");

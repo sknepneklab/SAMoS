@@ -64,6 +64,14 @@ public:
   //! \param param Contains information about all parameters 
   IntegratorBrownianPos(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstrainerPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
   { 
+    m_known_params.push_back("mu");
+    m_known_params.push_back("seed");
+    string param_test = this->params_ok(param);
+    if (param_test != "")
+    {
+      m_msg->msg(Messenger::ERROR,"Parameter \""+param_test+"\" is not a valid parameter for brownian_pos integrator.");
+      throw runtime_error("Unknown parameter \""+param_test+"\" in brownian_pos integrator.");
+    }
     if (param.find("mu") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Brownian dynamics integrator for particle position. Mobility not set. Using default value 1.");

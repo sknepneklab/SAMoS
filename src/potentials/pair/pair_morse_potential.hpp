@@ -75,6 +75,19 @@ public:
       m_msg->msg(Messenger::ERROR,"Morse pair potential requires neighbour list. None given.");
       throw runtime_error("Neighbour list required by Morse potential, but non specified.");
     }
+    m_known_params.push_back("D");
+    m_known_params.push_back("a");
+    m_known_params.push_back("re");
+    m_known_params.push_back("rcut");
+    m_known_params.push_back("use_particle_radii");
+    m_known_params.push_back("phase_in");
+    m_known_params.push_back("shifted");
+    string param_test = this->params_ok(param);
+    if (param_test != "")
+    {
+      m_msg->msg(Messenger::ERROR,"Parameter \""+param_test+"\" is not a valid parameter for Morse pair potential.");
+      throw runtime_error("Unknown parameter \""+param_test+"\" in Morse potential.");
+    }
     if (param.find("D") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No potential depth (D) specified for the Morse pair potential. Setting it to 1.");

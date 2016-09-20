@@ -63,6 +63,18 @@ public:
   //! \param param Contains information about all parameters 
   IntegratorActomyo(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstrainerPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
   { 
+    m_known_params.push_back("zeta");
+    m_known_params.push_back("seed");
+    m_known_params.push_back("f");
+    m_known_params.push_back("actin_type");
+    m_known_params.push_back("myosin_site");
+    m_known_params.push_back("active_cutoff");
+    string param_test = this->params_ok(param);
+    if (param_test != "")
+    {
+      m_msg->msg(Messenger::ERROR,"Parameter \""+param_test+"\" is not a valid parameter for actomyosin integrator.");
+      throw runtime_error("Unknown parameter \""+param_test+"\" in actomyosin integrator.");
+    }
     m_msg->msg(Messenger::WARNING,"Using Actomyo dynamics integrator. All particle groups will be ignored. Working only with group \"all\".");
     if (param.find("zeta") == param.end())
     {

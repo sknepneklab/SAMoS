@@ -66,4 +66,6 @@ void register_pair_potentials(PairPotentialMap& pair_potentials)
   pair_potentials["boundary_bending"] = boost::factory<PairBoundaryBendingPotentialPtr>();
   // Register boundary attraction pair potential for tissues with the pair potentials class factory
   pair_potentials["boundary_attraction"] = boost::factory<PairBoundaryAttractionPotentialPtr>();
+  // Register motor pair potential with the pair potentials class factory
+  pair_potentials["motor"] = boost::factory<PairMotorPotentialPtr>();
 }

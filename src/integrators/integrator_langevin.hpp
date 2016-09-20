@@ -73,6 +73,15 @@ public:
   //! \param param Contains information about all parameters 
   IntegratorLangevin(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstrainerPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
   { 
+    m_known_params.push_back("gamma");
+    m_known_params.push_back("seed");
+    m_known_params.push_back("method");
+    string param_test = this->params_ok(param);
+    if (param_test != "")
+    {
+      m_msg->msg(Messenger::ERROR,"Parameter \""+param_test+"\" is not a valid parameter for langevin integrator.");
+      throw runtime_error("Unknown parameter \""+param_test+"\" in langevin integrator.");
+    }
     if (param.find("gamma") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Langevin dynamics integrator for particle position. Friction constant not set. Using default value 1.");
