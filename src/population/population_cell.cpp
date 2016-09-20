@@ -101,6 +101,7 @@ void PopulationCell::divide(int t)
           p_new.set_radius(p.get_radius());
           p_new.set_type(p.get_type());
           p_new.set_default_area(p.get_A0());
+          p_new.in_tissue = true;
           for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)
             p_new.groups.push_back(*it_g);
           m_system->add_particle(p_new);
