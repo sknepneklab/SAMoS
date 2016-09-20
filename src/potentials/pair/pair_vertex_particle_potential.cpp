@@ -90,6 +90,7 @@ void PairVertexParticlePotential::compute(double dt)
       {
         K  = m_particle_params[vi.type-1].K;
         gamma = m_particle_params[vi.type-1].gamma;
+        lambda = m_particle_params[vi.type-1].lambda;
       }
       double dA = 0.0; 
       dA = (vi.area - pi.A0);
@@ -161,6 +162,7 @@ void PairVertexParticlePotential::compute(double dt)
         {
           K  = m_particle_params[vj.type-1].K;
           gamma = m_particle_params[vj.type-1].gamma;
+          lambda = m_particle_params[vi.type-1].lambda;
         }
         double dA = 0.0;
         dA = (vj.area - pj.A0);
