@@ -96,7 +96,7 @@ void PairMotorPotential::compute(double dt)
           ai_p_aj = ai+aj;
         if (r < ai_p_aj)
         {
-          force_factor = alpha*phi*n_dot_n;
+          force_factor = alpha*phi*fabs(n_dot_n);
           // Handle force
           pi.fx += force_factor*pi.nx;
           pi.fy += force_factor*pi.ny;
