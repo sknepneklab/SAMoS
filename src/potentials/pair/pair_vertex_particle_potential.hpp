@@ -220,10 +220,22 @@ public:
       param["gamma"] = m_gamma;
     }
     m_msg->write_config("potential.pair.vertex_particle.type_"+pair_param["type"]+".push",lexical_cast<string>(param["gamma"]));
+    if (pair_param.find("lambda") != pair_param.end())
+    {
+      m_msg->msg(Messenger::INFO,"VertexParticle pair potential. Setting edge contractility (lambda) to "+pair_param["lambda"]+" for particles of type "+lexical_cast<string>(type)+".");
+      param["lambda"] = lexical_cast<double>(pair_param["lambda"]);
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"VertexParticle pair potential. Using default edge contractility ("+lexical_cast<string>(m_lambda)+") for particles of type "+lexical_cast<string>(type)+".");
+      param["lambda"] = m_lambda;
+    }
+    m_msg->write_config("potential.pair.vertex_particle.type_"+pair_param["type"]+".push",lexical_cast<string>(param["lambda"]));
     
         
     m_particle_params[type-1].K = param["K"];
     m_particle_params[type-1].gamma = param["gamma"];
+    m_particle_params[type-1].lambda = param["lambda"];
         
     m_has_part_params = true;
   }
