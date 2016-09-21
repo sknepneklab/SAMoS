@@ -83,6 +83,10 @@ public:
   { 
     m_known_params.push_back("dt");
     m_known_params.push_back("group");
+    m_known_params.push_back("temperature_control");
+    m_known_params.push_back("min_val");
+    m_known_params.push_back("max_val");
+    m_known_params.push_back("steps");
     if (param.find("dt") != param.end())
     {
       m_msg->msg(Messenger::WARNING,"Integrator is setting its own time step size. While this is allowed, it may cause odd behaviour in case different integrators set different internal step size.");
@@ -139,7 +143,7 @@ protected:
   double m_dt;                   //!< time step
   string m_group_name;           //!< Name of the group to apply this integrator to
   vector<string> m_known_params; //!< Lists all known parameters accepted by a given integrator
-  
+
 };
 
 typedef shared_ptr<Integrator> IntegratorPtr;

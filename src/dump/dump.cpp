@@ -939,10 +939,13 @@ void Dump::dump_vtp(int step)
     dir->SetNumberOfComponents(3);
     ndir->SetName("NDirector");
     ndir->SetNumberOfComponents(3);
-    dual_area->SetName("DualArea");
-    dual_area->SetNumberOfComponents(1);
-    num_neigh->SetName("NumNeigh");
-    num_neigh->SetNumberOfComponents(1);
+    if (mesh.size() > 0)
+    {
+      dual_area->SetName("DualArea");
+      dual_area->SetNumberOfComponents(1);
+      num_neigh->SetName("NumNeigh");
+      num_neigh->SetNumberOfComponents(1);
+    }
       
     for (int i = 0; i < N; i++)
     {
@@ -981,10 +984,10 @@ void Dump::dump_vtp(int step)
     polydata->GetPointData()->AddArray(vel);
     polydata->GetPointData()->AddArray(force);
     polydata->GetPointData()->AddArray(dir);
-    polydata->GetPointData()->AddArray(ndir);
-    polydata->GetPointData()->AddArray(num_neigh);
+    polydata->GetPointData()->AddArray(ndir);  
     if (mesh.size() > 0)
     {
+      polydata->GetPointData()->AddArray(num_neigh);
       polydata->GetPointData()->AddArray(dual_area);
     }
         
