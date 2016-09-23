@@ -90,16 +90,16 @@ void PairBoundaryBendingPotential::compute(double dt)
       Vector3d f = -(fm+fp);
       
       pm.fx += fm.x;
-      pm.fy += fm.x;
-      pm.fz += fm.x;
+      pm.fy += fm.y;
+      pm.fz += fm.z;
       
       pp.fx += fp.x;
-      pp.fy += fp.x;
-      pp.fz += fp.x;
+      pp.fy += fp.y;
+      pp.fz += fp.z;
       
       p.fx += f.x;
-      p.fy += f.x;
-      p.fz += f.x;
+      p.fy += f.y;
+      p.fz += f.z;
       
     }
   }
