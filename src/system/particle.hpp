@@ -88,6 +88,7 @@ public:
     mass = 1.0;
     boundary = false;
     in_tissue = false;
+    molecule = m_id;   // Default molecule id is particle id (each particle is a molecule)
   }
   
   //! Get particle id
@@ -234,6 +235,7 @@ public:
   vector<int> boundary_neigh;  //!< For a boundary particle (tissue simulation) list all its boundary neighbours
   int coordination;            //!< Keeps track of the number of neighbours
   double mass;                 //!< Particle mass
+  int molecule;                //!< Id of of the "molecule" (collection of particles) this particle belongs to
   
 private:  // Make these attributes immutable 
   

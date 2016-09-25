@@ -500,8 +500,10 @@ void Dump::dump_data()
       m_out << " cont_num ";
     if (m_params.find("boundary") != m_params.end())
       m_out << " boundary ";
-    if (m_params.find("stress") != m_params.end())
-      m_out << " s_xx  s_xy  s_xz  s_yx  s_yy  s_yz  s_zx  s_zy  s_zz ";
+    if (m_params.find("in_tissue") != m_params.end())
+      m_out << " in_tissue ";  
+    if (m_params.find("molecule") != m_params.end())
+      m_out << " molecule ";
     if (m_params.find("shape_param") != m_params.end())
       m_out << " shape_param";
     m_out << endl;
@@ -545,8 +547,8 @@ void Dump::dump_data()
       m_out << " boundary ";
     if (m_params.find("in_tissue") != m_params.end())
       m_out << " in_tissue ";  
-    if (m_params.find("stress") != m_params.end())
-      m_out << " s_xx  s_xy  s_xz  s_yx  s_yy  s_yz  s_zx  s_zy  s_zz ";
+    if (m_params.find("molecule") != m_params.end())
+      m_out << " molecule ";
     m_out << endl;
   }
   for (int i = 0; i < N; i++)
@@ -613,12 +615,8 @@ void Dump::dump_data()
       else
         m_out << " 0 ";
     }  
-    if (m_params.find("stress") != m_params.end())
-    {
-        m_out << format(" %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f ") % p.s_xx % p.s_xy % p.s_xz 
-                                                                                   % p.s_yx % p.s_yy % p.s_yz 
-                                                                                   % p.s_zx % p.s_zy % p.s_zz;
-    }
+    if (m_params.find("molecule") != m_params.end())
+      m_out << format("%2d ") % p.molecule;
     if (m_params.find("shape_param") != m_params.end())
     {
       if (m_nlist->has_faces())

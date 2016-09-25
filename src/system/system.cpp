@@ -336,6 +336,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         }
         if (has_keys)
           if (column_key.find("mass") != column_key.end())  p.mass = lexical_cast<double>(s_line[column_key["mass"]]);
+        if (has_keys)
+          if (column_key.find("molecule") != column_key.end())  p.molecule = lexical_cast<double>(s_line[column_key["molecule"]]);
         if (has_keys && (column_key.find("boundary") != column_key.end()))  
         {
           if (lexical_cast<int>(s_line[column_key["boundary"]]) != 0)  

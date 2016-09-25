@@ -125,6 +125,7 @@
 #include "external_field_aligner.hpp"
 #include "external_ajnematic_aligner.hpp"
 #include "external_shape_aligner.hpp"
+#include "external_tangent_aligner.hpp"
 #include "population.hpp"
 #include "population_random.hpp"
 #include "population_density.hpp"
