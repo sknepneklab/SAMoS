@@ -14,7 +14,7 @@
  *   School of Life Sciences 
  *   University of Dundee
  * 
- *   (c) 2015
+ *   (c) 2015, 2016
  * 
  *   Author: Silke Henkes
  * 
@@ -22,7 +22,7 @@
  *   Institute for Complex Systems and Mathematical Biology
  *   University of Aberdeen  
  * 
- *   (c) 2014, 2015
+ *   (c) 2014, 2015, 2016
  *  
  *   This program cannot be used, copied, or modified without
  *   explicit written permission of the authors.
