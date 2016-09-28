@@ -1,0 +1,11 @@
+This is an example for active filaments. 
+
+In order to run it, the user first needs to:
+
+1) create a single filament with make_filament.py script.
+2) edit make_many.inp (this is a configuration file for packmol)
+3) run packmol on make_many.inp (packmol can be downladed from
+http://www.ime.unicamp.br/~martinez/packmol/home.shtml)
+4) run make_filaments.py script to produce multiple filaments. 
+
+
