@@ -43,12 +43,32 @@ void ExternalBoundaryPull::compute()
 {
   int N = m_system->size();
   double alpha = m_alpha;
+
+  // First we compute centre of mass to be albe to determine outward direction
+  double xcm = 0.0, ycm = 0.0, zcm = 0.0;
+  int cnt = 0;
+  for (int i = 0; i < N; i++)
+  {
+    Particle& pi = m_system->get_particle(i);
+    if (pi.in_tissue)
+    {
+      xcm += pi.x;
+      ycm += pi.y;
+      zcm += pi.z;
+      cnt++;
+    }
+  }
+  xcm /= cnt;  ycm /= cnt;  zcm /= cnt;
   
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
     if (pi.boundary)
     {
+      double force_sign = 1.0;
+      double X = pi.x - xcm,  Y = pi.y - ycm,  Z = pi.z - zcm;
+      double len_R = sqrt(X*X + Y*Y + Z*Z);
+      X /= len_R;  Y /= len_R;  Y /= len_R;
       Particle& pj = m_system->get_particle(pi.boundary_neigh[0]);
       Particle& pk = m_system->get_particle(pi.boundary_neigh[1]);
       double xji = pj.x - pi.x, yji = pj.y - pi.y, zji = pj.z - pi.z;
@@ -60,9 +80,13 @@ void ExternalBoundaryPull::compute()
       double x = -(xji+xki), y = -(yji+yki), z = -(zji+zki);
       double len_r = sqrt(x*x + y*y + z*z);
       x /= len_r;  y /= len_r;  z /= len_r;
-      pi.fx += alpha*x;
-      pi.fy += alpha*y;
-      pi.fz += alpha*z;
+      // compute dot product with radius the vector connecting center of mass and pi
+      if ((x*X + y*Y + z*Z) < 0.0)
+        force_sign = -1.0;
+      double factor = force_sign*alpha;
+      pi.fx += factor*x;
+      pi.fy += factor*y;
+      pi.fz += factor*z;
     }
   }
 }
