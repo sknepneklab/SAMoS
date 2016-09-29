@@ -342,6 +342,7 @@ void Mesh::order_dual(int v)
 {
   Vertex& V = m_vertices[v];
   V.dual.clear();
+  V.dual_neighbour_map.clear();
   if (V.n_faces == 0)
     V.attached = false;
   if (!V.attached) return;
@@ -365,7 +366,10 @@ void Mesh::order_dual(int v)
   
   // Now we order duals. This is important for proper computation of areas and force
   if (!V.boundary)
+  {
     V.dual.push_back(V.faces[0]);
+    V.dual_neighbour_map.push_back(V.neigh[0]);
+  }
   else
   {
     Vector3d r0 =  m_vertices[V.neigh[0]].r - V.r;
@@ -386,6 +390,7 @@ void Mesh::order_dual(int v)
        }
      }
      V.dual.push_back(V.faces[fface]);
+     V.dual_neighbour_map.push_back(V.neigh[fface]);
   }
   int i = 0;
   while(V.dual.size() < V.faces.size())
@@ -399,6 +404,7 @@ void Mesh::order_dual(int v)
     double min_angle = 2.0*M_PI;
     int next_dual;
     bool can_add = false;
+    int face_index;
     for (unsigned int f = 0; f < V.faces.size(); f++)
     {
       Face& Fj = m_faces[V.faces[f]];
@@ -417,6 +423,7 @@ void Mesh::order_dual(int v)
           {
             min_angle = ang;
             next_dual = Fj.id;
+            face_index = f;
             can_add = true;
           }
         }
@@ -425,6 +432,7 @@ void Mesh::order_dual(int v)
     if (can_add)
     {
       V.dual.push_back(next_dual);
+      V.dual_neighbour_map.push_back(V.neigh[face_index]);
       i++;
     }
     if (!can_add && (static_cast<int>(V.dual.size()) != V.n_faces-1))
