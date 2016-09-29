@@ -88,6 +88,7 @@
 #include "external_gravity_potential.hpp"
 #include "external_harmonic_potential.hpp"
 #include "external_self_propulsion.hpp"
+#include "external_boundary_pull.hpp"
 #include "pair_potential.hpp"
 #include "pair_coulomb_potential.hpp"
 #include "pair_soft_potential.hpp"
