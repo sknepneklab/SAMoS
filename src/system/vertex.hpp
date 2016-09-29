@@ -196,6 +196,7 @@ struct Vertex
   vector<int> edges;           //!< Contains indices of all edges that originate at this vertex
   vector<int> faces;           //!< Contains indices of faces this vertex belongs to
   vector<int> dual;            //!< Centres of all faces surrounding it, ordered counterclockwise
+  vector<int> dual_neighbour_map;  //!< Contains indices of vertices that correspond to a given dual (for tissue simulations)
   
     
 };
