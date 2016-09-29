@@ -52,7 +52,11 @@ void ExternalBoundaryPull::compute()
       Particle& pj = m_system->get_particle(pi.boundary_neigh[0]);
       Particle& pk = m_system->get_particle(pi.boundary_neigh[1]);
       double xji = pj.x - pi.x, yji = pj.y - pi.y, zji = pj.z - pi.z;
+      double len_ji = sqrt(xji*xji + yji*yji + zji*zji);
+      xji /= len_ji;  yji /= len_ji;  zji /= len_ji; 
       double xki = pk.x - pi.x, yki = pk.y - pi.y, zki = pk.z - pi.z;
+      double len_ki = sqrt(xki*xki + yki*yki + zki*zki);
+      xki /= len_ki;  yki /= len_ki;  zki /= len_ki;
       double x = -(xji+xki), y = -(yji+yki), z = -(zji+zki);
       double len_r = sqrt(x*x + y*y + z*z);
       x /= len_r;  y /= len_r;  z /= len_r;
