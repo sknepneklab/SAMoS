@@ -38,9 +38,6 @@
 
 #include "mesh.hpp"
 
-using std::unique;
-using std::sort;
-using std::rotate;
 
 typedef pair<int,double> vert_angle;  //!< Used to sort angles
 
@@ -449,9 +446,7 @@ void Mesh::order_dual(int v)
     if (V.boundary && (static_cast<int>(V.dual.size()) == V.n_faces-1))
       V.dual.push_back(V.faces[V.n_faces-1]);
   }
-  //Not necessary, faces and neighbours line up closely enough
-  //rotate(V.dual_neighbour_map.begin(), V.dual_neighbour_map.begin()+1, V.dual_neighbour_map.end());
-
+  
   // And update area
   this->dual_area(V.id);
 }

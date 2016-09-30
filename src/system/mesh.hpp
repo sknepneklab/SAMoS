@@ -67,6 +67,8 @@ using std::copy;
 using std::sort;
 using std::reverse;
 using std::rotate;
+using std::unique;
+using std::sort;
 using std::runtime_error;
 using std::ofstream;
 using std::cerr;
