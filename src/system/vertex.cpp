@@ -60,6 +60,9 @@ ostream& operator<<(ostream& out, const Vertex& v)
   out << endl << "dual : ";
   for (unsigned int i = 0; i < v.dual.size(); i++)
     out << v.dual[i] << " ";
+  out << endl << "dual_neighbour_map: ";
+  for (unsigned int i = 0; i < v.dual_neighbour_map.size(); i++)
+    out << v.dual_neighbour_map[i] << " ";
   out << endl;
   if (v.boundary)
     out << "boundary vertex" << endl;

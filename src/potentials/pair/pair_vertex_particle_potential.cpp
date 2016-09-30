@@ -124,9 +124,10 @@ void PairVertexParticlePotential::compute(double dt)
         if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_2 -= (((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i));
         perim_vec = perim_vec + cross_prod_2; 
         
+        // Adding force contributions from the dual edges associated with face f and face next(f,vi.n_faces)
         if (m_has_pair_params)
         {
-          Vertex& vn = mesh.get_vertices()[vi.dual_neighbour_map[prev(f,vi.n_faces)]];
+          Vertex& vn = mesh.get_vertices()[vi.dual_neighbour_map[f]];
           lambda = m_pair_params[vi.type-1][vn.type-1].lambda;
         } 
         Vector3d cross_prod_3(0.0,0.0,0.0);
@@ -207,9 +208,10 @@ void PairVertexParticlePotential::compute(double dt)
             if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_2 -= ((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i);
             perim_vec = perim_vec + cross_prod_2; 
             
+            // Adding force contributions from the dual edges associated with face f and face next(f,vi.n_faces)
             if (m_has_pair_params)
             {
-              Vertex& vn = mesh.get_vertices()[vj.dual_neighbour_map[prev(f,vj.n_faces)]];
+              Vertex& vn = mesh.get_vertices()[vj.dual_neighbour_map[f]];
               lambda = m_pair_params[vj.type-1][vn.type-1].lambda;
             } 
             Vector3d cross_prod_3(0.0,0.0,0.0);
