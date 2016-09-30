@@ -448,6 +448,9 @@ void Mesh::order_dual(int v)
     if (V.boundary && (static_cast<int>(V.dual.size()) == V.n_faces-1))
       V.dual.push_back(V.faces[V.n_faces-1]);
   }
+  // Rotate dual neighbour map such that neighbours and their faces are properly aligned
+  int rol = V.dual_neighbour_map.size() - 1;
+  rotate(V.dual_neighbour_map.begin(),V.dual_neighbour_map.begin()+rol,V.dual_neighbour_map.end());
   // And update area
   this->dual_area(V.id);
 }
