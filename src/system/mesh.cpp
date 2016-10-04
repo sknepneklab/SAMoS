@@ -38,6 +38,9 @@
 
 #include "mesh.hpp"
 
+using std::unique;
+using std::sort;
+using std::rotate;
 
 typedef pair<int,double> vert_angle;  //!< Used to sort angles
 
@@ -446,7 +449,9 @@ void Mesh::order_dual(int v)
     if (V.boundary && (static_cast<int>(V.dual.size()) == V.n_faces-1))
       V.dual.push_back(V.faces[V.n_faces-1]);
   }
-  
+  //Not necessary, faces and neighbours line up closely enough
+  //rotate(V.dual_neighbour_map.begin(), V.dual_neighbour_map.begin()+1, V.dual_neighbour_map.end());
+
   // And update area
   this->dual_area(V.id);
 }
@@ -1025,6 +1030,7 @@ PlotArea& Mesh::plot_area(bool boundary)
   m_plot_area.area.clear();
   m_plot_area.perim.clear();
   m_plot_area.circum_radius.clear();
+  m_plot_area.type.clear();
   map<int,int> bnd_vert;
   map<int,int> face_idx;
   vector<int> added_faces;
@@ -1038,6 +1044,7 @@ PlotArea& Mesh::plot_area(bool boundary)
         bnd_vert[V.id] = idx++;
         m_plot_area.points.push_back(V.r);
         m_plot_area.circum_radius.push_back(0.0);
+        //m_plot_area.type.push_back(V.type);
       }
   }
   
@@ -1046,6 +1053,8 @@ PlotArea& Mesh::plot_area(bool boundary)
   {
     Vertex& V = m_vertices[v];
     if (V.attached)
+    {
+      m_plot_area.type.push_back(V.type);
       for (int f = 0; f < V.n_faces; f++)
       {
         Face& face = m_faces[V.dual[f]];
@@ -1059,6 +1068,7 @@ PlotArea& Mesh::plot_area(bool boundary)
             face_idx[face.id] = idx++;
           }
       }
+    }
   }
   
   vector<int> sides;

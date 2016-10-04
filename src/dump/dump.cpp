@@ -937,13 +937,10 @@ void Dump::dump_vtp(int step)
     dir->SetNumberOfComponents(3);
     ndir->SetName("NDirector");
     ndir->SetNumberOfComponents(3);
-    if (mesh.size() > 0)
-    {
-      dual_area->SetName("DualArea");
-      dual_area->SetNumberOfComponents(1);
-      num_neigh->SetName("NumNeigh");
-      num_neigh->SetNumberOfComponents(1);
-    }
+    dual_area->SetName("DualArea");
+    dual_area->SetNumberOfComponents(1);
+    num_neigh->SetName("NumNeigh");
+    num_neigh->SetNumberOfComponents(1);
       
     for (int i = 0; i < N; i++)
     {
@@ -982,10 +979,10 @@ void Dump::dump_vtp(int step)
     polydata->GetPointData()->AddArray(vel);
     polydata->GetPointData()->AddArray(force);
     polydata->GetPointData()->AddArray(dir);
-    polydata->GetPointData()->AddArray(ndir);  
+    polydata->GetPointData()->AddArray(ndir);
+    //polydata->GetPointData()->AddArray(num_neigh); # A header for this with no data gets put into the .vtp file even when there is no mesh
     if (mesh.size() > 0)
     {
-      polydata->GetPointData()->AddArray(num_neigh);
       polydata->GetPointData()->AddArray(dual_area);
     }
         
@@ -1093,6 +1090,7 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkDoubleArray> perims =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> p0 =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> circum_radius =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkIntArray> types =  vtkSmartPointer<vtkIntArray>::New();
     ids->SetName("Id");
     areas->SetNumberOfComponents(1);
     areas->SetName("Area");
@@ -1103,6 +1101,7 @@ void Dump::dump_vtp(int step)
     circum_radius->SetNumberOfComponents(1);
     p0->SetName("p0");
     p0->SetNumberOfComponents(1);
+    types->SetName("type");
     
     PlotArea& pa = mesh.plot_area(m_dual_boundary);
     for (unsigned int f = 0; f < pa.points.size(); f++)
@@ -1110,6 +1109,7 @@ void Dump::dump_vtp(int step)
       points->InsertNextPoint(pa.points[f].x, pa.points[f].y, pa.points[f].z);
       circum_radius->InsertNextValue(pa.circum_radius[f]);
       ids->InsertNextValue(f);
+      types->InsertNextValue(pa.type[f]);
     }
     polydata->SetPoints(points);
     polydata->GetPointData()->AddArray(ids);
@@ -1131,6 +1131,7 @@ void Dump::dump_vtp(int step)
     polydata->GetCellData()->AddArray(areas);
     polydata->GetCellData()->AddArray(perims);
     polydata->GetCellData()->AddArray(p0);
+    polydata->GetCellData()->AddArray(types);
   }
   
   // Write the file

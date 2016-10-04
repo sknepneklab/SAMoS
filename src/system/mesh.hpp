@@ -67,8 +67,6 @@ using std::copy;
 using std::sort;
 using std::reverse;
 using std::rotate;
-using std::unique;
-using std::sort;
 using std::runtime_error;
 using std::ofstream;
 using std::cerr;
@@ -85,6 +83,7 @@ typedef struct
   vector<double> area;
   vector<double> perim;
   vector<double> circum_radius;
+  vector<int> type;
 } PlotArea;
 
 /*! Mesh class handles basic manipuations with mesesh
