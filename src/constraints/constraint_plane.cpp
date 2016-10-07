@@ -56,7 +56,7 @@ void ConstraintPlane::enforce(Particle& p)
     double Ly = m_system->get_box()->Ly;
     double xlo = -0.5*Lx, xhi = 0.5*Lx;
     double ylo = -0.5*Ly, yhi = 0.5*Ly;
-    p.z = 0.0;
+    p.z = m_zpos;
     p.vz = 0.0;
     p.fz = 0.0;
     // Set the particle normal
@@ -89,7 +89,10 @@ void ConstraintPlane::enforce(Particle& p)
     }
     // normalize director
     p.nz = 0.0;
-    double inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny);
+    double len_n = sqrt(p.nx*p.nx + p.ny*p.ny);
+    double inv_len = 1.0;
+    if (len_n != 0.0) 
+      inv_len = 1.0/sqrt(p.nx*p.nx + p.ny*p.ny);
     p.nx *= inv_len;  p.ny *= inv_len;  
   }
 }

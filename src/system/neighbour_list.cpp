@@ -354,9 +354,9 @@ bool NeighbourList::build_triangulation()
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
-    if (pi.z != 0.0) 
+    if (pi.in_tissue && pi.z != 0.0) 
     {
-      m_msg->msg(Messenger::ERROR,"Delaunay triangulation is only supported in plane. All z components must be set to zero.");
+      m_msg->msg(Messenger::ERROR,"Delaunay triangulation is only supported in plane. All z components of tissue particles must be set to zero.");
       throw runtime_error("Unable to build Delaunay triangulation for non-planar systems.");
     }
     if (pi.in_tissue)

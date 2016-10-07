@@ -76,6 +76,17 @@ public:
       m_msg->msg(Messenger::INFO,"Plane constraint. Particle motion will not be affected by the box boundaries.");
       m_unlimited = true;
     }
+    if (param.find("zpos") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Plane constraint. No zpos specified. Assuming that the constraint plane is at z = 0.");
+      m_zpos = 0.0;
+    }
+    else 
+    {
+      m_msg->msg(Messenger::WARNING,"Plane constraint. Setting constraint plane at z = "+param["zpos"]+".");
+      m_zpos = lexical_cast<double>(param["zpos"]);
+    }
+    m_msg->write_config("constraint.plane.zpos",lexical_cast<string>(m_zpos));
   }
   
   //! Enforce constraint
@@ -105,6 +116,7 @@ public:
 private:
   
   bool m_unlimited;       //!< If true, ignore box boundary and low system to exapand freely
+  bool m_zpos;            //!< Position (along z axis) of the constraint plane
   
   
 };
