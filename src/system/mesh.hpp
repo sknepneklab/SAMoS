@@ -140,14 +140,6 @@ public:
   void set_circumcenter(bool val) { m_circumcenter = val; }
   
   //! Add a vertex
-  //! \param p particle
-  //add_vertex(Particle& p)
-  //{
-  //  vertices.push_back(Vertex(p));
-  //  size++;
-  //}
-  
-  //! Add a vertex
   //! \param vid vertex id
   //! \param x x-coordinate
   //! \param y y-coordinate
