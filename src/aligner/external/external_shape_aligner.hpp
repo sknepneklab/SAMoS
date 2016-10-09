@@ -51,7 +51,7 @@ struct ShapeParameters
  *  cell's gyration tensor corresponding to the largest eigenvalue. 
  *  For all particles we compute torque on the particle as
  *  \f$ \vec \tau_i = -J \vec n_i\times\vec a_i \f$,
- *  where \f$ J \f$ is the coupling strength and \f$ \vec a_i \f$ is unit-lenght eigenvector of
+ *  where \f$ J \f$ is the coupling strength and \f$ \vec a_i \f$ is unit-length eigenvector of
  *  the shape tensor corresponding to the largest eigenvalue.
  *  Shape tensor is defined as the sum of the outter products of the 
  *  edge vectors along the sided of the dual polygon (cell).

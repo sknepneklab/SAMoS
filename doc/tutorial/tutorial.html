@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>SAMoS Tutorila</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="docs/assets/css/docs.css">
+  <link rel="stylesheet" href="docs/assets/css/pygments-manni.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/menu.js"></script>
+  <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
+  <script type="text/javascript" async src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script>
+</head>
+<body>
+
+<!-- Top Navbar -->
+<div class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button> <a class="navbar-brand" href="#">SAMoS Tutorial</a>
+
+        </div>
+        <div class="collapse navbar-collapse">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="#">Home</a>
+                </li>
+            </ul>
+        </div>
+        <!--/.nav-collapse -->
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="row MainContent">
+    <!--Side Nav Bar -->
+    <nav class="col-sm-2 bs-docs-sidebar">
+        <ul id="sidebar" class="nav nav-stacked" data-spy="affix">
+            <li>
+                <a href="#Overview">Overview</a>
+            </li>
+            <li>
+                <a href="#GettingStarted">Getting Started</a>
+                <ul class="nav nav-stacked">
+                    <li><a href="#Download">Download</a></li>
+                    <li><a href="#Compile">Compile and run</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#StepByStep">Step by Step guide</a>
+                <ul class="nav nav-stacked">
+                    <li><a href="#InputFile">Input file</a></li>
+                    <li><a href="#ConfFile">Configuration file</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#Citing">Citing</a>
+            </li>
+            <li>
+                <a href="#Credits">Credits</a>
+                <ul class="nav nav-stacked">
+                    <li><a href="#Pulications">Publication</a></li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+    
+    <!--Main Content -->
+    <div class="col-sm-9">
+        <section id="Overview">
+            <h1>Overview</h1>
+             <p>
+                SAMoS (Soft Active Matter on Surfaces) is a set of tools for performing numerical simulations of particle-based models for active matter systems.
+                The package consists of the main simulation program ("samos") and a range of tools for building initial configurations and analysing
+                results of simulations.
+              </p>    
+              <p>
+                SAMoS has been designed to be modular, simple yet powerful. The code is optimised for speed, but not at the expense of clarity.
+                The user does not need to be familiar with programming in order to run simulations in SAMoS.
+              </p>
+              <div class="panel panel-primary">
+                  <div class="panel-heading">Key features</div>
+                  <div class="panel-body">
+                    <ul>
+                      <li>Modular design allowing simple setup of complex simulations. </li>
+                      <li>Simple scripting language for simulation control (no need to modify source code).</li>
+                      <li>Detailed logging for simple debugging.</li>
+                      <li>Support for many standard output formats (VTP, mol2, xyz, etc.) for simple visualisation of the results.</li>
+                      <li>Multiple particle types and particle groups.</li>
+                      <li>Type/group specific parameters for simulations of multicomponent systems.</li>
+                      <li>Support for multiple integrators (NVE, Langevin, Browninan etc.) of equations of motion.</li>
+                      <li>Support for multiple interaction potentials (Lennard-Jones, WCA, soft, Morse, etc.).</li>
+                      <li>Support for multiple particle alignments (nematic, polar, velocity, Vicsek, etc.).</li>
+                      <li>Support for simulating filaments (actomyosin) and rods (including confinement of curved surfaces).</li>
+                      <li>Simulations of systems confined to move on various curved surfaces.</li>
+                      <li>Simulations of multicomponent epithelial cell layers using Self-propelled Voroni model (SPV).</li>
+                    </ul>
+                  </div>
+                </div>
+              <p>
+                  Why yet another particle based code? Unlike many other molecular and Brownian dynamics codes, from the outset SAMoS has been
+                  designed to simulate active matter systems. Therefore, features such as interparticle alignment essential for many 
+                  active matter models are included in the core of the code.
+              </p>
+              <div class="container">
+                <h4>Examples of systems simulated with SAMoS</h4>
+                <table class="table table-borderless">
+                  <tbody>
+                    <tr>
+                      <td class="col-sm-4"><img src="images/polar_sphere.jpg" class="center-block" width="300" height="288" align="center"></td>
+                      <td class="col-sm-4"><img src="images/tissue_example.jpg" class="center-block" width="300" height="257" align="center"></td>
+                    </tr>
+                    <tr>
+                      <td class="col-sm-4">Snapshot of the simulation of active polar particles confined to move on the surface of a sphere.</td>
+                      <td class="col-sm-4">Snapshot of the simulation of a confluent layer of epithelial cells.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>
+              Currently, SAMoS does not support several features that could be of interest for more general and larger simulations. Some of those are 
+              planned for later releases. 
+              </p>
+              <div class="panel panel-danger">
+                  <div class="panel-heading"><b>WARNING!</b> Not supported features</div>
+                  <div class="panel-body">
+                      <ul>
+                          <li>Hydrodynamic interactions. </li>
+                          <li>Multi-threaded or MPI parallel execution. </li>
+                          <li>GPU support. </li>
+                          <li>Merging of two or more disjointed tissue patches. </li>
+                          <li>Tissue simulations on curved surfaces. </li>
+                      </ul>
+                </div>
+              </div>
+        </section>   
+        <section id="GettingStarted">
+            <h1>Getting Started</h1>
+            <p>
+              SAMoS Overview. With some math $\int \frac{\sin(x)}{x}dx$
+              
+            </p>
+            <div id="Download">
+              <h3>Downloading SAMoS</h3>
+              <p>
+                SAMoS can be downloaded from the GitHub repository.
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Clone SAMoS source from GitHub repository</div>
+                  <div class="panel-body">git clone https://github.com/sknepneklab/SAMoS.git</div>
+                </div>
+              </p>
+            </div>
+            <div id="Compile">
+              <h3>Compiling and Running SAMoS</h3>
+              <h4>Requirements</h4>
+              <p>
+                SAMoS can be downloaded from the GitHub repository.
+              </p>
+            </div>
+        </section>       
+    </div>
+</div>
+<div class="bs-docs-footerholder text-center">
+  <div class="bs-docs-footer">
+      <p>SAMoS (c) 2013-2016, <a href="http://www.dundee.ac.uk/">University of Dundee</a></p>
+  </div>
+</div>
+
+</body>
+</html>
