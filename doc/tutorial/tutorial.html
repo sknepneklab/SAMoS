@@ -52,10 +52,11 @@
                 </ul>
             </li>
             <li>
-                <a href="#StepByStep">Step by Step guide</a>
+                <a href="#SimulationSetup">Simulation setup</a>
                 <ul class="nav nav-stacked">
                     <li><a href="#InputFile">Input file</a></li>
                     <li><a href="#ConfFile">Configuration file</a></li>
+                    <li><a href="#StepByStep">Setting up a simple simulation</a></li>
                 </ul>
             </li>
             <li>
@@ -99,6 +100,7 @@
                       <li>Support for simulating filaments (actomyosin) and rods (including confinement of curved surfaces).</li>
                       <li>Simulations of systems confined to move on various curved surfaces.</li>
                       <li>Simulations of multicomponent epithelial cell layers using Self-propelled Voroni model (SPV).</li>
+                      <li>Population control (growth, division, death, etc.).</li>
                     </ul>
                   </div>
                 </div>
@@ -142,27 +144,357 @@
         <section id="GettingStarted">
             <h1>Getting Started</h1>
             <p>
-              SAMoS Overview. With some math $\int \frac{\sin(x)}{x}dx$
-              
+              In order to use SAMoS, we first need to download the source code and compile it. Currently, only Linux and Mac OS X operating systems are supported.
+              In principle, it should be possible to compile and run SAMoS on a Windows machine. However, this has not been tested and is not officially supported.  
             </p>
             <div id="Download">
               <h3>Downloading SAMoS</h3>
-              <p>
-                SAMoS can be downloaded from the GitHub repository.
+                <p>
+                Source code of SAMoS package can be downloaded from the GitHub repository.
+                </p>
                 <div class="panel panel-primary">
                   <div class="panel-heading">Clone SAMoS source from GitHub repository</div>
                   <div class="panel-body">git clone https://github.com/sknepneklab/SAMoS.git</div>
                 </div>
-              </p>
+                <p>
+                  Note: Git is an open-source version control package available on most platforms. 
+                </p>
             </div>
             <div id="Compile">
               <h3>Compiling and Running SAMoS</h3>
               <h4>Requirements</h4>
-              <p>
-                SAMoS can be downloaded from the GitHub repository.
-              </p>
+                <p>
+                SAMoS is written in C++ using the C++98 standard. Initialisation and analysis tools are written in Python 2.7. The code depends 
+                on several open-source libraries, that are available on most Linux distributions and on Mac via MacPorts.
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Required software/libraries</div>
+                  <div class="panel-body">
+                    <ul>
+                        <li>A modern C++ compiler, such as g++ 4.4 or newer. </li>
+                        <li>Boost libraries, v. 1.48 or newer.</li>
+                        <li>GNU Scientific Library (GSL) - version 1.13 or newer.</li> 
+                        <li>CMake (2.8 or newer) - also please install CMake's GUI (ccmake).</li>
+                        <li>Doxygen - optional but recommended (LaTeX support for building the PDF reference manual).</li>
+                        <li>VTK library (version 5 or 6).</li>
+                        <li>CGAL library (version 4.3 or newer). NOTE: Code will fail to compile with CGAL 4.2 or older.</li>
+                        <li>NumPy, SciPy and maploptlib.</li>
+                    </ul>
+                  </div>
+                </div>
+             <h4>Configuring and compiling the code</h4>
+             <p>
+              In order to compile the code, you first need to make sure that all packages and libraries listed above have been 
+              installed on your system. 
+             </p>
+             <div class="panel panel-primary">
+                  <div class="panel-heading">Configuring and compiling the code (from a console terminal)</div>
+                  <div class="panel-body">
+                    <ol>
+                        <li><b>cd</b> <i>samos</i> (or the name of the directory you chose to download the code into)</li>
+                        <li><b>mkdir</b> <i>build</i></li>
+                        <li><b>cd</b> <i>build</i></li>
+                        <li><b>ccmake</b> <i>../</i></li>
+                        <li>Use the CMake's GUI to select appropriate settings</li>
+                        <li>Press '<b>c</b>' key several times to configure</li>
+                        <li>If all libraries have been found, CMake will allow you to create a Makefile. If not, please exit CMake GUI and
+                             install missing libraries.</li>
+                        <li>Press '<b>g</b>' to create Make files. This will terminate CMake's GUI is return you to the shell</li>
+                        <li>Type '<b>make -j 8</b>' (-j option tells make how many parallel threads to use to compile; 
+                            on a 4-core machine one can typically use 8 threads).</li> 
+                         <li>If the compilation is successful, an executable '<i><b>samos</b></i>' should appear in the build directory.
+                              NOTE: SAMoS uses several libraries in Boost some of which rely heavily on C++ templates. Therefore, compilation may take 
+                              several minutes even on a very fast CPU.</li>
+                    </ol>
+                  </div>
+                </div>
             </div>
-        </section>       
+            <div class="panel panel-danger">
+                  <div class="panel-heading"><b>WARNING!</b></div>
+                  <div class="panel-body">
+                      Some Linux distributions with newer C++ compilers may have problems with running 8 parallel threads and can 
+                      cause the machine to crash. If this happens, use '-j 2', which is likely not to cause any problems on most modern computers.
+                </div>
+            </div>
+            <h4>Running simulations with SAMoS</h4>
+              <p>
+               Once the code has been successfully compiled you can use it to run simulations.
+              </p>
+               <div class="panel panel-primary">
+                  <div class="panel-heading">Configuring and compiling the code (from a console terminal)</div>
+                  <div class="panel-body">
+                      <b>/path/to/samos/build/samos</b> <i>configuration_file.conf</i>
+                  </div>
+              </div>
+              <p>
+                <i>configuration_file.conf</i> is a file containing simulations parameters and protocol. It content will be 
+                explained in details in the following sections. 
+            </p>
+         </section>  
+         <section id="SimulationSetup">
+           <h1>Simulation setup</h1>
+           <p>
+             In order to run a simulation with SAMoS we need to supply at least two files: a <b>configuration file</b> and <b>input file</b>.
+             For filaments simulations, we need to supply one or two additional files, containing connectivity information for </b>bonds</b> and
+             <b>angles</b>.
+           </p>
+           <div id="InputFile">
+             <h2>Input file</h2>
+             <p>
+                 Input file contains information about initial positions, types, sizes, etc. of all particles in the system. It is a text file
+                 that stores required data for each particle as a separate row. Data for each particle is given in columns, separated
+                 by one or more white spaces. Order in which the per-particle data appears is set at the top of the file using <b>keys:</b> keyword
+                 followed by a list of keys. 
+             </p>
+             <p>
+                 Empty lines or lines stating with the <b>#</b> character are ignored.
+             </p>
+             <div class="panel panel-primary">
+                  <div class="panel-heading">Example of in input file for 10 particles in the plane</div>
+                  <div class="panel-body">
+<pre>
+# Example of an input file for SAMoS simulation
+keys:  id  x  y   nx   ny   vx   vy 
+0  -49.812523  -13.220622  -0.557911  -0.829901  -0.064187  -0.997938
+1    2.837991  -15.389861  -0.772394  -0.635144   0.841073  -0.540922
+2  -28.937555  -17.031011   0.656690   0.754160  -0.871029  -0.491232
+3  -43.149352  -17.145390   0.094470  -0.995528  -0.877083  -0.480338
+4   -4.272546  -31.464737   0.577069   0.816696   0.204656   0.978834
+5  -41.197388  -12.608635  -0.402312   0.915503  -0.785632  -0.618694
+6    7.005807   28.411867   0.997299  -0.073445  -0.069671  -0.997570
+7   23.550813  -38.901239  -0.124280  -0.992247   0.179116  -0.983828
+8   28.584616   -5.643690   0.587347   0.809335  -0.606693  -0.794936
+9   44.286823  -48.149627   0.987257   0.159133  -0.959705  -0.281008
+</pre>
+                  </div>
+              </div>
+              <p>
+                  Keys can appear in any order. However, once set given quantity always must appear in the given column. In other words, 
+                  if we set <b>x</b> coordinate as the second column, column 2 will be interpreted as <b>x</b> coordinate in each row.
+                  Keys that have been omitted will be set to a default value. 
+              </p>
+              <div class="panel panel-primary">
+                  <div class="panel-heading">List of all available keys</div>
+                  <div class="panel-body">
+                    <ul>
+                      <li><b>id</b> - unique particle id. Ids are integers starting at 0 (default: 0). Note: This key should always be set.</li>
+                      <li><b>type</b> - Type of the particle. Type is an integers starting at 1 (default: 1).</li>
+                      <li><b>radius</b> - particle radius. Radius is a floating point number (default: 1.0).</li>
+                      <li><b>molecule</b> - molecule this particle belongs to (default: particle id). Note: Used in filament simulations.</li>
+                      <li><b>radius</b> - particle mass. Mass is a floating point number (default: 1.0).</li>
+                      <li><b>x</b> - x coordinate of the particle (default: 0.0). Note: User needs to ensure that all particles are inside the simulation box.</li>
+                      <li><b>y</b> - y coordinate of the particle (default: 0.0). Note: User needs to ensure that all particles are inside the simulation box.</li>
+                      <li><b>z</b> - z coordinate of the particle (default: 0.0). Note: User needs to ensure that all particles are inside the simulation box.</li>
+                      <li><b>nx</b> - x component of the director vector (default: 0.0). Note: At least one of the components of the director vector has to be non-zero.</li>
+                      <li><b>ny</b> - y component of the director vector (default: 0.0). </li>
+                      <li><b>nz</b> - z component of the director vector (default: 0.0).</li>
+                      <li><b>vx</b> - x component of the initial velocity (default: 0.0). </li>
+                      <li><b>vy</b> - y component of the initial velocity (default: 0.0). </li>
+                      <li><b>vz</b> - z component of the initial velocity (default: 0.0). </li>
+                      <li><b>length</b> - rod length (for rod simulations) (default: 1.0). </li>
+                      <li><b>ix</b> - image flag in x direction for unwrapping coordinates (default: 0). </li>
+                      <li><b>iy</b> - image flag in y direction for unwrapping coordinates (default: 0). </li>
+                      <li><b>iz</b> - image flag in z direction for unwrapping coordinates (default: 0). </li>
+                      <li><b>nvx</b> - x component of the vector normal to constraint (default: depends on the constraint).</li>
+                      <li><b>nvy</b> - y component of the vector normal to constraint (default: depends on the constraint).</li>
+                      <li><b>nvz</b> - z component of the vector normal to constraint (default: depends on the constraint).</li>
+                      <li><b>area</b> - native cell area used in tissue simulations (default: 0.0).</li>
+                      <li><b>in_tissue</b> - non-zero is particle belongs to a tissue, 0 otherwise (default: 0).</li>
+                      <li><b>boundary</b> - non-zero is the particle is a tissue boundary particle; 0 otherwise (default: 0.0).</li>
+                      <li><b>parent</b> - id of the parent used in lineage tracking.</li>
+                    </ul>
+                  </div>
+              </div>
+              <h3>Bond file</h3>
+              <p>
+                  For simulations of flexible and semi-flexible filaments, we also need to supply a file with bond (connectivity information). Bond file is a text file
+                  containing 4 columns. Empty lines and lines starting with <b>#</b> character are ignored.
+                  <ul>
+                      <li><i>column 1</i> - bond id; ids start from 0.</li>
+                      <li><i>column 2</i> - bond type; bonds types are integers starting from 1.</li>
+                      <li><i>column 3</i> - id of the first particle in the bond.</li>
+                      <li><i>column 4</i> - id of the second particle in the bond.</li>
+                  </ul>
+                  Note that each bond needs to appear only once. 
+              </p>
+              <div class="panel panel-primary">
+                  <div class="panel-heading">Example of a bond file with 5 bonds</div>
+                  <div class="panel-body">
+<pre>
+# Example of a bond file
+# columns are bond id, bond type, id of 1st particle, id of 2nd particle
+0  1  0  1
+1  1  1  2
+2  1  2  3
+3  1  3  4
+4  1  4  5 
+</pre>                
+                  </div>
+             </div>
+            <h3>Angle file</h3>
+              <p>
+                  For simulations of semi-flexible filaments, we also need to supply a file with angle (bending information). Angle file is a text file
+                  containing 5 columns. Empty lines and lines starting with <b>#</b> character are ignored.
+                  <ul>
+                      <li><i>column 1</i> - angle id; ids start from 0.</li>
+                      <li><i>column 2</i> - angle type; angle types are integers starting from 1.</li>
+                      <li><i>column 3</i> - id of the first particle in the angle (side particle).</li>
+                      <li><i>column 4</i> - id of the second particle in the angle (angle at this particle).</li>
+                      <li><i>column 5</i> - id of the third particle in the angle (side particle).</li>
+                  </ul>
+                  Note that each angle needs to appear only once. 
+              </p>
+              <div class="panel panel-primary">
+                  <div class="panel-heading">Example of an angle file with 4 angles</div>
+                  <div class="panel-body">
+<pre>
+# Example of an angle file
+# columns are angle id, angle type, id of 1st particle, id of 2nd particle, id of 3rd particle
+0  1  0  1  2
+1  1  1  2  3
+2  1  2  3  4
+3  1  3  4  5
+</pre>                
+                  </div>
+             </div>
+             <h3>Tissue boundary file</h3>
+              <p>
+                  <a href="#TissueSimulations">Tissue simulations</a> require a file which sets connectivity of the boundary particles. This is a text file  
+                  containing 3 columns. Empty lines and lines starting with <b>#</b> character are ignored.
+                  <ul>
+                      <li><i>column 1</i> - boundary bonds id; ids start from 0.</li>
+                      <li><i>column 2</i> - id of the first particle in a tissue boundary bond.</li>
+                      <li><i>column 3</i> - id of the second particle in a tissue boundary bond.</li>
+                  </ul>
+                  Note that each bond needs to appear only once. 
+              </p>
+              <div class="panel panel-primary">
+                  <div class="panel-heading">Example of a boundary connectivity file</div>
+                  <div class="panel-body">
+<pre>
+# Example of a boundary connectivity file for tissue simulations
+# columns are bond id, id of 1st particle, id of 2nd particle
+0  11 17
+1  17 25
+2  25 32
+3  32 11
+</pre>                
+                  </div>
+             </div>
+
+           </div>
+           <div id="ConfFile">
+             <h2>Configuration file</h2>
+             <p>
+                 Configuration (or parameter) file (script) is a text file which sets the parameters (such as interaction types, integrators, etc.) as well as 
+                 the simulation protocol. Commands in the file are executed in the order in which appear. Commands are executed in "interpreter"-like fashion,
+                 meaning that the configuration file is parsed one line at the time. Each line is executed right away and the program does not 
+                 continue to the next command until the current command has completed its execution. 
+             </p>
+             <p>
+                 SAMoS uses a simple parser to parse commands in the configuration script. Commands cannot be split over multiple lines and there can be only 
+                 one command per line.
+             </p>
+             <p>
+                 General syntax for commands is:
+<pre>
+    command_name [arg] { param_1 = val_1; param_2; param_3 = val_2 }
+</pre>
+                 where <i>command_name</i> is the command, <i>arg</i> is one or zero arguments, depending on the command, followed by a list of semi-colon separated
+                 parameters. Parameters can appear either as single keywords or as argument-value pairs. As in the case of input file, empty lines and lines starting with 
+                 the <b>#</b> characters (comments) will be ignored.
+             </p>
+             <div class="panel panel-primary">
+                  <div class="panel-heading">Example of a configuration file</div>
+                  <div class="panel-body">
+<pre>
+# All runtime messages will be sent to file messages.msg
+messages messages.msg
+
+# Every simulation requires a box
+# "periodic" means that periodic boundary are applied.
+# box is cubic with size 100x100x10 (units of particle radius r = 1) and spans from -50 to 50 in
+# x and y directions and -5 to 5 in z direction
+box periodic { lx = 100.0;  ly = 100.0;  lz = 10.0 }
+
+# We read in particle positions from file plane.dat (generated by tools in utils directory)
+input plane.dat
+
+# We set the neighbour list with cutoff distance 2.4 and padding distance of 0.5
+nlist { rcut = 2.5; pad = 0.5 }
+
+# Output particle velocities. Base name of the file is plane_test
+# File extension will we '.vtp'. Output will be generated every 10000 time steps
+# staring from the step 0. Each snapshots will be stored in a separate file (keyword 'multi')
+# with name plane_[time_step].vtp (e.g., plane_0000010000.vtp)
+# and each file with contain a header with the description of its content
+dump plane { type=vtp; start=0; freq=10000; multi }
+
+# We constrain all particles to move only on the xy plane
+constraint plane {  }
+
+# All particles are interacting with the soft-core potential of strength
+# k = 1.0 (energy units)
+# a = 2.0 (distance units)
+pair_potential soft { k = 1.0; a = 2.0 }
+
+# Alignment will be done using polar aligner
+# Coupling constant J = 1.0 (energy units)
+pair_align polar { J = 1.0 }
+
+# We would also like to monitor measure a few quantities
+# Here we define a log that keeps track of step, velocity, soft core potential energy, and alignment
+# These quantities will be logged once every 1000 steps
+# Note that step is always logged automatically
+log plane.log { freq = 1000; velocity; soft_energy; polar_align }
+
+# we set the simulation time step to 0.01
+time_step 0.01
+
+# In order to relax the system and remove large overlaps
+# we first run system using NVE integrator with maximum
+# displacement limit=0.001. 
+integrator nve { limit=0.0001 }
+
+# Run for 10,000 steps
+run 10000
+
+# Relaxation is done. We need set disable the NVE integrator
+disable nve { group=all }
+
+# Now we are at the point to execute actual simulations.
+# We switch the integrator to brownian.
+# Integrate equations of motion using Brownian dynamics.
+# seed is the initial seed for the random number generator
+# nu sets the width of the distribution for random changes of velocity
+# mu is particle mobility
+# v0 is the intensity of the self-propelling velocity
+# we apply integrator to group "all" (i.e, to all particles in the system)
+integrator brownian { seed = 1;  nu = 0.02; mu = 1.0;  v0 = 0.05; group = all }
+
+
+# Finally, we run simulation for 100,000 time steps
+run 100000
+</pre>                
+                  </div>
+             </div>
+           </div>  
+           <div id="StepByStep">
+             <h2>Step by Step guide for setting up a simple simulation</h2>
+             <p>
+                 In this section we will go over necessary steps to set up a simple simulations to study $N$ monodisperse polar active 
+                 particles on the surface of a sphere of radius $R=30$ with packing fraction $\phi=0.7$.
+             </p>
+             <h3>Building initial configuration</h3>
+                <p>
+                    We start by building the initial configuration for our simulation. 
+                </p>
+             <p>
+              Follow the links for download complete <a href="examples/soft_on_sphere/soft_on_sphere.conf">configuration</a> and <a href="examples/soft_on_sphere/sphere.dat">input</a> 
+              files used in this example. 
+             </p>
+          </div> 
+        </section>     
     </div>
 </div>
 <div class="bs-docs-footerholder text-center">
