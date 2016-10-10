@@ -1503,9 +1503,21 @@ h1[id] {
 
 /*Header formatting */
 .MainContent {
-    margin-top: 50px;
+    margin-top: 30px;
+    margin-bottom: 30px;
 }
 
 .table-borderless tbody tr td, .table-borderless tbody tr th, .table-borderless thead tr th {
     border: none;
 }
+
+.navbar-brand {
+  font-size: 15px;
+}
+
+.navbar-nav > li > a, .navbar-brand {
+    padding-top:4px !important; 
+    padding-bottom:0 !important;
+    height: 28px;
+}
+.navbar {min-height:28px !important;}

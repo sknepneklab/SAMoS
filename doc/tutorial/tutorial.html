@@ -485,14 +485,303 @@ run 100000
                  In this section we will go over necessary steps to set up a simple simulations to study $N$ monodisperse polar active 
                  particles on the surface of a sphere of radius $R=30$ with packing fraction $\phi=0.7$.
              </p>
-             <h3>Building initial configuration</h3>
+             <h3>Step 1: Building initial configuration</h3>
                 <p>
-                    We start by building the initial configuration for our simulation. 
+                    We start by building the initial configuration for our simulation. This can be done using the <b>random_sphere.py</b> Python script 
+                    provided in the <i>samos/configurations/MakeConfigurations</i> directory. 
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Make initial configuration for simulating particles on a sphere</div>
+                  <div class="panel-body">
+<pre>
+python /path/to/samos/configurations/MakeConfigurations/random_sphere.py -R 10.0 -f 0.7 -o sphere.dat
+</pre>
+                  </div>
+                </div>
+                <p>
+                    This will create an initial configuration file (input file) called <a href="examples/soft_on_sphere/sphere.dat">sphere.dat</a> that will 
+                    contain ids, types, radii, position, initial velocities and inital velues of the director field for $N=316$ particles. All particles will have
+                    same radius ($r=0.5$) and same type (1). Director field will be point in a random direction, but it will be tangential to the sphere at every point.
+                    Velocity vectors will also point along the random direction tangent to the sphere and will have magnitude $|\vec v|=1$.
                 </p>
              <p>
-              Follow the links for download complete <a href="examples/soft_on_sphere/soft_on_sphere.conf">configuration</a> and <a href="examples/soft_on_sphere/sphere.dat">input</a> 
-              files used in this example. 
+                 Now that we have initial configuration, we can move on an create a configuration file to run this simulation. We will call this file <i>soft_on_sphere.conf</i>.
              </p>
+             <h3>Step 2: Adding message and metadata files (optional)</h3>
+
+             <p>
+                 In order to create a file with information, warning and error message produced by the simulation we use the command
+             </p>
+             <div class="panel panel-primary">
+                  <div class="panel-heading">Adding messanger</div>
+                  <div class="panel-body">
+<pre>
+message messages.msg
+</pre>
+                  </div>
+                </div>
+                <p>
+                    All messages regarding the state of the simulation will we sent to the file <i>messages.msg</i>. This file will be in the same working directory that 
+                    the simulation uses to output all other results.  
+                </p>
+                <p>
+                    SAMoS also supports automatic generation of the meta-data for curating the results of simulations. These can be stored in several formats including JSON and XML.
+                    Meta-data is produced by the <i>config</i> command. Note that the meta-data file will be produced only upon successful termination of the code. In other words,
+                    if the code fails, or if it is interrupted, no meta-data file will be generated. 
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Adding metadata (JSON format)</div>
+                  <div class="panel-body">
+<pre>
+config sphere { type = json }
+</pre>
+                  </div>
+                </div>
+                <p>
+                    Previous command will generate a file named <i>sphere.json</i> in the simulation execution directory. 
+                </p>
+                <h3>Step 3: Setting the simulation box</h3>
+                <p>
+                    In order to run a simulation, we need to specify the simulation box and the boundary conditions (fixed or periodic). SAMoS assumes that the 
+                    simulation box is centred at the origin. That is, if the box has dimensions $\left(L_x,L_y,L_z\right)$ allowed particle coordinates will be
+                    $-L_x/2\le x < L_x/2$, $-L_y/2\le y < L_y/2$, $-L_z/2\le z < L_z/2$. 
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Setting a simulation box with fixed boundary conditions</div>
+                  <div class="panel-body">
+<pre>
+box fixed { lx = 30.0; ly = 30.0; lz = 30.0 }
+</pre>
+                  </div>
+                </div>
+                <p>
+                    Note that the user needs to ensure that the all particles coordinates in the input file are within the simulation box. If this is not the 
+                    case, SAMoS will return an error and terminate. 
+                </p>
+                <h3>Step 4: Reading input data</h3>
+                <p>
+                    In this step we need to supply the input file (initial configuration) to SAMoS.
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Reading input file</div>
+                  <div class="panel-body">
+<pre>
+input sphere.dat
+</pre>
+                  </div>
+                </div>
+                <p>
+                    Previous command loads input configuration generated in Step 1 and prepares it for simulation. 
+                </p>
+                <h3>Step 5: Setting the neighbour list</h3>
+                <p>
+                    In order to speed up calculation of short-range forces, SAMoS uses standard cell and neighbour list algorithms. It is therefore necessary 
+                    to specify parameters such as neighbour list cutoff and padding distance.  
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Setting the neighbour list parameters</div>
+                  <div class="panel-body">
+<pre>
+nlist { rcut = 2.4; pad = 0.5 }
+</pre>
+                  </div>
+                </div>
+                <p>
+                    Previous command sets the cutoff distance to $r_c=2.4$ (recall that the potential range is $2r = 1.0$) and padding distance ($r_p=0.5$). Neighbour list
+                    will be rebuilt once one of the particles travelled more that $r_p/2$.
+                </p>
+                <h3>Step 6: Output simulation results</h3>
+                <p>
+                    In this step we supply so-called <i>dumps</i>. That is, we specify format and frequency of outputting simulation results. We can specify as many dumps
+                    as necessary. However, keep in mind that some of dump types can be slow (e.g., VTP) and rather large, which may result is generating a huge amount of data
+                    is hinder simulation performance.
+                </p>
+                <p>
+                    Here we specify two dumps, one into VTP files and other one into a regular, text-based file that can be directly used as an input for a next run. In both cases,
+                    dumps are split over multiple files (labelled by the time step) and produced every 1000 time steps.
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Setting the neighbour list parameters</div>
+                  <div class="panel-body">
+<pre>
+dump sphere_example { type = vtp; start = 0; freq=1000; multi }
+dump sphere_example { type=full; start=0; freq=1000; multi; id; type; radius; coordinate; velocity; director; keys  }
+</pre>
+                  </div>
+                </div>
+                <p>
+                    First command will produce a sequences of VTP files with names sphere_example_0000XX000.vtp (ready to be visualised with ParaView). Second command 
+                    will produce a sequence of plain text files with names sphere_example_0000XX000.dat, with the <b>keys:</b> keyword and the list of column names 
+                    at the top.
+                </p>
+                <h3>Step 7: Specifying the constraint</h3>
+                <p>
+                    In this example we study active particles confined to move on the surface of the sphere. Therefore, we need to tell SAMoS to use the
+                    spherical constraint.
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Specifying spherical constraint</div>
+                  <div class="panel-body">
+<pre>
+constraint sphere { r = 10 }
+</pre>
+                  </div>
+                </div>
+                <h3>Step 8: Setting interparticle interactions</h3>
+                <p>
+                    In this example, we'll assume that particles interact with each other via a short-range soft repulsive potential of the form 
+                    $$V(r) = \frac{k}{2}(r-a)^2$$ for $r < a$ and $V(r)=0$ otherwise. In the last equation, $r$ is the Euclidean distance between particles 
+                    $i$ and $j$, i.e., $r=\left|\vec r_i - \vec r_j\right|$, $k$ is the elastic constant and $a$ is the potential range.
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Setting the interaction potential between particles</div>
+                  <div class="panel-body">
+<pre>
+pair_potential soft { k = 10.0; a = 1.0 }
+</pre>
+                  </div>
+                </div>
+                <h3>Step 9: Setting interparticle alignment</h3>
+                <p>
+                    In many active particle simulations it is not only sufficient to know the particle position, but one need to know the direction of the internal 
+                    degree of freedom, i.e. the director. Alignment interactions calculate torques on the internal degree of freedom. In this example, we assume that 
+                    particles are polar and that the align to their neighbours within cutoff $r_c$ (set by the neighbour list). Polar alignment assumes simple XY-model 
+                    coupling, i.e. it tries to minimise energy functional 
+                    $$ E_{polar} = -J\sum_j \vec n_i\cdot\vec n_j $$
+                    where $\vec n_j$ are directors of the particles within radius $r_c$ of particle $i$ and $J$ is the coupling constant. 
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Setting the alignment between particles</div>
+                  <div class="panel-body">
+<pre>
+pair_align polar { J = 1.0 }
+</pre>
+                  </div>
+                </div>
+                <h3>Step 10: Logs (optional)</h3>
+                <p>
+                    It is often useful to monitor global properties of the system such as kinetic energy or total potential energy. In order to do so, we define a <i>log</i>
+                    which will contain such information. We output log information once every 100 time steps. Logs will be written into the file <i>sphere_test.log</i>.
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Logging simulation state</div>
+                  <div class="panel-body">
+<pre>
+log sphere_test.log { freq = 100; velocity; soft_energy; polar_align }
+</pre>
+                  </div>
+                </div>
+                <h3>Step 11: Time step</h3>
+                <p>
+                    In order to be able to integrate equations of motion, we need to set the simulation time step. SAMoS supports multiple integrtors that simultaneously 
+                    can act on different groups or degrees of freedom (e.g., one integrator updating particle positions and the other updating the orientation of the director).
+                    Therefore, in order to be able to ensure consistent simulation results, we need to specify a global simulation time step.
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Setting global time step</div>
+                  <div class="panel-body">
+<pre>
+timestep 0.01
+</pre>
+                  </div>
+                </div>
+                <h3>Step 12: Relaxation (optional)</h3>
+                <p>
+                    Python script we used in Step 1 to generate the initial configuration did not check if there are large overlaps between particles. If this is the case, which 
+                    is almost always true for dense systems, running the simulation starting from such configuration would result in very large forces that can lead to a crash.
+                    This is particularly the case is one works with hard-core repulsive forces. In the case of soft potentials, as in this example, the effects of overlaps are
+                    less severe. However, it is a good practice to "relax" the system before starting the actual run. We achieve this by using the <i>NVE</i> integrator which 
+                    limits the maximum distance a particle can move, regardless of the force acting on it.
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">NVE with limited step</div>
+                  <div class="panel-body">
+<pre>
+integrator nve { limit = 0.0001  }
+</pre>
+                  </div>
+                </div>
+                <h3>Step 13: Relaxation (continued)</h3>
+                <p>
+                    We proceed to run the simulation for 10,000 time steps, in order to remove large inter-particle overlaps.
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Relaxation run</div>
+                  <div class="panel-body">
+<pre>
+run 10000
+</pre>
+                  </div>
+                </div>
+                <h3>Step 14: Relaxation (completed)</h3>
+                <p>
+                    Now that we have completed the relaxation run, we need to disable NVE integrator with the limited step size, in order to prepare the system for actual 
+                    simulation.
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Disabling the integrator</div>
+                  <div class="panel-body">
+<pre>
+disable nve { group = all }
+</pre>
+                  </div>
+                </div>
+                <h3>Step 15: Self-propulsion</h3>
+                <p>
+                    We are finally ready to simulate the actual active system. In order to do so, we need to introduce self-propulsion. Self-propulsion acts on 
+                    individual particles and does not depend on the surrounding. Therefore, it is categorised as an external (single-particle) effect. We assign 
+                    activity of strength $\alpha = 1.0$ acting on each particle in the direction of its director.  
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Specifying activity</div>
+                  <div class="panel-body">
+<pre>
+external self_propulsion { alpha = 1.0 }
+</pre>
+                  </div>
+                </div>
+                <h3>Step 16: Integrators</h3>
+                <p>
+                    In this step we set the integrators for the equations of motion. Since each particle contains the director, which acts as an internal degree of freedom
+                    we need to specify two integrators, one for particle positions and one for the orientation of the director. In both cases we'll use simple, first order
+                    Brownian dynamics integrators. However, in case of the particle position we'll also introduce thermal noise at temperature $T=0.1$. Director will be subject
+                    to a random noise of strength $\nu = 0.01$.
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Setting integrators for position and orientation</div>
+                  <div class="panel-body">
+<pre>
+integrator brownian_pos { seed = 0; mu = 1.0;  temperature_control = constant; min_val = 0.1 }
+integrator brownian_align { seed = 0; nu = 0.01;  }
+</pre>
+                  </div>
+                </div>
+                <h3>Step 17: Running the simulation</h3>
+                <p>
+                    We are finally ready to run the simulation. We'll run it for 100,000 time step.
+                </p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading">Running the simulation</div>
+                  <div class="panel-body">
+<pre>
+run 100000
+</pre>
+                  </div>
+                </div>
+                <h3>Summary</h3>
+                <p>
+                    Above example will produce 111 VTP files, 111 dat files, one log file, one message and one JSON file. All files will be stored in the execution directory, which is the
+                    same directory that contains the configuration and input files. 
+                </p>
+                <p>
+                    This completes the simulation part. One can now use Paraview (or any other visualisation software) to visualise results of the simulation. In addition, 
+                    one can use the data stored in "dat" files in order to extract various physical quantities. Some of the analysis tools are available in the <i>utils</i>
+                    directory. Alternatively, the user might want to write her own analysis code.
+                </p>
+                <p>
+                    Follow the links for download complete <a href="examples/soft_on_sphere/soft_on_sphere.conf">configuration</a> and <a href="examples/soft_on_sphere/sphere.dat">input</a> 
+                    files used in this example. 
+                </p>
           </div> 
         </section>     
     </div>
