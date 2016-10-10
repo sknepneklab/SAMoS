@@ -12,6 +12,11 @@
   <script src="js/menu.js"></script>
   <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
   <script type="text/javascript" async src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script>
+  <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+        });
+  </script>   
 </head>
 <body>
 
@@ -46,6 +51,7 @@
                 <ul class="nav nav-stacked">
                     <li><a href="#AVM">Active Vertex Model</a></li>
                     <li><a href="#Boundaries">Handling boundaries</a></li>
+                    <li><a href="#BoundaryEng">Boundary forces</a></li>
                     <li><a href="#DivDeath">Cell division and death</a></li>
                 </ul>
             </li>
@@ -87,38 +93,219 @@
                 </p>
                 <p>
                     In the vertex model energy of the tessellation is defined as
-                    $$E_{vertex}=\sum_{i=1}^{N_{face}}\left[\frac{K_{i}}{2}\left(A_{i}-A_{i}^{0}\right)^{2}+\frac{\Gamma_{i}}{2}P_{i}^{2}\right]+\sum_{\mu,\nu}\Lambda_{\mu\nu}l_{\mu\nu},$$
+                    \begin{equation}
+                      E_{vertex}=\sum_{i=1}^{N_{face}}\left[\frac{K_{i}}{2}\left(A_{i}-A_{i}^{0}\right)^{2}+\frac{\Gamma_{i}}{2}P_{i}^{2}\right]+\sum_{\mu,\nu}\Lambda_{\mu\nu}l_{\mu\nu},
+                      \label{eq:vertex_model_energy}
+                    \end{equation}
                     where the first sum goes over all faces (cells), $K_{i}$ is the cell stiffness, measuring resistance to change the cell area $A_{i}$ from its native area $A_{i}^{0}$.
                     $\Gamma_{i}$ measures the resistance to changing the cell perimeter, $P_{i}$. $l_{\mu\nu}$ is the length of the edge connecting vertices $\mu$ and $\nu$ (on the Voronoi 
                     mesh) and $\Lambda_{\mu\nu}$ is the resistance of changing the contact length between two neighbouring cells, i.e., the tension of the cell junctions. 
                 </p>
                 <p>
                     <img src="images/model.png" class="center-block" width="400" height="279" align="center">
+                </p>
+                <p align="center">
                     <b>Fig. 1:</b> Two coordinate representations. In our model we track particles that correspond to cell centres (yellow spheres).
                     Particle positions are denoted using latin indices. Particles form a Delaunay triangulation (blue lines). Dual of this triangulations is a
                     Voronoi diagram, with each Voroni cell representing actual cell. Cell edges are marked with red lines. Vertices of the dual mesh are denoted by Greek indices.
-                <p>
+                </p>
                 <p>
                     In Figure 1 we show two representations used in this model. We are going to adhere to a convention that Latin indices denote particle positions and 
                     Greek indices label vertices of the Voronoi network. In this description, area corresponding to the particle i is nothing but the area of the polygon
                      (face) on of the vertex mesh surrounding site i and is given as, 
-                     $$A_{i}=\frac{1}{2}\sum_{\mu}\left(\vec{r}_{\mu}\times\vec{r}_{\mu+1}\right)\cdot\vec{N}_{i},$$
+                     \begin{equation}
+                     A_{i}=\frac{1}{2}\sum_{\mu}\left(\vec{r}_{\mu}\times\vec{r}_{\mu+1}\right)\cdot\vec{N}_{i},
+                     \end{equation}
                      where $\vec{r}_{\mu}$ is the position of vertex $\mu$ and $\vec{N}_{i}$ is a unit-length vector perpendicular to the surface the polygon
                      and it does not depend on the position of vertices. This is expression is just a discrete version of the Green's formula. 
                      We will assume that the triangulation is Delaunay and vectors $\vec{r}_{\mu}$ correspond to the vertices of the dual Voronoi lattice.
                 </p>
                 <p>
-                    For a given Delaunay triangle, the position of the Voronoi centre is given as 
-                    $$\vec{r}_{\mu}=\frac{\lambda_{1}}{\lambda_{1}+\lambda_{2}+\lambda_{3}}\vec{r}_{i}+\frac{\lambda_{2}}{\lambda_{1}+\lambda_{2}+\lambda_{3}}\vec{r}_{j}+\frac{\lambda_{3}}{\lambda_{1}+\lambda_{2}+\lambda_{3}}\vec{r}_{k},$$
-                    where we use the notation 
-                    $$\lambda_{1}	=l_{i}^{2}\left(l_{j}^{2}+k_{k}^{2}-l_{i}^{2}\right)$$
-                    $$\lambda_{2}	=l_{j}^{2}\left(l_{k}^{2}+l_{i}^{2}-l_{j}^{2}\right)$$
-                    $$\lambda_{3}	=l_{k}^{2}\left(l_{i}^{2}+l_{j}^{2}-l_{k}^{2}\right),$$
-                    where 
-                    $$l_{i}	=\left|\vec{r}_{j}-\vec{r}_{k}\right|=\left|\vec{r}_{jk}\right|$$
-                    $$l_{j}	=\left|\vec{r}_{k}-\vec{r}_{i}\right|=\left|\vec{r}_{ki}\right|$$
-                    $$l_{k}	=\left|\vec{r}_{i}-\vec{r}_{j}\right|=\left|\vec{r}_{ij}\right|.$$
+                    <img src="images/triangle_circumcenter.png" class="center-block" width="330" height="335" align="center">
                 </p>
+                <p align="center">
+                    <b>Fig. 2:</b> Definition of the circumcenter of a non-obtuse triangle.
+                </p>
+                <p>
+                    For a given Delaunay triangle, the position of the Voronoi centre is given as (see Fig. 2)
+                    \begin{equation}
+                      \vec{r}_{\mu}=\frac{\lambda_{1}}{\lambda_{1}+\lambda_{2}+\lambda_{3}}\vec{r}_{i}+\frac{\lambda_{2}}{\lambda_{1}+\lambda_{2}+\lambda_{3}}\vec{r}_{j}+\frac{\lambda_{3}}{\lambda_{1}+\lambda_{2}+\lambda_{3}}\vec{r}_{k},
+                      \label{eq:r_mu_baricentric}
+                    \end{equation}
+                    where we use the notation 
+                    \begin{eqnarray}
+                      \lambda_{1}	&=&l_{i}^{2}\left(l_{j}^{2}+k_{k}^{2}-l_{i}^{2}\right) \\
+                      \lambda_{2}	&=&l_{j}^{2}\left(l_{k}^{2}+l_{i}^{2}-l_{j}^{2}\right) \\
+                      \lambda_{3}	&=&l_{k}^{2}\left(l_{i}^{2}+l_{j}^{2}-l_{k}^{2}\right),
+                    \end{eqnarray}
+                    where 
+                    \begin{eqnarray}
+                      l_{i}	&=&\left|\vec{r}_{j}-\vec{r}_{k}\right|=\left|\vec{r}_{jk}\right| \\
+                      l_{j}	&=&\left|\vec{r}_{k}-\vec{r}_{i}\right|=\left|\vec{r}_{ki}\right| \\
+                      l_{k}	&=&\left|\vec{r}_{i}-\vec{r}_{j}\right|=\left|\vec{r}_{ij}\right|.
+                    \end{eqnarray}
+                </p>
+                <p>
+                    In order to implement the AVM into a particle based code such as SAMoS, we have to compute forces acting on each particle (cell-centre in this case).
+                    This is done directly by computing the negative derivative of the energy functional in Eq. (\ref{eq:vertex_model_energy}). The only
+                    real complication is that the energy is most naturally written in terms of positions of the Voronoi vertices, while the basic degrees of freedom
+                    in AVM are the cell-centres. Therefore, we need to apply the chain rule in order to extract forces on a particle. In general,
+                    \begin{equation}
+                        \vec{F}_{i}=-\nabla_{\vec{r}_{i}}E_{vertex}.\label{eq:general_force-1}
+                    \end{equation}
+                    Another complication we need to worry about is that moving particle $i$ will change area of its neighbouring cells and thus exert force
+                    on a number of other particles in its surrounding. All those contributions have to be taking into account when computing the force. A direct
+                    consequence of this is that the <b>forces on cell centres cannot be written as simple pairwise interactions</b>. However, they still remain local
+                    and only nearest neighbours contribute to the total force. 
+                </p>
+                <p>
+                    After a lengthy, but straightforward calculation we derive to the final expression for the force on particle (cell) $i$, 
+                    \begin{eqnarray}
+                        \vec{F}_{i} & = & \vec{F}_{i}^{a}+\vec{F}_{i}^{p}+\vec{F}_{i}^{j}\nonumber \\
+                                    & = & -\sum_{k=1}^{N_{part}}\frac{K_{k}}{2}\left(A_{k}-A_{k}^{0}\right)\sum_{\nu\in l_{k}}\left[\vec{r}_{\nu+1,\nu-1}\times\vec{N}_{k}\right]^{T}\left[\frac{\partial\vec{r}_{\nu}}{\partial\vec{r}_{i}}\right]\label{eq:total_force}\\
+                                    &  & -\sum_{k=1}^{N_{part}}\Gamma_{k}P_{k}\sum_{\nu\in l_{k}}\left(\hat{\vec{r}}_{\nu,\nu-1}-\hat{\vec{r}}_{\nu+1,\nu}\right)^{T}\left[\frac{\partial\vec{r}_{\nu}}{\partial\vec{r}_{i}}\right]\\
+                                    &  & -\sum_{k=1}^{N_{part}}\sum_{\nu\in l_{k}}\left[\Lambda_{\nu-1,\nu}\hat{\vec{r}}_{\nu,\nu-1}-\Lambda_{\nu,\nu+1}\hat{\vec{r}}_{\nu+1,\nu}\right]^{T}\left[\frac{\partial\vec{r}_{\nu}}{\partial\vec{r}_{i}}\right].
+                    \end{eqnarray}
+                </p>
+                <p>
+                    In previous equation $\left[\frac{\partial\vec{r}_{\nu}}{\partial\vec{r}_{i}}\right]$ is the $3\times3$ Jacobian matrix for changing coordinates from 
+                    the vertices to cell centres.
+                </p>
+                <p>
+                    We note that the $k$ sum runs over all immediate neighbours of cell $i$, hence leading to the expression for the force that is not pair-wise. 
+                    In order to see explicitly what goes into computing the force on cell $i$, we focus only of the area, $\vec F^a$, term.
+                </p>
+                <p>
+                    We loop over all cells surrounding cell $i$.
+                    <ul>
+                        <li> For particle $i$ compute $\frac{K_{i}}{2}\left(A_{i}-A_{i}^{0}\right)$ and multiply it with the sum 
+                             $\sum_{\nu\in l_{i}}\left[\left(\vec{r}_{\nu+1}-\vec{r}_{\nu-1}\right)\times\vec{N}_{i}\right]^{T}\left[\frac{\partial\vec{r}_{\nu}}{\partial\vec{r}_{i}}\right]$.
+                            Note that this sum runs over all vertices (corners) $\nu$ of the cell $i$.
+                        </li>
+                        <li>
+                            For all immediate neighbours $j$ of cell $i$ compute $\frac{K_{j}}{2}\left(A_{j}-A_{j}^{0}\right)$ and multiply it with the sum 
+                            $\sum_{\nu\in l_{i}\cap l_{j}}\left[\left(\vec{r}_{\nu+1}-\vec{r}_{\nu-1}\right)\times\vec{N}_{j}\right]^{T}\left[\frac{\partial\vec{r}_{\nu}}{\partial\vec{r}_{i}}\right]$.
+                            Note that $\nu\in l_{i}\cap l_{j}$ ensures that vertices $\nu$ surrounding $j$ are taken into account only if the are
+                            affected by (also belong to) the cell $i$. That is, we only consider those $\vec{r}_{\nu}$ for which coordinates $\vec{r}_{i}$ of cell $i$ appear in 
+                            Eq. (\ref{eq:r_mu_baricentric}).
+                        </li>
+                   </ul>
+                </p>
+                <p>
+                    Note that quantities such as the native area, $A_{0}$ are not easily defined for the boundary cells (particles). Therefore, it is clear 
+                    that boundary particles have to be treated separately. 
+                </p>
+            </div>
+            <div id="Boundaries">
+                <h2>Handling Boundaries</h2>
+                <p>
+                    The most general method that would allow changes of topology of the boundary, such as parts of the tissue being allowed to detach or holes
+                    being allowed to open and close, is not an easy problem. It would require complex checks and modifications of the underlying Delaunay
+                    triangulation, which would introduce a non-negligible additional computational cost on top of already elaborate mechanisms required to maintain and
+                    dynamically update the triangulation. Therefore, in current implementation we assume that the topology (connectivity) of the boundary is maintained
+                    throughout the entire simulations. This does not mean that the boundary is fixed. It can grow, shrink and change its shape, but it cannot
+                    change its topology, e.g. it is not possible transition from a disk to an annulus. Examples of allowed and disallowed changes of the boundary
+                    are shown in Fig. 3. 
+                </p>
+                <p>
+                    <img src="images/boundary_topology.png" class="center-block" width="400" height="224" align="center">
+                </p>
+                <p align="center">
+                    <b>Fig. 3:</b> Schematic representation of the allowed and disallowed changes of the boundary. Initial configuration with the topology of a disk (a)
+                    is allowed to develop pronounced fingers (b). However, it is not possible to split into two domains (c) or develop a hole (d). 
+                </p>
+                <p>
+                    In the AVM the degrees of freedom are particles that represent cell centres. These particles also serve as sites of the Delaunay triangulation. 
+                    In order to handle boundaries we introduced two types of particles, <i>boundary</i> and <i>internal</i>. In addition we specify the connectivity
+                    between boundary particles. Boundary particles together with their connection information form a <i>boundary line</i>. This line sets the topology
+                    of the boundary, which is preserved throughout the simulation, and delineates between the tissue and its surrounding. In addition, the boundary line can
+                    have free energy, such as line tension or bending stiffness, assigned to it. Biologically, this would correspond to the complex molecular
+                    For simplicity, we assume that each boundary particle has exactly two boundary neighbours. This prevents somewhat pathological, 
+                    "cross-like" configurations where two otherwise disjoint domains would hinge on a single boundary site. 
+                </p>
+                <p>
+                    Boundary particles do not represent centres of actual cell. In a Delaunay triangulation, star of the boundary vertex is incomplete, which introduces
+                    a number of complications related to properly defining quantities such as the associated dual area or perimeter. These quantities can
+                    unambiguously be defined only for the internal particles, which in turn correspond to cells. Boundary particles instead can be thought
+                    of as "ghosts" that serve to model the complex processes that occur at the buffer layer between cells in the epithelial sheet and
+                    its environment. These particles, however, experience forces from the interior of the tissue as well as form the interactions with their
+                    neighbours on the boundary (such as line tension and bending rigidity). The boundary line, dynamically adjusts its shape to the cell configuration
+                    inside the tissue. 
+                </p>
+                <p>
+                    Due to the dynamic nature of the model, even without cell <division></division>and death, it is not possible to retain a constant number of boundary
+                    particles. Instead, the boundary line has to be able to contract or extend in order to accommodate changes inside the tissue. This is 
+                    achieved by adding and removing boundary particles. Here we outline the algorithm used to achieve this.
+                </p>
+                <p>
+                    We first focus on the boundary expansion. We require that that all cells are contained within the boundary, that is that no cell vertices 
+                    spill over to the outside region. The spill-over happens if the angle opposite to a boundary edge is greater than $90^{\circ}$. In this
+                    case, the centre of the circumscribed circle falls outside the triangle and, therefore, outside the boundary. In order to prevent this from happening we 
+                    perform following check (see Fig. 4):
+                </p>
+                <ol>
+                    <li>For each boundary edge $e$ compute angle $\alpha_{e}$ at the internal particle $p_{e}$ opposite to it.</li>
+                    <li>
+                        If $\alpha>90^{\circ}$
+                        <ol type="a">
+                            <li>Compute position, $\vec{r}_{p_{n}}$, of the new particle $p_{n}$ by mirroring, $\vec{r}_{p_{e}}$, coordinates of $p_{e}$ with
+                                respect to edge $e$. If $\vec{\hat{r}}_{e}$ is the unit-length vector along edge $e$ then 
+                                \begin{equation}
+                                    \vec{r}_{p_{n}}=2\left(\vec{r}_{p_{e}}\cdot\hat{\vec{r}}_{e}\right)\hat{\vec{r}}_{e}-\vec{r}_{p_{e}}.
+                                \end{equation}
+                            </li>
+                            <li>Add new boundary particle $p_{n}$ at position $\vec{r}_{p_{n}}$ and mark it as boundary.</li>
+                            <li>Remove boundary edge $e$, i.e., two boundary particles at its end are no longer neighbours.</li>
+                            <li>Connect $p_{n}$ to the two boundary particles disconnected in (c).</li>
+                            <li>Connect $p_{n}$ to $p_{e}$.</li>
+                        </ol>
+                    </li>
+                    <li>
+                        If at least one new boundary particle was added in 2., rebuild the triangulation. 
+                    </li>
+                </ol>
+                <p>
+                    Note that the procedure outlined above always converges in a single step. A boundary edge is flipped is the angle opposite to it is $90^{\circ}$.
+                    The flip creates two new triangles that are both acute at the internal vertex and therefore cannot trigger additional flips in the same step. 
+                </p>
+                <p>
+                    <img src="images/boundary_edge_flip.png" class="center-block" width="800" height="288" align="center">
+                </p>
+                <p align="center">
+                    <b>Fig. 4:</b> Expansion of the boundary by adding a new boundary particle. (a) If the angle at the internal particle shaded in green opposite to the 
+                    highlighted edge reaches $90^{\circ}$, one of the corners of the cell (yellow polygon) touches the highlighted edge. This triggers a "flip" mechanism.
+                    (b) The internal particle shaded in green is mirrored along the shaded edge in (a) and a new boundary particle (top blue) is introduced. 
+                    The shaded edge is flipped such that the new particle is connected to the "green" one.  
+                </p>
+                <p>
+                    Shrinking of the boundary is achieved by removing particles that have no connections to the internal particles, i.e., they only have two
+                    edges connecting them to the two neighbouring boundary particles. In other words, in this situation, no part of a cell can be inside
+                    the triangle having two of its sides being boundary edges and it can be safely removed. The algorithm schematically outlined in Fig. 5 is as follows:
+                </p>
+                <ol>
+                    <li>For each boundary particle $p$ compute number of edges $n_{e}\left(p\right)$ that the particle belongs to.</li>
+                    <li>If $n_{e}\left(p\right)\le2$ remove $p$.</li>
+                </ol>
+                <p>
+                    Note that the position of the "dangling" particles does not directly affect the shape of the cells and, therefore, if is not essential 
+                    for it to be removed right away. Instead, "dangling particles are removed only when during neighbour list rebuilds. 
+                </p>
+                <p>
+                    An important point to make is that the algorithms proposed for adding and removing boundary particles <b>do not</b> lead to any jumps in
+                    the shape and force of the cells. However, both addition and removal of boundary particles will lead to jumps in the boundary forces, such
+                    as those resulting from line tension or bending. These jumps are inevitable due to the discontinuous nature of the extension and shrinkage of
+                    the boundary. However, in practice, such jumps are relatively small and do not lead to any appreciable artifacts in the cell dynamics. 
+                </p>
+                <p>
+                    <img src="images/boundary_particle_removal.png" class="center-block" width="800" height="260" align="center">
+                </p>
+                <p align="center">
+                    <b>Fig. 5:</b> Shrinking of the boundary is achieved by removing boundary vertices that have only two bonds. (a) If the sum of angles at two particles
+                    shaded in green opposite the edge connecting the internal and boundary particles is greater than $180^{\circ}$ the edge is flipped (this 
+                    is the standard equangulation move that occurs for all internal edges). (b) After the flip, the boundary particles shaded in green has only
+                    two bonds, both to its boundary neighbours. (c) The "green" particle in (b) is removed. 
+                </p>
+            </div>
         </section>
     </div>
 </div>
