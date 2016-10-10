@@ -117,6 +117,8 @@ private:
   bool m_compress;              //!< Compress output data using gzip compression
   bool m_output_dual;           //!< Outputs dual mesh for tissue simulations
   bool m_dual_boundary;         //!< If true, output dual faces that belog to the boundary vertices
+  bool m_include_bonds;         //!< If true, output bonds between particles
+  bool m_include_mesh;          //!< If true, output mesh  
   string m_group;               //!< Dump this group
   
   // Auxiliary data structures

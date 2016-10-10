@@ -57,6 +57,8 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
                                                                                                                   m_compress(false),
                                                                                                                   m_output_dual(false),
                                                                                                                   m_dual_boundary(false),
+                                                                                                                  m_include_bonds(false),
+                                                                                                                  m_include_mesh(false), 
                                                                                                                   m_group("all")
 {
   m_type_ext["velocity"] = "vel";
@@ -183,6 +185,23 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_time_step_offset = lexical_cast<int>(params["step_offset"]);;
     m_msg->msg(Messenger::INFO,"Dump steps will be offset by "+params["step_offset"]+".");
     m_msg->write_config("dump."+fname+".time_step_offset",params["step_offset"]);
+  }
+  if (params.find("include_bonds") != params.end())
+  {
+    m_include_bonds = true;
+    m_msg->msg(Messenger::INFO,"Bonds will be included in the dump file.");
+    m_msg->write_config("dump."+fname+".include_bonds","true");
+  }
+  if (params.find("include_mesh") != params.end())
+  {
+    m_include_mesh = true;
+    m_msg->msg(Messenger::INFO,"Mesh will be included in the dump file.");
+    m_msg->write_config("dump."+fname+".include_mesh","true");
+  }
+  if (m_type == "vtp" && m_include_bonds && m_include_mesh)
+  {
+    m_msg->msg(Messenger::ERROR,"Including bonds and mesh in a VTP file would produce an inconsistent file. Therefore, it is not allowed.");
+    runtime_error("Unsupported output parameters for VTP files.");
   }
   if (params.find("id") != params.end())
     m_msg->add_config("dump."+fname+".quantity","id");
@@ -891,6 +910,7 @@ void Dump::dump_vtp(int step)
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
   vtkSmartPointer<vtkCellArray> lines =  vtkSmartPointer<vtkCellArray>::New();
   vtkSmartPointer<vtkCellArray> faces = vtkSmartPointer<vtkCellArray>::New();
+  map<int,int> index_map;   // Maps particle indices to the current index (for different groups)
   Mesh& mesh = m_system->get_mesh();
   
   if (!m_output_dual)
@@ -940,6 +960,7 @@ void Dump::dump_vtp(int step)
       double f[3] = {pi.fx, pi.fy, pi.fz};
       double n[3] = {pi.nx, pi.ny, pi.nz};
       double nn[3] = {-pi.nx, -pi.ny, -pi.nz};
+      index_map[pi.get_id()] = i;
       points->InsertNextPoint ( pi.x, pi.y, pi.z );
       ids->InsertNextValue(pi.get_id());
       types->InsertNextValue(pi.get_type());
@@ -977,7 +998,7 @@ void Dump::dump_vtp(int step)
       polydata->GetPointData()->AddArray(dual_area);
     }
         
-    if (m_system->num_bonds() > 0 && m_group == "all")
+    if (m_system->num_bonds() > 0 && m_include_bonds)
     {
       vtkSmartPointer<vtkLine> line =  vtkSmartPointer<vtkLine>::New();
       vtkSmartPointer<vtkDoubleArray> lens =  vtkSmartPointer<vtkDoubleArray>::New();
@@ -986,8 +1007,8 @@ void Dump::dump_vtp(int step)
       for (int b = 0; b < m_system->num_bonds(); b++)
       {
         Bond& bond = m_system->get_bond(b);
-        line->GetPointIds()->SetId(0, bond.i); 
-        line->GetPointIds()->SetId(1, bond.j);
+        line->GetPointIds()->SetId(0, index_map[bond.i]); 
+        line->GetPointIds()->SetId(1, index_map[bond.j]);
         lines->InsertNextCell(line);
         Particle& pi = m_system->get_particle(bond.i);
         Particle& pj = m_system->get_particle(bond.j);
@@ -999,7 +1020,7 @@ void Dump::dump_vtp(int step)
       polydata->GetCellData()->AddArray(lens);
     }
     
-    if (mesh.size() > 0 && m_group == "all")
+    if (mesh.size() > 0 && m_include_mesh)
     {
       vtkSmartPointer<vtkLine> edge =  vtkSmartPointer<vtkLine>::New();
       vtkSmartPointer<vtkDoubleArray> lens =  vtkSmartPointer<vtkDoubleArray>::New();
