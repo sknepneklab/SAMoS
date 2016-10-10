@@ -199,6 +199,12 @@
             </div>
             <div id="Boundaries">
                 <h2>Handling Boundaries</h2>
+                <div class="panel panel-danger">
+                  <div class="panel-heading"><b>WARNING!</b></div>
+                  <div class="panel-body">
+                      Current implementation of the AVM does not support periodic boundary conditions.
+                  </div>
+                </div>
                 <p>
                     The most general method that would allow changes of topology of the boundary, such as parts of the tissue being allowed to detach or holes
                     being allowed to open and close, is not an easy problem. It would require complex checks and modifications of the underlying Delaunay
@@ -379,10 +385,13 @@
                     Similarly to the cell division, there are many ways one can model cell death. We opt for a simplest possible one, where the cell dies after it reaches certain 
                     "age"
                 </p>
-                <p>
-                    <b>Note!</b> Implementing more complex division and death processes into SAMoS is straightforward. Please e-mail the <a href="tutorial.html#Credits">
-                        lead developer</a> for the instruction on how to do it.
-                <p>
+                <div class="panel panel-primary">
+                  <div class="panel-heading"><b>NOTE!</b></div>
+                  <div class="panel-body">
+                      Implementing more complex division and death processes into SAMoS is straightforward. Please e-mail the <a href="tutorial.html#Credits">
+                    lead developer</a> for the instruction on how to do it.
+                  </div>
+                </div>
             </div>
             <div id="Bi">
                 <h2>Comparison with SPV</h2>
@@ -421,6 +430,12 @@
 
                 </p>
             </div>
+        </section>
+        <section id="References">
+            <h1>References</h1>
+            <ol>
+                <li>Dapeng Bi, X. Yang, M. C. Marchetti, M. L. Manning, <i>Motility-driven glass transitions in biological tissues</i>, Phys. Rev X <b>6</b> 021011 (2016).</li>
+            </ol>
         </section>
     </div>
 </div>
