@@ -53,6 +53,7 @@
                     <li><a href="#Boundaries">Handling boundaries</a></li>
                     <li><a href="#BoundaryEng">Boundary forces</a></li>
                     <li><a href="#DivDeath">Cell division and death</a></li>
+                    <li><a href="#Bi">Comparison with SPV</a></li>
                 </ul>
             </li>
             <li>
@@ -304,6 +305,120 @@
                     shaded in green opposite the edge connecting the internal and boundary particles is greater than $180^{\circ}$ the edge is flipped (this 
                     is the standard equangulation move that occurs for all internal edges). (b) After the flip, the boundary particles shaded in green has only
                     two bonds, both to its boundary neighbours. (c) The "green" particle in (b) is removed. 
+                </p>
+            </div>
+            <div id="BoundaryEng">
+                <h2>Boundary forces</h2>
+                <p>
+                    It is plausible to assume that the boundary of an epithelial cell sheet will experience additional forces due to its resistance to stretching
+                    (line tension) and bending. For simplicity, we model those effects by measuring distances and angles between centres of neighbouring boundary 
+                    particles. In case of line tension, we write
+                    \begin{equation}
+                        E_{lt}=\frac{1}{2}\sum_{\left\langle i,j\right\rangle }\lambda_{i,j}\left(l_{ij}-l_{0}\right)^{2},
+                    \end{equation}
+                    where $\lambda_{i,j}$ is the line tension of the edge connecting boundary particles $i$ and $j$, $l_{ij}=\left|\vec{r}_{i}-\vec{r}_{j}\right|$
+                    is the length of that edge and $l_{0}$ is the length of an non-stretched bond.
+                </p>
+                <p>
+                    We can directly compute force on boundary particle $p$ due to line tension, by evaluating $\vec F^{lt}_p = -\nabla_{\vec r_p}E_{lt}$, which is
+                    \begin{equation}
+                      F^{lt}_p =  -\lambda_{p,p+1}\left(\left|\vec{r}_{p,p+1}\right|-l_{0}\right)\hat{\vec{r}}_{p,p+1}-\lambda_{p-1,p}\left(\left|\vec{r}_{p,p-1}\right|-l_{0}\right)\hat{\vec{r}}_{p,p-1}.
+                    \end{equation}
+                </p>
+                <p>
+                     We model bending of the boundary as
+                     \begin{equation}
+                        E_{bend}=\frac{1}{2}\sum_{i}\kappa_{i}\left(\theta_{i}-\theta_{0}\right)^{2},
+                     \end{equation}
+                     where $\kappa_{i}$ is the stiffness of the angle $\theta_{i}$ at the boundary particle $i$. This angle is given as
+                     \begin{equation}
+                        \theta_{i}=\arccos\frac{\vec{r}_{ji}\cdot\vec{r}_{ki}}{\left|\vec{r}_{ji}\right|\left|\vec{r}_{ki}\right|},
+                     \end{equation}
+                     where $\vec{r}_{j}$ and $\vec{r}_{k}$ are positions of boundary vertices to the left and to the right of vertex $\vec{r}_{i}$.
+                </p>
+                <p> 
+                    In order to compute the force one needs to compute negative gradient with respect to the position of boundary particle $p$. After a lengthy but
+                    straightforward calculation, we obtain the force $\vec F^{bend}_p$ as
+                </p>
+                <p> 
+                    \begin{equation}
+                      \vec F^{bend}_p = \vec{F}_{p}^{\left(1\right)} + \vec{F}_{p}^{\left(2\right)} + \vec{F}_{p}^{\left(3\right)}, 
+                    \end{equation}
+                    with 
+                    \begin{equation}
+                        \vec{F}_{p}^{\left(1\right)}=-\left(\vec{F}_{p-1}^{\left(2\right)}+\vec{F}_{p+1}^{\left(3\right)}\right),
+                    \end{equation}
+                    and
+                    \begin{equation}
+                        \vec{F}_{p-1}^{\left(2\right)}=\kappa_{p}\left(\theta_{p}-\theta_{0}\right)\frac{1}{\sqrt{1-\left(\frac{\vec{r}_{p-1,p}\cdot\vec{r}_{p+1,p}}{\left|\vec{r}_{p-1,p}\right|\left|\vec{r}_{p+1,p}\right|}\right)^{2}}}\left[\frac{\vec{r}_{p+1,p}}{\left|\vec{r}_{p-1,p}\right|\left|\vec{r}_{p+1,p}\right|}-\frac{\left(\vec{r}_{p-1,p}\cdot\vec{r}_{p+1,p}\right)\left|\vec{r}_{p+1,p}\right|\hat{\vec{r}}_{p-1,p}}{\left|\vec{r}_{p-1,p}\right|^{2}\left|\vec{r}_{p+1,p}\right|^{2}}\right]
+                    \end{equation}
+                    and
+                    \begin{equation}
+                        \vec{F}_{p+1}^{\left(3\right)}=\kappa_{p}\left(\theta_{p}-\theta_{0}\right)\frac{1}{\sqrt{1-\left(\frac{\vec{r}_{p-1,p}\cdot\vec{r}_{p+1,p}}{\left|\vec{r}_{p-1,p}\right|\left|\vec{r}_{p+1,p}\right|}\right)^{2}}}\left[\frac{\vec{r}_{p-1,p}}{\left|\vec{r}_{p-1,p}\right|\left|\vec{r}_{p+1,p}\right|}-\frac{\left(\vec{r}_{p-1,p}\cdot\vec{r}_{p+1,p}\right)\left|\vec{r}_{p-1,p}\right|\hat{\vec{r}}_{p+1,p}}{\left|\vec{r}_{p-1,p}\right|^{2}\left|\vec{r}_{p+1,p}\right|^{2}}\right].
+                    \end{equation}
+
+                </p>
+            </div>
+            <div id="DivDeath">
+                <h2>Cell division and death</h2>
+                <p>
+                    In order to mimic actual biological processes, cells need to be allowed to grow, divide and die. Currently, SAMoS supports simple growth, i.e. in each 
+                    time step cell's are increases by a factor
+                    \begin{equation}
+                        A_i(t+dt) = (1+fdt)A_i(t),
+                    \end{equation}
+                    where $dt$ is the time step, $f$ is the growth rate per unit time and $A_i(t)$ and $A_i(t+dt)$ is the area of cell $i$ at times $t$ and $t+dt$,
+                    respectively. In each step cell "age" is incremented.
+                </p>
+                <p>
+                    There are many different ways to model cell division. We use the simplest one in which cell is set to divide once it reaches a critical area $A_c$. If the 
+                    cell area $A_i$ exceeds $A_c$, probability of division grows linearly with $A_i - A_c$. Once the cell is set to divide, two daughter cells are created. 
+                    Those cells are places along the direction of the director vector at a distance $\alpha$. Ages of two daughter cells is set to zero. 
+                </p>
+                <p>
+                    Similarly to the cell division, there are many ways one can model cell death. We opt for a simplest possible one, where the cell dies after it reaches certain 
+                    "age"
+                </p>
+                <p>
+                    <b>Note!</b> Implementing more complex division and death processes into SAMoS is straightforward. Please e-mail the <a href="tutorial.html#Credits">
+                        lead developer</a> for the instruction on how to do it.
+                <p>
+            </div>
+            <div id="Bi">
+                <h2>Comparison with SPV</h2>
+                <p>
+                    The SPV mode uses aa slightly different expression for the energy. Namely, the SPV uses
+                    \begin{equation}
+                      E_{SPV}=\sum_{i=1}^{N_{face}}\left[\frac{K_{i}}{2}\left(A_{i}-A_{i}^{\left(0\right)}\right)^{2}+\frac{\Gamma_{i}}{2}\left(P_{i}-P_{i}^{\left(0\right)}\right)^{2}\right],
+                    \end{equation}
+                    with $P_{i}^{\left(0\right)}$ being the preferred perimeter of cell $i$, akin to the native area $A_{i}^{\left(0\right)}$. We can rewrite
+                    this as,
+                    \begin{equation}                     
+                        E_{SPV}=\sum_{i=1}^{N_{face}}\left[\frac{K_{i}}{2}\left(A_{i}-A_{i}^{0}\right)^{2}+\frac{\Gamma_{i}}{2}P_{i}^{2}-\Gamma_{i}P_{i}^{0}P_{i}+\frac{\Gamma_{i}}{2}\left(P_{i}^{0}\right)^{2}\right].
+                    \end{equation}
+                    We can readily drop the last term as it does not contribute to the force. If for a moment we assume that $\Gamma_{i}$, $P_{i}^{\left(0\right)}$
+                    and $K_{i}$ do not depend on the cell $i$, we can rewrite the last expression as
+                    \begin{equation}
+                        E_{SPV}=\frac{K}{2}\sum_{i=1}^{N_{face}}\left(A_{i}-A_{i}^{0}\right)^{2}+\frac{\Gamma}{2}\sum_{i=1}^{N_{face}}P_{i}^{2}-\Gamma P^{\left(0\right)}\sum_{i=1}^{N_{face}}P_{i}.
+                    \end{equation}
+                    Furthermore, perimeter $P_{i}=\sum_{\nu\in l_{i}}l_{\nu,\nu+1}$ allowing us to write the last term as
+                    \begin{equation}
+                        -\Gamma P^{\left(0\right)}\sum_{i=1}^{N_{face}}\sum_{\nu\in l_{i}}l_{\nu,\nu+1}.
+                    \end{equation}
+                    Comparing this expression to the last term in Eq. (\ref{eq:vertex_model_energy}) we read off
+                    \begin{equation}
+                        \lambda=-\Gamma P^{\left(0\right)},
+                    \end{equation}
+                    or
+                    \begin{equation}
+                        P^{\left(0\right)}=-\frac{\lambda}{\Gamma}.
+                    \end{equation}
+                    Bi, <i>et al.</i> identify dimensionless shape parameter $p_{0}=\frac{P^{\left(0\right)}}{\sqrt{A^{\left(0\right)}}}$. In our description this parameter becomes,
+                    \begin{equation}
+                        p_{0}=-\frac{\lambda}{\Gamma\sqrt{A^{\left(0\right)}}},
+                    \end{equation}
+                    indicating that $\lambda<0$.
+
                 </p>
             </div>
         </section>
