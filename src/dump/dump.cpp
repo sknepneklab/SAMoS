@@ -1063,8 +1063,8 @@ void Dump::dump_vtp(int step)
         Edge& ee = mesh.get_edges()[e];
         if ( find(visited_edges.begin(),visited_edges.end(),make_pair(ee.from,ee.to)) == visited_edges.end() )
         {
-          edge->GetPointIds()->SetId(0, ee.from); 
-          edge->GetPointIds()->SetId(1, ee.to);
+          edge->GetPointIds()->SetId(0, index_map[ee.from]); 
+          edge->GetPointIds()->SetId(1, index_map[ee.to]);
           lines->InsertNextCell(edge);
           Particle& pi = m_system->get_particle(ee.from);
           Particle& pj = m_system->get_particle(ee.to);
@@ -1089,7 +1089,7 @@ void Dump::dump_vtp(int step)
         Face& ff = mesh.get_faces()[f];
         face->GetPointIds()->SetNumberOfIds(ff.n_sides);
         for (int fi = 0; fi < ff.n_sides; fi++)
-          face->GetPointIds()->SetId(fi, ff.vertices[fi]);
+          face->GetPointIds()->SetId(fi, index_map[ff.vertices[fi]]);
         faces->InsertNextCell(face);
       }
     }
