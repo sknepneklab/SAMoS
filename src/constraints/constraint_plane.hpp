@@ -107,7 +107,7 @@ public:
 private:
   
   bool m_unlimited;       //!< If true, ignore box boundary and low system to exapand freely
-  bool m_zpos;            //!< Position (along z axis) of the constraint plane
+  double m_zpos;            //!< Position (along z axis) of the constraint plane
   
   
 };
