@@ -52,6 +52,7 @@
                     <li><a href="#AVM">Active Vertex Model</a></li>
                     <li><a href="#Boundaries">Handling boundaries</a></li>
                     <li><a href="#BoundaryEng">Boundary forces</a></li>
+                    <li><a href="#EqMotion">Equations of motion</a></li>
                     <li><a href="#DivDeath">Cell division and death</a></li>
                     <li><a href="#Bi">Comparison with SPV</a></li>
                 </ul>
@@ -166,6 +167,7 @@
                                     & = & -\sum_{k=1}^{N_{part}}\frac{K_{k}}{2}\left(A_{k}-A_{k}^{0}\right)\sum_{\nu\in l_{k}}\left[\vec{r}_{\nu+1,\nu-1}\times\vec{N}_{k}\right]^{T}\left[\frac{\partial\vec{r}_{\nu}}{\partial\vec{r}_{i}}\right]\label{eq:total_force}\\
                                     &  & -\sum_{k=1}^{N_{part}}\Gamma_{k}P_{k}\sum_{\nu\in l_{k}}\left(\hat{\vec{r}}_{\nu,\nu-1}-\hat{\vec{r}}_{\nu+1,\nu}\right)^{T}\left[\frac{\partial\vec{r}_{\nu}}{\partial\vec{r}_{i}}\right]\\
                                     &  & -\sum_{k=1}^{N_{part}}\sum_{\nu\in l_{k}}\left[\Lambda_{\nu-1,\nu}\hat{\vec{r}}_{\nu,\nu-1}-\Lambda_{\nu,\nu+1}\hat{\vec{r}}_{\nu+1,\nu}\right]^{T}\left[\frac{\partial\vec{r}_{\nu}}{\partial\vec{r}_{i}}\right].
+                        \label{eq:avm_force}
                     \end{eqnarray}
                 </p>
                 <p>
@@ -363,6 +365,30 @@
                         \vec{F}_{p+1}^{\left(3\right)}=\kappa_{p}\left(\theta_{p}-\theta_{0}\right)\frac{1}{\sqrt{1-\left(\frac{\vec{r}_{p-1,p}\cdot\vec{r}_{p+1,p}}{\left|\vec{r}_{p-1,p}\right|\left|\vec{r}_{p+1,p}\right|}\right)^{2}}}\left[\frac{\vec{r}_{p-1,p}}{\left|\vec{r}_{p-1,p}\right|\left|\vec{r}_{p+1,p}\right|}-\frac{\left(\vec{r}_{p-1,p}\cdot\vec{r}_{p+1,p}\right)\left|\vec{r}_{p-1,p}\right|\hat{\vec{r}}_{p+1,p}}{\left|\vec{r}_{p-1,p}\right|^{2}\left|\vec{r}_{p+1,p}\right|^{2}}\right].
                     \end{equation}
 
+                </p>
+            </div>
+            <div id="EqMotion">
+                <h2>Equations of motion</h2>
+                <p>
+                    Given that typical epithelial cell sizes are in the micron range with cell speeds of the order of a few $\mu m/s$, inertial effects do not 
+                    affect cell dynamics and it is common use overdamped equations of motion to describe cell motion. This is a first order ordinary differential equation 
+                    which is just a balance between the frictional force $\vec F^{fr}_i = -\gamma \vec v_i$ (where $\gamma$ is the friction coefficient and 
+                    $\vec v_i=\dot{\vec r}_i\equiv\frac{d\vec r_i}{dt}$ is the velocity of particle $i$) and the forces acting on the cell. The main novelty of the SPV and AVM 
+                    approaches is the introduction of the active force in addition to the external and internal (by surrounding cells) forces. This force is designed to mimic 
+                    cells ability to move on its own. The molecular machinery responsible for cell crawling is very complex and not fully understood. For simplicity, within the 
+                    AVM we assume that each cells receives an active force of strength $\alpha$ in the direction of vector $\vec n_i$. $\vec n_i$ is the "polarity" vector 
+                    that determines cell directionality, i.e., a very crude approximation of direction of cell motion. SAMoS implements several models for polarity alignment 
+                    for cells, either to some external cue or to the neighbouring cells.      
+                </p>
+                <p>
+                    Therefore, the equations of motion for cell centres and polarity vectors are 
+                    \begin{eqnarray}
+                       \gamma \frac{d\vec r_i}{dt} &=& \alpha\vec n_i + \vec F_i + \vec \nu_i(t)\\
+                       \gamma_r \frac{d\vec n_i}{dt} &=& \vec \tau_i + \vec \nu^r_i(t), 
+                    \end{eqnarray} 
+                    Where force $\vec F_i$ is given in Eq. (\ref{eq:avm_force}), $\vec \nu_i$ is the positional noise (typically, but not necessarily thermal in nature),
+                    $\vec\tau_i$ is the alignment torque (may be absent in the simplest cases) and $\vec \nu^r_i$ is the rotational noise with similar properties 
+                    as the positional noise.  
                 </p>
             </div>
             <div id="DivDeath">
