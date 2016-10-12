@@ -468,8 +468,7 @@
                 <h2>Active cells with fixed boundary</h2>
                 An important consideration with the Active Vertex Model is stabilising the boundary. We start with the strictest boundary conditions.
                 In this case we place 496 immobile boundary particles in a dense line surrounding the cells. All cell voronoi centres interact with eachother
-                and with the boundary via soft repulsion. This soft interaction is set sufficiently strong that cells have no chance to overcome the repulsion
-                they feel from the boundary wall.
+                and with the boundary via soft repulsion. This soft interaction is set sufficiently strong that cells have no chance to break through the boundary wall.
                 <p>
                     <img src="images/fixed_final.png" class="center-block" width="562" height="287" align="center">
                 </p>
@@ -479,7 +478,7 @@
                 </p>
                 <p>
                     In this simulation cells have a shape parameter $p_0$ of 3.22. They cannot intercalate freely, rather in order to change neighbours they
-                    must be driven by a strong active force as is happening here. In this case that active force is a applied to each cell in a random direction 
+                    must be driven by a strong active force as is happening here. In this case the active force is a applied to each cell in a random direction 
                     which changes over time according to a rotational noise. The boundary is entirely stable despite strong active forces directed towards it.
                 </p>
                 <p>
@@ -533,6 +532,13 @@
                 of causing a simulation crash and the computational time required to simulate the exponentially growing number of cells becomes the limiting factor.
                 In this case the patch with 24083 cells after less then 12 hours of computation is shown. Adjusting growth rate and division rate parameters leads 
                 to very different distributions of cell areas.
+                <p>
+                    <img src="images/grow_line.png" class="center-block" width="629" heigh="322" align="center">
+                </p>
+                <p align="center">
+                    <b>Fig. 7: </b> Patches are made up of 37, 124 and 24083 cells respectively. Cells have a chance to divide if their area is greater 
+                    than 2.8 after which the probabilty of a cell to divide increases linearly with its area. 
+                </p>
 
                 <p>
                     Input files: <a href="examples/growth/sfinal.input">sfinal.input</a>, <a href="examples/growth/sfinal.boundary">sfinal.boundary</a> <br/>
