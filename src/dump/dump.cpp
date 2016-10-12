@@ -59,7 +59,8 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
                                                                                                                   m_dual_boundary(false),
                                                                                                                   m_include_bonds(false),
                                                                                                                   m_include_mesh(false), 
-                                                                                                                  m_group("all")
+                                                                                                                  m_group("all"),
+                                                                                                                  m_directory(".")
 {
   m_type_ext["velocity"] = "vel";
   m_type_ext["xyz"] = "xyz";
@@ -95,6 +96,17 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_type = params["type"];
   }
   m_msg->write_config("dump."+fname+".type",m_type);
+  if (params.find("directory") == params.end())
+  {
+    m_msg->msg(Messenger::WARNING,"No dump directory specified. Using current directory.");
+    m_directory = ".";
+  }
+  else
+  {
+    m_msg->msg(Messenger::INFO,"Dump directory set to "+params["directory"]);
+    m_directory = params["directory"];
+  }
+  m_msg->write_config("dump."+fname+".directory",m_directory);
   if (m_type_ext.find(m_type) == m_type_ext.end())
   {
     m_msg->msg(Messenger::ERROR,"Unsupported dump type "+m_type+".");
@@ -141,7 +153,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
   {
     m_msg->msg(Messenger::WARNING,"All time steps will be concatenated to a single file.");
     m_multi_print = false;
-    string file_name = m_file_name+"."+m_ext;
+    string file_name = m_directory+"/"+m_file_name+"."+m_ext;
     if (m_compress)
     {
       m_file.open(file_name.c_str(), std::ios_base::out | std::ios_base::binary);
@@ -336,7 +348,7 @@ void Dump::dump(int step)
     return;
   if (m_multi_print)
   {
-    string file_name = m_file_name+"_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
+    string file_name = m_directory+"/"+m_file_name+"_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
     if (m_compress)
     {
       file_name += ".gz";
@@ -905,7 +917,7 @@ void Dump::dump_mesh()
 void Dump::dump_vtp(int step)
 {
   vector<pair<int,int> > visited_edges;
-  string file_name = m_file_name+"_"+lexical_cast<string>(format("%010d") % step)+"."+m_ext;
+  string file_name = m_directory+"/"+m_file_name+"_"+lexical_cast<string>(format("%010d") % step)+"."+m_ext;
   vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
   vtkSmartPointer<vtkCellArray> lines =  vtkSmartPointer<vtkCellArray>::New();

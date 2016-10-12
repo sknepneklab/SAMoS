@@ -49,7 +49,7 @@ struct key_value_sequence : qi::grammar<std::string::iterator, pairs_type(), qi:
     query =  (qi::lit('{') >> qi::lit('}')) | (qi::lit('{') >> pair >> *((qi::lit(';') | qi::lit(',')) >> pair) >> *(qi::lit(';')) >> qi::lit('}'));
     pair  =  key >> -('=' >> value);
     key   =  qi::char_("a-zA-Z_") >> *qi::char_("a-zA-Z_0-9");
-    value =  +qi::char_("-a-zA-Z_0-9+.");
+    value =  +qi::char_("-a-zA-Z_0-9+./");
     //value =  qi::char_("-0-9.") >> *qi::char_("0-9Ee+.-");
   }
   

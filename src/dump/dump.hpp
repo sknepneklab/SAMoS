@@ -120,6 +120,7 @@ private:
   bool m_include_bonds;         //!< If true, output bonds between particles
   bool m_include_mesh;          //!< If true, output mesh  
   string m_group;               //!< Dump this group
+  string m_directory;           //!< Directory in which to redirect output
   
   // Auxiliary data structures
   map<string, string> m_type_ext;  //!< Hold extension for a given data type
