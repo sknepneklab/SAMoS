@@ -52,6 +52,7 @@
                     <li><a href="#AVM">Active Vertex Model</a></li>
                     <li><a href="#Boundaries">Handling boundaries</a></li>
                     <li><a href="#BoundaryEng">Boundary forces</a></li>
+                    <li><a href="#EqMotion">Equations of motion</a></li>
                     <li><a href="#DivDeath">Cell division and death</a></li>
                     <li><a href="#Bi">Comparison with SPV</a></li>
                 </ul>
@@ -166,6 +167,7 @@
                                     & = & -\sum_{k=1}^{N_{part}}\frac{K_{k}}{2}\left(A_{k}-A_{k}^{0}\right)\sum_{\nu\in l_{k}}\left[\vec{r}_{\nu+1,\nu-1}\times\vec{N}_{k}\right]^{T}\left[\frac{\partial\vec{r}_{\nu}}{\partial\vec{r}_{i}}\right]\label{eq:total_force}\\
                                     &  & -\sum_{k=1}^{N_{part}}\Gamma_{k}P_{k}\sum_{\nu\in l_{k}}\left(\hat{\vec{r}}_{\nu,\nu-1}-\hat{\vec{r}}_{\nu+1,\nu}\right)^{T}\left[\frac{\partial\vec{r}_{\nu}}{\partial\vec{r}_{i}}\right]\\
                                     &  & -\sum_{k=1}^{N_{part}}\sum_{\nu\in l_{k}}\left[\Lambda_{\nu-1,\nu}\hat{\vec{r}}_{\nu,\nu-1}-\Lambda_{\nu,\nu+1}\hat{\vec{r}}_{\nu+1,\nu}\right]^{T}\left[\frac{\partial\vec{r}_{\nu}}{\partial\vec{r}_{i}}\right].
+                        \label{eq:avm_force}
                     \end{eqnarray}
                 </p>
                 <p>
@@ -365,6 +367,30 @@
 
                 </p>
             </div>
+            <div id="EqMotion">
+                <h2>Equations of motion</h2>
+                <p>
+                    Given that typical epithelial cell sizes are in the micron range with cell speeds of the order of a few $\mu m/s$, inertial effects do not 
+                    affect cell dynamics and it is common use overdamped equations of motion to describe cell motion. This is a first order ordinary differential equation 
+                    which is just a balance between the frictional force $\vec F^{fr}_i = -\gamma \vec v_i$ (where $\gamma$ is the friction coefficient and 
+                    $\vec v_i=\dot{\vec r}_i\equiv\frac{d\vec r_i}{dt}$ is the velocity of particle $i$) and the forces acting on the cell. The main novelty of the SPV and AVM 
+                    approaches is the introduction of the active force in addition to the external and internal (by surrounding cells) forces. This force is designed to mimic 
+                    cells ability to move on its own. The molecular machinery responsible for cell crawling is very complex and not fully understood. For simplicity, within the 
+                    AVM we assume that each cells receives an active force of strength $\alpha$ in the direction of vector $\vec n_i$. $\vec n_i$ is the "polarity" vector 
+                    that determines cell directionality, i.e., a very crude approximation of direction of cell motion. SAMoS implements several models for polarity alignment 
+                    for cells, either to some external cue or to the neighbouring cells.      
+                </p>
+                <p>
+                    Therefore, the equations of motion for cell centres and polarity vectors are 
+                    \begin{eqnarray}
+                       \gamma \frac{d\vec r_i}{dt} &=& \alpha\vec n_i + \vec F_i + \vec \nu_i(t)\\
+                       \gamma_r \frac{d\vec n_i}{dt} &=& \vec \tau_i + \vec \nu^r_i(t), 
+                    \end{eqnarray} 
+                    Where force $\vec F_i$ is given in Eq. (\ref{eq:avm_force}), $\vec \nu_i$ is the positional noise (typically, but not necessarily thermal in nature),
+                    $\vec\tau_i$ is the alignment torque (may be absent in the simplest cases) and $\vec \nu^r_i$ is the rotational noise with similar properties 
+                    as the positional noise.  
+                </p>
+            </div>
             <div id="DivDeath">
                 <h2>Cell division and death</h2>
                 <p>
@@ -454,11 +480,47 @@
                 must be driven by a strong active force as is happening here. In this case that active force is a applied to each cell in a random direction 
                 which changes over time according to a rotational noise. The boundary is entirely stable despite strong active forces directed towards it.
             </p>
-
             <p>
                 Input files: <a href="examples/cells_fixed/fixed.input">fixed.input</a>, <a href="examples/cells_fixed/fixed.boundary">fixed.boundary</a> <br/>
                 Configuration: <a href="examples/cells_fixed/cells_fixed.conf">cells_fixed.conf</a>
             </p>
+
+            <p>
+                Samos includes scripts for building input configurations which place particles randomly inside the boundary. In order to obtain 
+                a highly regular arrangement like the one in Figure 6, first frame, we can give all particles a soft repulsive force and use samos to relax the system.
+                The <b>soft_on_sphere</b> example does this relaxation followed by the simulation in one configuration file. Here the steps are done separately.
+            </p>
+            
+<pre><code>
+# Produce the initial input file. The '-bp' (boundary packing) argument sets the density of boundary particles.
+# [-a &lt;area&gt;, -n &lt;No. cells&gt;, -l &lt;radius&gt;]
+<b>$ python utils/pvmodel/build_epithilial.py -type Circle -l 30 -n 1000 -bp 4. -a 3.0 -o out.input</b>
+# This produces a file 'out.input'. We can obtain the boundary information immediately.
+<b>$ utils/pvmodel/constructmesh.py eb out.input </b>
+# The file is named 'out.boundary'. For relaxing the system obtain <a href="examples/relax/relax.conf"><b>relax.conf</b></a> 
+# and check that it is reading 'out.input', then run it with Samos.
+# After 1000 timesteps 'relax_0000001000.dat' will contain the new particle positions but 
+# this output file is not the same format as an input file.
+<b>$ mv relax_0000001000.dat fixed.input </b>
+<b>$ utils/pvmodel/constructmesh.py makeinput fixed.input </b>
+# The constructmesh.py routine overwrites fixed.input and leaves fixed.input.save in case 
+# something went wrong.
+# Rename your boundary file to keep good track of which input it is paired with.
+<b>$ mv out.boundary fixed.boundary </b>
+</pre></code>
+            <div class="panel panel-danger">
+              <div class="panel-heading"><b>WARNING!</b></div>
+              <div class="panel-body">
+                  <ul>
+                      <li>There are many routines in constructmesh.py for manipulating input configurations and this code is under heavy development as of 12/10/16.
+                          The behaviour of the constructmesh.py executable may change.</li>
+                      <li>The configuration <b>relax.conf</b> uses a brownian integrator by default. If Samos crashes due to heavily overlapping particles then switch
+                          to nve integrator.
+                  </ul>
+              </div>
+            </div>
+
+
 
             <h2>Growth and division</h2>
             It is possible have a cell patch gradually grow and divide from a handleful of cells to tens of thousands in a few hours of computational time.
@@ -482,7 +544,13 @@
                 Input files: <a href="examples/growth/sfinal.input">sfinal.input</a>, <a href="examples/growth/sfinal.boundary">sfinal.boundary</a> <br/>
                 Configuration: <a href="examples/growth/growth.conf">growth.conf</a>
             </p>
-            
+            To produce suitable initial conditions follow exactly the same steps as the previous example.
+<pre><code>
+# Produce a tiny patch of 30 randomly positioned particles. 
+<b>$ python utils/pvmodel/build_epithilial.py -type Circle -l 5 -n 30 -bp 2.5 -a 3.0 -o out.input </b>
+# Now follow steps from previous example.
+</pre></code>
+ 
             <h2>Multiple Cell Types</h2>
             This example is constructed by randomly choosing 50% of the initial cells to be assigned a new type in the input file. 
             The lambda ($\Lambda$) parameter is then specified in the configuration file to be -6.3 except for edges formed by a pair
@@ -502,8 +570,17 @@
             </p>
             Using randomly oriented active forces instead of thermal noise will likewise lead to interesting sorting patterns. 
             The parameters $K$ and $\Gamma$ can be set for each cell type independently. Also lambda can be specified for every type of edge, even the boundary edges.
-            The ability to specify parameters for different types of particles is a powerful tool.
+            The ability to specify parameters for different types of particles is a powerful tool. 
+           
+<pre><code>
+# In this case choose a low boundary packing. We don't want a solid wall of boundary particles 
+# but a flexible boundary instead.
+<b>$ python build_epithilial.py -type Circle -l 30 -n 1000 -bp 1.5 -a 3.0 -o out.input</b>
+# Follow same steps as the first example to produce the .boundary file and relax the system. 
+# Then change the type of half of the cells from 2 to 3
+<b>$ utils/pvmodel/constructmesh.py sampletype out.input 2 3 0.5 </b>
 
+</pre></code>
         </section>
         <section id="References">
             <h1>References</h1>
