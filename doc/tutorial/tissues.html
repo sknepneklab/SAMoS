@@ -463,73 +463,76 @@
                 Examples are given complete with configuration file and input files in the tutorial/examples folder.
             </p>
             <!--try an image-->
-            <h2>Active cells with fixed boundary</h2>
-            An important consideration with the Active Vertex Model is stabilising the boundary. We start with the strictest boundary conditions.
-            In this case we place 496 immobile boundary particles in a dense line surrounding the cells. All cell voronoi centres interact with eachother
-            and with the boundary via soft repulsion. This soft interaction is set sufficiently strong that cells have no chance to overcome the repulsion
-            they feel from the boundary wall.
-            <p>
-                <img src="images/fixed_final.png" class="center-block" width="562" height="287" align="center">
-            </p>
-            <p align="center">
-                <b>Fig. 6: </b> The initial state and the state of the cell patch after 1000 timesteps. Some cells have exchanged neighbours
-                between the first and second images. 
-            </p>
-            <p>
-                In this simulation cells have a shape parameter $p_0$ of 3.22. They cannot intercalate freely, rather in order to change neighbours they
-                must be driven by a strong active force as is happening here. In this case that active force is a applied to each cell in a random direction 
-                which changes over time according to a rotational noise. The boundary is entirely stable despite strong active forces directed towards it.
-            </p>
+            <div id="FixedBoundary">
+                <h2>Active cells with fixed boundary</h2>
+                An important consideration with the Active Vertex Model is stabilising the boundary. We start with the strictest boundary conditions.
+                In this case we place 496 immobile boundary particles in a dense line surrounding the cells. All cell voronoi centres interact with eachother
+                and with the boundary via soft repulsion. This soft interaction is set sufficiently strong that cells have no chance to overcome the repulsion
+                they feel from the boundary wall.
+                <p>
+                    <img src="images/fixed_final.png" class="center-block" width="562" height="287" align="center">
+                </p>
+                <p align="center">
+                    <b>Fig. 6: </b> The initial state and the state of the cell patch after 1000 timesteps. Some cells have exchanged neighbours
+                    between the first and second images. 
+                </p>
+                <p>
+                    In this simulation cells have a shape parameter $p_0$ of 3.22. They cannot intercalate freely, rather in order to change neighbours they
+                    must be driven by a strong active force as is happening here. In this case that active force is a applied to each cell in a random direction 
+                    which changes over time according to a rotational noise. The boundary is entirely stable despite strong active forces directed towards it.
+                </p>
 
-            <p>
-                Input files: <a href="examples/cells_fixed/fixed.input">fixed.input</a>, <a href="examples/cells_fixed/fixed.boundary">fixed.boundary</a> <br/>
-                Configuration: <a href="examples/cells_fixed/cells_fixed.conf">cells_fixed.conf</a>
-            </p>
+                <p>
+                    Input files: <a href="examples/cells_fixed/fixed.input">fixed.input</a>, <a href="examples/cells_fixed/fixed.boundary">fixed.boundary</a> <br/>
+                    Configuration: <a href="examples/cells_fixed/cells_fixed.conf">cells_fixed.conf</a>
+                </p>
+            </div>
+            <div id="Growth">
+                <h2>Growth and division</h2>
+                It is possible have a cell patch gradually grow and divide from a handleful of cells to tens of thousands in a few hours of computational time.
+                While cells grow gradually by incrementing their preferred areas, cell division in the AVM is an inherently discontinuous process whereby a particle
+                is removed and two new ones added at new locations mirrored in the division plane. In order to maintain the stability of the simulation it is useful to 
+                phase in the forces due to the new cells gradually. A smaller timestep is an even more effective measure to improve stability. In this example 
+                the shape index of the cells is set to 3.10 which corresponds to quite regular cell shapes. Cell divisions under these conditions bear a vanishing risk
+                of causing a simulation crash and the computational time required to simulate the exponentially growing number of cells becomes the limiting factor.
+                In this case the patch with 24083 cells after less then 12 hours of computation is shown. Adjusting growth rate and division rate parameters leads 
+                to very different distributions of cell areas.
 
-            <h2>Growth and division</h2>
-            It is possible have a cell patch gradually grow and divide from a handleful of cells to tens of thousands in a few hours of computational time.
-            While cells grow gradually by incrementing their preferred areas, cell division in the AVM is an inherently discontinuous process whereby a particle
-            is removed and two new ones added at new locations mirrored in the division plane. In order to maintain the stability of the simulation it is useful to 
-            phase in the forces due to the new cells gradually. A smaller timestep is an even more effective measure to improve stability. In this example 
-            the shape index of the cells is set to 3.10 which corresponds to quite regular cell shapes. Cell divisions under these conditions bear a vanishing risk
-            of causing a simulation crash and the computational time required to simulate the exponentially growing number of cells becomes the limiting factor.
-            In this case the patch with 24083 cells after less then 12 hours of computation is shown. Adjusting growth rate and division rate parameters leads 
-            to very different distributions of cell areas.
+                <p>
+                    <img src="images/grow_line.png" class="center-block" width="629" heigh="322" align="center">
+                </p>
+                <p align="center">
+                    <b>Fig. 7: </b> Patches are made up of 37, 124 and 24083 cells respectively. Cells have a chance to divide if their area is greater 
+                    than 2.8 after which the probabilty of a cell to divide increases linearly with its area. 
+                </p>
 
-            <p>
-                <img src="images/grow_line.png" class="center-block" width="629" heigh="322" align="center">
-            </p>
-            <p align="center">
-                <b>Fig. 7: </b> Patches are made up of 37, 124 and 24083 cells respectively. Cells have a chance to divide if their area is greater 
-                than 2.8 after which the probabilty of a cell to divide increases linearly with its area. 
-            </p>
+                <p>
+                    Input files: <a href="examples/growth/sfinal.input">sfinal.input</a>, <a href="examples/growth/sfinal.boundary">sfinal.boundary</a> <br/>
+                    Configuration: <a href="examples/growth/growth.conf">growth.conf</a>
+                </p>
+            </div>
+            <div id="Types">
+                <h2>Multiple Cell Types</h2>
+                This example is constructed by randomly choosing 50% of the initial cells to be assigned a new type in the input file. 
+                The lambda ($\Lambda$) parameter is then specified in the configuration file to be -6.3 except for edges formed by a pair
+                of cells of differing type in which case it is -5.8. The effect is that cell boundaries between the cell types are 
+                energetically unfavourable. The system is then given a finite temperature and is allowed to settle into a 
+                low energy state whereby cells of the same type are aggregated. 
 
-            <p>
-                Input files: <a href="examples/growth/sfinal.input">sfinal.input</a>, <a href="examples/growth/sfinal.boundary">sfinal.boundary</a> <br/>
-                Configuration: <a href="examples/growth/growth.conf">growth.conf</a>
-            </p>
-            
-            <h2>Multiple Cell Types</h2>
-            This example is constructed by randomly choosing 50% of the initial cells to be assigned a new type in the input file. 
-            The lambda ($\Lambda$) parameter is then specified in the configuration file to be -6.3 except for edges formed by a pair
-            of cells of differing type in which case it is -5.8. The effect is that cell boundaries between the cell types are 
-            energetically unfavourable. The system is then given a finite temperature and is allowed to settle into a 
-            low energy state whereby cells of the same type are aggregated. 
-
-            <p>
-                <img src="images/tempsort.png" class="center-block" width="700" heigh="261" align="center" vspace="20">
-            </p>
-            <p align="center">
-                <b>Fig. 8: </b> Here 500 cells of type A and 500 cells of type B, initialy randomly distributed, find a local energy minimum 
-                    where cells of the same type neighbour eachother.  </p>
-            <p>
-                Input files: <a href="examples/types/epi.input">epi.input</a>, <a href="examples/types/epi.boundary">epi.boundary</a> <br/>
-                Configuration: <a href="examples/types/sorting.conf">sorting.conf</a>
-            </p>
-            Using randomly oriented active forces instead of thermal noise will likewise lead to interesting sorting patterns. 
-            The parameters $K$ and $\Gamma$ can be set for each cell type independently. Also lambda can be specified for every type of edge, even the boundary edges.
-            The ability to specify parameters for different types of particles is a powerful tool.
-
+                <p>
+                    <img src="images/tempsort.png" class="center-block" width="700" heigh="261" align="center" vspace="20">
+                </p>
+                <p align="center">
+                    <b>Fig. 8: </b> Here 500 cells of type A and 500 cells of type B, initialy randomly distributed, find a local energy minimum 
+                        where cells of the same type neighbour eachother.  </p>
+                <p>
+                    Input files: <a href="examples/types/epi.input">epi.input</a>, <a href="examples/types/epi.boundary">epi.boundary</a> <br/>
+                    Configuration: <a href="examples/types/sorting.conf">sorting.conf</a>
+                </p>
+                Using randomly oriented active forces instead of thermal noise will likewise lead to interesting sorting patterns. 
+                The parameters $K$ and $\Gamma$ can be set for each cell type independently. Also lambda can be specified for every type of edge, even the boundary edges.
+                The ability to specify parameters for different types of particles is a powerful tool.
+            </div>
         </section>
         <section id="References">
             <h1>References</h1>
