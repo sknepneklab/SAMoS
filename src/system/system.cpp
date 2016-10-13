@@ -328,7 +328,14 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         if (has_keys)
           if (column_key.find("mass") != column_key.end())  p.mass = lexical_cast<double>(s_line[column_key["mass"]]);
         if (has_keys)
-          if (column_key.find("molecule") != column_key.end())  p.molecule = lexical_cast<double>(s_line[column_key["molecule"]]);
+          if (column_key.find("molecule") != column_key.end())  
+          {
+            p.molecule = lexical_cast<double>(s_line[column_key["molecule"]]);
+            if (p.molecule < m_molecules.size())
+              m_molecules[p.molecule].push_back(p.get_id());
+            else 
+              m_molecules.push_back(vector<int>(1,p.get_id()));
+          }
         if (has_keys && (column_key.find("boundary") != column_key.end()))  
         {
           if (lexical_cast<int>(s_line[column_key["boundary"]]) != 0)  
@@ -536,6 +543,10 @@ void System::add_particle(Particle& p)
   for (list<string>::iterator it = p.groups.begin(); it != p.groups.end(); it++)
     m_group[*it]->add_particle(p.get_id());
   if (p.boundary) m_boundary.push_back(p.get_id());
+  if (p.molecule < m_molecules.size())
+    m_molecules[p.molecule].push_back(p.get_id());
+  else 
+    m_molecules.push_back(vector<int>(1,p.get_id()));
   // We need to force neighbour list rebuild
   m_force_nlist_rebuild = true;
   m_current_particle_flag++;
@@ -554,6 +565,8 @@ void System::remove_particle(int id)
     pj.boundary_neigh[(pj.boundary_neigh[0] == id) ? 0 : 1] = pk.get_id();
     pk.boundary_neigh[(pk.boundary_neigh[0] == id) ? 0 : 1] = pj.get_id();
   }
+  vector<int>::iterator it_m = find(m_molecules[pi.molecule].begin(), m_molecules[pi.molecule].end(),id);
+  m_molecules[pi.molecule].erase(it_m);
   m_particles.erase(m_particles.begin() + id);
   // Shift down all ids
   for (unsigned int i = 0; i < m_particles.size(); i++)

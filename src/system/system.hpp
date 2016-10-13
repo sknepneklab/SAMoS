@@ -306,7 +306,13 @@ public:
   //! \param id particle id
   void add_boundary(int id) { m_boundary.push_back(id); }
   
+  //! Return true if system has boundary neighbours
   bool has_boundary_neighbours() { return m_has_boundary_neighbours; }
+ 
+  //! Return list (vector) of all particles in a given molecule 
+  //! \param mol_id id of the molecule
+  vector<int>& get_mol_particles(int mol_id) { return m_molecules[mol_id]; }
+
     
 private:
   
@@ -335,6 +341,7 @@ private:
   vector<int> m_boundary;               //!< Contains all particles that belong to the boundary (for tissue simulations)
   int m_boundary_type;                  //!< Type of the boundary particles that are added for cell simulations
   bool m_has_boundary_neighbours;       //!< If true, systems contains boundary neighbours (used in cells simulations)
+  vector<vector<int> > m_molecules;     //!< List of all particles ids in a given molecule
    
 };
 
