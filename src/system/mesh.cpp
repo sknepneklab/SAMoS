@@ -443,6 +443,9 @@ void Mesh::order_dual(int v)
   //Not necessary, faces and neighbours line up closely enough
   //rotate(V.dual_neighbour_map.begin(), V.dual_neighbour_map.begin()+1, V.dual_neighbour_map.end());
 
+  // Make sure that dual has the same number of elements as there are faces in the star 
+  assert(V.dual.size() == V.faces.size());
+
   // And update area
   this->dual_area(V.id);
 }
