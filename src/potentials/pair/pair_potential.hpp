@@ -78,6 +78,9 @@ public:
                                                                                                             m_phase_in(false),
                                                                                                             m_compute_stress(false)
   {  
+    m_known_params.push_back("min_val");
+    m_known_params.push_back("max_val");
+    m_known_params.push_back("ntypes");
     if (param.find("min_val") != param.end())
     {
       if (lexical_cast<double>(param["min_val"]) != 0.0)
@@ -123,6 +126,15 @@ public:
   
   //! Computes potentials and forces for all particles
   virtual void compute(double) = 0;
+
+  //! Check if there are no illegal parameters
+  string params_ok(pairs_type& params)
+  {
+    for (pairs_type::iterator it_p = params.begin(); it_p != params.end(); it_p++)
+      if (find(m_known_params.begin(),m_known_params.end(),(*it_p).first) == m_known_params.end())
+        return (*it_p).first;
+    return "";
+  }
   
 protected:
        
@@ -137,6 +149,7 @@ protected:
   bool m_phase_in;                  //!< If true, gradually switch on potential for particles that are younger than a given age
   bool m_compute_stress;            //!< If true, compute stress tensor
   int m_ntypes;                     //!< Total number of particle types in the system
+  vector<string> m_known_params;    //!< Lists all known parameters accepted by a given pair potential
   
 };
 

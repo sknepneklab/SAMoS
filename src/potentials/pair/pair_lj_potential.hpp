@@ -74,6 +74,18 @@ public:
       m_msg->msg(Messenger::ERROR,"Lennard Jones pair potential requires neighbour list. None given.");
       throw runtime_error("Neighbour list required by Lennard Jones potential, but non specified.");
     }
+    m_known_params.push_back("epsilon");
+    m_known_params.push_back("sigma");
+    m_known_params.push_back("rcut");
+    m_known_params.push_back("use_particle_radii");
+    m_known_params.push_back("phase_in");
+    m_known_params.push_back("shifted");
+    string param_test = this->params_ok(param);
+    if (param_test != "")
+    {
+      m_msg->msg(Messenger::ERROR,"Parameter \""+param_test+"\" is not a valid parameter for Lennard-Jones pair potential.");
+      throw runtime_error("Unknown parameter \""+param_test+"\" in Lennard-Jones potential.");
+    }
     if (param.find("epsilon") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No potential depth (epsilon) specified for the Lennard Jones pair potential. Setting it to 1.");

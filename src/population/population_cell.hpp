@@ -161,6 +161,7 @@ public:
       m_msg->msg(Messenger::INFO,"Cell population control. Growth rate set to "+param["growth_rate"]+".");
       m_growth_rate = lexical_cast<double>(param["growth_rate"]);
     }
+    m_msg->write_config("population.cell.growth_rate",lexical_cast<string>(m_growth_rate));
     if (param.find("growth_prob") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"Cell population control. No growth proability set. Assuming 0.5 (so as to introduce stochasticity)");

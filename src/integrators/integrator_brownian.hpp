@@ -63,6 +63,20 @@ public:
   //! \param param Contains information about all parameters 
   IntegratorBrownian(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr align, NeighbourListPtr nlist,  ConstrainerPtr cons, ValuePtr temp, pairs_type& param) : Integrator(sys, msg, pot, align, nlist, cons, temp, param)
   { 
+    m_known_params.push_back("v0");
+    m_known_params.push_back("nu");
+    m_known_params.push_back("mu");
+    m_known_params.push_back("mur");
+    m_known_params.push_back("seed");
+    m_known_params.push_back("nematic");
+    m_known_params.push_back("tau");
+    m_known_params.push_back("velocity_align");
+    string param_test = this->params_ok(param);
+    if (param_test != "")
+    {
+      m_msg->msg(Messenger::ERROR,"Parameter \""+param_test+"\" is not a valid parameter for brownian integrator.");
+      throw runtime_error("Unknown parameter \""+param_test+"\" in brownian integrator.");
+    }
     m_msg->msg(Messenger::WARNING,"Brownian dynamics is a legacy integrator keep for backwards compatibility. It will be removed in a later release. Please consider using brawnian_pos and brownian_align instead.");
     if (param.find("v0") == param.end())
     {

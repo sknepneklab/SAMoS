@@ -140,10 +140,13 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         }
         if (column_key.find("boundary") != column_key.end())  // Create two groups for boundary and internal particles
         {
-          m_group["boundary"] = make_shared<Group>(Group(1,"boundary"));
-          m_group["internal"] = make_shared<Group>(Group(2,"internal"));
-          m_num_groups = 3;
-          m_msg->msg(Messenger::INFO,"Generated groups 'boundary' and 'internal' to distinguish particles on inside and on the boundary.");
+          m_group["tissue"] = make_shared<Group>(Group(1,"tissue"));
+          m_group["environment"] = make_shared<Group>(Group(2,"environment"));
+          m_group["boundary"] = make_shared<Group>(Group(3,"boundary"));
+          m_group["internal"] = make_shared<Group>(Group(4,"internal"));
+          m_num_groups = 5;
+          m_msg->msg(Messenger::INFO,"Generated groups 'tissue', 'environment', 'boundary' and 'internal' to distinguish particles beloging to the tissue or not.");
+          m_msg->msg(Messenger::INFO,"Generated groups 'boundary' and 'internal' to distinguish if tissue particles are inside or on the boundary.");
           has_boundary = true;
         }
         write_keys = false;
@@ -333,6 +336,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         }
         if (has_keys)
           if (column_key.find("mass") != column_key.end())  p.mass = lexical_cast<double>(s_line[column_key["mass"]]);
+        if (has_keys)
+          if (column_key.find("molecule") != column_key.end())  p.molecule = lexical_cast<double>(s_line[column_key["molecule"]]);
         if (has_keys && (column_key.find("boundary") != column_key.end()))  
         {
           if (lexical_cast<int>(s_line[column_key["boundary"]]) != 0)  
@@ -341,6 +346,20 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
             m_boundary.push_back(p.get_id());
           }
           else p.boundary = false;
+          if (column_key.find("in_tissue") == column_key.end())  // boundary flags given but no in_tisse flag set, assume all in tissue
+            p.in_tissue = true; 
+        }
+        if (has_keys && (column_key.find("in_tissue") != column_key.end()))
+        {
+          if (lexical_cast<int>(s_line[column_key["in_tissue"]]) != 0)
+          {
+            p.in_tissue = true;
+            if (column_key.find("boundary") == column_key.end())
+            {
+              m_msg->msg(Messenger::ERROR,"For tissue simulations (in_tissue flag) boundary flag need to be specified.");
+              throw runtime_error("No boundary flag specified for tissue simulations.");
+            }
+          }
         }
         p.set_flag(m_current_particle_flag);
         m_current_particle_flag++;
@@ -363,15 +382,25 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
     if (has_boundary)
     {
       Particle& p = m_particles[i];
-      if (p.boundary)
+      if (p.in_tissue)
       {
-        m_group["boundary"]->add_particle(i);
-        m_particles[i].groups.push_back("boundary");
+        m_group["tissue"]->add_particle(i);
+        m_particles[i].groups.push_back("tissue");
+        if (p.boundary)
+        {
+          m_group["boundary"]->add_particle(i);
+          m_particles[i].groups.push_back("boundary");
+        }
+        else
+        {
+          m_group["internal"]->add_particle(i);
+          m_particles[i].groups.push_back("internal");
+        }
       }
       else
       {
-        m_group["internal"]->add_particle(i);
-        m_particles[i].groups.push_back("internal");
+        m_group["environment"]->add_particle(i);
+        m_particles[i].groups.push_back("environment");
       }
     }
   }

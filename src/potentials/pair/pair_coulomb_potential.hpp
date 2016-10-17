@@ -71,6 +71,15 @@ public:
   //! \param param Contains information about all parameters (alpha and sigma)
   PairCoulombPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param)
   {
+    m_known_params.push_back("alpha");
+    m_known_params.push_back("sigma");
+    m_known_params.push_back("phase_i");
+    string param_test = this->params_ok(param);
+    if (param_test != "")
+    {
+      m_msg->msg(Messenger::ERROR,"Parameter \""+param_test+"\" is not a valid parameter for Coulomb pair potential.");
+      throw runtime_error("Unknown parameter \""+param_test+"\" in Coulomb potential.");
+    }
     if (param.find("alpha") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No potential strength (alpha) specified for Coulomb pair potential. Setting it to 1.");

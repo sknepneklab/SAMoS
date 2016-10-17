@@ -69,6 +69,19 @@ public:
   //! \param param Contains information about all parameters (k)
   PairVertexParticlePotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param), m_has_part_params(false), m_include_boundary(false)
   {
+    m_known_params.push_back("K");
+    m_known_params.push_back("gamma");
+    m_known_params.push_back("lambda");
+    m_known_params.push_back("phase_in");
+    m_known_params.push_back("compute_stress");
+    m_known_params.push_back("mesh_update_steps");
+    m_known_params.push_back("include_boundary");
+    string param_test = this->params_ok(param);
+    if (param_test != "")
+    {
+      m_msg->msg(Messenger::ERROR,"Parameter \""+param_test+"\" is not a valid parameter for vertex-particle pair potential.");
+      throw runtime_error("Unknown parameter \""+param_test+"\" in vertex-particle model.");
+    }
     if (param.find("K") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No area stiffness (K) specified for vertex-particle pair potential. Setting it to 1.");
@@ -207,10 +220,22 @@ public:
       param["gamma"] = m_gamma;
     }
     m_msg->write_config("potential.pair.vertex_particle.type_"+pair_param["type"]+".push",lexical_cast<string>(param["gamma"]));
+    if (pair_param.find("lambda") != pair_param.end())
+    {
+      m_msg->msg(Messenger::INFO,"VertexParticle pair potential. Setting edge contractility (lambda) to "+pair_param["lambda"]+" for particles of type "+lexical_cast<string>(type)+".");
+      param["lambda"] = lexical_cast<double>(pair_param["lambda"]);
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"VertexParticle pair potential. Using default edge contractility ("+lexical_cast<string>(m_lambda)+") for particles of type "+lexical_cast<string>(type)+".");
+      param["lambda"] = m_lambda;
+    }
+    m_msg->write_config("potential.pair.vertex_particle.type_"+pair_param["type"]+".push",lexical_cast<string>(param["lambda"]));
     
         
     m_particle_params[type-1].K = param["K"];
     m_particle_params[type-1].gamma = param["gamma"];
+    m_particle_params[type-1].lambda = param["lambda"];
         
     m_has_part_params = true;
   }

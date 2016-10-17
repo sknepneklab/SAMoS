@@ -500,8 +500,10 @@ void Dump::dump_data()
       m_out << " cont_num ";
     if (m_params.find("boundary") != m_params.end())
       m_out << " boundary ";
-    if (m_params.find("stress") != m_params.end())
-      m_out << " s_xx  s_xy  s_xz  s_yx  s_yy  s_yz  s_zx  s_zy  s_zz ";
+    if (m_params.find("in_tissue") != m_params.end())
+      m_out << " in_tissue ";  
+    if (m_params.find("molecule") != m_params.end())
+      m_out << " molecule ";
     if (m_params.find("shape_param") != m_params.end())
       m_out << " shape_param";
     m_out << endl;
@@ -543,8 +545,10 @@ void Dump::dump_data()
       m_out << " cont_num ";
     if (m_params.find("boundary") != m_params.end())
       m_out << " boundary ";
-    if (m_params.find("stress") != m_params.end())
-      m_out << " s_xx  s_xy  s_xz  s_yx  s_yy  s_yz  s_zx  s_zy  s_zz ";
+    if (m_params.find("in_tissue") != m_params.end())
+      m_out << " in_tissue ";  
+    if (m_params.find("molecule") != m_params.end())
+      m_out << " molecule ";
     m_out << endl;
   }
   for (int i = 0; i < N; i++)
@@ -603,13 +607,16 @@ void Dump::dump_data()
         m_out << " 1 ";
       else
         m_out << " 0 ";
-    }    
-    if (m_params.find("stress") != m_params.end())
+    }   
+    if (m_params.find("in_tissue") != m_params.end())
     {
-        m_out << format(" %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f %8.5f ") % p.s_xx % p.s_xy % p.s_xz 
-                                                                                   % p.s_yx % p.s_yy % p.s_yz 
-                                                                                   % p.s_zx % p.s_zy % p.s_zz;
-    }
+      if (p.in_tissue)
+        m_out << " 1 ";
+      else
+        m_out << " 0 ";
+    }  
+    if (m_params.find("molecule") != m_params.end())
+      m_out << format("%2d ") % p.molecule;
     if (m_params.find("shape_param") != m_params.end())
     {
       if (m_nlist->has_faces())
@@ -930,10 +937,13 @@ void Dump::dump_vtp(int step)
     dir->SetNumberOfComponents(3);
     ndir->SetName("NDirector");
     ndir->SetNumberOfComponents(3);
-    dual_area->SetName("DualArea");
-    dual_area->SetNumberOfComponents(1);
-    num_neigh->SetName("NumNeigh");
-    num_neigh->SetNumberOfComponents(1);
+    if (mesh.size() > 0)
+    {
+      dual_area->SetName("DualArea");
+      dual_area->SetNumberOfComponents(1);
+      num_neigh->SetName("NumNeigh");
+      num_neigh->SetNumberOfComponents(1);
+    }
       
     for (int i = 0; i < N; i++)
     {
@@ -972,10 +982,10 @@ void Dump::dump_vtp(int step)
     polydata->GetPointData()->AddArray(vel);
     polydata->GetPointData()->AddArray(force);
     polydata->GetPointData()->AddArray(dir);
-    polydata->GetPointData()->AddArray(ndir);
-    polydata->GetPointData()->AddArray(num_neigh);
+    polydata->GetPointData()->AddArray(ndir);  
     if (mesh.size() > 0)
     {
+      polydata->GetPointData()->AddArray(num_neigh);
       polydata->GetPointData()->AddArray(dual_area);
     }
         
@@ -1033,8 +1043,10 @@ void Dump::dump_vtp(int step)
         Particle& pi = m_system->get_particle(particles[i]);
         if (pi.boundary)
           boundary_part->InsertNextValue(0);
-        else
+        else if (!pi.boundary && pi.in_tissue)
           boundary_part->InsertNextValue(1);
+        else
+          boundary_part->InsertNextValue(2);    // non-tissue (environment) particles have flag 2
       }
       polydata->GetPointData()->AddArray(boundary_part);
       for (int e = 0; e < mesh.nedges(); e++)

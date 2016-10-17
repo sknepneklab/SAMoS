@@ -81,6 +81,12 @@ public:
                                                                                                                                                                    m_constrainer(cons),
                                                                                                                                                                    m_temp(temp)
   { 
+    m_known_params.push_back("dt");
+    m_known_params.push_back("group");
+    m_known_params.push_back("temperature_control");
+    m_known_params.push_back("min_val");
+    m_known_params.push_back("max_val");
+    m_known_params.push_back("steps");
     if (param.find("dt") != param.end())
     {
       m_msg->msg(Messenger::WARNING,"Integrator is setting its own time step size. While this is allowed, it may cause odd behaviour in case different integrators set different internal step size.");
@@ -116,6 +122,15 @@ public:
   //! Propagate system for a time step
   virtual void integrate() = 0;
   
+  //! Check if there are no illegal parameters
+  string params_ok(pairs_type& params)
+  {
+    for (pairs_type::iterator it_p = params.begin(); it_p != params.end(); it_p++)
+      if (find(m_known_params.begin(),m_known_params.end(),(*it_p).first) == m_known_params.end())
+        return (*it_p).first;
+    return "";
+  }
+
 protected:
   
   SystemPtr m_system;            //!< Pointer to the System object
@@ -127,7 +142,8 @@ protected:
   ValuePtr m_temp;               //!< Pointer to the handler of current value of temperature 
   double m_dt;                   //!< time step
   string m_group_name;           //!< Name of the group to apply this integrator to
-  
+  vector<string> m_known_params; //!< Lists all known parameters accepted by a given integrator
+
 };
 
 typedef shared_ptr<Integrator> IntegratorPtr;

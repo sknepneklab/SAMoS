@@ -348,6 +348,9 @@ bool NeighbourList::build_triangulation()
   vector< pair<int,int> > boundary_indices;  // pairs of edges at the boundary 
 
   int N = m_system->size();
+  vector<int> tissue_id;   // Bookgkeeping vector for building triangulation
+  vector<int> index_map(N,-1);
+  int tissue_count = 0;
   for (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
@@ -356,15 +359,25 @@ bool NeighbourList::build_triangulation()
       m_msg->msg(Messenger::ERROR,"Delaunay triangulation is only supported in plane. All z components must be set to zero.");
       throw runtime_error("Unable to build Delaunay triangulation for non-planar systems.");
     }
-    points.push_back( make_pair( Point(pi.x,pi.y), pi.get_id() ) );
-    points_for_boundary.push_back(Point(pi.x,pi.y));
-    if (pi.boundary)
+    if (pi.in_tissue)
     {
-      boundary_indices.push_back(make_pair(pi.get_id(),pi.boundary_neigh[0]));
-      boundary_indices.push_back(make_pair(pi.get_id(),pi.boundary_neigh[1]));
+      //points.push_back( make_pair( Point(pi.x,pi.y), pi.get_id() ) );
+      points.push_back( make_pair( Point(pi.x,pi.y), tissue_count ) );
+      points_for_boundary.push_back(Point(pi.x,pi.y));
+      tissue_id.push_back(pi.get_id());
+      index_map[pi.get_id()] = tissue_count;
+      tissue_count++;
     }
   }
-
+  for (int i = 0; i < N; i++)
+  {
+    Particle& pi = m_system->get_particle(i);
+    if (pi.boundary && pi.in_tissue)
+    {
+      boundary_indices.push_back( make_pair(index_map[pi.get_id()],index_map[pi.boundary_neigh[0]]) );
+      boundary_indices.push_back( make_pair(index_map[pi.get_id()],index_map[pi.boundary_neigh[1]]) );
+    }
+  }
   
   Delaunay triangulation;  
   triangulation.insert_constraints(points_for_boundary.begin(), points_for_boundary.end(), boundary_indices.begin(), boundary_indices.end());
@@ -375,8 +388,8 @@ bool NeighbourList::build_triangulation()
   {
     Delaunay::Face_handle f1 = eit->first;
     Delaunay::Face_handle f2 = f1->neighbor(eit->second);
-    int i = f1->vertex(f1->cw(eit->second))->info();
-    int j = f1->vertex(f1->ccw(eit->second))->info();
+    int i = tissue_id[f1->vertex(f1->cw(eit->second))->info()];
+    int j = tissue_id[f1->vertex(f1->ccw(eit->second))->info()];
     int k, l;
     int to_flip;
     bool can_add = false;
@@ -385,9 +398,9 @@ bool NeighbourList::build_triangulation()
     if (triangulation.is_infinite(f1) || triangulation.is_infinite(f2))
     {
       if (triangulation.is_infinite(f2))
-        k = f1->vertex(eit->second)->info();                //  k is the index of the index opposite to the edge (i,j)
+        k = tissue_id[f1->vertex(eit->second)->info()];                //  k is the index of the index opposite to the edge (i,j)
       else
-        k = get_opposite(f2, i, j);
+        k = tissue_id[get_opposite(f2, f1->vertex(f1->cw(eit->second))->info(), f1->vertex(f1->ccw(eit->second))->info())];
       Particle& pi = m_system->get_particle(i);
       Particle& pj = m_system->get_particle(j);
       Particle& pk = m_system->get_particle(k);
@@ -400,8 +413,10 @@ bool NeighbourList::build_triangulation()
     }
     else
     {
-      k = f1->vertex(eit->second)->info();                //  k is the index of the index opposite to the edge (i,j) for face f1
-      l = get_opposite(f2, i, j);                         //  l is the index of the index opposite to the edge (i,j) for face f2 
+      //  k is the index of the index opposite to the edge (i,j) for face f1
+      k = tissue_id[f1->vertex(eit->second)->info()];                
+      //  l is the index of the index opposite to the edge (i,j) for face f2
+      l = tissue_id[get_opposite(f2, f1->vertex(f1->cw(eit->second))->info(), f1->vertex(f1->ccw(eit->second))->info())];   
       Particle& pi = m_system->get_particle(i);
       Particle& pj = m_system->get_particle(j);
       Particle& pk = m_system->get_particle(k);
@@ -446,7 +461,7 @@ bool NeighbourList::build_triangulation()
 
         double x, y, z;                  // contains coordinates of mirrored particles 
         mirror(p3, p1, p2, x, y, z);     // compute poistion of mirrored particle 
-        Particle p(m_system->size(),p3.get_type(), p3.get_radius());    // generate new particle with the "last" id and inhereted type and radus from p3
+        Particle p(m_system->size(), p1.get_type(), p1.get_radius());    // generate new particle with the "last" id and inhereted type and radus from p1
         i4 = p.get_id();                                            
         // set parameters for the new particle
         p.x = x; p.y = y; p.z = z;
@@ -456,9 +471,13 @@ bool NeighbourList::build_triangulation()
         p.coordination = 0;
         p.groups.push_back("all");
         if (m_system->has_group("boundary"))
+        {
           p.groups.push_back("boundary");
+          p.groups.push_back("tissue");
+        }
         // Note: Make sure that new particle is added to all necessary groups. 
         p.boundary = true;
+        p.in_tissue = true;
         if (p1.boundary_neigh.size() == 2)  p1.boundary_neigh[(p1.boundary_neigh[0] == i2) ? 0 : 1] = i4;
         if (p2.boundary_neigh.size() == 2)  p2.boundary_neigh[(p2.boundary_neigh[0] == i1) ? 0 : 1] = i4;
         p.boundary_neigh.push_back(i1);
@@ -553,12 +572,15 @@ void NeighbourList::remove_dangling()
    vector<int> to_remove;
    int offset = 0;  // We need to shift vertex ids to match them in the removal
    for (unsigned int i = 0; i < m_contact_list.size(); i++)
-     if (m_contact_list[i].size() == 0)
+   {
+     Particle& pi = m_system->get_particle(i);
+     if (pi.in_tissue && m_contact_list[i].size() == 0)
      {
        to_remove.push_back(i-offset);
        offset++;       
      }
-  
+   }
+
    for (unsigned int i = 0; i < to_remove.size(); i++)
    {
      m_system->remove_particle(to_remove[i]);
