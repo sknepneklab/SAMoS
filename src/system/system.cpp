@@ -1,33 +1,24 @@
-/* *************************************************************
- *  
- *   Soft Active Mater on Surfaces (SAMoS)
- *   
- *   Author: Rastko Sknepnek
- *  
- *   Division of Physics
- *   School of Engineering, Physics and Mathematics
- *   University of Dundee
- *   
- *   (c) 2013, 2014
- * 
- *   School of Science and Engineering
- *   School of Life Sciences 
- *   University of Dundee
- * 
- *   (c) 2015
- * 
- *   Author: Silke Henkes
- * 
- *   Department of Physics 
- *   Institute for Complex Systems and Mathematical Biology
- *   University of Aberdeen  
- * 
- *   (c) 2014, 2015
- *  
- *   This program cannot be used, copied, or modified without
- *   explicit written permission of the authors.
- * 
- * ************************************************************* */
+/* ***************************************************************************
+ *
+ *  Copyright (C) 2013-2016 University of Dundee
+ *  All rights reserved. 
+ *
+ *  This file is part of SAMoS (Soft Active Matter on Surfaces) program.
+ *
+ *  SAMoS is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SAMoS is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * ****************************************************************************/
 
 /*!
  * \file system.cpp
@@ -337,7 +328,14 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         if (has_keys)
           if (column_key.find("mass") != column_key.end())  p.mass = lexical_cast<double>(s_line[column_key["mass"]]);
         if (has_keys)
-          if (column_key.find("molecule") != column_key.end())  p.molecule = lexical_cast<double>(s_line[column_key["molecule"]]);
+          if (column_key.find("molecule") != column_key.end())  
+          {
+            p.molecule = lexical_cast<double>(s_line[column_key["molecule"]]);
+            if (p.molecule < m_molecules.size())
+              m_molecules[p.molecule].push_back(p.get_id());
+            else 
+              m_molecules.push_back(vector<int>(1,p.get_id()));
+          }
         if (has_keys && (column_key.find("boundary") != column_key.end()))  
         {
           if (lexical_cast<int>(s_line[column_key["boundary"]]) != 0)  
@@ -545,6 +543,10 @@ void System::add_particle(Particle& p)
   for (list<string>::iterator it = p.groups.begin(); it != p.groups.end(); it++)
     m_group[*it]->add_particle(p.get_id());
   if (p.boundary) m_boundary.push_back(p.get_id());
+  if (p.molecule < m_molecules.size())
+    m_molecules[p.molecule].push_back(p.get_id());
+  else 
+    m_molecules.push_back(vector<int>(1,p.get_id()));
   // We need to force neighbour list rebuild
   m_force_nlist_rebuild = true;
   m_current_particle_flag++;
@@ -563,6 +565,8 @@ void System::remove_particle(int id)
     pj.boundary_neigh[(pj.boundary_neigh[0] == id) ? 0 : 1] = pk.get_id();
     pk.boundary_neigh[(pk.boundary_neigh[0] == id) ? 0 : 1] = pj.get_id();
   }
+  vector<int>::iterator it_m = find(m_molecules[pi.molecule].begin(), m_molecules[pi.molecule].end(),id);
+  m_molecules[pi.molecule].erase(it_m);
   m_particles.erase(m_particles.begin() + id);
   // Shift down all ids
   for (unsigned int i = 0; i < m_particles.size(); i++)

@@ -1,33 +1,24 @@
-/* *************************************************************
- *  
- *   Soft Active Mater on Surfaces (SAMoS)
- *   
- *   Author: Rastko Sknepnek
- *  
- *   Division of Physics
- *   School of Engineering, Physics and Mathematics
- *   University of Dundee
- *   
- *   (c) 2013, 2014
- * 
- *   School of Science and Engineering
- *   School of Life Sciences 
- *   University of Dundee
- * 
- *   (c) 2015, 2016
- * 
- *   Author: Silke Henkes
- * 
- *   Department of Physics 
- *   Institute for Complex Systems and Mathematical Biology
- *   University of Aberdeen  
- * 
- *   (c) 2014, 2015, 2016
- *  
- *   This program cannot be used, copied, or modified without
- *   explicit written permission of the authors.
- * 
- * ************************************************************* */
+/* ***************************************************************************
+ *
+ *  Copyright (C) 2013-2016 University of Dundee
+ *  All rights reserved. 
+ *
+ *  This file is part of SAMoS (Soft Active Matter on Surfaces) program.
+ *
+ *  SAMoS is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SAMoS is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * ****************************************************************************/
 
 /*!
  * \file external_shape_aligner.hpp
@@ -60,7 +51,7 @@ struct ShapeParameters
  *  cell's gyration tensor corresponding to the largest eigenvalue. 
  *  For all particles we compute torque on the particle as
  *  \f$ \vec \tau_i = -J \vec n_i\times\vec a_i \f$,
- *  where \f$ J \f$ is the coupling strength and \f$ \vec a_i \f$ is unit-lenght eigenvector of
+ *  where \f$ J \f$ is the coupling strength and \f$ \vec a_i \f$ is unit-length eigenvector of
  *  the shape tensor corresponding to the largest eigenvalue.
  *  Shape tensor is defined as the sum of the outter products of the 
  *  edge vectors along the sided of the dual polygon (cell).

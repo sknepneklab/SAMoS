@@ -1,33 +1,24 @@
-/* *************************************************************
- *  
- *   Soft Active Mater on Surfaces (SAMoS)
- *   
- *   Author: Rastko Sknepnek
- *  
- *   Division of Physics
- *   School of Engineering, Physics and Mathematics
- *   University of Dundee
- *   
- *   (c) 2013, 2014
- * 
- *   School of Science and Engineering
- *   School of Life Sciences 
- *   University of Dundee
- * 
- *   (c) 2015
- * 
- *   Author: Silke Henkes
- * 
- *   Department of Physics 
- *   Institute for Complex Systems and Mathematical Biology
- *   University of Aberdeen  
- * 
- *   (c) 2014, 2015
- *  
- *   This program cannot be used, copied, or modified without
- *   explicit written permission of the authors.
- * 
- * ************************************************************* */
+/* ***************************************************************************
+ *
+ *  Copyright (C) 2013-2016 University of Dundee
+ *  All rights reserved. 
+ *
+ *  This file is part of SAMoS (Soft Active Matter on Surfaces) program.
+ *
+ *  SAMoS is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SAMoS is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * ****************************************************************************/
 
 /*!
  * \file parse_external.hpp
@@ -73,6 +64,7 @@ public:
                   qi::as_string[keyword["gravity"]][phx::bind(&ExternalData::type, phx::ref(external_data)) = qi::_1 ]         /*! Handles gravitational potential */
                 | qi::as_string[keyword["harmonic"]][phx::bind(&ExternalData::type, phx::ref(external_data)) = qi::_1 ]        /*! Handles harmonic potential */
                 | qi::as_string[keyword["self_propulsion"]][phx::bind(&ExternalData::type, phx::ref(external_data)) = qi::_1 ] /*! Handles self propulsion */
+                | qi::as_string[keyword["boundary_pull"]][phx::bind(&ExternalData::type, phx::ref(external_data)) = qi::_1 ]   /*! Handles boundary pull */
                   /* to add new potential: | qi::as_string[keyword["newpotential"]][phx::bind(&ExternalData::type, phx::ref(external_data)) = qi::_1 ] */
                 )
                 >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&ExternalData::params, phx::ref(external_data)) = qi::_1 ]

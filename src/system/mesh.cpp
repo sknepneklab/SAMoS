@@ -1,33 +1,24 @@
-/* *************************************************************
- *  
- *   Soft Active Mater on Surfaces (SAMoS)
- *   
- *   Author: Rastko Sknepnek
- *  
- *   Division of Physics
- *   School of Engineering, Physics and Mathematics
- *   University of Dundee
- *   
- *   (c) 2013, 2014
- * 
- *   School of Science and Engineering
- *   School of Life Sciences 
- *   University of Dundee
- * 
- *   (c) 2015
- * 
- *   Author: Silke Henkes
- * 
- *   Department of Physics 
- *   Institute for Complex Systems and Mathematical Biology
- *   University of Aberdeen  
- * 
- *   (c) 2014, 2015
- *  
- *   This program cannot be used, copied, or modified without
- *   explicit written permission of the authors.
- * 
- * ************************************************************* */
+/* ***************************************************************************
+ *
+ *  Copyright (C) 2013-2016 University of Dundee
+ *  All rights reserved. 
+ *
+ *  This file is part of SAMoS (Soft Active Matter on Surfaces) program.
+ *
+ *  SAMoS is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SAMoS is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * ****************************************************************************/
 
 /*!
  * \file mesh.cpp
@@ -40,6 +31,7 @@
 
 using std::unique;
 using std::sort;
+using std::rotate;
 
 typedef pair<int,double> vert_angle;  //!< Used to sort angles
 
@@ -342,6 +334,7 @@ void Mesh::order_dual(int v)
 {
   Vertex& V = m_vertices[v];
   V.dual.clear();
+  V.dual_neighbour_map.clear();
   if (V.n_faces == 0)
     V.attached = false;
   if (!V.attached) return;
@@ -365,7 +358,10 @@ void Mesh::order_dual(int v)
   
   // Now we order duals. This is important for proper computation of areas and force
   if (!V.boundary)
+  {
     V.dual.push_back(V.faces[0]);
+    V.dual_neighbour_map.push_back(V.neigh[0]);
+  }
   else
   {
     Vector3d r0 =  m_vertices[V.neigh[0]].r - V.r;
@@ -386,6 +382,7 @@ void Mesh::order_dual(int v)
        }
      }
      V.dual.push_back(V.faces[fface]);
+     V.dual_neighbour_map.push_back(V.neigh[fface]);
   }
   int i = 0;
   while(V.dual.size() < V.faces.size())
@@ -399,6 +396,7 @@ void Mesh::order_dual(int v)
     double min_angle = 2.0*M_PI;
     int next_dual;
     bool can_add = false;
+    int face_index;
     for (unsigned int f = 0; f < V.faces.size(); f++)
     {
       Face& Fj = m_faces[V.faces[f]];
@@ -417,6 +415,7 @@ void Mesh::order_dual(int v)
           {
             min_angle = ang;
             next_dual = Fj.id;
+            face_index = f;
             can_add = true;
           }
         }
@@ -425,6 +424,7 @@ void Mesh::order_dual(int v)
     if (can_add)
     {
       V.dual.push_back(next_dual);
+      V.dual_neighbour_map.push_back(V.neigh[face_index]);
       i++;
     }
     if (!can_add && (static_cast<int>(V.dual.size()) != V.n_faces-1))
@@ -440,6 +440,12 @@ void Mesh::order_dual(int v)
     if (V.boundary && (static_cast<int>(V.dual.size()) == V.n_faces-1))
       V.dual.push_back(V.faces[V.n_faces-1]);
   }
+  //Not necessary, faces and neighbours line up closely enough
+  //rotate(V.dual_neighbour_map.begin(), V.dual_neighbour_map.begin()+1, V.dual_neighbour_map.end());
+
+  // Make sure that dual has the same number of elements as there are faces in the star 
+  assert(V.dual.size() == V.faces.size());
+
   // And update area
   this->dual_area(V.id);
 }
@@ -1018,6 +1024,7 @@ PlotArea& Mesh::plot_area(bool boundary)
   m_plot_area.area.clear();
   m_plot_area.perim.clear();
   m_plot_area.circum_radius.clear();
+  m_plot_area.type.clear();
   map<int,int> bnd_vert;
   map<int,int> face_idx;
   vector<int> added_faces;
@@ -1031,6 +1038,7 @@ PlotArea& Mesh::plot_area(bool boundary)
         bnd_vert[V.id] = idx++;
         m_plot_area.points.push_back(V.r);
         m_plot_area.circum_radius.push_back(0.0);
+        //m_plot_area.type.push_back(V.type);
       }
   }
   
@@ -1039,6 +1047,8 @@ PlotArea& Mesh::plot_area(bool boundary)
   {
     Vertex& V = m_vertices[v];
     if (V.attached)
+    {
+      m_plot_area.type.push_back(V.type);
       for (int f = 0; f < V.n_faces; f++)
       {
         Face& face = m_faces[V.dual[f]];
@@ -1052,6 +1062,7 @@ PlotArea& Mesh::plot_area(bool boundary)
             face_idx[face.id] = idx++;
           }
       }
+    }
   }
   
   vector<int> sides;

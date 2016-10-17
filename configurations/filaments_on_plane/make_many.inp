@@ -1,0 +1,14 @@
+#
+# Make many filaments
+#
+
+
+tolerance 2.0
+filetype xyz
+output filaments.xyz
+
+structure poly.xyz 
+  number 50
+  inside box -30. -30.0  0. 30.0 30.0  0.0
+end structure
+

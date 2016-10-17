@@ -1,33 +1,24 @@
-# * *************************************************************
-# *  
-# *   Soft Active Mater on Surfaces (SAMoS)
-# *   
-# *   Author: Rastko Sknepnek
-# *  
-# *   Division of Physics
-# *   School of Engineering, Physics and Mathematics
-# *   University of Dundee
-# *   
-# *   (c) 2013, 2014
-# * 
-# *   School of Science and Engineering
-# *   School of Life Sciences 
-# *   University of Dundee
-# * 
-# *   (c) 2015
-# * 
-# *   Author: Silke Henkes
-# * 
-# *   Department of Physics 
-# *   Institute for Complex Systems and Mathematical Biology
-# *   University of Aberdeen  
-# * 
-# *   (c) 2014, 2015
-# *  
-# *   This program cannot be used, copied, or modified without
-# *   explicit written permission of the authors.
-# * 
-# * ***************************************************************
+# * ***************************************************************************
+# *
+# *  Copyright (C) 2013-2016 University of Dundee
+# *  All rights reserved. 
+# *
+# *  This file is part of SAMoS (Soft Active Matter on Surfaces) program.
+# *
+# *  SAMoS is free software; you can redistribute it and/or modify
+# *  it under the terms of the GNU General Public License as published by
+# *  the Free Software Foundation; either version 2 of the License, or
+# *
+# *  (at your option) any later version.
+# *  SAMoS is distributed in the hope that it will be useful,
+# *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+# *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# *  GNU General Public License for more details.
+# *
+# *  You should have received a copy of the GNU General Public License
+# *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# *
+# * ****************************************************************************/
 
 # Utility code for building random initial configuration on a sphere
 
@@ -101,17 +92,23 @@ class Sphere:
     for i in xrange(len(lens)):
       self.particles[i].R = radii[i]
       
-  def write(self,outfile):
+  def write(self,outfile, include_len = False):
     gentime = datetime.now()
     out = open(outfile,'w')
     out.write('# Total of %d particles\n' % self.N)
     out.write('# Generated on : %s\n' % str(gentime))
-    out.write('# id  type radius  x   y   z   vx   vy   vz   nx   ny   nz  omega  l\n')
+    if include_len:
+      out.write('keys: id  type radius  x   y   z   vx   vy   vz   nx   ny   nz  length\n')
+    else:
+      out.write('keys: id  type radius  x   y   z   vx   vy   vz   nx   ny   nz\n')
     for p in self.particles:
       x, y, z = p.r
       vx, vy, vz = p.v
       nx, ny, nz = p.n
-      out.write('%d  %d  %f %f  %f  %f  %f  %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz,p.omega,p.l+2*p.R))
+      if include_len:
+        out.write('%d  %d  %3.2f %f  %f  %f  %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz,p.l+2*p.R))
+      else:
+        out.write('%d  %d  %3.2f %f  %f  %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz))
     out.close()
     
 
@@ -123,6 +120,7 @@ parser.add_argument("-o", "--output", type=str, default='out.dat', help="output 
 parser.add_argument("-v", "--vavr", type=float, default=1.0, help="average velocity")
 parser.add_argument("-l", "--length", type=float, default=2.0, help="rod length (straight part); set to zero to get sperical particles")
 parser.add_argument("-a", "--rod_rad", type=float, default=0.5, help="rod radius")
+parser.add_argument("--include_len", action="store_true", help="include rod lenght")
 args = parser.parse_args()
 
 print
@@ -152,7 +150,7 @@ lens = [args.length for i in range(N)]
 radii = [args.rod_rad for i in range(N)]
 s.set_lens(lens)
 s.set_particle_radius(radii)
-s.write(args.output)
+s.write(args.output,args.include_len)
 
 end = datetime.now()
 

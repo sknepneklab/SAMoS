@@ -1,33 +1,24 @@
-/* *************************************************************
- *  
- *   Soft Active Mater on Surfaces (SAMoS)
- *   
- *   Author: Rastko Sknepnek
- *  
- *   Division of Physics
- *   School of Engineering, Physics and Mathematics
- *   University of Dundee
- *   
- *   (c) 2013, 2014
- * 
- *   School of Science and Engineering
- *   School of Life Sciences 
- *   University of Dundee
- * 
- *   (c) 2015
- * 
- *   Author: Silke Henkes
- * 
- *   Department of Physics 
- *   Institute for Complex Systems and Mathematical Biology
- *   University of Aberdeen  
- * 
- *   (c) 2014, 2015
- *  
- *   This program cannot be used, copied, or modified without
- *   explicit written permission of the authors.
- * 
- * ************************************************************* */
+/* ***************************************************************************
+ *
+ *  Copyright (C) 2013-2016 University of Dundee
+ *  All rights reserved. 
+ *
+ *  This file is part of SAMoS (Soft Active Matter on Surfaces) program.
+ *
+ *  SAMoS is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SAMoS is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * ****************************************************************************/
 
 /*!
  * \file dump.cpp
@@ -66,7 +57,10 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
                                                                                                                   m_compress(false),
                                                                                                                   m_output_dual(false),
                                                                                                                   m_dual_boundary(false),
-                                                                                                                  m_group("all")
+                                                                                                                  m_include_bonds(false),
+                                                                                                                  m_include_mesh(false), 
+                                                                                                                  m_group("all"),
+                                                                                                                  m_directory(".")
 {
   m_type_ext["velocity"] = "vel";
   m_type_ext["xyz"] = "xyz";
@@ -102,6 +96,17 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_type = params["type"];
   }
   m_msg->write_config("dump."+fname+".type",m_type);
+  if (params.find("directory") == params.end())
+  {
+    m_msg->msg(Messenger::WARNING,"No dump directory specified. Using current directory.");
+    m_directory = ".";
+  }
+  else
+  {
+    m_msg->msg(Messenger::INFO,"Dump directory set to "+params["directory"]);
+    m_directory = params["directory"];
+  }
+  m_msg->write_config("dump."+fname+".directory",m_directory);
   if (m_type_ext.find(m_type) == m_type_ext.end())
   {
     m_msg->msg(Messenger::ERROR,"Unsupported dump type "+m_type+".");
@@ -148,7 +153,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
   {
     m_msg->msg(Messenger::WARNING,"All time steps will be concatenated to a single file.");
     m_multi_print = false;
-    string file_name = m_file_name+"."+m_ext;
+    string file_name = m_directory+"/"+m_file_name+"."+m_ext;
     if (m_compress)
     {
       m_file.open(file_name.c_str(), std::ios_base::out | std::ios_base::binary);
@@ -192,6 +197,23 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_time_step_offset = lexical_cast<int>(params["step_offset"]);;
     m_msg->msg(Messenger::INFO,"Dump steps will be offset by "+params["step_offset"]+".");
     m_msg->write_config("dump."+fname+".time_step_offset",params["step_offset"]);
+  }
+  if (params.find("include_bonds") != params.end())
+  {
+    m_include_bonds = true;
+    m_msg->msg(Messenger::INFO,"Bonds will be included in the dump file.");
+    m_msg->write_config("dump."+fname+".include_bonds","true");
+  }
+  if (params.find("include_mesh") != params.end())
+  {
+    m_include_mesh = true;
+    m_msg->msg(Messenger::INFO,"Mesh will be included in the dump file.");
+    m_msg->write_config("dump."+fname+".include_mesh","true");
+  }
+  if (m_type == "vtp" && m_include_bonds && m_include_mesh)
+  {
+    m_msg->msg(Messenger::ERROR,"Including bonds and mesh in a VTP file would produce an inconsistent file. Therefore, it is not allowed.");
+    runtime_error("Unsupported output parameters for VTP files.");
   }
   if (params.find("id") != params.end())
     m_msg->add_config("dump."+fname+".quantity","id");
@@ -326,7 +348,7 @@ void Dump::dump(int step)
     return;
   if (m_multi_print)
   {
-    string file_name = m_file_name+"_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
+    string file_name = m_directory+"/"+m_file_name+"_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
     if (m_compress)
     {
       file_name += ".gz";
@@ -585,7 +607,7 @@ void Dump::dump_data()
     if (m_params.find("parent") != m_params.end())
       m_out << format(" %3d ") % p.get_parent();
     if (m_params.find("area") != m_params.end())
-      m_out << format("%10.6f ") % p.get_A0();
+      m_out << format("%10.6f ") % p.A0;
     if (m_params.find("cell_area") != m_params.end())
     {
         if (m_nlist->has_faces())
@@ -895,11 +917,12 @@ void Dump::dump_mesh()
 void Dump::dump_vtp(int step)
 {
   vector<pair<int,int> > visited_edges;
-  string file_name = m_file_name+"_"+lexical_cast<string>(format("%010d") % step)+"."+m_ext;
+  string file_name = m_directory+"/"+m_file_name+"_"+lexical_cast<string>(format("%010d") % step)+"."+m_ext;
   vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
   vtkSmartPointer<vtkCellArray> lines =  vtkSmartPointer<vtkCellArray>::New();
   vtkSmartPointer<vtkCellArray> faces = vtkSmartPointer<vtkCellArray>::New();
+  map<int,int> index_map;   // Maps particle indices to the current index (for different groups)
   Mesh& mesh = m_system->get_mesh();
   
   if (!m_output_dual)
@@ -937,13 +960,10 @@ void Dump::dump_vtp(int step)
     dir->SetNumberOfComponents(3);
     ndir->SetName("NDirector");
     ndir->SetNumberOfComponents(3);
-    if (mesh.size() > 0)
-    {
-      dual_area->SetName("DualArea");
-      dual_area->SetNumberOfComponents(1);
-      num_neigh->SetName("NumNeigh");
-      num_neigh->SetNumberOfComponents(1);
-    }
+    dual_area->SetName("DualArea");
+    dual_area->SetNumberOfComponents(1);
+    num_neigh->SetName("NumNeigh");
+    num_neigh->SetNumberOfComponents(1);
       
     for (int i = 0; i < N; i++)
     {
@@ -952,6 +972,7 @@ void Dump::dump_vtp(int step)
       double f[3] = {pi.fx, pi.fy, pi.fz};
       double n[3] = {pi.nx, pi.ny, pi.nz};
       double nn[3] = {-pi.nx, -pi.ny, -pi.nz};
+      index_map[pi.get_id()] = i;
       points->InsertNextPoint ( pi.x, pi.y, pi.z );
       ids->InsertNextValue(pi.get_id());
       types->InsertNextValue(pi.get_type());
@@ -982,14 +1003,14 @@ void Dump::dump_vtp(int step)
     polydata->GetPointData()->AddArray(vel);
     polydata->GetPointData()->AddArray(force);
     polydata->GetPointData()->AddArray(dir);
-    polydata->GetPointData()->AddArray(ndir);  
+    polydata->GetPointData()->AddArray(ndir);
+    //polydata->GetPointData()->AddArray(num_neigh); # A header for this with no data gets put into the .vtp file even when there is no mesh
     if (mesh.size() > 0)
     {
-      polydata->GetPointData()->AddArray(num_neigh);
       polydata->GetPointData()->AddArray(dual_area);
     }
         
-    if (m_system->num_bonds() > 0 && m_group == "all")
+    if (m_system->num_bonds() > 0 && m_include_bonds)
     {
       vtkSmartPointer<vtkLine> line =  vtkSmartPointer<vtkLine>::New();
       vtkSmartPointer<vtkDoubleArray> lens =  vtkSmartPointer<vtkDoubleArray>::New();
@@ -998,8 +1019,8 @@ void Dump::dump_vtp(int step)
       for (int b = 0; b < m_system->num_bonds(); b++)
       {
         Bond& bond = m_system->get_bond(b);
-        line->GetPointIds()->SetId(0, bond.i); 
-        line->GetPointIds()->SetId(1, bond.j);
+        line->GetPointIds()->SetId(0, index_map[bond.i]); 
+        line->GetPointIds()->SetId(1, index_map[bond.j]);
         lines->InsertNextCell(line);
         Particle& pi = m_system->get_particle(bond.i);
         Particle& pj = m_system->get_particle(bond.j);
@@ -1011,7 +1032,7 @@ void Dump::dump_vtp(int step)
       polydata->GetCellData()->AddArray(lens);
     }
     
-    if (mesh.size() > 0 && m_group == "all")
+    if (mesh.size() > 0 && m_include_mesh)
     {
       vtkSmartPointer<vtkLine> edge =  vtkSmartPointer<vtkLine>::New();
       vtkSmartPointer<vtkDoubleArray> lens =  vtkSmartPointer<vtkDoubleArray>::New();
@@ -1054,8 +1075,8 @@ void Dump::dump_vtp(int step)
         Edge& ee = mesh.get_edges()[e];
         if ( find(visited_edges.begin(),visited_edges.end(),make_pair(ee.from,ee.to)) == visited_edges.end() )
         {
-          edge->GetPointIds()->SetId(0, ee.from); 
-          edge->GetPointIds()->SetId(1, ee.to);
+          edge->GetPointIds()->SetId(0, index_map[ee.from]); 
+          edge->GetPointIds()->SetId(1, index_map[ee.to]);
           lines->InsertNextCell(edge);
           Particle& pi = m_system->get_particle(ee.from);
           Particle& pj = m_system->get_particle(ee.to);
@@ -1080,7 +1101,7 @@ void Dump::dump_vtp(int step)
         Face& ff = mesh.get_faces()[f];
         face->GetPointIds()->SetNumberOfIds(ff.n_sides);
         for (int fi = 0; fi < ff.n_sides; fi++)
-          face->GetPointIds()->SetId(fi, ff.vertices[fi]);
+          face->GetPointIds()->SetId(fi, index_map[ff.vertices[fi]]);
         faces->InsertNextCell(face);
       }
     }
@@ -1093,6 +1114,7 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkDoubleArray> perims =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> p0 =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> circum_radius =  vtkSmartPointer<vtkDoubleArray>::New();
+    vtkSmartPointer<vtkIntArray> types =  vtkSmartPointer<vtkIntArray>::New();
     ids->SetName("Id");
     areas->SetNumberOfComponents(1);
     areas->SetName("Area");
@@ -1103,6 +1125,7 @@ void Dump::dump_vtp(int step)
     circum_radius->SetNumberOfComponents(1);
     p0->SetName("p0");
     p0->SetNumberOfComponents(1);
+    types->SetName("type");
     
     PlotArea& pa = mesh.plot_area(m_dual_boundary);
     for (unsigned int f = 0; f < pa.points.size(); f++)
@@ -1110,6 +1133,7 @@ void Dump::dump_vtp(int step)
       points->InsertNextPoint(pa.points[f].x, pa.points[f].y, pa.points[f].z);
       circum_radius->InsertNextValue(pa.circum_radius[f]);
       ids->InsertNextValue(f);
+      types->InsertNextValue(pa.type[f]);
     }
     polydata->SetPoints(points);
     polydata->GetPointData()->AddArray(ids);
@@ -1131,6 +1155,7 @@ void Dump::dump_vtp(int step)
     polydata->GetCellData()->AddArray(areas);
     polydata->GetCellData()->AddArray(perims);
     polydata->GetCellData()->AddArray(p0);
+    polydata->GetCellData()->AddArray(types);
   }
   
   // Write the file

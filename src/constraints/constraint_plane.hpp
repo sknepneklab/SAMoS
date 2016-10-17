@@ -1,33 +1,24 @@
-/* *************************************************************
- *  
- *   Soft Active Mater on Surfaces (SAMoS)
- *   
- *   Author: Rastko Sknepnek
- *  
- *   Division of Physics
- *   School of Engineering, Physics and Mathematics
- *   University of Dundee
- *   
- *   (c) 2013, 2014
- * 
- *   School of Science and Engineering
- *   School of Life Sciences 
- *   University of Dundee
- * 
- *   (c) 2015
- * 
- *   Author: Silke Henkes
- * 
- *   Department of Physics 
- *   Institute for Complex Systems and Mathematical Biology
- *   University of Aberdeen  
- * 
- *   (c) 2014, 2015
- *  
- *   This program cannot be used, copied, or modified without
- *   explicit written permission of the authors.
- * 
- * ************************************************************* */
+/* ***************************************************************************
+ *
+ *  Copyright (C) 2013-2016 University of Dundee
+ *  All rights reserved. 
+ *
+ *  This file is part of SAMoS (Soft Active Matter on Surfaces) program.
+ *
+ *  SAMoS is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SAMoS is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * ****************************************************************************/
 
 /*!
  * \file constraint_plane.hpp
@@ -76,6 +67,17 @@ public:
       m_msg->msg(Messenger::INFO,"Plane constraint. Particle motion will not be affected by the box boundaries.");
       m_unlimited = true;
     }
+    if (param.find("zpos") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Plane constraint. No zpos specified. Assuming that the constraint plane is at z = 0.");
+      m_zpos = 0.0;
+    }
+    else 
+    {
+      m_msg->msg(Messenger::WARNING,"Plane constraint. Setting constraint plane at z = "+param["zpos"]+".");
+      m_zpos = lexical_cast<double>(param["zpos"]);
+    }
+    m_msg->write_config("constraint.plane.zpos",lexical_cast<string>(m_zpos));
   }
   
   //! Enforce constraint
@@ -105,6 +107,7 @@ public:
 private:
   
   bool m_unlimited;       //!< If true, ignore box boundary and low system to exapand freely
+  double m_zpos;            //!< Position (along z axis) of the constraint plane
   
   
 };

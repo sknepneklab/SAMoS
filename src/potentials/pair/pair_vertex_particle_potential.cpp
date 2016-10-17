@@ -1,33 +1,24 @@
-/* *************************************************************
- *  
- *   VertexParticle Active Mater on Surfaces (SAMoS)
- *   
- *   Author: Rastko Sknepnek
- *  
- *   Division of Physics
- *   School of Engineering, Physics and Mathematics
- *   University of Dundee
- *   
- *   (c) 2013, 2014
- * 
- *   School of Science and Engineering
- *   School of Life Sciences 
- *   University of Dundee
- * 
- *   (c) 2015
- * 
- *   Author: Silke Henkes
- * 
- *   Department of Physics 
- *   Institute for Complex Systems and Mathematical Biology
- *   University of Aberdeen  
- * 
- *   (c) 2014, 2015
- *  
- *   This program cannot be used, copied, or modified without
- *   explicit written permission of the authors.
- * 
- * ************************************************************* */
+/* ***************************************************************************
+ *
+ *  Copyright (C) 2013-2016 University of Dundee
+ *  All rights reserved. 
+ *
+ *  This file is part of SAMoS (Soft Active Matter on Surfaces) program.
+ *
+ *  SAMoS is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SAMoS is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * ****************************************************************************/
 
 /*!
  * \file pair_vertex_particle_potential.cpp
@@ -124,10 +115,22 @@ void PairVertexParticlePotential::compute(double dt)
         if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_2 -= (((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i));
         perim_vec = perim_vec + cross_prod_2; 
         
+        // Adding force contributions from the dual edges associated with face f and face next(f,vi.n_faces)
+        if (m_has_pair_params)
+        {
+          Vertex& vn = mesh.get_vertices()[vi.dual_neighbour_map[f]];
+          lambda = m_pair_params[vi.type-1][vn.type-1].lambda;
+        } 
         Vector3d cross_prod_3(0.0,0.0,0.0);
         if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_3 = lambda*(((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i));
         con_vec = con_vec + cross_prod_3; 
         
+        // Adding force contributions from the dual edges associated with face f and face prev(f,vi.n_faces)
+        if (m_has_pair_params)
+        {
+          Vertex& vn = mesh.get_vertices()[vi.dual_neighbour_map[next(f,vi.n_faces)]];
+          lambda = m_pair_params[vi.type-1][vn.type-1].lambda;
+        } 
         Vector3d cross_prod_4(0.0,0.0,0.0);
         if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_4 = lambda*(((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i));
         con_vec = con_vec - cross_prod_4; 
@@ -197,10 +200,22 @@ void PairVertexParticlePotential::compute(double dt)
             if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_2 -= ((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i);
             perim_vec = perim_vec + cross_prod_2; 
             
+            // Adding force contributions from the dual edges associated with face f and face next(f,vi.n_faces)
+            if (m_has_pair_params)
+            {
+              Vertex& vn = mesh.get_vertices()[vj.dual_neighbour_map[f]];
+              lambda = m_pair_params[vj.type-1][vn.type-1].lambda;
+            } 
             Vector3d cross_prod_3(0.0,0.0,0.0);
             if (!(f_nu_m.is_hole || f_nu.is_hole)) cross_prod_3 = lambda*(((r_nu - r_nu_m).unit())*f_nu.get_jacobian(i));
             con_vec = con_vec + cross_prod_3; 
 
+            // Adding force contributions from the dual edges associated with face f and face next(f,vi.n_faces)
+            if (m_has_pair_params)
+            {
+              Vertex& vn = mesh.get_vertices()[vj.dual_neighbour_map[next(f,vj.n_faces)]];
+              lambda = m_pair_params[vj.type-1][vn.type-1].lambda;
+            } 
             Vector3d cross_prod_4(0.0,0.0,0.0);
             if (!(f_nu_p.is_hole || f_nu.is_hole)) cross_prod_4 = lambda*(((r_nu_p - r_nu).unit())*f_nu.get_jacobian(i));
             con_vec = con_vec - cross_prod_4; 
