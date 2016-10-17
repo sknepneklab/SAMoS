@@ -58,9 +58,10 @@ except:
 	pass
 
 class SimRun:
-	def __init__(self,directory,conffile,inputfile,radiusfile,skip,tracer=False,ignore=False):
+	def __init__(self,directory,conffile,inputfile,radiusfile,skip,tracer=False,ignore=False,takeDrift=False):
 		self.tracer=tracer
 		self.ignore=ignore
+		self.takeDrift=takeDrift
 		self.param = Param(directory+conffile)
 		files = sorted(glob(directory + self.param.dumpname+'*.dat'))[skip:]
 		if len(files) == 0:
@@ -77,10 +78,10 @@ class SimRun:
 		# Find out if this is a simulation with a variable number of particles:
 		# For now, otherwise we get a mess ...
 		self.Nvariable=True
-		#if self.param.npopulation>0:
-			#self.Nvariable=True
-		#else:
-			#self.Nvariable=False
+		if self.param.npopulation>0:
+			self.Nvariable=True
+		else:
+			self.Nvariable=False
 		# Deal with the radii in an appropriate manner:
 		# First check that the potential actually uses radii:
 		# If yes, read them in from the initial file (to be overwritten if there are separate ones in each file)
@@ -126,10 +127,9 @@ class SimRun:
 		# Produce empty arrays for initialization
 		self.rval=np.zeros((self.Nsnap,self.N,3))
 		self.vval=np.zeros((self.Nsnap,self.N,3))
-		#self.nval=np.empty((self.Nsnap,self.N,3))
-		#self.vhat=np.empty((self.Nsnap,self.N,3))
+		self.flag=np.zeros((self.Nsnap,self.N))
 		if self.Nvariable:
-			self.flag=np.zeros((self.Nsnap,self.N))
+			#self.flag=np.zeros((self.Nsnap,self.N))
 			if not self.monodisperse:
 				 self.radius=np.zeros((self.Nsnap,self.N))
 		if tracer:
@@ -166,36 +166,29 @@ class SimRun:
 				#print u
 			rval_u = np.column_stack((x,y,z))
 			vval_u = np.column_stack((vx,vy,vz))
-			#nval_u = np.column_stack((nx,ny,nz))
-			#vel = np.sqrt(vval_u[:,0]**2 + vval_u[:,1]**2 + vval_u[:,2]**2)
-			#vhat_u=((vval_u).transpose()/(vel).transpose()).transpose()
 			if self.Nvariable:
 				self.rval[u,:self.Nval[u],:]=rval_u
 				self.vval[u,:self.Nval[u],:]=vval_u
 				if tracer:
-					#self.rtracers[u,:]=self.rval[u,self.tracers[u,:]]
-					#self.vtracers[u,:]=self.rval[u,self.tracers[u,:]]
 					self.rtracers[u,:,:]=self.rval[u,tracers,:]
 					self.vtracers[u,:,:]=self.rval[u,tracers,:]
 			else:
 				self.rval[u,:,:]=rval_u
 				self.vval[u,:,:]=vval_u
 			u+=1
-			
-	#def takeDrift():
-		## taking off the drift
-		#if u>0:
-			## Bring back people who crossed the line
-			#diff_real =self.geom.ApplyPeriodic12(rval_u0,rval_u)
-			##print np.max(diff_real)
-			##print diff_real
-			#rval_ud=rval_u0+diff_real
-			#drift=np.sum(diff_real,axis=0)/self.N
-			##print drift
-			#rval_ud-=drift
-			#self.rval[u,:,:]=rval_ud
-		#else:
-			#self.rval[u,:,:]=rval_u
+		# Take the drift off as a post-processing step if desired
+		# Rather: Just compute it, and take it off in the MSD etc
+		if self.takeDrift:
+			self.drift=np.zeros((self.Nsnap,3))
+			if self.Nvariable:
+				print "Variable N: Taking off the drift is meaningless. Doing nothing."
+			else:	
+				for u in range(1,self.Nsnap):
+					 dr=self.geom.ApplyPeriodic2d(self.rval[u,:,:]-self.rval[u-1,:,:])
+					 drift0=np.sum(dr,axis=0)/self.N
+					 self.drift[u,:]=self.drift[u-1,:]+drift0
+					 print self.drift[u,:]
+			  
 		
 	def getMSD(self,verbose=True):
 		self.msd=np.empty((self.Nsnap,))
@@ -211,10 +204,21 @@ class SimRun:
 				else:
 					print "Sorry: MSD for dividing particles is ambiguous and currently not implemented!"
 			else:
-				if self.geom.periodic:
-					self.msd[u]=np.sum(np.sum(np.sum((self.geom.ApplyPeriodic33(self.rval[:smax,:,:],self.rval[u:,:,:]))**2,axis=2),axis=1),axis=0)/(self.N*smax)
+				# Drift is only meaningful here
+				#print "Doing the non-tracer MSD: this may take some time"
+				if self.takeDrift:
+					hmm=(self.drift[:smax,:]-self.drift[u:,:])
+					takeoff=np.einsum('j,ik->ijk',np.ones((self.N,)),hmm)
+					if self.geom.periodic:
+						dr=self.geom.ApplyPeriodic3d(self.rval[:smax,:,:]-self.rval[u:,:,:])-takeoff
+					else:
+						dr=self.rval[:smax,:,:]-self.rval[u:,:,:]-takeoff
+					self.msd[u]=np.sum(np.sum(np.sum(dr**2,axis=2),axis=1),axis=0)/(self.N*smax)
 				else:
-					self.msd[u]=np.sum(np.sum(np.sum((self.rval[u:,:,:]-self.rval[:smax,:,:])**2,axis=2),axis=1),axis=0)/(self.N*smax)
+					if self.geom.periodic:
+						self.msd[u]=np.sum(np.sum(np.sum((self.geom.ApplyPeriodic33(self.rval[:smax,:,:],self.rval[u:,:,:]))**2,axis=2),axis=1),axis=0)/(self.N*smax)
+					else:
+						self.msd[u]=np.sum(np.sum(np.sum((self.rval[u:,:,:]-self.rval[:smax,:,:])**2,axis=2),axis=1),axis=0)/(self.N*smax)
 		xval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
 		if verbose:
 			fig=plt.figure()
