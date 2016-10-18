@@ -313,6 +313,8 @@ public:
   //! \param mol_id id of the molecule
   vector<int>& get_mol_particles(int mol_id) { return m_molecules[mol_id]; }
 
+  //! Return total number of molecules in the system
+  int number_of_molecules() { return m_molecules.size(); }
     
 private:
   
