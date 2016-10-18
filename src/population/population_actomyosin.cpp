@@ -98,7 +98,9 @@ void PopulationActomyosin::divide(int t)
       // TODO: Figure out how to incorporate forces
       //double f = sqrt(pi.fx*pi.fx + pi.fy*pi.fy + pi.fz*pi.fz);
       //double prob = m_detach_prob*exp(m_lambda*f);
-      if (m_rng->drnd() < detach_prob)  // flip its type to "attached" with probability attach_prob.
+      double f = sqrt(pi.fx*pi.fx + pi.fy*pi.fy + pi.fz*pi.fz);
+      double detach_prob_fdep = detach_prob*exp(m_lambda*f);
+      if (m_rng->drnd() < detach_prob_fdep)   // flip its type to "attached" with probability attach_prob.
         pi.set_type(m_type_d);  
     }
   }
