@@ -401,7 +401,7 @@ class Param:
 					self.int_params[str.strip(conf.key_words['integrator'][nNVE].attributes[l].name)]=str.strip(conf.key_words['integrator'][nNVE].attributes[l].val)
 				except: # some odd thermal ones are effectively boolean
 					self.int_params[str.strip(conf.key_words['integrator'][nNVE].attributes[l].name)]=True
-			done = self.oneInt()
+			done = self.oneInt(conf)
 		else:
 			self.group_integrator=['none' for u in range(self.ngroups)] 
 			self.group_int_params=[{} for u in range(self.ngroups)]
@@ -425,7 +425,7 @@ class Param:
 					self.integrator=conf.key_words['integrator'][k].name
 					print "Main integrator: " + self.integrator
 					self.int_params=int_params
-					done = self.oneInt()
+					done = self.oneInt(conf)
 				else:
 					groupidx=self.groupnames.index(mygroup)
 					self.group_integrator[groupidx]=conf.key_words['integrator'][k].name
@@ -434,7 +434,7 @@ class Param:
 						self.integrator=conf.key_words['integrator'][k].name
 						print "Main integrator: " + self.integrator
 						self.int_params=int_params
-						done = self.oneInt()
+						done = self.oneInt(conf)
 					else:
 						if k==(nintegrator-1):
 							print "Warning: multiple complex integrators "
@@ -474,16 +474,28 @@ class Param:
 		print self.nsteps
 	
 	
-	def oneInt(self):
+	def oneInt(self,conf):
 		self.one_integrator=True
 		if self.integrator=='brownian':
-			self.dt =float(self.int_params['dt'])
-			print "Time step: " + str(self.dt)
+                        # In case it's one of the newer ones where the dt is on its own
+                        # If the except doesn't work either, we are fucked in any case
+                        try:
+                            self.dt =float(self.int_params['dt'])
+                        except:
+                            #print conf.key_words['timestep']
+                            #self.dt = float(conf.key_words['timestep'])
+                            # Oh yes, that syntax is incompatible with the parser
+                            self.dt=0.01
+                        print "Time step: " + str(self.dt)
 			self.seed = self.int_params['seed']
 			print "Dynamics seed: " + self.seed
 			self.mu = self.int_params['mu']
 			print "Mobility: " + str(self.mu)
-			self.v0 = self.int_params['v0']
+			# Again, the stupid v0 as external aligner type
+			try:
+                            self.v0 = float(conf.key_words['external'][0].attributes[0].val)
+                        except:
+                            self.v0 = self.int_params['v0']
 			print "v0: " + str(self.v0)
 			self.nu = self.int_params['nu']
 			print "Noise strength: " + str(self.nu)
