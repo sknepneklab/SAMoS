@@ -30,8 +30,10 @@
 # * ***************************************************************
 
 from Geometry import *
+#from read_param_json import *
 from read_param import *
 from read_data import *
+from read_faces import *
 from CellList import *
 from Interaction import *
 
@@ -44,12 +46,12 @@ except:
 	pass
 
 class CellConfiguration:
-	def __init__(self,param,filename,ignore=False,debug=False):
+	def __init__(self,param,filename_cells,filename_faces,ignore=False,debug=False):
 		self.param=param
 		# Read the local data
 		geometries={'sphere':GeometrySphere,'plane':GeometryPlane,'plane_periodic':GeometryPeriodicPlane,'none':Geometry,'tube':GeometryTube,'peanut':GeometryPeanut,'hourglass':GeometryHourglass}
-		print "Processing file : ", filename
-		data = ReadData(filename)
+		print "Processing file : ", filename_cells
+		data = ReadData(filename_cells)
 		if data.keys.has_key('x'):
 			x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
 		else:
@@ -107,6 +109,12 @@ class CellConfiguration:
 		vel = np.sqrt(self.vval[:,0]**2 + self.vval[:,1]**2 + self.vval[:,2]**2)
 		self.vhat=((self.vval).transpose()/(vel).transpose()).transpose()
 		
+		# Now get the connectivity here from the faces files
+		#print "Processing file : ", filename_faces
+		data_faces = ReadFaces(filename_faces)
+		self.Faces=data_faces.Faces
+		self.NFaces=data_faces.Nfaces
+		
 		# Create the Interaction class
 		# This is essentially dummy for now
 		self.radius=1
@@ -157,12 +165,13 @@ class CellConfiguration:
 		#self.clist.printMe()
         
 	# For now: just get a couple of vital statistics out of this
-	# n.b. for our standard fixed patch, the radius including boundary is something like 31.5 (~10 pi)
-	# Look only at cells well inside
-	def getStatsCells(self,ratbin,conbin,maskradius=25):
+	
+	def getStatsCells(self,areabin,ratbin,conbin,maskradius=25):
 		rdist=np.sqrt(self.rval[:,0]**2+self.rval[:,1]**2+self.rval[:,2]**2)
-		inside=[index for index,value in enumerate(rdist) if value<maskradius]
-		print maskradius
+		# First find the ones that are not actually boundary
+		inside=[index for index,value in enumerate(self.boundary) if value==0]
+		#inside=[index for index,value in enumerate(rdist) if value<maskradius]
+		#print maskradius
 		Ninside=len(inside)
 		print Ninside
 		vel2 = self.vval[inside,0]**2 + self.vval[inside,1]**2 + self.vval[inside,2]**2
@@ -170,19 +179,31 @@ class CellConfiguration:
 		# mean square force
 		f2 = self.fval[inside,0]**2 + self.fval[inside,1]**2 + self.fval[inside,2]**2
 		f2av=np.mean(f2)
+		# Actual area
+		areav=np.mean(self.area[inside])
+		areadist,bins=np.histogram(self.area[inside],areabin,density=True)
 		# The infamous perimeter / area ratio
 		pratio=self.perim[inside]/np.sqrt(self.area[inside])
 		# mean and distribution
 		pratav=np.mean(pratio)
 		pratdist,bins=np.histogram(pratio,ratbin,density=True)
 		# contact number distribution (be careful with binning)
-		zav=np.mean(self.ncon[inside])
-		zdist,bins=np.histogram(self.ncon[inside],conbin,density=True)
+		# Well, current data does't have that keyword ..
+		zav=0.0
+		zdist=np.zeros((len(conbin)-1,))
+		#zav=np.mean(self.ncon[inside])
+		#zdist,bins=np.histogram(self.ncon[inside],conbin,density=True)
 		# Boundary length as a fraction of total number of particles (useless for fixed)
 		# Check that read as an int
 		boundary=[index for index,value in enumerate(self.boundary) if value==1]
 		bfrac=len(boundary)/self.N
-		return vel2av, f2av, pratav,pratdist,zav,zdist,bfrac,Ninside
+		# Now get the actual length of the boundary ...
+		borderface=self.Faces[self.NFaces-2]
+		# Calculate its length, the old fashioned way
+		bshift=[borderface[k-1] for k in range(len(borderface))]
+                blens=np.sqrt(np.sum((self.rval[bshift,:]-self.rval[borderface,:])**2,axis=1))
+                borderlen=np.sum(blens)
+		return vel2av, f2av, areav, areadist, pratav,pratdist,zav,zdist,borderlen,bfrac,Ninside
 	
 	
 	  
