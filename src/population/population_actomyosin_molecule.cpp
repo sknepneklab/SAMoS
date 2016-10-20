@@ -51,7 +51,7 @@ void PopulationActomyosinMolecule::divide(int t)
     int Nmol = m_system->number_of_molecules();
     // Probability of detachment for a given particle is rate per particle multiplied with time,
     // where time is equal to m_freq*integrator_time_step.   
-    double detach_prob = m_detach_rate*m_system->get_integrator_step();
+    double detach_prob = m_detach_rate*m_freq*m_system->get_integrator_step();
     // loop over all molecules in the system
     for (int mol = 0; mol < Nmol; mol++)
     {
