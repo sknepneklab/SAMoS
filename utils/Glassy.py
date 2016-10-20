@@ -58,10 +58,14 @@ except:
 	pass
 
 class SimRun:
-	def __init__(self,directory,conffile,inputfile,radiusfile,skip,tracer=False,ignore=False,takeDrift=False):
+	def __init__(self,directory,conffile,inputfile,radiusfile,skip,tracer=False,ignore=False,takeDrift=False,usetype='all'):
 		self.tracer=tracer
 		self.ignore=ignore
 		self.takeDrift=takeDrift
+		self.usetype=usetype
+		readonetype=False
+		if self.usetype!='all':
+                        readonetype=True
 		self.param = Param(directory+conffile)
 		files = sorted(glob(directory + self.param.dumpname+'*.dat'))[skip:]
 		if len(files) == 0:
@@ -82,6 +86,8 @@ class SimRun:
 			self.Nvariable=True
 		else:
 			self.Nvariable=False
+                if readonetype:
+                        self.Nvariable=False
 		# Deal with the radii in an appropriate manner:
 		# First check that the potential actually uses radii:
 		# If yes, read them in from the initial file (to be overwritten if there are separate ones in each file)
@@ -89,13 +95,13 @@ class SimRun:
 			self.monodisperse=True
 		else:
 			if self.param.pot_params['use_particle_radii']==True:
-				print "Reading radii from initial file!"
-				data_ini=ReadData(directory+radiusfile)
+				#print "Reading radii from initial file!"
+				#data_ini=ReadData(directory+radiusfile)
 				self.monodisperse=False
-				self.radius=data_ini.data[data_ini.keys['radius']]
-				if self.Nvariable==False:
-					self.N=len(self.radius)
-					print "Constant number of " + str(self.N) + " particles!"
+				#self.radius=data_ini.data[data_ini.keys['radius']]
+				#if self.Nvariable==False:
+					#self.N=len(self.radius)
+					#print "Constant number of " + str(self.N) + " particles!"
 			else:
 				self.monodisperse=True
 		# Unfortunately, need a first read-through to gauge what kind of data size we need
@@ -112,11 +118,26 @@ class SimRun:
 				 u+=1
 			self.N=int(np.amax(self.Nval))
 			print "Handling a total of maximum " + str(self.N) + " particles!"
-		elif self.monodisperse:
+		else:
 			data = ReadData(files[0])
 			x= np.array(data.data[data.keys['x']])
-			self.N=len(x)
+			if readonetype:
+                                mytypes= np.array(data.data[data.keys['type']])
+                                usetype0=int(self.usetype)
+                                useparts=[k for k in range(len(mytypes)) if mytypes[k]==usetype0]
+                                self.N=len(useparts)
+                        else:
+                                self.N=len(x)
 			print "Constant number of " + str(self.N) + " particles!"
+                # Earliers point at which the radius can be read
+                if not self.monodisperse:
+                        print "Reading radii from initial file!"
+                        data_ini=ReadData(directory+radiusfile)
+                        if readonetype:
+                                hmm=data_ini.data[data_ini.keys['radius']]
+                                self.radius=hmm[useparts]
+                        else:
+				self.radius=data_ini.data[data_ini.keys['radius']]
 		if tracer:
 			data = ReadData(files[0])
 			tp=np.array(data.data[data.keys['type']])
@@ -145,18 +166,24 @@ class SimRun:
 			#if data.keys.has_key('nx'):
 			#	nx, ny, nz = np.array(data.data[data.keys['nx']]), np.array(data.data[data.keys['ny']]), np.array(data.data[data.keys['nz']])	
 			if data.keys.has_key('flag'):
-				fl = data.data[data.keys['flag']]
+				fl = np.array(data.data[data.keys['flag']])
 				if self.Nvariable:
 					self.flag[u,:self.Nval[u]]=fl
+                                elif readonetype:
+                                        self.flag[u,:]=fl[useparts]
 				else:
 					self.flag[u,:]=fl
 			if data.keys.has_key('type'):
-				tp = data.data[data.keys['type']]
+                                if readonetype:
+                                        hmm=np.array(data.data[data.keys['type']])
+                                        self.tp=hmm[useparts]
+                                else:
+                                        self.tp = data.data[data.keys['type']]
 				if tracer:
-					tracers = [index for index,value in enumerate(tp) if value==2]
+					tracers = [index for index,value in enumerate(self.tp) if value==2]
 					self.tracers[u,:]=tracers
 			if data.keys.has_key('radius'):
-				rad=data.data[data.keys['radius']]
+				rad=np.array(data.data[data.keys['radius']])
 				if self.Nvariable:
 					self.radius[u,:self.Nval[u]]=rad
 				#else:
@@ -173,8 +200,12 @@ class SimRun:
 					self.rtracers[u,:,:]=self.rval[u,tracers,:]
 					self.vtracers[u,:,:]=self.rval[u,tracers,:]
 			else:
-				self.rval[u,:,:]=rval_u
-				self.vval[u,:,:]=vval_u
+                                if readonetype:
+                                        self.rval[u,:,:]=rval_u[useparts,:]
+                                        self.vval[u,:,:]=vval_u[useparts,:]
+                                else:
+                                        self.rval[u,:,:]=rval_u[useparts,:]
+                                        self.vval[u,:,:]=vval_u[useparts,:]
 			u+=1
 		# Take the drift off as a post-processing step if desired
 		# Rather: Just compute it, and take it off in the MSD etc
@@ -183,42 +214,44 @@ class SimRun:
 			if self.Nvariable:
 				print "Variable N: Taking off the drift is meaningless. Doing nothing."
 			else:	
-				for u in range(1,self.Nsnap):
-					 dr=self.geom.ApplyPeriodic2d(self.rval[u,:,:]-self.rval[u-1,:,:])
-					 drift0=np.sum(dr,axis=0)/self.N
-					 self.drift[u,:]=self.drift[u-1,:]+drift0
-					 print self.drift[u,:]
+                                for u in range(1,self.Nsnap):
+                                        dr=self.geom.ApplyPeriodic2d(self.rval[u,:,:]-self.rval[u-1,:,:])
+                                        drift0=np.sum(dr,axis=0)/self.N
+                                        self.drift[u,:]=self.drift[u-1,:]+drift0
+                                        #print self.drift[u,:]
 			  
 		
 	def getMSD(self,verbose=True):
 		self.msd=np.empty((self.Nsnap,))
 		# in case of tracers, simply use the tracer rval isolated above
-		for u in range(self.Nsnap):
-			smax=self.Nsnap-u
-			if self.Nvariable:
-				if self.tracer:
-					if self.geom.periodic:
-						self.msd[u]=np.sum(np.sum(np.sum((self.geom.ApplyPeriodic33(self.rtracers[:smax,:,:],self.rtracers[u:,:,:]))**2,axis=2),axis=1),axis=0)/(self.Ntracer*smax)
-					else:
-						self.msd[u]=np.sum(np.sum(np.sum((self.rtracers[u:,:,:]-self.rtracers[:smax,:,:])**2,axis=2),axis=1),axis=0)/(self.Ntracer*smax)
-				else:
-					print "Sorry: MSD for dividing particles is ambiguous and currently not implemented!"
-			else:
-				# Drift is only meaningful here
-				#print "Doing the non-tracer MSD: this may take some time"
-				if self.takeDrift:
-					hmm=(self.drift[:smax,:]-self.drift[u:,:])
-					takeoff=np.einsum('j,ik->ijk',np.ones((self.N,)),hmm)
-					if self.geom.periodic:
-						dr=self.geom.ApplyPeriodic3d(self.rval[:smax,:,:]-self.rval[u:,:,:])-takeoff
-					else:
-						dr=self.rval[:smax,:,:]-self.rval[u:,:,:]-takeoff
-					self.msd[u]=np.sum(np.sum(np.sum(dr**2,axis=2),axis=1),axis=0)/(self.N*smax)
-				else:
-					if self.geom.periodic:
-						self.msd[u]=np.sum(np.sum(np.sum((self.geom.ApplyPeriodic33(self.rval[:smax,:,:],self.rval[u:,:,:]))**2,axis=2),axis=1),axis=0)/(self.N*smax)
-					else:
-						self.msd[u]=np.sum(np.sum(np.sum((self.rval[u:,:,:]-self.rval[:smax,:,:])**2,axis=2),axis=1),axis=0)/(self.N*smax)
+		#if self.usetype=='all':
+                for u in range(self.Nsnap):
+                        smax=self.Nsnap-u
+                        if self.Nvariable:
+                                if self.tracer:
+                                        if self.geom.periodic:
+                                                self.msd[u]=np.sum(np.sum(np.sum((self.geom.ApplyPeriodic33(self.rtracers[:smax,:,:],self.rtracers[u:,:,:]))**2,axis=2),axis=1),axis=0)/(self.Ntracer*smax)
+                                        else:
+                                                self.msd[u]=np.sum(np.sum(np.sum((self.rtracers[u:,:,:]-self.rtracers[:smax,:,:])**2,axis=2),axis=1),axis=0)/(self.Ntracer*smax)
+                                else:
+                                        print "Sorry: MSD for dividing particles is ambiguous and currently not implemented!"
+                        else:
+                                # Drift is only meaningful here
+                                #print "Doing the non-tracer MSD: this may take some time"
+                                if self.takeDrift:
+                                        hmm=(self.drift[:smax,:]-self.drift[u:,:])
+                                        takeoff=np.einsum('j,ik->ijk',np.ones((self.N,)),hmm)
+                                        if self.geom.periodic:
+                                                dr=self.geom.ApplyPeriodic3d(self.rval[:smax,:,:]-self.rval[u:,:,:])-takeoff
+                                        else:
+                                                dr=self.rval[:smax,:,:]-self.rval[u:,:,:]-takeoff
+                                        self.msd[u]=np.sum(np.sum(np.sum(dr**2,axis=2),axis=1),axis=0)/(self.N*smax)
+                                else:
+                                        if self.geom.periodic:
+                                                self.msd[u]=np.sum(np.sum(np.sum((self.geom.ApplyPeriodic33(self.rval[:smax,:,:],self.rval[u:,:,:]))**2,axis=2),axis=1),axis=0)/(self.N*smax)
+                                        else:
+                                                self.msd[u]=np.sum(np.sum(np.sum((self.rval[u:,:,:]-self.rval[:smax,:,:])**2,axis=2),axis=1),axis=0)/(self.N*smax)
+                                
 		xval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
 		if verbose:
 			fig=plt.figure()
@@ -236,21 +269,28 @@ class SimRun:
 	def SelfIntermediate(self,qval,verbose=True):
 		# This is single particle, single q, shifted time step. Equivalent to the MSD, really
 		SelfInt=np.empty((self.Nsnap,),dtype=complex)
-		for u in range(self.Nsnap):
-			smax=self.Nsnap-u
-			if self.Nvariable:
-				if self.tracer:
-					if self.geom.periodic:
-						SelfInt[u]=np.sum(np.sum(np.exp(1.0j*qval[0]*(self.geom.ApplyPeriodicX(-self.rtracers[:smax,:,0]+self.rtracers[u:,:,0]))+1.0j*qval[1]*(self.geom.ApplyPeriodicY(-self.rtracers[:smax,:,1]+self.rtracers[u:,:,1]))+1.0j*qval[2]*(self.geom.ApplyPeriodicZ(-self.rtracers[:smax,:,2]+self.rtracers[u:,:,2]))),axis=1),axis=0)/(self.Ntracer*smax)
-					else:
-						SelfInt[u]=np.sum(np.sum(np.exp(1.0j*qval[0]*(-self.rtracers[:smax,:,0]+self.rtracers[u:,:,0])+1.0j*qval[1]*(-self.rtracers[:smax,:,1]+self.rtracers[u:,:,1])+1.0j*qval[2]*(-self.rtracers[:smax,:,2]+self.rtracers[u:,:,2])),axis=1),axis=0)/(self.Ntracer*smax)
-				else:
-					print "Sorry: Self-intermediate scattering function for dividing particles is ambiguous and currently not implemented!"
-			else:
-				if self.geom.periodic:
-					SelfInt[u]=np.sum(np.sum(np.exp(1.0j*qval[0]*(self.geom.ApplyPeriodicX(-self.rval[:smax,:,0]+self.rval[u:,:,0]))+1.0j*qval[1]*(self.geom.ApplyPeriodicY(-self.rval[:smax,:,1]+self.rval[u:,:,1]))+1.0j*qval[2]*(self.geom.ApplyPeriodicZ(-self.rval[:smax,:,2]+self.rval[u:,:,2]))),axis=1),axis=0)/(self.N*smax)
-				else:
-					SelfInt[u]=np.sum(np.sum(np.exp(1.0j*qval[0]*(-self.rval[:smax,:,0]+self.rval[u:,:,0])+1.0j*qval[1]*(-self.rval[:smax,:,1]+self.rval[u:,:,1])+1.0j*qval[2]*(-self.rval[:smax,:,2]+self.rval[u:,:,2])),axis=1),axis=0)/(self.N*smax)
+		#if self.usetype=='all':
+                for u in range(self.Nsnap):
+                        smax=self.Nsnap-u
+                        if self.Nvariable:
+                                if self.tracer:
+                                        if self.geom.periodic:
+                                                SelfInt[u]=np.sum(np.sum(np.exp(1.0j*qval[0]*(self.geom.ApplyPeriodicX(-self.rtracers[:smax,:,0]+self.rtracers[u:,:,0]))+1.0j*qval[1]*(self.geom.ApplyPeriodicY(-self.rtracers[:smax,:,1]+self.rtracers[u:,:,1]))+1.0j*qval[2]*(self.geom.ApplyPeriodicZ(-self.rtracers[:smax,:,2]+self.rtracers[u:,:,2]))),axis=1),axis=0)/(self.Ntracer*smax)
+                                        else:
+                                                SelfInt[u]=np.sum(np.sum(np.exp(1.0j*qval[0]*(-self.rtracers[:smax,:,0]+self.rtracers[u:,:,0])+1.0j*qval[1]*(-self.rtracers[:smax,:,1]+self.rtracers[u:,:,1])+1.0j*qval[2]*(-self.rtracers[:smax,:,2]+self.rtracers[u:,:,2])),axis=1),axis=0)/(self.Ntracer*smax)
+                                else:
+                                        print "Sorry: Self-intermediate scattering function for dividing particles is ambiguous and currently not implemented!"
+                        else:
+                                if self.takeDrift:
+                                        hmm=(self.drift[:smax,:]-self.drift[u:,:])
+                                        takeoff=np.einsum('j,ik->ijk',np.ones((self.N,)),hmm)
+                                else:
+                                        hmm=np.zeros((smax,3))
+                                        takeoff=takeoff=np.einsum('j,ik->ijk',np.ones((self.N,)),hmm)
+                                if self.geom.periodic:
+                                        SelfInt[u]=np.sum(np.sum(np.exp(1.0j*qval[0]*(self.geom.ApplyPeriodicX(-self.rval[:smax,:,0]+self.rval[u:,:,0])++takeoff[:,:,0])+1.0j*qval[1]*(self.geom.ApplyPeriodicY(-self.rval[:smax,:,1]+self.rval[u:,:,1])+takeoff[:,:,1])+1.0j*qval[2]*(self.geom.ApplyPeriodicZ(-self.rval[:smax,:,2]+self.rval[u:,:,2])+takeoff[:,:,2])),axis=1),axis=0)/(self.N*smax)
+                                else:
+                                        SelfInt[u]=np.sum(np.sum(np.exp(1.0j*qval[0]*(-self.rval[:smax,:,0]+self.rval[u:,:,0]+takeoff[:,:,0])+1.0j*qval[1]*(-self.rval[:smax,:,1]+self.rval[u:,:,1]+takeoff[:,:,1])+1.0j*qval[2]*(-self.rval[:smax,:,2]+self.rval[u:,:,2]+takeoff[:,:,2])),axis=1),axis=0)/(self.N*smax)
 		tval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
 		# Looking at the absolute value of it here
 		SelfInt2=(np.real(SelfInt)**2 + np.imag(SelfInt)**2)**0.5

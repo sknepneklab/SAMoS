@@ -29,31 +29,90 @@ parser.add_argument("-r", "--radii", type=str, help="radii file (initial configu
 parser.add_argument("-c", "--conffile", type=str, help="configuration file")
 parser.add_argument("-d", "--directory", type=str, help="input directory")
 parser.add_argument("-o", "--output", type=str, help="output directory")
+parser.add_argument("-p", "--prefix", type=str, default="glassy",help="prefix for output file")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
+parser.add_argument("-t", "--step", type=int, default=1, help="step snapshots with this spacing in correlation function")
 parser.add_argument("--tracer", action='store_true', default=False, help="Is this a configuration with tracer particles")
-parser.add_argument("--getMSD", action='store_true', default=False, help="Compute mean squared displacement")
+parser.add_argument("--drift", action='store_true', default=False, help="Should I take away the drift?")
+parser.add_argument("-u", "--usetype", type=str, default="all", help="Which types of particles should I use for MSD and SelfInt?")
+parser.add_argument("--getMSD", action='store_true', default=False, help="Compute mean squared displacement?")
+parser.add_argument("--getSelfInt", action='store_true', default=False, help="Compute Self-Intermediate scattering function?")
+parser.add_argument("--getFourPoint", action='store_true', default=False, help="Compute four point function?")
+parser.add_argument("--getDynStruct", action='store_true', default=False, help="Compute the dynamic structure factor?")
+parser.add_argument("--getFourier", action='store_true', default=False, help="Compute the Fourier transformed positions and velocities?")
 parser.add_argument("--getVelcorr", action='store_true', default=False, help="Compute velocity correlation function")
 parser.add_argument("--plot", action='store_true', default=False, help="Plot MSD and correlations")
-parser.add_argument("--ignore", action='store_true', default=False, help="Ignore complications for quick result (warning!)")
+parser.add_argument("--ignore", action='store_true', default=False, help="Ignore complications like missing potentials for quick result (warning!)")
 
 args = parser.parse_args()
-sim = SimRun(args.directory,args.conffile,args.input,args.radii,args.skip,args.ignore,args.tracer,args.plot)
-output=False
+#def __init__(self,directory,conffile,inputfile,radiusfile,skip,tracer=False,ignore=False,takeDrift=False,usetype='all'):
+#simL = SimRun(confdir,conffile,prefix,radiusfile,skip,True,False,True)
+sim = SimRun(args.directory,args.conffile,args.input,args.radii,args.skip,args.tracer,args.ignore,args.drift,args.usetype)
+data={'input':args.input,'configuration':args.conffile}
 if args.getMSD:
-	tplot,msd = sim.getMSD()
-	data={'tplot':tplot,'msd':msd,'configuration':args.conffile}
-	output=True
+        #getMSD(self,verbose=True):
+	tplot,msd = sim.getMSD(args.plot)
+	dataMSD={'tplot':tplot,'msd':msd,}
+	data.update(dataMSD)
+if args.getSelfInt:
+        qval=np.linspace(0,np.pi,20)
+        SelfInt=np.zeros((len(qval),sim.Nsnap))
+        for q in range(len(qval)):
+                qvalintermediate=qval[q]*np.array([1,1,0])
+                print qval[q]
+                tval,SelfInt[q,:] = sim.SelfIntermediate(qvalintermediate,args.plot)
+        dataSelfInt={'qval':qval,'tval':tval,'SelfInt':SelfInt}
+        data.update(dataSelfInt)
+if args.getFourPoint:
+        afourpoint=0.5
+        qmax=np.pi
+        nmax=50
+        #def FourPoint(self,a,qmax=3.14,verbose=True,nmax=20):
+        tvalFourPoint, FourPoint=sim.FourPoint(afourpoint,qmax,args.plot,nmax)
+        dataFourPoint={'afourpoint':afourpoint,'qmax':qmax,'nmax':nmax,'tvalFourPoint':tvalFourPoint,'FourPoint':FourPoint}
+        data.update(dataFourPoint)
+if args.getDynStruct:  
+        nmax=50
+        qmax=np.pi
+        omegamax=0.1
+        # def getDynStruct(self,qmax,omegamax,verbose=True,nmax=50):
+        omega,qrad,DynStruct=sim.getDynStruct(qmax,omegamax,args.plot,nmax)
+        dataDynStruct={'omegamax':omegamax,'qrad':qrad,'DynStruct':DynStruct}
+        data.update(dataDynStruct)
+if args.getFourier:
+        Sqvel=np.zeros((84,))
+        Sqrad=np.zeros((84,))
+        qmaxFourier=0.5
+        npts=sim.Nsnap/args.step
+        for u in range(0,sim.Nsnap,args.step):
+                qradv,velrad,Sqvel=sim.FourierTransVel(u,qmaxFourier,args.plot)
+                Sqvel+=Sqvel
+                qrad2,posrad=sim.FourierTrans(u,qmaxFourier,args.plot)
+                Sqrad+=posrad
+        Sqvel/=npts
+        Sqrad/=npts
+        dataFourier={'npts':npts,'qmaxFourier':qmaxFourier,'qrad2':qrad2,'qradv':qradv,'Sqrad':Sqrad,'Sqvel':Sqvel}
+        data.update(dataFourier)
 if args.getVelcorr:
-	bins,velcorr,fig=sim.getVelcorr(0.5)
-	print bins
-	print velcorr
-	data={'bins':bins,'velcorr':velcorr,'configuration':args.conffile}
-	output=True
-if output:
-	outglassy=args.output + '/glassy.p'
-	pickle.dump(data,open(outglassy,'wb'))
+        dx=0.1
+        xmax=20
+        nbins=int(xmax/dx)
+        velcorr=np.zeros((nbins,))
+        npts=sim.Nsnap/args.step
+        for u in range(0,simM.Nsnap,step):
+                #def getVelcorrSingle(self,whichframe,dx,xmax,verbose=True):
+                bins,velcorr0=sim.getVelcorrSingle(u,0.1,20,args.plot)
+                velcorr+=velcorr0
+        velcorr/=npts
+	dataVelcorr={'dx':dx,'xmax':xmax,'nbins':nbins,'bins':bins,'velcorr':velcorr}
+	data.update(dataVelcorr)
+
+# Save the output files
+outglassy=args.output + args.prefix +'.p'
+pickle.dump(data,open(outglassy,'wb'))
 if args.plot:
 	plt.show()
+	
 
 	
 	
