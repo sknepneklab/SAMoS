@@ -60,9 +60,9 @@ void PopulationDensity::divide(int t)
     double prob_div = m_div_rate*m_freq*m_system->get_integrator_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
     if (prob_div > 1.0)
     {
-	    m_msg->msg(Messenger::ERROR,"Division rate "+lexical_cast<string>(prob_div)+" is too large for current time step and attempt rate.");
-	    m_msg->msg(Messenger::INFO,"We have: division "+lexical_cast<string>(m_div_rate)+" frequency "+lexical_cast<string>(m_freq)+" time step "+lexical_cast<string>(m_system->get_step())+".");
-	    throw runtime_error("Too high division.");
+      m_msg->msg(Messenger::ERROR,"Division rate "+lexical_cast<string>(prob_div)+" is too large for current time step and attempt rate.");
+      m_msg->msg(Messenger::INFO,"We have: division "+lexical_cast<string>(m_div_rate)+" frequency "+lexical_cast<string>(m_freq)+" time step "+lexical_cast<string>(m_system->get_step())+".");
+      throw runtime_error("Too high division.");
     }
     for (int i = 0; i < N; i++)
     {
@@ -111,17 +111,17 @@ void PopulationDensity::divide(int t)
         }
         // For the polydispersity function: Change radius of second child.
         if (m_new_radius==0.0)
-		      new_r = pr.get_radius(); 
+          new_r = pr.get_radius(); 
         else 
-		    {
-		      if (m_poly == 0.0)
+        {
+          if (m_poly == 0.0)
             new_r = m_new_radius;
-		      else 
+          else 
           {
             new_r = m_new_radius*(1+m_poly*(m_rng->drnd()-0.5));
             //cout << "new radius " << new_r << endl;
           }
-		    }
+        }
         pr.set_radius(new_r);
       }
     }
@@ -157,8 +157,8 @@ void PopulationDensity::remove(int t)
     double prob_death = m_death_rate*m_freq*m_system->get_integrator_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
     if (prob_death>1.0)
     {
-	    cerr << "Error: death rate " << prob_death << " is too large for current time step and attempt rate!" << endl;
-	    throw runtime_error("Too high death.");
+      cerr << "Error: death rate " << prob_death << " is too large for current time step and attempt rate!" << endl;
+      throw runtime_error("Too high death.");
     }
     for (int i = 0; i < N; i++)
     {
