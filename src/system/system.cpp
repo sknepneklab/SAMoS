@@ -402,6 +402,14 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
       }
     }
   }
+  // Make sure molecules exist
+  if (m_molecules.size() == 0)
+    for (unsigned int i = 0; i < m_particles.size(); i++)
+    {
+      Particle& p = m_particles[i];
+      m_molecules.push_back(vector<int>(1,p.get_id()));
+    }
+      
   
   m_n_types = types.size();
    

@@ -55,20 +55,20 @@ if args.getMSD:
 	dataMSD={'tplot':tplot,'msd':msd,}
 	data.update(dataMSD)
 if args.getSelfInt:
-        # This tends to be too slow except for when tracer particles are used
-        #qval=np.linspace(0,np.pi,20)
-        #SelfInt=np.zeros((len(qval),sim.Nsnap))
-        #for q in range(len(qval)):
-                #qvalintermediate=qval[q]*np.array([1,1,0])
-                #print qval[q]
-                #tval,SelfInt[q,:] = sim.SelfIntermediate(qvalintermediate,args.plot)
-        #dataSelfInt={'qval':qval,'tval':tval,'SelfInt':SelfInt}
-        #data.update(dataSelfInt)
+        #This tends to be too slow except for when tracer particles are used
+        qval=np.linspace(0,np.pi,20)
+        SelfInt=np.zeros((len(qval),sim.Nsnap))
+        for q in range(len(qval)):
+                qvalintermediate=qval[q]*np.array([1,1,0])
+                print qval[q]
+                tval,SelfInt[q,:] = sim.SelfIntermediate(qvalintermediate,args.plot)
+        dataSelfInt={'qval':qval,'tval':tval,'SelfInt':SelfInt}
+        data.update(dataSelfInt)
         # Take a single slice at pi (magnitude)
-        qval=np.pi
-        SelfInt=np.zeros((sim.Nsnap,))
-        qvalintermediate=qval*np.array([1,1,0])/np.sqrt(2)
-        tval,SelfInt = sim.SelfIntermediate(qvalintermediate,args.plot)
+        #qval=np.pi
+        #SelfInt=np.zeros((sim.Nsnap,))
+        #qvalintermediate=qval*np.array([1,1,0])/np.sqrt(2)
+        #tval,SelfInt = sim.SelfIntermediate(qvalintermediate,args.plot)
         dataSelfInt={'qval':qval,'tval':tval,'SelfInt':SelfInt}
         data.update(dataSelfInt)
 if args.getFourPoint:
