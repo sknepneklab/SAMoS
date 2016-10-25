@@ -127,6 +127,7 @@
 #include "population_actomyosin.hpp"
 #include "population_actomyosin_poisson.hpp"
 #include "population_actomyosin_molecule.hpp"
+#include "population_actomyosin_head.hpp"
 #include "bond_potential.hpp" 
 #include "bond_harmonic_potential.hpp"
 #include "bond_fene_potential.hpp"
