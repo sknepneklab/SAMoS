@@ -72,6 +72,7 @@ public:
     m_known_params.push_back("min_val");
     m_known_params.push_back("max_val");
     m_known_params.push_back("ntypes");
+    m_known_params.push_back("steps");
     if (param.find("min_val") != param.end())
     {
       if (lexical_cast<double>(param["min_val"]) != 0.0)
