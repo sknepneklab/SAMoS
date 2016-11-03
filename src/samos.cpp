@@ -355,8 +355,6 @@ int main(int argc, char* argv[])
                                                                                                   parameter_data
                                                                                                  ));
                 msg->msg(Messenger::INFO,"Added "+potential_data.type+" to the list of pair potentials.");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for pair potential "+potential_data.type+" is set to "+(*it).second+".");
               }
               else
               {
@@ -392,8 +390,6 @@ int main(int argc, char* argv[])
               {
                 pot->add_external_potential(external_data.type, external_potentials[external_data.type](sys,msg,parameter_data));
                 msg->msg(Messenger::INFO,"Added "+external_data.type+" to the list of external potentials.");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for pair potential "+external_data.type+" is set to "+(*it).second+".");
               }
               else
               {
@@ -436,8 +432,6 @@ int main(int argc, char* argv[])
               {
                 pot->add_bond_potential(bond_data.type, bond_potentials[bond_data.type](sys,msg,parameter_data));
                 msg->msg(Messenger::INFO,"Added "+bond_data.type+" to the list of bond potentials.");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for bond potential "+bond_data.type+" is set to "+(*it).second+".");
               }
               else
               {
@@ -481,8 +475,6 @@ int main(int argc, char* argv[])
               {
                 pot->add_angle_potential(angle_data.type, angle_potentials[angle_data.type](sys,msg,parameter_data));
                 msg->msg(Messenger::INFO,"Added "+angle_data.type+" to the list of angle potentials.");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for angle potential "+angle_data.type+" is set to "+(*it).second+".");
               }
               else
               {
@@ -519,8 +511,6 @@ int main(int argc, char* argv[])
                 //constraint = boost::shared_ptr<Constraint>(constraints[constraint_data.type](sys,msg,parameter_data));  // dirty workaround shared_ptr and inherited classes
                 constraint->add_constraint(constraint_data.type,constraints[constraint_data.type](sys,msg,parameter_data));
                 msg->msg(Messenger::INFO,"Adding constraint of type "+constraint_data.type+".");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for constraint "+constraint_data.type+" is set to "+(*it).second+".");
                 // Enforce constraint so we make sure all particles lie on it
                 for (int i = 0; i < sys->size(); i++)
                   constraint->enforce(sys->get_particle(i));
@@ -580,7 +570,14 @@ int main(int argc, char* argv[])
                 dump.push_back(boost::shared_ptr<Dump>(new Dump(sys,msg,nlist,log_dump_data.name,parameter_data)));
                 msg->msg(Messenger::INFO,"Adding dump to file "+log_dump_data.name+".");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for dump "+log_dump_data.name+" is set to "+(*it).second+".");
+                  if ((*it).second != "")
+                  {
+                    msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for dump "+log_dump_data.name+" is set to "+(*it).second+".");
+                  }
+                  else 
+                  {
+                    msg->msg(Messenger::INFO,"Setting flag " + (*it).first + " for dump "+log_dump_data.name+".");
+                  }
               }
               else
               {
@@ -675,8 +672,6 @@ int main(int argc, char* argv[])
                                                                                                   )
                                                                                                  );
                   msg->msg(Messenger::INFO,"Adding integrator of type "+integrator_data.type+".");
-                  for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                    msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for integrator "+integrator_data.type+" is set to "+(*it).second+".");
                 }
                 else
                 {
@@ -709,8 +704,6 @@ int main(int argc, char* argv[])
               {
                 pot->add_pair_potential_parameters(potential_data.type, parameter_data);
                 msg->msg(Messenger::INFO,"Setting new parameters for "+potential_data.type+".");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for pair potential "+potential_data.type+" is set to "+(*it).second+".");
               }
               else
               {
@@ -738,8 +731,6 @@ int main(int argc, char* argv[])
               {
                 pot->add_pair_type_parameters(potential_data.type, parameter_data);
                 msg->msg(Messenger::INFO,"Setting new parameters for "+potential_data.type+".");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for pair potential "+potential_data.type+" is set to "+(*it).second+".");
               }
               else
               {
@@ -767,8 +758,6 @@ int main(int argc, char* argv[])
               {
                 pot->add_external_potential_parameters(external_data.type, parameter_data);
                 msg->msg(Messenger::INFO,"Setting new parameters for "+external_data.type+".");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for external potential "+external_data.type+" is set to "+(*it).second+".");
               }
               else
               {
@@ -795,8 +784,6 @@ int main(int argc, char* argv[])
               {
                 pot->add_bond_potential_parameters(bond_data.type, parameter_data);
                 msg->msg(Messenger::INFO,"Setting new parameters for "+bond_data.type+".");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for bond potential "+bond_data.type+" is set to "+(*it).second+".");
               }
               else
               {
@@ -823,8 +810,6 @@ int main(int argc, char* argv[])
               {
                 pot->add_angle_potential_parameters(angle_data.type, parameter_data);
                 msg->msg(Messenger::INFO,"Setting new parameters for "+angle_data.type+".");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for angle potential "+angle_data.type+" is set to "+(*it).second+".");
               }
               else
               {
@@ -999,8 +984,6 @@ int main(int argc, char* argv[])
                 }
                 aligner->add_pair_align(pair_align_data.type, pair_aligners[pair_align_data.type](sys,msg,nlist,parameter_data));
                 msg->msg(Messenger::INFO,"Added "+pair_align_data.type+" to the list of pairwise aligners.");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for pairwise alignment "+pair_align_data.type+" is set to "+(*it).second+".");
               }
               else
               {
@@ -1027,8 +1010,6 @@ int main(int argc, char* argv[])
               {
                 aligner->add_pair_align_parameters(pair_align_data.type, parameter_data);
                 msg->msg(Messenger::INFO,"Setting new parameters for "+pair_align_data.type+".");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for pair aligner "+pair_align_data.type+" is set to "+(*it).second+".");
               }
               else
               {
@@ -1065,8 +1046,6 @@ int main(int argc, char* argv[])
               {
                 aligner->add_external_align(external_align_data.type, external_aligners[external_align_data.type](sys,msg,parameter_data));
                 msg->msg(Messenger::INFO,"Added "+external_align_data.type+" to the list of external aligners.");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for external alignment "+external_align_data.type+" is set to "+(*it).second+".");
               }
               else
               {
@@ -1093,8 +1072,6 @@ int main(int argc, char* argv[])
               {
                 aligner->add_external_align_parameters(external_align_data.type, parameter_data);
                 msg->msg(Messenger::INFO,"Setting new parameters for "+external_align_data.type+".");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for external aligner "+external_align_data.type+" is set to "+(*it).second+".");
               }
               else
               {
@@ -1236,8 +1213,6 @@ int main(int argc, char* argv[])
                 if (defined["nlist"])
                   population[population.size()-1]->set_nlist(nlist);
                 msg->msg(Messenger::INFO,"Adding population of type "+population_data.type+".");
-                for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
-                  msg->msg(Messenger::INFO,"Parameter " + (*it).first + " for population "+population_data.type+" is set to "+(*it).second+".");
                 has_population = true;
               }
               else
