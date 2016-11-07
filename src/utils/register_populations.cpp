@@ -47,4 +47,6 @@ void register_populations(PopulationMap& populations)
   populations["actomyosin_poisson"] = boost::factory<PopulationActomyosinPoissonPtr>();
   // Register actomyosin molecule population control with the class factory
   populations["actomyosin_molecule"] = boost::factory<PopulationActomyosinMoleculePtr>();
+  // Register actomyosin head population control with the class factory
+  populations["actomyosin_head"] = boost::factory<PopulationActomyosinHeadPtr>();
 }

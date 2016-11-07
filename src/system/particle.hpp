@@ -80,6 +80,8 @@ public:
     boundary = false;
     in_tissue = false;
     molecule = m_id;   // Default molecule id is particle id (each particle is a molecule)
+    bind = -1;         // Ignored by default 
+    unbind = -1;       // Ignored by default 
   }
   
   //! Get particle id
@@ -227,6 +229,8 @@ public:
   int coordination;            //!< Keeps track of the number of neighbours
   double mass;                 //!< Particle mass
   int molecule;                //!< Id of of the "molecule" (collection of particles) this particle belongs to
+  int bind;                    //!< Next time step this particle will bind (for actomyosin simulations)
+  int unbind;                  //!< Next time step this particle will unbind (for actomyosin simulations)
   
 private:  // Make these attributes immutable 
   

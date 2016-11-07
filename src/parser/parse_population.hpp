@@ -69,6 +69,7 @@ public:
                   | qi::as_string[keyword["actomyosin"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ]  /*! Handles actomyosin attachment/detachment */
                   | qi::as_string[keyword["actomyosin_poisson"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ]  /*! Handles actomyosin Poisson attachment/detachment */
                   | qi::as_string[keyword["actomyosin_molecule"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ]  /*! Handles actomyosin molecule detachment */
+                  | qi::as_string[keyword["actomyosin_head"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ]  /*! Handles actomyosin head detachment */
                   /* to add new population: | qi::as_string[keyword["newpopulation"]][phx::bind(&PopulationData::type, phx::ref(population_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&PopulationData::params, phx::ref(population_data)) = qi::_1 ]

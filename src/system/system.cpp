@@ -566,6 +566,7 @@ void System::add_particle(Particle& p)
 void System::remove_particle(int id)
 {
   Particle& pi = m_particles[id];
+  int mol_id = pi.molecule;
   if (pi.boundary)
   {
     Particle& pj = m_particles[pi.boundary_neigh[0]];
@@ -573,8 +574,10 @@ void System::remove_particle(int id)
     pj.boundary_neigh[(pj.boundary_neigh[0] == id) ? 0 : 1] = pk.get_id();
     pk.boundary_neigh[(pk.boundary_neigh[0] == id) ? 0 : 1] = pj.get_id();
   }
-  vector<int>::iterator it_m = find(m_molecules[pi.molecule].begin(), m_molecules[pi.molecule].end(),id);
-  m_molecules[pi.molecule].erase(it_m);
+  vector<int>::iterator it_m = find(m_molecules[mol_id].begin(), m_molecules[mol_id].end(),id);
+  m_molecules[mol_id].erase(it_m);
+  if (m_molecules[mol_id].size() == 0)
+    m_molecules.erase(m_molecules.begin() + mol_id);
   m_particles.erase(m_particles.begin() + id);
   // Shift down all ids
   for (unsigned int i = 0; i < m_particles.size(); i++)
@@ -582,11 +585,19 @@ void System::remove_particle(int id)
     Particle& p = m_particles[i];
     if (p.get_id() > id)
       p.set_id(p.get_id() - 1);
+    if (p.molecule > mol_id)
+      p.molecule--;
     if (p.boundary)
     {
       if (p.boundary_neigh[0] > id) p.boundary_neigh[0]--;
       if (p.boundary_neigh[1] > id) p.boundary_neigh[1]--;
     }
+  }
+  for (unsigned int i = 0; i < m_molecules.size(); i++)
+  {
+    for (unsigned int j = 0; j < m_molecules[i].size(); j++)
+      if (m_molecules[i][j] > mol_id) 
+       m_molecules[i][j]--; 
   }
   // Update all groups
   for(map<string, GroupPtr>::iterator it_g = m_group.begin(); it_g != m_group.end(); it_g++)
