@@ -292,6 +292,10 @@ class SimRun:
                                 else:
                                         SelfInt[u]=np.sum(np.sum(np.exp(1.0j*qval[0]*(-self.rval[:smax,:,0]+self.rval[u:,:,0]+takeoff[:,:,0])+1.0j*qval[1]*(-self.rval[:smax,:,1]+self.rval[u:,:,1]+takeoff[:,:,1])+1.0j*qval[2]*(-self.rval[:smax,:,2]+self.rval[u:,:,2]+takeoff[:,:,2])),axis=1),axis=0)/(self.N*smax)
 		tval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
+		#print tval
+		print self.Nsnap
+		print self.param.dt
+		print self.param.dump['freq']
 		# Looking at the absolute value of it here
 		SelfInt2=(np.real(SelfInt)**2 + np.imag(SelfInt)**2)**0.5
 		qnorm=np.sqrt(qval[0]**2+qval[1]**2+qval[2]**2)
