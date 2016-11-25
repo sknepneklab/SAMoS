@@ -65,6 +65,8 @@ k) If the compilation is successful, an executable 'samos' should appear in the 
 Compiling it may take several minutes even on a very fast machine.
 
 NOTE: Depending on the compiler, you may get a number of warning messages. Those are harmless and you may safely ignore them.  
+NOTE: If you are compiling with gcc 6.x you need to explicitly state that you are using the C++98 standard. This is done by adding -std=c++98 to the
+CMAKE_CXX_FLAGS variable. SAMoS will fail to compile using the C++11 standard! 
 
 
 4. RUNNING SAMoS
