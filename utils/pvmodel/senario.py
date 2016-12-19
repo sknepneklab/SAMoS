@@ -280,14 +280,15 @@ class Property(Senario):
         if args.boundary:
             self.boundary_main(pv)
 
-        # calculate the difference between real areas and critical division areas
-        max_area = 2.8  # read from configuration file
-        rsp, rad = self.radial_area(pv, max_area)
-        outd, ax = cm.arearadial(rsp, rad)
+        if False:
+            # calculate the difference between real areas and critical division areas
+            max_area = 2.8  # read from configuration file
+            rsp, rad = self.radial_area(pv, max_area)
+            outd, ax = cm.arearadial(rsp, rad)
 
-        name = os.path.join('plots/data/','arearadial_'+str(self.outnum)+'.dat' )
-        with open(name, 'w') as fo:
-            io.dump(outd, fo)
+            name = os.path.join('plots/data/','arearadial_'+str(self.outnum)+'.dat' )
+            with open(name, 'w') as fo:
+                io.dump(outd, fo)
 
     def radial_area(self, pv, max_area, nstat=4000.):
         nbins = int(math.ceil(len(pv.tri.rcmd)/nstat))

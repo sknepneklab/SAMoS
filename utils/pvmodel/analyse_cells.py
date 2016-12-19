@@ -143,8 +143,8 @@ def configuration(args):
         is_active_types= True
 
     # Conversion between the names I gave the parameters and the SAMoS names
-    myparams = ['L', 'k', 'gamma']
     samparams = ['lambda', 'K', 'gamma']
+    myparams = ['L', 'k', 'gamma']
     pmap = dict(zip(samparams, myparams))
 
     # This will get the default attributes but not necessarily the correct values 

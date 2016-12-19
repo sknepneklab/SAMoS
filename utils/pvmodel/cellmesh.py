@@ -535,6 +535,8 @@ class NTriMesh(TriMesh, Pymesh):
 
         #for vhid in tri.pym.keys():
         #print [eh.idx() for eh in tri.edges()]
+        
+        # construct mapping between edges of each mesh
         for eh in tri.edges():
             if tri.is_boundary(eh):
                 continue
@@ -550,9 +552,6 @@ class NTriMesh(TriMesh, Pymesh):
             if len(es) != 1:
                  print 'no intersection'
                  print eset, eseto
-            # tmp
-            if len(es) != 1:
-                print eset, eseto
             assert len(es) == 1
             dual = es.pop()
             to_mesh_edge[eh.idx()] = dual
@@ -1302,7 +1301,8 @@ class PVmesh(object):
                 bondouter /= norm(rnumu)
                 # get the specific value of cl
                 cl = mesh.clproperty[nuheh.idx()]
-                # because samos is off by a factor of 2, lambda_sam = lambda/2
+                #print 'cl property, ', cl
+                # because samos is off by a factor of 2, lambda_sam = 2 *  lambda ( lambda we set )
                 cl = 2 * cl
 
                 # the factor of two here (cl/2.) comes from the fact that we 
