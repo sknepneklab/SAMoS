@@ -26,10 +26,14 @@
 The code has been developed and tested under Linux and Mac OS X. 
 In principle it should be possible to build and run the code on 
 a Windows machine. However, this would require modifying the CMake
-build scripts. This is has not been tested. 
+build scripts. This has not been tested. 
 
+2. TUTORIALS
 
-2. REQUIREMENTS
+A detailed tutorial on how to setup a simulation in SAMoS can be found in the
+samos/doc/tutorial/tutorial.html
+
+3. REQUIREMENTS
 
 SAMoS code is written in C++ using C++98 standard. Data analysis and initial configuration 
 building tools are written in Python 2.7 and require NumPy to run.
@@ -47,7 +51,7 @@ NOTE: On Mac OS X, it is suggested to use Mac Ports to install all necessary lib
 NOTE: SAMoS is able to generate VTP files as its output. We suggest installing and using ParaView 
 to visualise the results. 
 
-3. COMPILING 
+4. COMPILING 
 
 a). Clone the code from the GitHub repository
 b) cd samos (or the name of the directory you chose to download the code into)
@@ -69,12 +73,12 @@ NOTE: If you are compiling with gcc 6.x you need to explicitly state that you ar
 CMAKE_CXX_FLAGS variable. SAMoS will fail to compile using the C++11 standard! 
 
 
-4. RUNNING SAMoS
+5. RUNNING SAMoS
 
 The code requires two files to run:
 
-1. conf file containing simulation parameters, force field, integrator type, etc.
-2. data file containing initial position of particles (see configurations directory for a number of examples)
+   1. conf file containing simulation parameters, force field, integrator type, etc.
+   2. data file containing initial position of particles (see configurations directory for a number of examples)
 
 NOTE: Format of the configuration and data files can be found in the 'configurations' directory.
 
@@ -82,7 +86,7 @@ code is executed with
 
 ./samos conf_file.conf
 
-5. DIRECTORY STRUCTURE
+6. DIRECTORY STRUCTURE
 
 samos 
    /FormerAnalysis   - some earlier versions of scripts for data analysis
@@ -112,7 +116,7 @@ samos
       /utils         - Several utility functions (e.g., random number generator classes)
 
 
-6. CREDITS
+7. CREDITS
 
 Lead developer:
 
