@@ -41,4 +41,6 @@ void register_external_aligners(ExternalAlignerMap& external_aligners)
   external_aligners["cell_shape"] = boost::factory<ExternalShapeAlignPtr>();
   // Register alignment to polymer tangent to the external align class factory
   external_aligners["tangent"] = boost::factory<ExternalTangentAlignPtr>();
+  // Register kenotaxis alignment class
+  external_aligners["kenotaxis"] = boost::factory<ExternalKenotaxisAlignPtr>();
 }

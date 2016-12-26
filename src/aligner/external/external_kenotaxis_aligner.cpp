@@ -20,20 +20,15 @@
  *
  * ****************************************************************************/
 
-/*!
- * \file external_boundary_pull.cpp
- * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 29-Sep-2016
- * \brief Implementation of the self propulsion for active particles.
- */ 
 
-#include "external_boundary_pull.hpp"
+#include "external_kenotaxis_aligner.hpp"
 
-/*! Apply pulling force onto each boundary particle. */
-void ExternalBoundaryPull::compute()
+void ExternalKenotaxisAlign::compute()
 {
   int N = m_system->size();
-  double alpha = m_alpha;
+  double J = m_J;
+  Mesh& mesh = m_system->get_mesh();
+
 
   // First we compute centre of mass to be able to determine outward direction
   double xcm = 0.0, ycm = 0.0, zcm = 0.0;
@@ -74,10 +69,15 @@ void ExternalBoundaryPull::compute()
       // compute dot product with radius the vector connecting center of mass and pi
       if ((x*X + y*Y + z*Z) < 0.0)
         force_sign = -1.0;
-      double factor = force_sign*alpha;
-      pi.fx += factor*x;
-      pi.fy += factor*y;
-      pi.fz += factor*z;
+      double J_factor = force_sign*J;
+      double tau_z = pi.nx*y - pi.ny*x;
+      //if (m_has_params)
+        //J = m_type_params[pi.get_type()].J
+        //
+      
+      pi.tau_x += 0.0;
+      pi.tau_y += 0.0;
+      pi.tau_z += J_factor*tau_z;
     }
   }
 }

@@ -62,7 +62,8 @@ public:
   //! \param msg Pointer to the internal state messenger
   //! \param nlist Pointer to the global neighbour list
   //! \param param Contains information about all parameters (J and cutoff distance)
-  PairPolarAlign(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairAlign(sys, msg, nlist, param)
+  PairPolarAlign(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, pairs_type& param) : PairAlign(sys, msg, nlist, param),
+                                                                                                m_exclude_boundary(false)
   {
     int ntypes = m_system->get_ntypes();
     if (param.find("J") == param.end())
@@ -96,6 +97,12 @@ public:
         m_pair_params[i][j].J = m_J;
         m_pair_params[i][j].rcut = m_rcut;
       }
+    }
+
+    if (param.find("exclude_boundary") != param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Polar alignment will not affect boundary particles");
+      m_exclude_boundary = true;
     }
   }
   
@@ -170,6 +177,7 @@ private:
   double m_J;                             //!< Coupling constant
   double m_rcut;                          //!< Cutoff distance (has to be less than neighbour list cutoff)
   PolarAlignParameters** m_pair_params;   //!< type specific pair parameters 
+  bool m_exclude_boundary;         
      
 };
 
