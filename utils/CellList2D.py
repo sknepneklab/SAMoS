@@ -133,4 +133,11 @@ class CellList2D:
   def printMe(self):
       for cell in self.cell_list:
 	cell.printMe()
-      
+
+  # additional method for finding pairs of particles in space
+  def add_bond(self, pta, ptb, bondk):
+      cell_idx_a = self.get_cell_idx(pta[:2])
+      cell_idx_b = self.get_cell_idx(ptb[:2])
+      self.cell_list[cell_idx_a].add_particle(bondk)
+      self.cell_list[cell_idx_b].add_particle(bondk)
+ 
