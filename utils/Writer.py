@@ -242,7 +242,9 @@ class Writer:
 		polygonPolyData.SetPolys(polygons)
 		# Add stresses ...
 		eng, press,ncon,stress = tess.conf.compute_energy_and_pressure()
+		contractile = False
 		if contractile:
+                        print "Are we actually going here??"
 			press_c=tess.computeContractile(self.alpha)
 			print press_c
 			print np.mean(press_c)
@@ -250,11 +252,11 @@ class Writer:
 			print np.min(press_c)
 			print np.max(press_c)
 			press+=press_c
-		print press
-		print np.mean(press)
-		print np.std(press)
-		print np.min(press)
-		print np.max(press)
+		#print press
+		#print np.mean(press)
+		#print np.std(press)
+		#print np.min(press)
+		#print np.max(press)
 		pressure = vtk.vtkDoubleArray()
 		pressure.SetNumberOfComponents(1)
 		pressure.SetName('Pressure')
