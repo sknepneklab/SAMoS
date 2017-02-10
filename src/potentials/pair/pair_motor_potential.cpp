@@ -34,11 +34,13 @@ void PairMotorPotential::compute(double dt)
 {
   int N = m_system->size();
   double alpha = m_alpha;
+  double beta = m_beta;
   double ai, aj;
   double force_factor;
   double phi_i = 1.0;  // phase in factor for particle i
   double phi_j = 1.0;  // phase in factor for particle j
   double phi = 1.0;    // phase in factor for pair interaction (see below)
+  double activity;     // actual activity on each bead
   
   if (m_system->compute_per_particle_energy())
   {
@@ -63,43 +65,45 @@ void PairMotorPotential::compute(double dt)
       Particle& pj = m_system->get_particle(neigh[j]);
       if (pi.molecule != pj.molecule)  // Only particles on different molecules can interact
       {
-        double n_dot_n = pi.nx*pj.nx + pi.ny*pj.ny + pi.nz*pj.nz;
-        if (n_dot_n < 0.0)  // particles point in the "opposite" direction
+        double n_dot_n = pi.nx*pj.nx + pi.ny*pj.ny + pi.nz*pj.nz; 
+        if (m_phase_in)
         {
-          if (m_phase_in)
-          {
-            phi_j = 0.5*(1.0 + m_val->get_val(static_cast<int>(pj.age/dt)));
-            // Determine global phase in factor: particles start at 0.5 strength (both daugthers of a division replace the mother)
-            // Except for the interaction between daugthers which starts at 0
-            if (phi_i < 1.0 && phi_j < 1.0)
-              phi = phi_i + phi_j - 1.0;
-            else 
-              phi = phi_i*phi_j;
-          }
-          alpha = m_pair_params[pi.get_type()-1][pj.get_type()-1].alpha;
-          aj = pj.get_radius();
-          double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
-          m_system->apply_periodic(dx,dy,dz);
-          double r_sq = dx*dx + dy*dy + dz*dz;
-          double r = sqrt(r_sq);
-          double ai_p_aj;
-          if (!m_use_particle_radii)
-            ai_p_aj = m_pair_params[pi.get_type()-1][pj.get_type()-1].a;
-          else
-            ai_p_aj = ai+aj;
-          if (r < ai_p_aj)
-          {
-            force_factor = alpha*phi*fabs(n_dot_n);
-            // Handle force
-            pi.fx += force_factor*pi.nx;
-            pi.fy += force_factor*pi.ny;
-            pi.fz += force_factor*pi.nz;
-            // This breaks 3d Newton's law!!!
-            pj.fx += force_factor*pj.nx;
-            pj.fy += force_factor*pj.ny;
-            pj.fz += force_factor*pj.nz;
-          }
+          phi_j = 0.5*(1.0 + m_val->get_val(static_cast<int>(pj.age/dt)));
+          // Determine global phase in factor: particles start at 0.5 strength (both daughters of a division replace the mother)
+          // Except for the interaction between daughters which starts at 0
+          if (phi_i < 1.0 && phi_j < 1.0)
+            phi = phi_i + phi_j - 1.0;
+          else 
+            phi = phi_i*phi_j;
         }
+        alpha = m_pair_params[pi.get_type()-1][pj.get_type()-1].alpha;
+        beta = m_pair_params[pi.get_type()-1][pj.get_type()-1].beta;
+        if (n_dot_n < 0.0)  // particles point in the "opposite" direction
+          activity = alpha;
+        else 
+          activity = beta;
+        aj = pj.get_radius();
+        double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
+        m_system->apply_periodic(dx,dy,dz);
+        double r_sq = dx*dx + dy*dy + dz*dz;
+        double r = sqrt(r_sq);
+        double ai_p_aj;
+        if (!m_use_particle_radii)
+          ai_p_aj = m_pair_params[pi.get_type()-1][pj.get_type()-1].a;
+        else
+          ai_p_aj = ai+aj;
+        if (r < ai_p_aj)
+        {
+          force_factor = activity*phi*fabs(n_dot_n);
+          // Handle force
+          pi.fx += force_factor*pi.nx;
+          pi.fy += force_factor*pi.ny;
+          pi.fz += force_factor*pi.nz;
+          // This breaks 3d Newton's law!!!
+          pj.fx += force_factor*pj.nx;
+          pj.fy += force_factor*pj.ny;
+          pj.fz += force_factor*pj.nz;
+        }  
       }
     }
   }
