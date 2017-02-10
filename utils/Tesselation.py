@@ -65,7 +65,7 @@ class Tesselation:
 			neighbours=[]
 			if closeHoles:
 				mult=mult0
-				while len(neighbours)<5 and mult<mult1:
+				while len(neighbours)<4 and mult<mult1:
 					neighbours=self.conf.getNeighbours(i,mult,dmax)[0]
 					mult=1.1*mult
                                 #print i, ' --> ', neighbours
