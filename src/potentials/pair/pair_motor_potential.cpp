@@ -100,9 +100,18 @@ void PairMotorPotential::compute(double dt)
           pi.fy += force_factor*pi.ny;
           pi.fz += force_factor*pi.nz;
           // This breaks 3d Newton's law!!!
-          pj.fx += force_factor*pj.nx;
-          pj.fy += force_factor*pj.ny;
-          pj.fz += force_factor*pj.nz;
+          // Variant with every two filaments pushing each other back (to force nematic behaviour): Make the force along - \hat{n} for one. How to choose consistently which one?
+          // Trial run: since j < i always (see neighbour list), and indices are frozen in time, it should be enough to simply put a minus in front of the j one
+          if ((n_dot_n < 0.0) || (!m_allpairpush)) {
+            pj.fx += force_factor*pj.nx;
+            pj.fy += force_factor*pj.ny;
+            pj.fz += force_factor*pj.nz;
+          }
+          else {
+            pj.fx -= force_factor*pj.nx;
+            pj.fy -= force_factor*pj.ny;
+            pj.fz -= force_factor*pj.nz;
+          }
         }  
       }
     }

@@ -67,6 +67,7 @@ public:
   {
     m_known_params.push_back("alpha");
     m_known_params.push_back("beta");
+    m_known_params.push_back("allpairpush");
     m_known_params.push_back("a");
     m_known_params.push_back("use_particle_radii");
     m_known_params.push_back("phase_in");
@@ -98,6 +99,17 @@ public:
       m_beta = lexical_cast<double>(param["beta"]);
     }
     m_msg->write_config("potential.pair.motor.beta",lexical_cast<string>(m_beta));
+    if (param.find("allpairpush") != param.end())
+    {
+      m_msg->msg(Messenger::INFO,"Symmetric pushing implemented between all pairs of filaments, regardless of orientation, with strength beta.");
+      m_msg->write_config("potential.pair.motor.allpairpush","true");
+      m_allpairpush = true;
+    }
+    else
+    {
+      m_msg->write_config("potential.pair.motor.allpairpush","false");
+      m_allpairpush = false;
+    }
     if (param.find("a") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No potential range (a) specified for motor pair potential. Setting it to 2.");
@@ -220,6 +232,7 @@ private:
        
   double m_alpha;                   //!< activity for filaments pointing in opposite direction 
   double m_beta;                    //!< activity for filaments pointing in same direction (defaults to 0)
+  bool m_allpairpush;               //!< Whether to implement pushing also between parallel filaments (with strength beta, defaults to false)
   double m_a;                       //!< potential range
   MotorParameters** m_pair_params;  //!< type specific pair parameters 
      
