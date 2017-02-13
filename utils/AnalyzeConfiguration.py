@@ -150,7 +150,10 @@ if ((args.writeD) or (args.getStatsBasic)):
 	try:
 		data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params,'population':params.population,'pop_params':params.pop_params}
 	except:
-		data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params}
+                try:
+                    data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params}
+                except:
+                    data={'pot_params':params.pot_params}
 	if args.writeD:
 		dataD={'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out,'numdefects_v':numdefects_v_out}
 		data.update(dataD)
