@@ -43,9 +43,12 @@ using std::runtime_error;
 using std::sqrt;
 using std::exp;
 
+// Used to create the grid for myosin jump moves.
+typedef vector<vector<double> > myMatrix;
+
 /*! PopulationActomyosinMolecule class handles unbinding of the entire myosin
  *  molecule form the rest of the system. If any of the beads is in the attached state 
- *  all head groups detach. This detachment is done with a given probability.
+ *  all molecule groups detach. This detachment is done with a given probability.
  *  This is to model experiments of Christoph Schmidt.
  *
 */
@@ -121,6 +124,29 @@ public:
     m_msg->write_config("population.actomyosin_molecule.actin_type",lexical_cast<string>(m_type_actin));  
     if (m_detach_rate*m_freq*m_system->get_integrator_step() > 1.0)
       m_msg->msg(Messenger::WARNING,"Actomyosin molecule population control. Detachment rate per particle is too high. Particles will always detach.");
+    if (param.find("mean_attach_time") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Actomyosin molecule population control. No mean attachment time (in time steps) given. Assuming default 1000.");
+      m_mean_attach = 1000;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Actomyosin molecule population control. Setting mean attachment time to "+param["mean_attach_time"]+" time steps.");
+      m_mean_attach = lexical_cast<int>(param["mean_attach_time"]);
+    }
+    m_msg->write_config("population.actomyosin_molecule.mean_attach_time",lexical_cast<string>(m_mean_attach));
+
+    if (param.find("grid_box_size") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"No grid size given. Assuming default 10.");
+      m_gridsize = 10.0;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Setting grid size to "+param["grid_box_size"]);
+      m_gridsize = lexical_cast<double>(param["grid_box_size"]);
+    }
+    m_msg->write_config("population.actomyosin_molecule.grid_box_size",lexical_cast<string>(m_gridsize));
   }
   
   //! This function controls attachment (note: function name derives from the initial intent of the population classes to use to treat cell division)
@@ -146,6 +172,8 @@ private:
   int m_type_d;                  //!< Type when detached
   int m_type_a;                  //!< Type when attached
   int m_type_actin;              //!< Type of the actin beads
+  int m_mean_attach;             //!< Mean attachment time (in time steps)
+  double m_gridsize;             //!< size of a box in the grid
 
 };
 
