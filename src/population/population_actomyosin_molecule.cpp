@@ -106,10 +106,10 @@ void PopulationActomyosinMolecule::divide(int t)
           myo_comz += pi.z;
           imyo++;
         }
-        if (pi.z > 1.5)    // if at least one of the beads is of type "attached", mark for detachment. NOTE: Why is thi hard coded?
+        if (pi.z > m_free_h)    // if at least one of the beads is of type "attached", mark for detachment. NOTE: Why is thi hard coded?
           ii++;
       }
-      if (imyo == 18)  // Why is this hard coded?
+      if (imyo == m_myosin_size)  
       {
         myo_comx /= imyo;
         myo_comy /= imyo;
@@ -118,7 +118,7 @@ void PopulationActomyosinMolecule::divide(int t)
         int biny = nbin/2 + floor(myo_comy/dbiny);
         imyo=0;
       }
-      if (ii == 18)   // Why is this hard coded?
+      if (ii == m_myosin_size)   
       {                        
         detach = true;
         ii = 0;
@@ -144,7 +144,7 @@ void PopulationActomyosinMolecule::divide(int t)
           {
             int nmove = static_cast<int>(ind*m_rng->drnd()); 
             int jj = to_movex[nmove], kk = to_movey[nmove];
-            double dx = rbinx[jj] - myo_comx, dy = rbiny[kk] - myo_comy, dz = 2.0 - myo_comz; 
+            double dx = rbinx[jj] - myo_comx, dy = rbiny[kk] - myo_comy, dz = m_new_h - myo_comz; 
             if (iout==1)
             {
               cout << "moving  distance " << dx << "," << dy << "," << dz << endl;          
@@ -155,10 +155,9 @@ void PopulationActomyosinMolecule::divide(int t)
             for (unsigned int ij = 0; ij < particles.size(); ij++)   // loop over all particles in the molecule
             {
               Particle& pj = m_system->get_particle(particles[ij]);
-              //cout<<pj.z<<endl;
-              double px=pj.x+pj.ix*Lx, py=pj.y+pj.iy*Ly;    
-              pj.x = px+dx;                   
-              pj.y = py+dy;                   
+              double px = pj.x + pj.ix*Lx, py = pj.y + pj.iy*Ly;    
+              pj.x = px + dx;                   
+              pj.y = py + dy;                   
               pj.z += dz;
               pj.ix = 0;
               pj.iy = 0;
@@ -166,18 +165,12 @@ void PopulationActomyosinMolecule::divide(int t)
               int binx = nbin/2 + floor(pj.x/dbinx);
               int biny = nbin/2 + floor(pj.y/dbiny);
             }
-            //cout<<"myosin moved to box "<<jj<<","<<kk<<"\n"<<endl;
           }
-        }
-        else
-        {
-//          cout<<"cannot move myosin "<<dprob<<endl;        
         }
       }
       myo_comx = 0.0;
       myo_comy = 0.0;    
-      myo_comz = 0.0;    
-      //cout<<"molecule "<<mol<<" done"<<endl;                  
+      myo_comz = 0.0;                
     }
   }
 }
