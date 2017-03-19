@@ -50,6 +50,14 @@ void PairMotorPotential::compute(double dt)
       p.set_pot_energy("motor",0.0);
     }
   }
+
+  // Compute centres of mass of all filaments
+  for (int mol = 0; mol < m_system->number_of_molecules(); mol++)
+  {
+    double xcm = 0.0, ycm = 0.0, zcm = 0.0;
+    m_system->molecule_cm(mol,xcm,ycm,zcm);
+    m_fil_cm[mol].x = xcm; m_fil_cm[mol].y = ycm; m_fil_cm[mol].z = zcm;
+  }
   
   m_potential_energy = 0.0;
   double tot_pot = m_potential_energy;
@@ -78,9 +86,9 @@ void PairMotorPotential::compute(double dt)
         }
         alpha = m_pair_params[pi.get_type()-1][pj.get_type()-1].alpha;
         beta = m_pair_params[pi.get_type()-1][pj.get_type()-1].beta;
-        if (n_dot_n < 0.0)  // particles point in the "opposite" direction
+        if (n_dot_n < 0.0)  // filaments point in the "opposite" direction
           activity = alpha;
-        else 
+        else                // filaments point in the same direction
           activity = beta;
         aj = pj.get_radius();
         double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
@@ -92,6 +100,47 @@ void PairMotorPotential::compute(double dt)
           ai_p_aj = m_pair_params[pi.get_type()-1][pj.get_type()-1].a;
         else
           ai_p_aj = ai+aj;
+        // new code 
+        /* comment out rom here... */
+        if (r < ai_p_aj)
+        {
+          if (n_dot_n <= 0.0)  // opposite direction
+          {
+            force_factor = alpha*phi*fabs(n_dot_n);
+            // Handle force
+            pi.fx += force_factor*pi.nx;
+            pi.fy += force_factor*pi.ny;
+            pi.fz += force_factor*pi.nz;
+            // This breaks 3d Newton's law!!! 
+            pj.fx += force_factor*pj.nx;
+            pj.fy += force_factor*pj.ny;
+            pj.fz += force_factor*pj.nz;
+          }
+          else                 // same direction 
+          {
+            // Note: This is inefficient. We are computing the same distance over and over again
+            double Xij = m_fil_cm[pi.molecule].x - m_fil_cm[pj.molecule].x; 
+            double Yij = m_fil_cm[pi.molecule].y - m_fil_cm[pj.molecule].y;
+            double Zij = m_fil_cm[pi.molecule].z - m_fil_cm[pj.molecule].z;
+            m_system->apply_periodic(Xij,Yij,Zij);
+            double ni_dot_Rij = pi.nx*Xij + pi.ny*Yij + pi.nz*Zij;
+            double nj_dot_Rij = pj.nx*Xij + pj.ny*Yij + pj.nz*Zij;
+            double sgn_i = (ni_dot_Rij > 0) ? 1.0 : -1.0;
+            double sgn_j = (nj_dot_Rij > 0) ? 1.0 : -1.0;
+            force_factor = beta*phi;
+            // Handle force
+            pi.fx += -sgn_i*force_factor*pi.nx;
+            pi.fy += -sgn_i*force_factor*pi.ny;
+            pi.fz += -sgn_i*force_factor*pi.nz;
+            // This breaks 3d Newton's law!!! 
+            pj.fx += sgn_j*force_factor*pj.nx;
+            pj.fy += sgn_j*force_factor*pj.ny;
+            pj.fz += sgn_j*force_factor*pj.nz;
+          }
+        }
+        /* ... to here  */
+        // old code 
+        /* uncomment from here...
         if (r < ai_p_aj)
         {
           force_factor = activity*phi*fabs(n_dot_n);
@@ -108,7 +157,8 @@ void PairMotorPotential::compute(double dt)
           pj.fx += force_factor*pj.nx;
           pj.fy += force_factor*pj.ny;
           pj.fz += force_factor*pj.nz;
-        }  
+        } 
+        to here */ 
       }
     }
   }
