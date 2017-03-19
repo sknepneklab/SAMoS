@@ -101,7 +101,7 @@ void PairMotorPotential::compute(double dt)
         else
           ai_p_aj = ai+aj;
         // new code 
-        /* comment out rom here... */
+        /* comment out from here... */
         if (r < ai_p_aj)
         {
           if (n_dot_n <= 0.0)  // opposite direction
