@@ -139,12 +139,12 @@ public:
     if (param.find("grid_box_size") == param.end())
     {
       m_msg->msg(Messenger::WARNING,"No grid size given. Assuming default 10.");
-      m_gridsize = 10;
+      m_gridsize = 10.0;
     }
     else
     {
       m_msg->msg(Messenger::INFO,"Setting grid size to "+param["grid_box_size"]);
-      m_gridsize = lexical_cast<int>(param["grid_box_size"]);
+      m_gridsize = lexical_cast<double>(param["grid_box_size"]);
     }
     m_msg->write_config("population.actomyosin_molecule.grid_box_size",lexical_cast<string>(m_gridsize));
 
@@ -210,7 +210,7 @@ private:
   int m_type_a;                  //!< Type when attached
   int m_type_actin;              //!< Type of the actin beads
   int m_mean_attach;             //!< Mean attachment time (in time steps)
-  int m_gridsize;                //!< size of a box in the grid
+  double m_gridsize;             //!< size of a box in the grid
   double m_free_h;               //!< height where myosin is considered free
   double m_new_h;                //!< height at which the free myosin is moved
   int m_myosin_size;             //!< size of one myosin minifilament 
