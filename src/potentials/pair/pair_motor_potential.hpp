@@ -37,6 +37,16 @@
 using std::make_pair;
 using std::sqrt;
 
+//! Auxiliary structure to hold coordinates of centres of mass of all filaments
+struct CentreOfMass
+{
+  CentreOfMass() : x(0.0), y(0.0), z(0.0) { }
+  double x;
+  double y;
+  double z;
+};
+
+
 //! Structure that handles parameters for the motor pair potential
 struct MotorParameters
 {
@@ -63,7 +73,7 @@ public:
   //! \param nlist Pointer to the global neighbour list
   //! \param val Value control object (for phasing in)
   //! \param param Contains information about all parameters (k)
-  PairMotorPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param)
+  PairMotorPotential(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, ValuePtr val, pairs_type& param) : PairPotential(sys, msg, nlist, val, param), m_fil_cm(sys->number_of_molecules(),CentreOfMass())
   {
     m_known_params.push_back("alpha");
     m_known_params.push_back("beta");
@@ -234,6 +244,7 @@ private:
   double m_beta;                    //!< activity for filaments pointing in same direction (defaults to 0)
   bool m_allpairpush;               //!< Whether to implement pushing also between parallel filaments (with strength beta, defaults to false)
   double m_a;                       //!< potential range
+  vector<CentreOfMass> m_fil_cm;    //!< holds centres of mass of all filaments 
   MotorParameters** m_pair_params;  //!< type specific pair parameters 
      
 };

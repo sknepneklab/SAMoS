@@ -26,13 +26,13 @@ from read_data import *
 from CellList import *
 from Interaction import *
 
-try:
-	import matplotlib.pyplot as plt
-	from mpl_toolkits.mplot3d import Axes3D
-	HAS_MATPLOTLIB=True
-except:
-	HAS_MATPLOTLIB=False
-	pass
+#try:
+	#import matplotlib.pyplot as plt
+	#from mpl_toolkits.mplot3d import Axes3D
+	#HAS_MATPLOTLIB=True
+#except:
+	#HAS_MATPLOTLIB=False
+	#pass
 
 class Configuration:
 	def __init__(self,param,filename,ignore=False,debug=False):

@@ -315,6 +315,9 @@ public:
 
   //! Return total number of molecules in the system
   int number_of_molecules() { return m_molecules.size(); }
+
+  // Compute centre of mass of a molecule
+  void molecule_cm(int, double&, double&, double&);
     
 private:
   
