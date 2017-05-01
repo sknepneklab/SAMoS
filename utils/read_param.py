@@ -476,6 +476,7 @@ class Param:
                             #print conf.key_words['timestep']
                             #self.dt = float(conf.key_words['timestep'])
                             # Oh yes, that syntax is incompatible with the parser
+                            # And leads to all kind of BS if I don't stay on top of it
                             self.dt=0.01
                         print "Time step: " + str(self.dt)
 			self.seed = self.int_params['seed']

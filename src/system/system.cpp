@@ -1145,8 +1145,8 @@ void System::update_mesh()
     }
     if (iter >= m_max_mesh_iter)
     {
-      cout << "Exceeded maximum number of itrations in boundary build. Most likely something is wrong with input paramters. Results will not be reliable." << endl;
-      throw runtime_error("Exceeded maximum number of itrations in boundary build.");
+      cout << "Exceeded maximum number of iterations in boundary build. Most likely something is wrong with input paramters. Results will not be reliable." << endl;
+      throw runtime_error("Exceeded maximum number of iterations in boundary build.");
     }
     for (int i = 0; i < m_mesh.size(); i++)
     {
@@ -1155,4 +1155,26 @@ void System::update_mesh()
       m_mesh.dual_area(i); 
     }
   }
+}
+
+//! Compute centre of mass for a molecule
+//! \param mol_id id of the molecule
+//! \param xcm x-coordinate of the centre of mass
+//! \param ycm y-coordinate of the centre of mass
+//! \param zcm z-coordinate of the centre of mass
+void System::molecule_cm(int mol_id, double& xcm, double& ycm, double& zcm)
+{
+  vector<int>& mol = this->get_mol_particles(mol_id);
+  Particle& p0 = this->get_particle(mol[0]);
+  int M = mol.size();
+  xcm = 0.0; ycm = 0.0; zcm = 0.0;
+  for (int i = 1; i < M; i++)
+  {
+    Particle& pi = this->get_particle(mol[i]);
+    double dx = pi.x - p0.x, dy = pi.y - p0.y, dz = pi.z - p0.z;
+    this->apply_periodic(dx,dy,dz);
+    xcm += dx;  ycm += dy;  zcm += dz;
+  }
+  xcm = xcm/M + p0.x; ycm = ycm/M + p0.y; zcm = zcm/M + p0.z;
+  this->apply_periodic(xcm,ycm,zcm);
 }
