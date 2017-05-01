@@ -64,6 +64,7 @@ print "\tBox size : ", args.length
 print "\tNumber of particles : ", args.num
 print "\tMinimum distance between paticles : ", args.min_dist
 print "\tMagnitude of the initial velocity : ", args.init_vel
+print "\tPacking fraction : ", (0.25*args.num*np.pi)/(args.length**2)  # we assume unit particle diamter 
 print
 
 start = datetime.now()
