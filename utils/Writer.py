@@ -232,7 +232,10 @@ class Writer:
 		polygonPolyData.SetPoints(points)
 		polygonPolyData.SetPolys(polygons)
 		# Add stresses ...
-		eng, press,ncon,stress = tess.conf.compute_energy_and_pressure()
+		try:
+                        eng, press,ncon,stress = tess.conf.compute_energy_and_pressure()
+                except:
+                        pass
 		contractile = False
 		if contractile:
                         print "Are we actually going here??"
@@ -248,12 +251,12 @@ class Writer:
 		#print np.std(press)
 		#print np.min(press)
 		#print np.max(press)
-		pressure = vtk.vtkDoubleArray()
-		pressure.SetNumberOfComponents(1)
-		pressure.SetName('Pressure')
-		for k in havePoly:
-			pressure.InsertNextValue(press[k])
-		polygonPolyData.GetCellData().AddArray(pressure)
+		#pressure = vtk.vtkDoubleArray()
+		#pressure.SetNumberOfComponents(1)
+		#pressure.SetName('Pressure')
+		#for k in havePoly:
+			#pressure.InsertNextValue(press[k])
+		#polygonPolyData.GetCellData().AddArray(pressure)
 		
 		# Add type
 		ncon = vtk.vtkDoubleArray()
