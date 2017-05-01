@@ -24,37 +24,37 @@ from Configuration import *
 #from CellList import *
 from numpy import linalg as LA
 
-try:
-	import matplotlib.pyplot as plt
-	from mpl_toolkits.mplot3d import Axes3D
-	from matplotlib.colors import LinearSegmentedColormap
-	matplotlib.rcParams['text.usetex'] = 'false'
-	matplotlib.rcParams['lines.linewidth'] = 2
-	matplotlib.rcParams['axes.linewidth'] = 2
-	matplotlib.rcParams['xtick.major.size'] = 8
-	matplotlib.rcParams['ytick.major.size'] = 8
-	matplotlib.rcParams['font.size']=16.0
-	matplotlib.rcParams['legend.fontsize']=14.0
+#try:
+	#import matplotlib.pyplot as plt
+	#from mpl_toolkits.mplot3d import Axes3D
+	#from matplotlib.colors import LinearSegmentedColormap
+	#matplotlib.rcParams['text.usetex'] = 'false'
+	#matplotlib.rcParams['lines.linewidth'] = 2
+	#matplotlib.rcParams['axes.linewidth'] = 2
+	#matplotlib.rcParams['xtick.major.size'] = 8
+	#matplotlib.rcParams['ytick.major.size'] = 8
+	#matplotlib.rcParams['font.size']=16.0
+	#matplotlib.rcParams['legend.fontsize']=14.0
 
-	cdict = {'red':   [(0.0,  0.0, 0.5),
-					  (0.35,  1.0, 0.75),
-					  (0.45,  0.75, 0.0),
-					  (1.0,  0.0, 0.0)],
+	#cdict = {'red':   [(0.0,  0.0, 0.5),
+					  #(0.35,  1.0, 0.75),
+					  #(0.45,  0.75, 0.0),
+					  #(1.0,  0.0, 0.0)],
 
-			'green': [(0.0,  0.0, 0.0),
-					  (0.35,  0.0, 0.5),
-					  (0.5, 1.0, 1.0),
-					  (0.8,  0.5, 0.0),
-					  (1.0,  0.0, 0.0)],
+			#'green': [(0.0,  0.0, 0.0),
+					  #(0.35,  0.0, 0.5),
+					  #(0.5, 1.0, 1.0),
+					  #(0.8,  0.5, 0.0),
+					  #(1.0,  0.0, 0.0)],
 
-			'blue':  [(0.0,  0.0, 0.0),
-					  (0.5,  0.0, 0.0),
-					  (0.7, 0.5, 1.0),
-					  (1.0,  0.25, 0.0)]}
-	HAS_MATPLOTLIB=True
-except:
-	HAS_MATPLOTLIB=False
-	pass
+			#'blue':  [(0.0,  0.0, 0.0),
+					  #(0.5,  0.0, 0.0),
+					  #(0.7, 0.5, 1.0),
+					  #(1.0,  0.25, 0.0)]}
+	#HAS_MATPLOTLIB=True
+#except:
+	#HAS_MATPLOTLIB=False
+	#pass
 
 
 
@@ -91,7 +91,7 @@ class Hessian:
 		fsum=0.0
 		fav=0.0
 		for i in range(self.N):
-			if i not in rattlers:
+			if i not in self.rattlers:
 				if (i%200==0):
 					print i
 				# get some of the constants that are necessary here:
@@ -198,7 +198,19 @@ class Hessian:
 			plt.figure()
 			eigrank=np.linspace(0,3*self.N,3*self.N)
 			plt.plot(eigrank,self.eigval,'.-')
+                wx=np.zeros((self.N,))
+                wy=np.zeros((self.N,))
+                wz=np.zeros((self.N,))
+                for u in range(self.N):
+                        # dimensional contributions
+                        wx[u]=np.sum(self.eigvec[0:3*self.N:3,u]**2)
+                        wy[u]=np.sum(self.eigvec[1:3*self.N:3,u]**2)
+                        wz[u]=np.sum(self.eigvec[2:3*self.N:3,u]**2)
 		print "The smallest eigenvalue is: " + str(np.amin(self.eigval))
+		print self.eigval
+		print wx
+		print wy
+		print wz
 		
 	def plotModes(self,omegamax=3.0,npts=100):
 		# Straight here: The projection ratios on the sphere/plane

@@ -29,38 +29,41 @@ from Geometry import *
 from Hessian import *
 from read_param import *
 from read_data import *
-try:
-	import matplotlib.pyplot as plt
-	from mpl_toolkits.mplot3d import Axes3D
-	HAS_MATPLOTLIB=True
+
+import matplotlib.pyplot as plt
+#try:
+	#import matplotlib.pyplot as plt
+	##from mpl_toolkits.mplot3d import Axes3D
+	#HAS_MATPLOTLIB=True
 	
-	import matplotlib
-	matplotlib.rcParams['text.usetex'] = 'false'
-	matplotlib.rcParams['lines.linewidth'] = 2
-	matplotlib.rcParams['axes.linewidth'] = 2
-	matplotlib.rcParams['xtick.major.size'] = 8
-	matplotlib.rcParams['ytick.major.size'] = 8
-	matplotlib.rcParams['font.size']=16.0
-	matplotlib.rcParams['legend.fontsize']=14.0
+	#import matplotlib
+	#matplotlib.rcParams['text.usetex'] = 'false'
+	#matplotlib.rcParams['lines.linewidth'] = 2
+	#matplotlib.rcParams['axes.linewidth'] = 2
+	#matplotlib.rcParams['xtick.major.size'] = 8
+	#matplotlib.rcParams['ytick.major.size'] = 8
+	#matplotlib.rcParams['font.size']=16.0
+	#matplotlib.rcParams['legend.fontsize']=14.0
 
-	cdict = {'red':   [(0.0,  0.0, 0.5),
-					  (0.35,  1.0, 0.75),
-					  (0.45,  0.75, 0.0),
-					  (1.0,  0.0, 0.0)],
+	#cdict = {'red':   [(0.0,  0.0, 0.5),
+					  #(0.35,  1.0, 0.75),
+					  #(0.45,  0.75, 0.0),
+					  #(1.0,  0.0, 0.0)],
 
-			'green': [(0.0,  0.0, 0.0),
-					  (0.35,  0.0, 0.5),
-					  (0.5, 1.0, 1.0),
-					  (0.8,  0.5, 0.0),
-					  (1.0,  0.0, 0.0)],
+			#'green': [(0.0,  0.0, 0.0),
+					  #(0.35,  0.0, 0.5),
+					  #(0.5, 1.0, 1.0),
+					  #(0.8,  0.5, 0.0),
+					  #(1.0,  0.0, 0.0)],
 
-			'blue':  [(0.0,  0.0, 0.0),
-					  (0.5,  0.0, 0.0),
-					  (0.7, 0.5, 1.0),
-					  (1.0,  0.25, 0.0)]}
-except:
-	HAS_MATPLOTLIB=False
-	pass
+			#'blue':  [(0.0,  0.0, 0.0),
+					  #(0.5,  0.0, 0.0),
+					  #(0.7, 0.5, 1.0),
+					  #(1.0,  0.25, 0.0)]}
+#except:
+	#HAS_MATPLOTLIB=False
+	#print "Didn't find matplolib, plotting won't work!"
+	#pass
 
 class SimRun:
 	def __init__(self,directory,conffile,inputfile,radiusfile,skip,tracer=False,ignore=False,takeDrift=False,usetype='all'):
@@ -139,10 +142,10 @@ class SimRun:
                         print "Reading radii from initial file!"
                         data_ini=ReadData(directory+radiusfile)
                         if readonetype:
-                                hmm=data_ini.data[data_ini.keys['radius']]
+                                hmm=np.array(data_ini.data[data_ini.keys['radius']])
                                 self.radius=hmm[useparts]
                         else:
-				self.radius=data_ini.data[data_ini.keys['radius']]
+				self.radius=np.array(data_ini.data[data_ini.keys['radius']])
 		if tracer:
 			data = ReadData(files[0])
 			tp=np.array(data.data[data.keys['type']])
@@ -209,8 +212,8 @@ class SimRun:
                                         self.rval[u,:,:]=rval_u[useparts,:]
                                         self.vval[u,:,:]=vval_u[useparts,:]
                                 else:
-                                        self.rval[u,:,:]=rval_u[useparts,:]
-                                        self.vval[u,:,:]=vval_u[useparts,:]
+                                        self.rval[u,:,:]=rval_u
+                                        self.vval[u,:,:]=vval_u
 			u+=1
 		# Take the drift off as a post-processing step if desired
 		# Rather: Just compute it, and take it off in the MSD etc
@@ -223,7 +226,7 @@ class SimRun:
                                         dr=self.geom.ApplyPeriodic2d(self.rval[u,:,:]-self.rval[u-1,:,:])
                                         drift0=np.sum(dr,axis=0)/self.N
                                         self.drift[u,:]=self.drift[u-1,:]+drift0
-                                        #print self.drift[u,:]
+                                        print self.drift[u,:]
 			  
 		
 	def getMSD(self,verbose=True):
@@ -267,6 +270,67 @@ class SimRun:
 			
 			#plt.show()
 		return xval, self.msd
+            
+        def getNonGaussian(self,verbose=True):
+		self.msd=np.empty((self.Nsnap,))
+		kurtosis=np.empty((self.Nsnap,))
+		nongaussian=np.empty((self.Nsnap,))
+		# in case of tracers, simply use the tracer rval isolated above
+		#if self.usetype=='all':
+                for u in range(self.Nsnap):
+                        smax=self.Nsnap-u
+                        if self.Nvariable:
+                                if self.tracer:
+                                        if self.geom.periodic:
+                                                self.msd[u]=np.sum(np.sum(np.sum((self.geom.ApplyPeriodic33(self.rtracers[:smax,:,:],self.rtracers[u:,:,:]))**2,axis=2),axis=1),axis=0)/(self.Ntracer*smax)
+                                                kurtosis[u]=np.sum(np.sum(np.sum((self.geom.ApplyPeriodic33(self.rtracers[:smax,:,:],self.rtracers[u:,:,:]))**4,axis=2),axis=1),axis=0)/(self.Ntracer*smax)
+                                        else:
+                                                self.msd[u]=np.sum(np.sum(np.sum((self.rtracers[u:,:,:]-self.rtracers[:smax,:,:])**2,axis=2),axis=1),axis=0)/(self.Ntracer*smax)
+                                                kurtosis[u]=np.sum(np.sum(np.sum((self.rtracers[u:,:,:]-self.rtracers[:smax,:,:])**4,axis=2),axis=1),axis=0)/(self.Ntracer*smax)
+                                else:
+                                        print "Sorry: MSD et al. for dividing particles is ambiguous and currently not implemented!"
+                        else:
+                                # Drift is only meaningful here
+                                #print "Doing the non-tracer MSD: this may take some time"
+                                if self.takeDrift:
+                                        hmm=(self.drift[:smax,:]-self.drift[u:,:])
+                                        takeoff=np.einsum('j,ik->ijk',np.ones((self.N,)),hmm)
+                                        if self.geom.periodic:
+                                                dr=self.geom.ApplyPeriodic3d(self.rval[:smax,:,:]-self.rval[u:,:,:])-takeoff
+                                        else:
+                                                dr=self.rval[:smax,:,:]-self.rval[u:,:,:]-takeoff
+                                        self.msd[u]=np.sum(np.sum(np.sum(dr**2,axis=2),axis=1),axis=0)/(self.N*smax)
+                                        kurtosis[u]=np.sum(np.sum(np.sum(dr**4,axis=2),axis=1),axis=0)/(self.N*smax)
+                                else:
+                                        if self.geom.periodic:
+                                                self.msd[u]=np.sum(np.sum(np.sum((self.geom.ApplyPeriodic33(self.rval[:smax,:,:],self.rval[u:,:,:]))**2,axis=2),axis=1),axis=0)/(self.N*smax)
+                                                kurtosis[u]=np.sum(np.sum(np.sum((self.geom.ApplyPeriodic33(self.rval[:smax,:,:],self.rval[u:,:,:]))**4,axis=2),axis=1),axis=0)/(self.N*smax)
+                                        else:
+                                                self.msd[u]=np.sum(np.sum(np.sum((self.rval[u:,:,:]-self.rval[:smax,:,:])**2,axis=2),axis=1),axis=0)/(self.N*smax)
+                                                kurtosis[u]=np.sum(np.sum(np.sum((self.rval[u:,:,:]-self.rval[:smax,:,:])**4,axis=2),axis=1),axis=0)/(self.N*smax)
+                 
+                # Check for dimensional scaling, prefactor in 2d == 2/3 [?]
+                nongaussian=3.0/5.0*kurtosis/self.msd**2 -1
+		xval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
+		if verbose:
+			fig=plt.figure()
+			plt.loglog(xval,self.msd,'r.-',lw=2)
+			plt.loglog(xval,self.msd[1]/(1.0*xval[1])*xval,'-',lw=2,color=[0.5,0.5,0.5])
+			plt.xlabel('time')
+			plt.ylabel('MSD')
+			
+			fig=plt.figure()
+			plt.loglog(xval,kurtosis,'r.-',lw=2)
+			plt.xlabel('time')
+			plt.ylabel('kurtosis')
+			
+			fig=plt.figure()
+			plt.loglog(xval,nongaussian,'r.-',lw=2)
+			plt.xlabel('time')
+			plt.ylabel('Non - Gaussian')
+			
+			#plt.show()
+		return xval, self.msd, kurtosis, nongaussian
 
 	
 	# Definition of the self-intermediate scattering function (Flenner + Szamel)
@@ -314,27 +378,37 @@ class SimRun:
 		# Note to self: only low q values will be interesting in any case. 
 		# The stepping is in multiples of the inverse box size. Assuming a square box.
 		print "Fourier transforming positions"
-		dq=1.0/self.geom.Lx
+		dq=2*np.pi/self.geom.Lx
 		nq=int(qmax/dq)
 		print "Stepping Fourier transform with step " + str(dq)+ ", resulting in " + str(nq)+ " steps."
 		qx, qy, qrad, ptsx, ptsy=self.makeQrad(dq,qmax,nq)
+		#print " After Qrad" 
 		fourierval=np.zeros((nq,nq),dtype=complex)
+		print self.Nval[whichframe]
 		for kx in range(nq):
 			for ky in range(nq):
 				# And, alas, no FFT since we are most definitely off grid. And averaging is going to kill everything.
-				fourierval[kx,ky]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:,0]+qy[ky]*self.rval[whichframe,:,1])))
-		plotval=np.real(fourierval)**2+np.imag(fourierval)**2
+				fourierval[kx,ky]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:self.Nval[whichframe],0]+qy[ky]*self.rval[whichframe,:self.Nval[whichframe],1])))/self.Nval[whichframe]
+                #print fourierval
+		plotval=self.Nval[whichframe]*(np.real(fourierval)**2+np.imag(fourierval)**2)
+		#print plotval
 		# Produce a radial averaging to see if anything interesting happens
 		nq2=int(2**0.5*nq)
 		valrad=np.zeros((nq2,))
 		for l in range(nq2):
 			valrad[l]=np.mean(plotval[ptsx[l],ptsy[l]])
 		
-		if verbose:
-			plt.figure()
-			plt.pcolor(qx,qy,plotval)
-			plt.colorbar()
-			plt.title('Positions')
+		#if verbose:
+			#plt.figure()
+			#plt.pcolor(qx,qy,plotval, vmin=0, vmax=3)
+			#plt.colorbar()
+			#plt.title('Positions')
+			
+			#plt.figure()
+			#plt.plot(qrad,valrad)
+			#plt.xlabel('q')
+			#plt.ylabel('S(q)')
+			#plt.title('Positions')
 		return qrad,valrad
 	  
 	def makeQrad(self,dq,qmax,nq):
@@ -349,7 +423,6 @@ class SimRun:
 			for ky in range(nq):
 				qval=np.sqrt(qx[kx]**2+qy[ky]**2)
 				binval[kx,ky]=round(qval/dq)
-		#print binval
 		ptsx=[]
 		ptsy=[]
 		# do the indexing arrays
@@ -438,6 +511,7 @@ class SimRun:
 			plt.plot(tval,np.log10(rhocorr[:,10]),'.-b')
 			plt.title('Density correlation function')
 		return omega,qrad,DynStruct
+		
 		
 	# Four point structure factor
 	def FourPoint(self,a,qmax=3.14,verbose=True,nmax=20):
@@ -533,16 +607,17 @@ class SimRun:
 		# Note to self: only low q values will be interesting in any case. 
 		# The stepping is in multiples of the inverse box size. Assuming a square box.
 		print "Fourier transforming velocities"
-		dq=1.0/self.geom.Lx
+		dq=2.0*np.pi/self.geom.Lx
 		nq=int(qmax/dq)
 		print "Stepping Fourier transform with step " + str(dq)+ ", resulting in " + str(nq)+ " steps."
 		qx, qy, qrad, ptsx, ptsy=self.makeQrad(dq,qmax,nq)
+		print "After qrad"
 		fourierval=np.zeros((nq,nq,2),dtype=complex)
 		for kx in range(nq):
 			for ky in range(nq):
 				# And, alas, no FFT since we are most definitely off grid. And averaging is going to kill everything.
-				fourierval[kx,ky,0]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:,0]+qy[ky]*self.rval[whichframe,:,1]))*self.vval[whichframe,:,0])
-				fourierval[kx,ky,1]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:,0]+qy[ky]*self.rval[whichframe,:,1]))*self.vval[whichframe,:,1])
+				fourierval[kx,ky,0]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:,0]+qy[ky]*self.rval[whichframe,:,1]))*self.vval[whichframe,:,0])/len(self.rval[whichframe,:,0])
+				fourierval[kx,ky,1]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:,0]+qy[ky]*self.rval[whichframe,:,1]))*self.vval[whichframe,:,1])/len(self.rval[whichframe,:,0])
 		# Sq = \vec{v_q}.\vec{v_-q}, assuming real and symmetric
 		# = \vec{v_q}.\vec{v_q*} = v
 		Sq=np.real(fourierval[:,:,0])**2+np.imag(fourierval[:,:,0])**2+np.real(fourierval[:,:,1])**2+np.imag(fourierval[:,:,1])**2
@@ -557,15 +632,19 @@ class SimRun:
 			valrad[l,1]=np.mean(plotval_y[ptsx[l],ptsy[l]])
 			Sqrad[l]=np.mean(Sq[ptsx[l],ptsy[l]])
 		
+		print verbose
+		print "Before plotting!"
 		if verbose:
-			plt.figure()
-			plt.pcolor(qx,qy,plotval_x)
-			plt.colorbar()
-			plt.title('Velocities - x')
-			plt.figure()
-			plt.pcolor(qx,qy,plotval_y)
-			plt.colorbar()
-			plt.title('Velocities - y')
+			#plt.figure()
+			print "after first plotting command"
+			#plt.pcolor(qx,qy,plotval_x)
+			#print "after first plotting command"
+			#plt.colorbar()
+			#plt.title('Velocities - x')
+			#plt.figure()
+			#plt.pcolor(qx,qy,plotval_y)
+			#plt.colorbar()
+			#plt.title('Velocities - y')
 		return qrad,valrad,Sqrad
 	  
 	def getVelcorrSingle(self,whichframe,dx,xmax,verbose=True):
@@ -647,25 +726,31 @@ class SimRun:
 			self.proj=np.zeros((3*Hessian.N,self.Nsnap))
 			self.projv=np.zeros((3*Hessian.N,self.Nsnap))
 			#proj2=np.zeros((3*Hessian.N,self.Nsnap))
+			print Hessian.eigvec[0:3*Hessian.N:3,0]
+			#print Hessian.eigvec[0:3*Hessian.N:3,1]
+			# Check out what's going on here
 			for u in range(self.Nsnap):
+                                # None of this works: either keep it all, or take it all off
+                                #takeoff=np.einsum('j,k->jk',np.ones((self.N,)),self.drift[u,:])
+                                #rnew=self.rval[u,:,:]-takeoff
+                                #ourmean = np.mean(rnew)
+                                #hessmean= np.mean(Hessian.rval)
+                                #hessnew=Hessian.rval-hessmean+ourmean
+                                #print ourmean
+                                #print np.mean(hessnew)
+				#dr=self.geom.ApplyPeriodic2d(rnew-hessnew)
 				dr=self.geom.ApplyPeriodic2d(self.rval[u,:,:]-Hessian.rval)
+				dr-=np.mean(dr,axis=0)
+				#print np.mean(dr)
 				# aah. modulo periodic boundary conditions
 				dv=self.vval[u,:,:]
 				# serious WTF
-				#if self.debug:
-					#if u==100:
-						#plt.figure()
-						#plt.quiver(self.rval[u,:,0],self.rval[u,:,1],dr[:,0],dr[:,1])
-						#plt.title('Displacements')
-						
-						#plt.figure()
-						#plt.quiver(self.rval[u,:,0],self.rval[u,:,1],dv[:,0],dv[:,1])
-						#plt.title('Velocities')
 				# now project onto the modes
 				# This is the organisation of our matrix
 				#plt.quiver(self.rval[:,0],self.rval[:,1],self.eigvec[0:3*self.N:3,u],self.eigvec[1:3*self.N:3,u])
-				self.proj[:,u]=np.einsum('i,ij->j',dr[:,0],Hessian.eigvec[0:3*Hessian.N:3,:]) + np.einsum('i,ij->j',dr[:,1],Hessian.eigvec[1:3*Hessian.N:3,:])
-				self.projv[:,u]=np.einsum('i,ij->j',dv[:,0],Hessian.eigvec[0:3*Hessian.N:3,:]) + np.einsum('i,ij->j',dv[:,1],Hessian.eigvec[1:3*Hessian.N:3,:])
+				# By definition, we are just ignoring the third dimension here
+				self.proj[:,u]=1.0*(np.einsum('i,ij->j',dr[:,0],Hessian.eigvec[0:3*Hessian.N:3,:]) + np.einsum('i,ij->j',dr[:,1],Hessian.eigvec[1:3*Hessian.N:3,:]))
+				self.projv[:,u]=1.0*(np.einsum('i,ij->j',dv[:,0],Hessian.eigvec[0:3*Hessian.N:3,:]) + np.einsum('i,ij->j',dv[:,1],Hessian.eigvec[1:3*Hessian.N:3,:]))
 				#for v in range(3*Hessian.N):
 					#proj2[v,u]=np.sum(dr[:,0]*Hessian.eigvec[0:3*Hessian.N:3,u]) + np.einsum('i,ij->j',dr[:,1],Hessian.eigvec[1:3*Hessian.N:3,:])
 			# projection normalization
@@ -673,7 +758,61 @@ class SimRun:
 			self.projv/=self.Nsnap
 			self.proj2av=np.sum(self.proj**2,axis=1)
 			self.projv2av=np.sum(self.projv**2,axis=1)
+			
 		return self.proj,self.projv,self.proj2av,self.projv2av
+            
+        # Project our displacements or any stuff like that onto the eigenmodes of a hessian matrix, which has been calculated separately
+	# we will need self.eigval and self.eigvec
+	# I assume that the global skip has already taken care of any of the transient stuff
+	# I am *not* removing any dreaded rattlers, because they should be part of the whole thing. 
+	def projectModes2d(self,Hessian):
+		if self.Nvariable:
+			print "Hessians and dividing particles don't mix! Stopping here!"
+			self.proj=0
+			self.projv=0
+		else:
+			# self.rval and self.vval is where the fun is, self.rval=np.zeros((self.Nsnap,self.N,3))
+			self.proj=np.zeros((2*Hessian.N,self.Nsnap))
+			self.projv=np.zeros((2*Hessian.N,self.Nsnap))
+			#proj2=np.zeros((3*Hessian.N,self.Nsnap))
+			#print Hessian.eigvec[0:2*Hessian.N:2,0]
+			#print Hessian.eigvec[0:3*Hessian.N:3,1]
+			# Check out what's going on here
+			transcomp=np.zeros((self.Nsnap,3))
+			velcomp=np.zeros((self.Nsnap,3))
+			for u in range(self.Nsnap):
+                                # None of this works: either keep it all, or take it all off
+                                #takeoff=np.einsum('j,k->jk',np.ones((self.N,)),self.drift[u,:])
+                                #rnew=self.rval[u,:,:]-takeoff
+                                #ourmean = np.mean(rnew)
+                                #hessmean= np.mean(Hessian.rval)
+                                #hessnew=Hessian.rval-hessmean+ourmean
+                                #print ourmean
+                                #print np.mean(hessnew)
+				#dr=self.geom.ApplyPeriodic2d(rnew-hessnew)
+				dr=self.geom.ApplyPeriodic2d(self.rval[u,:,:]-Hessian.rval)
+				transcomp[u,:]=np.mean(dr,axis=0)
+				dr-=np.mean(dr,axis=0)
+				#print np.mean(dr)
+				# aah. modulo periodic boundary conditions
+				dv=self.vval[u,:,:]
+				velcomp[u,:]=np.mean(dv,axis=0)
+				# serious WTF
+				# now project onto the modes
+				# This is the organisation of our matrix
+				#plt.quiver(self.rval[:,0],self.rval[:,1],self.eigvec[0:3*self.N:3,u],self.eigvec[1:3*self.N:3,u])
+				# By definition, we are just ignoring the third dimension here
+				self.proj[:,u]=1.0*(np.einsum('i,ij->j',dr[:,0],Hessian.eigvec[0:2*Hessian.N:2,:]) + np.einsum('i,ij->j',dr[:,1],Hessian.eigvec[1:2*Hessian.N:2,:]))
+				self.projv[:,u]=1.0*(np.einsum('i,ij->j',dv[:,0],Hessian.eigvec[0:2*Hessian.N:2,:]) + np.einsum('i,ij->j',dv[:,1],Hessian.eigvec[1:2*Hessian.N:2,:]))
+				#for v in range(3*Hessian.N):
+					#proj2[v,u]=np.sum(dr[:,0]*Hessian.eigvec[0:3*Hessian.N:3,u]) + np.einsum('i,ij->j',dr[:,1],Hessian.eigvec[1:3*Hessian.N:3,:])
+			# projection normalization
+			self.proj/=self.Nsnap
+			self.projv/=self.Nsnap
+			self.proj2av=np.sum(self.proj**2,axis=1)
+			self.projv2av=np.sum(self.projv**2,axis=1)
+			
+		return self.proj,self.projv,self.proj2av,self.projv2av,transcomp,velcomp
 			
 	def plotProjections(self,Hessian,nmodes=5):
 	  
