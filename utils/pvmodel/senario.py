@@ -2,6 +2,7 @@
 import ioutils as io
 import sys, os
 import numpy as np
+from numpy import linalg as lg
 import glob
 import math 
 
@@ -365,6 +366,8 @@ class Property(Senario):
 
 
 # old at this point, be careful
+# Senario for calculating stress and all related quantities while we are at it
+# Should use this senario when implementing strain and graner metrics
 class Stress_Senario(Senario):
     def __init__(self, args):
         super(Stress_Senario, self).__init__(args)
@@ -380,6 +383,17 @@ class Stress_Senario(Senario):
             om = uniformkernel(wl)
         self.omega = om
 
+        self.ref_index = None
+        if args.ref:
+            nums = map(f_outnum, self.infiles)
+            # string comparision 
+            self.ref_index = nums.index(args.ref)
+        else:
+            print 'Warning: reference timestep not set for calculating Strain'
+            self.ref_index = 0
+        self.ref_structure = None
+
+
         self.pkr = SPickler(os.path.join(args.dir, 'stresses'))
 
     def _operate(self):
@@ -389,13 +403,90 @@ class Stress_Senario(Senario):
 
         pv = self._read_pv()
         self._handle_constants(pv)
-        pv.calculate_energy()
+        #pv.calculate_energy()
         pv.calculate_forces()
-
 
         pv.makecellparts()
         pv.on_centres()
 
+        if self.fid == self.ref_index:
+            self.ref_structure = {}
+
+
+        if args.test:
+            self.test_convergence(pv)
+
+        # for real
+        adjlist = [0, 4]
+        #self.calculate_U(pv, adjlist)
+
+        # pickle useful datas
+        self.pkr.update(pv, outnum)
+
+        ### vtp output 
+        self._vtp_output(pv)
+
+    def calculate_U(self, pv, adjlist):
+        self.adjavg_structure(pv, adjlist)
+        pv.structure_xx
+
+
+    def test_convergence(self, pv):
+        adjlist = [0, 1, 5, 10]
+        self.adjavg_structure(pv, adjlist)
+        cm.dev_texture(pv.xx_shear)
+
+    def adjavg_structure(self, pv, adjlist=[0,1,5]):
+        structure = pv.structure
+        structure_xx = {}
+        xx_trace = OrderedDict()
+        xx_shear = OrderedDict()
+
+        
+        # generic method for decomposing tensors. should be moved somewhere.
+        def decompose(ovtens):
+            #take (.., 3, 3) array of tensors and find principle directions and eigenvalues
+            ovtens = ovtens[:,:2,:2] # assume we need to go to two dimensions
+            evals, evecs = lg.eig(ovtens)
+            def orderedst(eva_evec): 
+                eva, evec = eva_evec
+                # for one set of eigenvalues/vectors order them and find components
+                if abs(eva[1]) > abs(eva[0]):
+                    eva[0], eva[1] = eva[1], eva[0]
+                    evec[0], evec[1] = evec[1], evec[0]
+                shear = (eva[0] - eva[1])/2
+                trace = (eva[0] + eva[1])/2
+                return eva, evec, trace, shear
+            ll = map(orderedst, zip(evals, evecs))
+            # transpose list of list
+            rll = map(list, zip(*ll)) 
+            # cleanup
+            return map(np.array, rll)
+            
+        for adjn in adjlist:
+            adjstr = pv.structure_on_centres(adjn)
+            structure_xx[adjn] = adjstr
+            #evecs, evals = lg.eig(np.array(adjstr.values())[:,:2,:2])
+            evals, evecs, trace, shear = decompose(np.array(adjstr.values()))
+
+            xx_trace[adjn] = trace 
+            xx_shear[adjn] = shear
+
+        pv.xx_trace = xx_trace
+        pv.xx_shear = xx_shear
+
+    #def avg_dev_texture(self, xx_shear):
+        #x = xx_shear.keys()
+        #ymean = map(np.mean, xx_shear.values())
+        #yupper = map(max, xx_shear.values())
+        #ylower = map(min, xx_shear.values())
+        #plt.plot(x, ymean, marker='o')
+        #plt.plot(x, yupper, linestyle='--', color='g', marker='o')
+        #plt.plot(x, ylower, linestyle='--', color='g', marker='o')
+        #plt.show()
+
+    def old_testing_code(self):
+        pass
         #bulkforces = [forces[i] for i in pv.tri.bulk]
         #avg_force = np.mean(map(norm, bulkforces))
         #print 'avg_force', avg_force
@@ -405,11 +496,6 @@ class Stress_Senario(Senario):
         #wr.writepoints(pv.mesh.centroids.values(), self._name_vtp('centroids_'))
         #wr.writemesh(pv.polygons, self._name_vtp('polygons_'))
 
-        # pickle useful datas
-        self.pkr.update(pv, outnum)
-
-        ### vtp output 
-        self._vtp_output(pv)
 
 
 # The Tone and Tlist classes for tracking transitions

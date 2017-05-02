@@ -301,8 +301,12 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     # overwrite -n argument
+    # N for plane
     #args.N = int(round((args.lx * args.ly)/args.area))
-    #print 'adding {} particles'.format(args.N)
+    # N for circle
+    args.N = int(round(args.L**2 )) # An individual particle has area pi R^2 = 4 pi
+
+    print 'adding {} particles'.format(args.N)
 
     print
     print "\tActive Particles on Curved Spaces (APCS)"
@@ -319,7 +323,8 @@ if __name__=='__main__':
     print
     #print "\tRadius : ", args.R
     print "\tpolydispersity: ", args.poly
-    #N = int(round(args.R**2*args.phi/4.0)) # An individual particle has area pi R^2 = 4 pi
+
+
     print "\tPacking fraction : ", args.phi
     print "\tNumber of particles : ", args.N
 

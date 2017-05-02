@@ -652,29 +652,6 @@ class Vstress(object):
         paxis = np.array([ev[0] for ev in self.evectors.values()])
         return nstress, sstress, paxis
 
-    #def radial(self, rcm, rcmd, nstat=10.):
-        #stat = round(self.lcl/nstat)
-
-        #mrc = np.max(rcmd)
-        #nbins = int( m.ceil(len(self.clist)/stat) )
-        #rspace = np.linspace(0, mrc, nbins+1, endpoint=True)
-
-        #npd = np.digitize(rcmd, rspace, right=True)-1
-
-        #hcount = np.zeros(nbins)
-        #rsum = np.zeros(nbins)
-        #for i, bn in zip(self.clist, npd):
-            #rsum[bn] += self.pressure[i]
-            #hcount[bn] += 1
-        #self.hcount = hcount
-        #self.npd = npd
-        #self.rsum = rsum
-        ##print rspace
-        ##print self.rsum
-        ##print self.hcount
-        #self.ravg = [rsum[i]/hcount[i] for i in range(nbins)]
-        #self.rspace = rspace
-
     # Now we have self.stress and self.pressure the next step is to 
     #  reduce to averaged quantities
     def radial(self, rcm, rcmd, nstat=1000.):
@@ -1288,7 +1265,6 @@ class PVmesh(object):
                 eh = tri.edge_handle(jheh)
                 nuehid = tri.to_mesh_edge[eh.idx()]
 
-                # can't believe this is wrong, but it just is right?
                 #nueh = tri.edge_handle(nuehid)
                 #nuheh = tri.halfedge_handle(nueh,0)
 
@@ -1310,7 +1286,7 @@ class PVmesh(object):
                 bondst = (gamma * prim + cl/2.) * bondouter
                 struct += bondst  
 
-            structure[vhi] = texture 
+            structure[vhi] = texture / 2.  # factor of two avoids double counting
             stress += struct 
             self.cellparts[vhi] = stress
 
@@ -1323,7 +1299,9 @@ class PVmesh(object):
 
 
     # Get rings of adjacent cells, this will include boundaries although we don't want them
-    def adjavg(self, vhi, adj=0):
+    # Not the most efficient use of set operation here
+    # Look in this method if optimisation is necessary
+    def adjavg(self, vhi, adj=0, cut_boundary=True):
 
         tri = self.tri
         last_ring = set([vhi])
@@ -1352,6 +1330,14 @@ class PVmesh(object):
         for ring in rings:
             vhids.extend(ring)
 
+        if cut_boundary:
+            nuvhids = []
+            for vhi in vhids:
+                vh = tri.vertex_handle(vhi)
+                if not tri.is_boundary(vh):
+                    nuvhids.append(vhi)
+            vhids = nuvhids
+
         return vhids
 
     # take a list of cells to use to make the virial stress
@@ -1362,10 +1348,12 @@ class PVmesh(object):
                        
         atotal = 0.
         for vhi in vhids:
-            # cut out boundary vertices
+            # cut out boundary vertices, we do this in adjavg now so cut it
             vh = tri.vertex_handle(vhi)
             if tri.is_boundary(vh):
                 continue
+            #
+
             mvhid = tri.to_mesh_face[vhi]
             area = mesh.areas[mvhid]
             cp = cellparts[vhi]
@@ -1405,6 +1393,17 @@ class PVmesh(object):
         vv = Vstress(self.stressv, self.tri.bulk, 'virial')
         vv.radial(self.tri.rcm,self.tri.rcmd)
         self.stresses['virial'] = vv
+
+    # if we have a mapping vhids -> range(0, n) then we can use arrays instead of OrderedDicts
+    def structure_on_centres(self, adj=0):
+        adjstructure = OrderedDict()
+        for vhi in self.tri.bulk:
+            vhids = self.adjavg(vhi, adj)
+            adjvalue = np.mean(np.array([self.structure[v] for v in vhids]), axis=0)
+
+            adjstructure[vhi] = adjvalue
+        return adjstructure
+
 
     #########
     # Complicated Stress Calculation which can deal with parts of bonds 
@@ -2031,6 +2030,8 @@ class PVmesh(object):
         ids = np.array(rdat.data[keys['id']], dtype=int)
         # we put environment at the top of the file 
         startid = ids[0] 
+        print 'startid = ', startid
+        print 
         x = np.array(rdat.data[keys['x']])
         y = np.array(rdat.data[keys['y']])
         z = np.array(rdat.data[keys['z']])

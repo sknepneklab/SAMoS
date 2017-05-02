@@ -109,6 +109,31 @@ def writemeshenergy(pv, outfile):
     sshear.SetNumberOfComponents(1)
     sshear.SetName("shear stress")
 
+    # need to add an abitrary number of texture tensors
+    # naming convention t_trace_<n> where n is the averaging number
+    texs = []
+    trace_arrs = []
+    stexs = []
+    shear_arrs = [] # for deviatoric part
+    is_xx_trace = True if hasattr(pv, 'xx_trace') else False
+    if is_xx_trace:
+        for adjn, trace in pv.xx_trace.items():
+            t_name = 't_trace_{}'.format(adjn)
+            texs.append(t_name)
+            tmarr = vtk.vtkDoubleArray()
+            tmarr.SetNumberOfComponents(1)
+            tmarr.SetName(t_name)
+            trace_arrs.append(tmarr)
+
+        for adjn, trace in pv.xx_shear.items():
+            t_name = 't_shear_{}'.format(adjn)
+            stexs.append(t_name)
+            tsarr = vtk.vtkDoubleArray()
+            tsarr.SetNumberOfComponents(1)
+            tsarr.SetName(t_name)
+            shear_arrs.append(tsarr)
+
+
     meshpt = mesh.pym
     vforces =mesh.vertex_force
     for i, vh in enumerate(mesh.vertices()):
@@ -136,8 +161,18 @@ def writemeshenergy(pv, outfile):
         area.InsertNextValue(ar[mfid])
         pressure.InsertNextValue(press[vhid])
         sshear.InsertNextValue(sstress[vhid])
-        
 
+    if is_xx_trace:
+        for i, tarr in enumerate(trace_arrs):
+            adjn = pv.xx_trace.keys()[i]
+            for traceval in pv.xx_trace[adjn]:
+                tarr.InsertNextValue(traceval)
+
+        for i, tarr in enumerate(shear_arrs):
+            adjn = pv.xx_shear.keys()[i]
+            for shearval in pv.xx_shear[adjn]:
+                tarr.InsertNextValue(shearval)
+        
 
     polydata = vtk.vtkPolyData()
     polydata.SetPoints(Points)
@@ -149,6 +184,11 @@ def writemeshenergy(pv, outfile):
     polydata.GetCellData().AddArray(pressure)
     polydata.GetCellData().AddArray(sshear)
     polydata.GetPointData().AddArray(force)
+    if is_xx_trace:
+        for tarr in trace_arrs:
+            polydata.GetCellData().AddArray(tarr)
+        for tarr in shear_arrs:
+            polydata.GetCellData().AddArray(tarr)
 
     polydata.Modified()
     writer = vtk.vtkXMLPolyDataWriter()

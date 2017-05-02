@@ -39,6 +39,7 @@
 import gzip
 from collections import OrderedDict
 import copy
+import sys
 
 class ReadData:
 
@@ -70,7 +71,6 @@ class ReadData:
                     header = lines[nheader].strip()[1:]
                     keys = header.split()
                     for k in keys: self.keys[k] = keys.index(k)
-                    #print keys
                     nheader+=1
                     if (self.keys.has_key('id')) or (self.keys.has_key('type')) or (self.keys.has_key('radius')) or(self.keys.has_key('x')):
                         read_keys=True

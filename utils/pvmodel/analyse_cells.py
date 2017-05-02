@@ -44,6 +44,8 @@ def process_commands():
     topparser.add_argument("--triangulate", action='store_true', 
             help='use numpy for triangulation')
     topparser.add_argument("-f", '--faces', type=str, help='specify the faces file')
+    topparser.add_argument("-ref", type=str, default=None, 
+            help='specify the number of the reference configuration')
 
     subparsers = topparser.add_subparsers(dest='subcommand')
  
@@ -62,6 +64,7 @@ def process_commands():
 
     parser.add_argument('-lt', '--ltransition', type=float, default=0.02, 
             help = 'Threshold length for a t1 transition')
+    parser.add_argument('--test', action='store_true')
 
     valid_smoothing_functions = ['uniform', 'quartic']
     # flags

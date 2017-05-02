@@ -20,22 +20,26 @@ import ioutils as io
 from os import path
 from collections import OrderedDict
 
-# Start abstracting this mess of methods into a class which contains all the necessary functions
-#  Then keep adding methods but they should be just a few lines long by calling methods from the 
-#  Class
+# tmp
+from obstacle import *
+
 
 from tmp_read_data import ReadData
 # Generic function for operating on the data input files 
+# this function could use a rewrite, todo
 def rwoperate(ifile):
+    # is this ReadData really giving list instead of numpy array?
     rdat = ReadData(ifile)
     keys = rdat.keys
     lrdat = len(rdat.data[0])
     outd = OrderedDict()
-    for k in keys:
-        outd[k] = []
-    for i, _ in enumerate(rdat.data[0]):
-        for kn, kv in keys.items():
-            outd[kn].append( rdat.data[kv][i] )
+    #for k in keys:
+        #outd[k] = []
+    #for i, _ in enumerate(rdat.data[0]):
+        #for kn, kv in keys.items():
+            #outd[kn].append( rdat.data[kv][i] )
+    for ki, k in enumerate(keys):
+        outd[k] = rdat.data[ki]
     if 'id' in outd:
         outd['id'] = map(int, outd['id'])
     if 'type' in outd:
@@ -239,7 +243,14 @@ class CellInput(object):
         # The number of particles
         self.N = len(self.outd.values()[0])
         # keep track of the tissue ids
-        self.all = self.outd['id']
+        self.all = None
+        if 'id' in self.outd:
+            self.all = self.outd['id']
+        else:
+            print 'Warning: This file has no ids, assume range starting form zero'
+            self.all = np.arange(len(self.outd['x']))
+
+
 
     # The reason we prepend the environment is because when cells are removed
     #  the particle ids change.
@@ -382,6 +393,33 @@ class CellInput(object):
             if key in self.outd:
                 del self.outd[key]
 
+    def make_spherical_input(self):
+        outd = self.outd
+        nvx = np.zeros(self.N)
+        nvy = np.zeros(self.N)
+        nvz = np.zeros(self.N)
+        x, y, z = outd['x'], outd['y'], outd['z']
+        for i, xyz in enumerate(zip(x, y, z)):
+            xt, yt, zt = xyz
+            ve = np.array([xt, yt, zt])
+            nvx[i], nvy[i], nvz[i] =  ve/norm(ve)
+        self.outd['nvx'] = nvx
+        self.outd['nvy'] = nvy
+        self.outd['nvz'] = nvz
+
+    def sphere_prepend(self):
+        #needs to be added to the start of the dict so great a new object
+        noutd = OrderedDict()
+        ids = np.arange(self.N)
+        radius = np.full(self.N, 1.)
+        tp = np.full(self.N, 1, dtype='int32')
+        noutd['id'] = ids
+        noutd['type'] = tp
+        noutd['radius'] = radius
+        for k, v in self.outd.items():
+            noutd[k] = v
+        self.outd = noutd
+
     def boundary_flags(self, boundaries):
         bd = self.outd['boundary']
         for b_id, boundary in enumerate(boundaries):
@@ -430,7 +468,128 @@ class CellInput(object):
             io.dump(self.outd, fo, htag='keys:')
 
 
-# Environment operations
+    #Fix obstacle
+    def orient_xy(self):
+
+        direction = setup_for_obstacle(self)
+        r, n, rot_angle = rotate_xyz(self, direction)
+
+        # now pick an id which is on the x-y plane
+        print np.absolute(r[:,2])
+        seedid = np.argmin(np.absolute(r[:,2]))
+        print 'using seed particle in the band', seedid, 'at position', self.rvals[seedid]
+        
+        #hardcode constraint radius
+        R = 28.2094791774 
+        #geom = Geometry.GeometrySphere(param(R))
+        rcut = 2.4
+        # create celllist and Populate it with all the particles:
+        # This is just for greater efficiency
+        #clist = CellList(geom, rcut)
+        #x, y, z = self.outd['x'], self.outd['y'], self.outd['z']
+        #for i, rval in enumerate(rvals):
+            #self.clist.add_particle(rval,i)
+
+        seed = self.rvals[seedid]
+        return seed, r, n, rot_angle
+   
+    
+    def whatobstacle(self, seed, obsr):
+
+        ids = self.outd['id']
+        # define boolean function
+        def isnear(idx):
+            r = self.rvals[idx]
+            if norm(seed - r) < obsr:
+                return 1
+            return 0
+
+        obst = []
+        for idx in ids:
+            if isnear(idx):
+                obst.append(idx)
+        print 'obstacle particles'
+        print obst
+
+        return obst 
+ 
+
+    def fixobstacle(self, obsr):
+        seed, r, n, rot_angle = self.orient_xy(self)
+        obst = self.whatobstacle(seed, obsr)
+        #now just change the type of those particles to fix them
+        for idx in obst:
+            self.outd['type'][idx] = 2
+
+    def insertobstacle(self, obsr):
+        # add 0.5 to obsr and create space for obstacle
+        seed, r, n, rot_angle = self.orient_xy()
+        # or ... choose (R, 0, 0) for the obstacle
+        R = 28.2094791774 
+    
+        # throw away the seed we have
+        seed = np.array([R, 0, 0])
+        rseed = rotate_vectorial(np.array([seed]), np.array([n[0]]), rot_angle)[0]
+        print rseed
+        obst = self.whatobstacle(rseed, obsr+0.5)
+
+        # remove these particles
+        mask = np.zeros(self.N, dtype='bool')
+        mask[np.array(obst)] = 1
+        for k, v in self.outd.items():
+            # so all the data is in numpy array form now
+            # we should make it like this at the read-in step
+            self.outd[k] = np.array(v)[~mask]
+        
+        # we didn't rotate the velocities and directors only the positions
+        # Best to construct the obstacle and then rotate it 
+        ll = len(self.outd.values()[0])
+        print 'number of particles remaining', ll
+
+        # add obstacle particles
+        # needed fields for adding a particle
+        # [id, type, radius, x, y, z, vx, vy, vz, nx, ny, nz, nvx, nvy, nvz]
+        obs = Obstacle(seed, obsr)
+        obsd = obs.build_particles(R, n, rot_angle)
+
+
+        # append these ordered dictionaries
+        for k in self.outd:
+            self.outd[k] = np.append(self.outd[k], obsd[k])
+
+        # reset ids
+        self.N = len(self.outd['id'])
+        self.outd['id'] = np.arange(self.N, dtype='int32')
+        print self.outd['id']
+
+        
+
+### Obstacle operations
+
+def resettypes(ifile):
+    ci= CellInput(ifile)
+    ci.outd['type'] = np.full(ci.N, 1, dtype=int)
+    ci.dump(ifile)
+
+def insertobstacle(ifile, obsr=5.):
+    ci = CellInput(ifile)
+    ci.insertobstacle(obsr)
+    ci.dump(ifile)
+
+# This is the one that adds ids and types, etc. to Rastko data file
+def sphereinput(ifile):
+    Ci = CellInput(ifile)
+    Ci.sphere_prepend()
+    Ci.make_spherical_input()
+    Ci.dump()
+
+def fixobstacle(ifile, obsr=5.):
+    Ci = CellInput(ifile)
+    Ci.fixobstacle(obsr)
+    Ci.dump()
+
+
+### Environment operations
 def addsquareenv(ifile, dens=1.5):
     ci = CellInput(ifile)
     # add the in_tissue flag
@@ -820,7 +979,6 @@ if __name__=='__main__':
             fargs = []
 
     ff = fargs
-    print fargs
     for i, f in enumerate(ff):
         try:
             ff[i] = eval(f)

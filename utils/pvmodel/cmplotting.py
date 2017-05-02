@@ -476,7 +476,25 @@ def grow_radial():
 
 
 
+## plotting texture tensor
 
+@defaultsave
+def dev_texture(xx_shear):
+    plt.clf()
+    x = xx_shear.keys()
+    ymean = map(np.mean, xx_shear.values())
+    yupper = map(max, xx_shear.values())
+    ylower = map(min, xx_shear.values())
+    plt.plot(x, ymean, marker='o')
+    plt.plot(x, yupper, linestyle='--', color='g', marker='o')
+    plt.plot(x, ylower, linestyle='--', color='g', marker='o')
+
+    outd = OrderedDict()
+    outd['adjn'] = x
+    outd['ymean'] = ymean
+    outd['yupper'] = yupper
+    outd['ylower'] = ylower
+    return outd
 
 
 ########################################################################################
