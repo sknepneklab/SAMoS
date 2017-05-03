@@ -78,7 +78,7 @@ def process_commands():
             help='Mirrors exclude_boundary flag in samso')
 
 
-    # Want a sub parser for simple operations on mesh which don't involve stress calcualtion
+    # Want a sub parser for simple operations on mesh which don't involve stress calculation
     # Examples. Calculating the structure tensor, calculating cell neighbour topology
     # Associated with the 'Property' senario
     meshparser = subparsers.add_parser('mesh', help='Analysis on the mesh')

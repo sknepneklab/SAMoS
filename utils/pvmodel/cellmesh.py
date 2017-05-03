@@ -620,7 +620,6 @@ class Vstress(object):
         # still ignoring kinetic part for now
         stress = dict([(i, self.stress[i]) for i in self.clist])
         evalues, evectors = {}, {}
-        #print stress
         for i in self.clist:
             st = stress[i]
 
@@ -1290,8 +1289,6 @@ class PVmesh(object):
             stress += struct 
             self.cellparts[vhi] = stress
 
-            #print vhi
-            #print stress
         
             
         self.structure = structure
@@ -1322,7 +1319,6 @@ class PVmesh(object):
 
                 rings.append(last_ring)
                 adj -= 1
-                #print adj
                 vvext(rings, last_ring, adj)
 
         vvext(rings, last_ring, adj)

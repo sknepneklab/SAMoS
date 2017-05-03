@@ -407,7 +407,7 @@ class Stress_Senario(Senario):
         pv.calculate_forces()
 
         pv.makecellparts()
-        pv.on_centres()
+        pv.on_centres(args.adj)
 
         if self.fid == self.ref_index:
             self.ref_structure = {}
@@ -416,9 +416,10 @@ class Stress_Senario(Senario):
         if args.test:
             self.test_convergence(pv)
 
-        # for real
-        adjlist = [0, 4]
-        #self.calculate_U(pv, adjlist)
+        # for real 
+        print 'stress averaging adj = ', args.adj
+        adjlist = [0, args.adj]
+        self.calculate_U(pv, adjlist)
 
         # pickle useful datas
         self.pkr.update(pv, outnum)
@@ -428,7 +429,7 @@ class Stress_Senario(Senario):
 
     def calculate_U(self, pv, adjlist):
         self.adjavg_structure(pv, adjlist)
-        pv.structure_xx
+        #pv.structure_xx
 
 
     def test_convergence(self, pv):
