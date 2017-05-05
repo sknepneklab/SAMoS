@@ -73,9 +73,10 @@ void PairActiveNematicPotential::compute(double dt)
         double Qxx = pj.nx*pj.nx - 1.0/3.0, Qxy = pj.nx*pj.ny,           Qxz = pj.nx*pj.nz;
         double Qyx = Qxy,                   Qyy = pj.ny*pj.ny - 1.0/3.0, Qyz = pj.ny*pj.nz;
         double Qzx = Qxz,                   Qzy = Qyz,                   Qzz = pj.nz*pj.nz - 1.0/3.0; 
-        pi.fx += alpha*(Qxx*dx + Qxy*dy + Qxz*dz)/r_sq;
-        pi.fy += alpha*(Qyx*dx + Qyy*dy + Qyz*dz)/r_sq;
-        pi.fz += alpha*(Qzx*dx + Qzy*dy + Qzz*dz)/r_sq;
+        double factor = alpha/r_sq;
+        pi.fx += factor*(Qxx*dx + Qxy*dy + Qxz*dz);
+        pi.fy += factor*(Qyx*dx + Qyy*dy + Qyz*dz);
+        pi.fz += factor*(Qzx*dx + Qzy*dy + Qzz*dz);
       }
     }
   }

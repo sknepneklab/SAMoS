@@ -59,4 +59,6 @@ void register_pair_potentials(PairPotentialMap& pair_potentials)
   pair_potentials["boundary_attraction"] = boost::factory<PairBoundaryAttractionPotentialPtr>();
   // Register motor pair potential with the pair potentials class factory
   pair_potentials["motor"] = boost::factory<PairMotorPotentialPtr>();
+  // Register active nematic pair potential with the pair potentials class factory
+  pair_potentials["active_nematic"] = boost::factory<PairActiveNematicPotentialPtr>(); 
 }
