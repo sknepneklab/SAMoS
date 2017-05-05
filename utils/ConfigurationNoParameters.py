@@ -20,30 +20,40 @@
 # *
 # *****************************************************************************
 
+# Version of Configuration for isolated data files with no parameter file. Chiefly used to extract geometric information, such as defect positions
 from Geometry import *
-from read_param import *
+#from read_param import *
 from read_data import *
 from CellList import *
-from Interaction import *
+#from Interaction import *
 
-#try:
-	#import matplotlib.pyplot as plt
-	#from mpl_toolkits.mplot3d import Axes3D
-	#HAS_MATPLOTLIB=True
-#except:
-	#HAS_MATPLOTLIB=False
-	#pass
+try:
+	import matplotlib.pyplot as plt
+	from mpl_toolkits.mplot3d import Axes3D
+	HAS_MATPLOTLIB=True
+except:
+	HAS_MATPLOTLIB=False
+	pass
+    
+# dummy parameter class for the most typical geometry variables
+class Param:
+    def __init__(self,box,r=30):
+        self.box=box
+        self.lx = box[0]
+        self.ly = box[1]
+        self.r=r
+        self.nlist_rcut=2.5
 
 class Configuration:
-	def __init__(self,param,filename,ignore=False,debug=False):
-		self.param=param
-		# Outdated list of geometries
-		#geometries={'sphere':GeometrySphere,'plane':GeometryPeriodicPlane,'none':Geometry,'tube':GeometryTube,'peanut':GeometryPeanut,'hourglass':GeometryHourglass}
+	def __init__(self,filename,constraint,box):
 		geometries={'sphere':GeometrySphere,'plane':GeometryPlane,'plane_periodic':GeometryPeriodicPlane,'none':Geometry,'tube':GeometryTube,'peanut':GeometryPeanut,'hourglass':GeometryHourglass}
 		print "Processing file : ", filename
 		data = ReadData(filename)
 		x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
-		vx, vy, vz = np.array(data.data[data.keys['vx']]), np.array(data.data[data.keys['vy']]), np.array(data.data[data.keys['vz']])
+                try:
+                        vx, vy, vz = np.array(data.data[data.keys['vx']]), np.array(data.data[data.keys['vy']]), np.array(data.data[data.keys['vz']])
+                except KeyError:
+			vx, vy, vz = np.zeros(np.shape(x)),np.zeros(np.shape(y)),np.zeros(np.shape(z))
 		try:
 			nx, ny, nz = np.array(data.data[data.keys['nx']]), np.array(data.data[data.keys['ny']]), np.array(data.data[data.keys['nz']])
 		except KeyError:
@@ -54,10 +64,10 @@ class Configuration:
 			# MISSING: read them in from the initial configuration
 			self.radius = np.array([1.0 for i in range(self.N)])
 			self.monodisperse=True
-			#self.sigma=1.0
+			self.sigma=1.0
 		else: 
 			self.radius = np.array(data.data[data.keys['radius']])	
-			#self.sigma = np.mean(self.radius)
+			self.sigma = np.mean(self.radius)
 		if data.keys.has_key('type'):
 			self.ptype = data.data[data.keys['type']]
 		else:
@@ -68,10 +78,9 @@ class Configuration:
 		self.vval = np.column_stack((vx,vy,vz))
 		self.nval = np.column_stack((nx,ny,nz))
 		# Create the right geometry environment (TBC):
-		self.geom=geometries[param.constraint](param)
+		param=Param(box)
+		self.geom=geometries[constraint](param)
 		print self.geom
-		# Create the Interaction class
-		self.inter=Interaction(self.param,self.radius,ignore)
 		
 		if self.geom.periodic:
 			# Apply periodic geomtry conditions just in case (there seem to be some rounding errors floating around)
@@ -83,19 +92,13 @@ class Configuration:
 		
 		# Create the cell list
 		cellsize=param.nlist_rcut
-		if cellsize>5*self.inter.sigma:
-			cellsize=5*self.inter.sigma
-			print "Warning! Reduced the cell size to manageable proportions (5 times mean radius). Re-check if simulating very long objects!"
 		self.clist=CellList(self.geom,cellsize)
 		# Populate it with all the particles:
 		for k in range(self.N):
 			self.clist.add_particle(self.rval[k,:],k)
 		#self.clist.printMe()
+		self.getTangentBundle()
 		
-		if debug:
-			fig = plt.figure()
-			ax = fig.add_subplot(111, projection='3d')
-			ax.scatter(self.rval[:,0], self.rval[:,1], self.rval[:,2], zdir='z', c='b')
 		
 	# Tangent bundle: Coordinates in an appropriate coordinate system defined on the manifold
 	# and the coordinate vectors themselves, for all the particles
@@ -146,19 +149,6 @@ class Configuration:
 		dr=np.sqrt(drvec[:,0]**2+drvec[:,1]**2+drvec[:,2]**2)
 		return neighbours, drvec, dr
 	      
-	def compute_energy_and_pressure(self):
-		eng = np.zeros(self.N)
-		press = np.zeros(self.N)
-		ncon = np.zeros(self.N)
-		stress = np.zeros((self.N,3,3))
-		for i in range(self.N):
-			neighbours, drvec, dr=self.getNeighbours(i,self.inter.getMult(),self.inter.getDmax())
-			ncon[i]=len(neighbours)
-			eng[neighbours]+=self.inter.getEnergy(i,neighbours,drvec,dr)
-			press_val,stress_val=self.inter.getStresses(i,neighbours,drvec,dr)
-			stress[neighbours,:,:]+=stress_val
-			press[neighbours]+=press_val
-		return [eng, press, ncon,stress]
 	
 	
 	# Flat case statistics (or other geometry statistics, if desired)
@@ -167,13 +157,13 @@ class Configuration:
 		vel2av=np.mean(vel2)
 		phival=np.pi*np.sum(self.radius**2)/self.geom.area
 		ndensity=self.N/self.geom.area
-		eng, press,ncon,stress = self.compute_energy_and_pressure()
-		pressure=np.sum(press)/self.geom.area
-		fmoment=np.mean(press)
-		energy=np.mean(eng)
-		energytot=np.sum(eng)
+		#eng, press,ncon,stress = self.compute_energy_and_pressure()
+		#pressure=np.sum(press)/self.geom.area
+		#fmoment=np.mean(press)
+		#energy=np.mean(eng)
+		#energytot=np.sum(eng)
 		zav=np.mean(ncon)
-		return vel2av, phival,ndensity, pressure,fmoment,energy,energytot,zav
+		return vel2av, phival,ndensity,zav
 	  
 	def getStatsBand(self,debug=False):
 		ez = np.array([0,0,1])  # lab frame z-axis
@@ -197,26 +187,6 @@ class Configuration:
 		vel = np.sqrt(self.vval[:,0]**2 + self.vval[:,1]**2 + self.vval[:,2]**2)
 		velnorm=((self.vval).transpose()/(vel).transpose()).transpose()
 		
-		eng, press,stress = self.compute_energy_and_pressure()
-		print np.shape(stress)
-		# Project the stresses into the e,theta,phi components. The rr component hast to be 0, and the r cross components
-		# belong to the projection. So they are not all that interesting. 
-		# We want the theta theta, theta phi, phi theta ant phi phi components (implicitly testing symmetries ...)
-		# I give up on the notation. Stress is (N,3,3), the axes are (N,3). We want e_i sigma_ij e_j
-		s_tt=np.sum(axisnorm*np.einsum('kij,j->ki',stress,axisnorm),axis=1)
-		s_tp=np.sum(axisnorm*np.einsum('kij,j->ki',stress,directionV),axis=1)
-		s_pt=np.sum(directionV*np.einsum('kij,j->ki',stress,axisnorm),axis=1)
-		s_pp=np.sum(directionV*np.einsum('kij,j->ki',stress,directionV),axis=1)
-		print np.shape(s_tt)
-		# Mean density really makes no sense? Determined by the initial conditions in periodic boundary conditions.
-		# I do not wish to set up artificial bins in a translationally invariant system
-		vel_av=np.mean(vel)
-		eng_av=np.mean(eng)
-		press_av=np.mean(press)
-		s_tt_av=np.mean(s_tt)
-		s_tp_av=np.mean(s_tp)
-		s_pt_av=np.mean(s_pt)
-		s_pp_av=np.mean(s_pp)
 		
 		# Debugging output
 		if debug==True:
@@ -227,5 +197,5 @@ class Configuration:
 			else:
 				print 'Error: Matplotlib does not exist on this machine, cannot plot system'
 			
-		return [vel_av,eng_av,press_av,s_tt_av,s_tp_av,s_pt_av,s_pp_av,alpha,direction,directionV,orderpar,orderparV]
+		return [vel_av,alpha,direction,directionV,orderpar,orderparV]
 	

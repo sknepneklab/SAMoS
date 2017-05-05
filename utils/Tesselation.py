@@ -22,8 +22,9 @@
 
 from Configuration import *
 from CellList import *
+import scipy.spatial
 
-MMAX=3.0
+MMAX=2.0
 class Tesselation:
     
 	def __init__(self,conf,debug=False):
@@ -32,6 +33,49 @@ class Tesselation:
 		self.geom=self.conf.geom
 		self.debug=debug
                 self.ordered_patches = False
+                
+        def findLoopDelaunay(self):
+                self.LoopList=[]
+		# The dual: which loops belong to which particle
+		self.ParList=[[] for k in range(len(self.rval))]
+		self.LoopCen=[]
+		self.l=0
+		# use properly two-dimensional data
+		print self.rval[:,0:2]
+                tri = scipy.spatial.Delaunay(self.rval[:,0:2])
+                # tri.simplices are the triangles, but not necessarily counterclockwise ...
+                for k in range(len(tri.simplices)):
+                        llist=tri.simplices[k]
+                        looppos=self.rval[llist]
+			lcen=[np.mean(looppos[:,0]), np.mean(looppos[:,1]),np.mean(looppos[:,2])]
+			self.LoopCen.append(lcen)
+			self.LoopList.append(llist)
+			self.l+=1
+		print "Found " + str(len(self.LoopList)) + " loops!"
+		# Need to also construct the connectivity matrix
+		# There surely are better ways ...
+		self.Ival=[]
+		self.Jval=[]
+		for k in range(len(tri.simplices)):
+                        llist=tri.simplices[k]
+                        self.Ival.append(llist[0])
+                        self.Jval.append(llist[1])
+                        self.Ival.append(llist[1])
+                        self.Jval.append(llist[0])
+                        
+                        self.Ival.append(llist[1])
+                        self.Jval.append(llist[2])
+                        self.Ival.append(llist[2])
+                        self.Jval.append(llist[1])
+                        
+                        self.Ival.append(llist[0])
+                        self.Jval.append(llist[2])
+                        self.Ival.append(llist[2])
+                        self.Jval.append(llist[0])
+                        self.ParList[llist[0]].append(k)
+                        self.ParList[llist[1]].append(k)
+                        self.ParList[llist[2]].append(k)
+		return self.LoopList,self.Ival,self.Jval
 		
 	def findLoop(self,closeHoles=False,mult0=1.0,mult1=MMAX):
 		neighList=[]
@@ -45,8 +89,11 @@ class Tesselation:
 		# Identify all neighbours and add them to a list. Keep i->j and j->i separate
 		# The label is in neighList, the particle numbers are in Ival and Jval
 		# Take these straight from the interaction now
-		dmax=self.conf.inter.dmax
-		mult=mult0*self.conf.inter.mult
+		# No, this should happen before the call, so that Tesselation is independent of interaction, as it should
+		#dmax=self.conf.inter.dmax
+		dmax=2*self.conf.sigma
+		mult=mult0
+		#mult=mult0*self.conf.inter.mult
 		#if self.conf.monodisperse:
 		#if self.conf.param.potential=='soft':
 			#dmax=2*self.conf.inter.sigma
@@ -63,9 +110,12 @@ class Tesselation:
 		print "Initial multiplier " + str(mult0)
 		for i in range(len(self.rval)):
 			neighbours=[]
+			#print i
+			if i%1000==0:
+                            print i
 			if closeHoles:
 				mult=mult0
-				while len(neighbours)<4 and mult<mult1:
+				while len(neighbours)<3 and mult<mult1:
 					neighbours=self.conf.getNeighbours(i,mult,dmax)[0]
 					mult=1.1*mult
                                 #print i, ' --> ', neighbours
@@ -97,6 +147,9 @@ class Tesselation:
 				self.Jval.extend(neighbours)
 				Inei.append([u for u in range(count,count+len(neighbours))])
 				count+=len(neighbours)
+                        #print neighbours
+                        if i%1000==0:
+                            print neighbours
 		# Identify loops based on the neighbour list. Kick out any (one-way) contacts that have occured so far
 		Jarray=np.array(self.Jval)
 		self.LoopList=[]
@@ -104,8 +157,10 @@ class Tesselation:
 		self.ParList=[[] for k in range(len(self.rval))]
 		self.LoopCen=[]
 		self.l=0
+		print "Found " + str(len(neighList)) + " neighbours."
 		while len(neighList)>0:
 			idx=neighList[0]
+			print idx
 			idxkeep=idx
 			#print idx
 			idx0=[]
@@ -148,10 +203,12 @@ class Tesselation:
 					idx0.append(idx)
 					llist.append(Jarray[idx])
 					self.ParList[Jarray[idx]].append(self.l)
-			#print idx0
+			print idx0
 			#print llist
 			#print len(neighList)
 			for v in idx0:
+                                #print v
+                                #neighList.remove(v)
 				try:
 					neighList.remove(v)
 				except ValueError:
@@ -159,6 +216,7 @@ class Tesselation:
 			# There may be rare isolated cases (rattlers?) where the first contact itself is not part of the eventual loop.
 			# This causes problems, because the loop identified after that has been removed.
 			# Remove the original contact, in case it hasn't
+			#neighList.remove(idxkeep)
 			try:
 				#print idxkeep
 				neighList.remove(idxkeep)
