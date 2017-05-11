@@ -658,10 +658,12 @@ void Dump::dump_input()
     m_out << "# " << format(" Lx = %10.6f, Ly = %10.6f, Lz = %10.6f") % m_system->get_box()->Lx % m_system->get_box()->Ly % m_system->get_box()->Lz << endl;
     m_out << "# id type  radius x y z vx vy vz nx ny nz  omega length ix iy iz" << endl;
   }
+  m_out << "keys: id molecule type radius  x   y   z   vx   vy   vz   nx   ny   nz  length ix iy iz" << endl;
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(particles[i]);
-    m_out << format("%5d  %2d  %8.4f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %3d  %3d  %3d") % p.get_id() % p.get_type() % p.get_radius() % p.x % p.y % p.z % p.vx % p.vy % p.vz % p.nx % p.ny % p.nz % p.omega % p.get_length() % p.ix % p.iy % p.iz << endl;
+    //m_out << format("%5d  %2d  %8.4f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %3d  %3d  %3d") % p.get_id() % p.get_type() % p.get_radius() % p.x % p.y % p.z % p.vx % p.vy % p.vz % p.nx % p.ny % p.nz % p.omega % p.get_length() % p.ix % p.iy % p.iz << endl;
+    m_out << format("%5d  %3d  %2d  %8.4f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %3d  %3d  %3d") % p.get_id() % p.molecule % p.get_type() % p.get_radius() % p.x % p.y % p.z % p.vx % p.vy % p.vz % p.nx % p.ny % p.nz % p.omega % p.ix % p.iy % p.iz << endl;
   }
 }
 
