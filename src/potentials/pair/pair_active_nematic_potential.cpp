@@ -46,11 +46,17 @@ void PairActiveNematicPotential::compute(double dt)
     }
   }
 
+  if (m_system->record_force_type())
+    this->reset_force_types("active_nematic");
+
   // Reset total potential energy to zero
   m_potential_energy = 0.0;
   for  (int i = 0; i < N; i++)
   {
     Particle& pi = m_system->get_particle(i);
+    double Qi_xx = pi.nx*pi.nx - 1.0/3.0, Qi_xy = pi.nx*pi.ny,           Qi_xz = pi.nx*pi.nz;
+    double Qi_yx = Qi_xy,                 Qi_yy = pi.ny*pi.ny - 1.0/3.0, Qi_yz = pi.ny*pi.nz;
+    double Qi_zx = Qi_xz,                 Qi_zy = Qi_yz,                 Qi_zz = pi.nz*pi.nz - 1.0/3.0;
     vector<int>& neigh = m_nlist->get_neighbours(i);
     for (unsigned int j = 0; j < neigh.size(); j++)
     {
@@ -68,15 +74,20 @@ void PairActiveNematicPotential::compute(double dt)
         if (m_has_pair_params)
         {
           int pi_t = pi.get_type() - 1, pj_t = pj.get_type() - 1;
-          alpha = -m_pair_params[pi_t][pj_t].alpha; // minus comes from the defintion 
+          alpha = -m_pair_params[pi_t][pj_t].alpha; // minus comes from the definition 
         }
-        double Qxx = pj.nx*pj.nx - 1.0/3.0, Qxy = pj.nx*pj.ny,           Qxz = pj.nx*pj.nz;
-        double Qyx = Qxy,                   Qyy = pj.ny*pj.ny - 1.0/3.0, Qyz = pj.ny*pj.nz;
-        double Qzx = Qxz,                   Qzy = Qyz,                   Qzz = pj.nz*pj.nz - 1.0/3.0; 
+        double Qj_xx = pj.nx*pj.nx - 1.0/3.0, Qj_xy = pj.nx*pj.ny,           Qj_xz = pj.nx*pj.nz;
+        double Qj_yx = Qj_xy,                 Qj_yy = pj.ny*pj.ny - 1.0/3.0, Qj_yz = pj.ny*pj.nz;
+        double Qj_zx = Qj_xz,                 Qj_zy = Qj_yz,                 Qj_zz = pj.nz*pj.nz - 1.0/3.0; 
         double factor = alpha/r_sq;
-        pi.fx += factor*(Qxx*dx + Qxy*dy + Qxz*dz);
-        pi.fy += factor*(Qyx*dx + Qyy*dy + Qyz*dz);
-        pi.fz += factor*(Qzx*dx + Qzy*dy + Qzz*dz);
+        double fx = factor*((Qi_xx - Qj_xx)*dx + (Qi_xy - Qj_xy)*dy + (Qi_xz - Qj_xz)*dz);
+        double fy = factor*((Qi_yx - Qj_yx)*dx + (Qi_yy - Qj_yy)*dy + (Qi_yz - Qj_yz)*dz);
+        double fz = factor*((Qi_zx - Qj_zx)*dx + (Qi_zy - Qj_zy)*dy + (Qi_zz - Qj_zz)*dz);
+        pi.fx += fx;
+        pi.fy += fy;
+        pi.fz += fz;
+        if (m_system->record_force_type())
+          pi.add_force_type("active_nematic",fx,fy,fz);
       }
     }
   }

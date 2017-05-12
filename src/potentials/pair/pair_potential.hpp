@@ -127,6 +127,18 @@ public:
         return (*it_p).first;
     return "";
   }
+
+  //! Resets per particle force type
+  //! \param name force type
+  void reset_force_types(const string& name)
+  {
+    for  (int i = 0; i < m_system->size(); i++)
+    {
+      Particle& p = m_system->get_particle(i);
+      p.set_force_type(name,0.0,0.0,0.0);
+    }
+  }
+
   
 protected:
        

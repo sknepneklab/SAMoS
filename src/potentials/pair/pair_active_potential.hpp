@@ -75,6 +75,18 @@ public:
     }
     m_msg->write_config("potential.pair.active.alpha",lexical_cast<string>(m_alpha));
     
+    if (param.find("rcut") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"No cutoff distance (rcut) specified for the active pair potential. Setting it to the neighbour list cutoff.");
+      m_rcut = m_nlist->get_cutoff();
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Global cutoff distance (rcut) for active pair potential is set to "+param["rcut"]+".");
+      m_rcut = lexical_cast<double>(param["rcut"]);
+    }
+    m_msg->write_config("potential.pair.active.rcut",lexical_cast<string>(m_rcut));
+
     if (m_rcut > m_nlist->get_cutoff())
       m_msg->msg(Messenger::WARNING,"Neighbour list cutoff distance (" + lexical_cast<string>(m_nlist->get_cutoff())+
       " is smaller than the active cuttof distance ("+lexical_cast<string>(m_rcut)+

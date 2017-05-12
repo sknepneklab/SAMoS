@@ -48,6 +48,9 @@ void PairSoftPotential::compute(double dt)
       p.set_pot_energy("soft",0.0);
     }
   }
+
+  if (m_system->record_force_type())
+    this->reset_force_types("soft");
   
   m_potential_energy = 0.0;
   double tot_pot = m_potential_energy;
@@ -103,6 +106,11 @@ void PairSoftPotential::compute(double dt)
         {
           pi.add_pot_energy("soft",pot_eng);
           pj.add_pot_energy("soft",pot_eng);
+        }
+        if (m_system->record_force_type())
+        {
+          pi.add_force_type("soft",-force_factor*dx,-force_factor*dy,-force_factor*dz);
+          pj.add_force_type("soft", force_factor*dx, force_factor*dy, force_factor*dz);
         }
       }
     }
