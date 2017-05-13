@@ -32,7 +32,7 @@
 void PairActiveNematicPotential::compute(double dt)
 {
   int N = m_system->size();
-  double alpha = -m_alpha; // minus comes from the defintion 
+  double alpha = m_alpha;   
   double rcut = m_rcut;
   double rcut_sq = rcut*rcut;
   double potential_energy = 0.0;
@@ -74,15 +74,15 @@ void PairActiveNematicPotential::compute(double dt)
         if (m_has_pair_params)
         {
           int pi_t = pi.get_type() - 1, pj_t = pj.get_type() - 1;
-          alpha = -m_pair_params[pi_t][pj_t].alpha; // minus comes from the definition 
+          alpha = m_pair_params[pi_t][pj_t].alpha;  
         }
         double Qj_xx = pj.nx*pj.nx - 1.0/3.0, Qj_xy = pj.nx*pj.ny,           Qj_xz = pj.nx*pj.nz;
         double Qj_yx = Qj_xy,                 Qj_yy = pj.ny*pj.ny - 1.0/3.0, Qj_yz = pj.ny*pj.nz;
         double Qj_zx = Qj_xz,                 Qj_zy = Qj_yz,                 Qj_zz = pj.nz*pj.nz - 1.0/3.0; 
         double factor = alpha/r_sq;
-        double fx = factor*((Qi_xx - Qj_xx)*dx + (Qi_xy - Qj_xy)*dy + (Qi_xz - Qj_xz)*dz);
-        double fy = factor*((Qi_yx - Qj_yx)*dx + (Qi_yy - Qj_yy)*dy + (Qi_yz - Qj_yz)*dz);
-        double fz = factor*((Qi_zx - Qj_zx)*dx + (Qi_zy - Qj_zy)*dy + (Qi_zz - Qj_zz)*dz);
+        double fx = factor*((Qj_xx - Qi_xx)*dx + (Qj_xy - Qi_xy)*dy + (Qj_xz - Qi_xz)*dz);
+        double fy = factor*((Qj_yx - Qi_yx)*dx + (Qj_yy - Qi_yy)*dy + (Qj_yz - Qi_yz)*dz);
+        double fz = factor*((Qj_zx - Qi_zx)*dx + (Qj_zy - Qi_zy)*dy + (Qj_zz - Qi_zz)*dz);
         pi.fx += fx;
         pi.fy += fy;
         pi.fz += fz;
