@@ -24,37 +24,37 @@ from Configuration import *
 #from CellList import *
 from numpy import linalg as LA
 
-#try:
-	#import matplotlib.pyplot as plt
-	#from mpl_toolkits.mplot3d import Axes3D
-	#from matplotlib.colors import LinearSegmentedColormap
-	#matplotlib.rcParams['text.usetex'] = 'false'
-	#matplotlib.rcParams['lines.linewidth'] = 2
-	#matplotlib.rcParams['axes.linewidth'] = 2
-	#matplotlib.rcParams['xtick.major.size'] = 8
-	#matplotlib.rcParams['ytick.major.size'] = 8
-	#matplotlib.rcParams['font.size']=16.0
-	#matplotlib.rcParams['legend.fontsize']=14.0
+try:
+	import matplotlib.pyplot as plt
+	from mpl_toolkits.mplot3d import Axes3D
+	from matplotlib.colors import LinearSegmentedColormap
+	matplotlib.rcParams['text.usetex'] = 'false'
+	matplotlib.rcParams['lines.linewidth'] = 2
+	matplotlib.rcParams['axes.linewidth'] = 2
+	matplotlib.rcParams['xtick.major.size'] = 8
+	matplotlib.rcParams['ytick.major.size'] = 8
+	matplotlib.rcParams['font.size']=16.0
+	matplotlib.rcParams['legend.fontsize']=14.0
 
-	#cdict = {'red':   [(0.0,  0.0, 0.5),
-					  #(0.35,  1.0, 0.75),
-					  #(0.45,  0.75, 0.0),
-					  #(1.0,  0.0, 0.0)],
+	cdict = {'red':   [(0.0,  0.0, 0.5),
+					  (0.35,  1.0, 0.75),
+					  (0.45,  0.75, 0.0),
+					  (1.0,  0.0, 0.0)],
 
-			#'green': [(0.0,  0.0, 0.0),
-					  #(0.35,  0.0, 0.5),
-					  #(0.5, 1.0, 1.0),
-					  #(0.8,  0.5, 0.0),
-					  #(1.0,  0.0, 0.0)],
+			'green': [(0.0,  0.0, 0.0),
+					  (0.35,  0.0, 0.5),
+					  (0.5, 1.0, 1.0),
+					  (0.8,  0.5, 0.0),
+					  (1.0,  0.0, 0.0)],
 
-			#'blue':  [(0.0,  0.0, 0.0),
-					  #(0.5,  0.0, 0.0),
-					  #(0.7, 0.5, 1.0),
-					  #(1.0,  0.25, 0.0)]}
-	#HAS_MATPLOTLIB=True
-#except:
-	#HAS_MATPLOTLIB=False
-	#pass
+			'blue':  [(0.0,  0.0, 0.0),
+					  (0.5,  0.0, 0.0),
+					  (0.7, 0.5, 1.0),
+					  (1.0,  0.25, 0.0)]}
+	HAS_MATPLOTLIB=True
+except:
+	HAS_MATPLOTLIB=False
+	pass
 
 
 # For plane 2d Hessans only
@@ -111,15 +111,9 @@ class Hessian2d:
 					# xx, xy and xz
 					subsquare[0,0]=-fval[j]/dr[j]*(1-n[0]*n[0]-N[0]*N[0])+kij[j]*n[0]*n[0]
 					subsquare[0,1]=-fval[j]/dr[j]*(0-n[0]*n[1]-N[0]*N[1])+kij[j]*n[0]*n[1]
-					#subsquare[0,2]=-fval[j]/dr[j]*(0-n[0]*n[2]-N[0]*N[2])+kij[j]*n[0]*n[2]
 					# yx, yy and yz
 					subsquare[1,0]=-fval[j]/dr[j]*(0-n[1]*n[0]-N[1]*N[0])+kij[j]*n[1]*n[0]
 					subsquare[1,1]=-fval[j]/dr[j]*(1-n[1]*n[1]-N[1]*N[1])+kij[j]*n[1]*n[1]
-					#subsquare[1,2]=-fval[j]/dr[j]*(0-n[1]*n[2]-N[1]*N[2])+kij[j]*n[1]*n[2]
-					# zx, zy and zz
-					#subsquare[2,0]=-fval[j]/dr[j]*(0-n[2]*n[0]-N[2]*N[0])+kij[j]*n[2]*n[0]
-					#subsquare[2,1]=-fval[j]/dr[j]*(0-n[2]*n[1]-N[2]*N[1])+kij[j]*n[2]*n[1]
-					#subsquare[2,2]=-fval[j]/dr[j]*(1-n[2]*n[2]-N[2]*N[2])+kij[j]*n[2]*n[2]
 					# Stick into the big matrix
 					label=neighbours[j]
 					self.Hessian[2*i:(2*i+2),2*label:(2*label+2)]=-subsquare
@@ -127,15 +121,9 @@ class Hessian2d:
 					# xx, xy and xz
 					diagsquare[0,0]+=fval[j]/dr[j]*(1-n[0]*n[0]-N[0]*N[0])-kij[j]*n[0]*n[0]
 					diagsquare[0,1]+=fval[j]/dr[j]*(0-n[0]*n[1]-N[0]*N[1])-kij[j]*n[0]*n[1]
-					#diagsquare[0,2]+=fval[j]/dr[j]*(0-n[0]*n[2]-N[0]*N[2])-kij[j]*n[0]*n[2]
 					# yx, yy and yz
 					diagsquare[1,0]+=fval[j]/dr[j]*(0-n[1]*n[0]-N[1]*N[0])-kij[j]*n[1]*n[0]
 					diagsquare[1,1]+=fval[j]/dr[j]*(1-n[1]*n[1]-N[1]*N[1])-kij[j]*n[1]*n[1]
-					#diagsquare[1,2]+=fval[j]/dr[j]*(0-n[1]*n[2]-N[1]*N[2])-kij[j]*n[1]*n[2]
-					# zx, zy and zz
-					#diagsquare[2,0]+=fval[j]/dr[j]*(0-n[2]*n[0]-N[2]*N[0])-kij[j]*n[2]*n[0]
-					#diagsquare[2,1]+=fval[j]/dr[j]*(0-n[2]*n[1]-N[2]*N[1])-kij[j]*n[2]*n[1]
-					#diagsquare[2,2]+=fval[j]/dr[j]*(1-n[2]*n[2]-N[2]*N[2])-kij[j]*n[2]*n[2]
 				#print diagsquare
 				self.Hessian[2*i:(2*i+2),2*i:(2*i+2)]=-diagsquare
 		fav/=self.N
@@ -150,8 +138,6 @@ class Hessian2d:
 		if self.debug:
 			plt.figure()
 			plt.pcolor(HessianSym)
-		#HessianASym=0.5*(self.Hessian-np.transpose(self.Hessian))
-		#print HessianASym
 		# Use routines for hermitian eigenvector decomposition
 		# Default is ascending order, which suits us
 		print "Starting Diagonalisation!"
@@ -163,17 +149,80 @@ class Hessian2d:
 			plt.plot(eigrank,self.eigval,'.-')
                 wx=np.zeros((self.N,))
                 wy=np.zeros((self.N,))
-                #wz=np.zeros((self.N,))
                 for u in range(self.N):
                         # dimensional contributions
                         wx[u]=np.sum(self.eigvec[0:2*self.N:2,u]**2)
                         wy[u]=np.sum(self.eigvec[1:2*self.N:2,u]**2)
-                        #wz[u]=np.sum(self.eigvec[2:3*self.N:3,u]**2)
 		print "The smallest eigenvalue is: " + str(np.amin(self.eigval))
 		print self.eigval
 		print wx
 		print wy
 		#print wz
+	
+	def makeQrad(self,dq,qmax,nq):
+		nq2=int(2**0.5*nq)
+		qmax2=2**0.5*qmax
+		qx=np.linspace(0,qmax,nq)
+		qy=np.linspace(0,qmax,nq)
+		qrad=np.linspace(0,qmax2,nq2)
+		# do this silly counting once and for all
+		binval=np.empty((nq,nq))
+		for kx in range(nq):
+			for ky in range(nq):
+				qval=np.sqrt(qx[kx]**2+qy[ky]**2)
+				binval[kx,ky]=round(qval/dq)
+		ptsx=[]
+		ptsy=[]
+		# do the indexing arrays
+		for l in range(nq2):
+			pts0x=[]
+			pts0y=[]
+			for kx in range(nq):
+				hmm=np.nonzero(binval[kx,:]==l)[0]
+				for v in range(len(hmm)):
+					pts0y.append(hmm[v])
+					pts0x.append(kx)
+			ptsx.append(pts0x)
+			ptsy.append(pts0y)
+		return qx, qy, qrad, ptsx, ptsy
+		
+	# project the modes into Fourier space to see how it's scaling
+	def ModesFourier(self,whichmode,qmax=0.3,verbose=True):
+		eps=0.001
+		print "Fourier transforming mode" + str(whichmode)
+		dq=2.0*np.pi/self.geom.Lx
+		nq=int(qmax/dq)
+		print "Stepping Fourier transform with step " + str(dq)+ ", resulting in " + str(nq)+ " steps."
+		qx, qy, qrad, ptsx, ptsy=self.makeQrad(dq,qmax,nq)
+		fourierlong0=np.zeros((nq,nq),dtype=complex)
+		fouriertrans0=np.zeros((nq,nq),dtype=complex)
+		# #self.eigvec[0:2*self.N:2,u]
+		eigx=self.eigvec[0:2*self.N:2,whichmode]
+		eigy=self.eigvec[1:2*self.N:2,whichmode]
+		for kx in range(nq):
+			for ky in range(nq):
+				# we need to be doing longitudinal and transverse here
+				# Both have the same FT, but the local bits are q . e, and q X e
+				fourierlong0[kx,ky]=np.sum(np.exp(1j*(qx[kx]*self.rval[:,0]+qy[ky]*self.rval[:,1]))*(eigx*qx[kx]+eigy*qy[ky])/np.sqrt(qx[kx]**2+qy[ky]**2+eps))/len(self.rval[:,0])
+				fouriertrans0[kx,ky]=np.sum(np.exp(1j*(qx[kx]*self.rval[:,0]+qy[ky]*self.rval[:,1]))*(eigx*qy[ky]-eigy*qx[kx])/np.sqrt(qx[kx]**2+qy[ky]**2+eps))/len(self.rval[:,0])
+		sqlong=np.real(fourierlong0**2+np.imag(fourierlong0)**2)
+		sqtrans=np.real(fouriertrans0**2+np.imag(fouriertrans0)**2)
+		# Produce a radial averaging to see if anything interesting happens
+		nq2=int(2**0.5*nq)
+		valrad=np.zeros((nq2,2))
+		fourierlong=np.zeros((nq2,))
+		fouriertrans=np.zeros((nq2,))
+		for l in range(nq2):
+			fourierlong[l]=np.mean(sqlong[ptsx[l],ptsy[l]])
+			fouriertrans[l]=np.mean(sqtrans[ptsx[l],ptsy[l]])
+		if verbose:
+			plt.figure()
+			plt.plot(qrad,fourierlong,'.-k')
+			plt.plot(qrad,fouriertrans,'.-r')
+			plt.xlabel('q')
+			plt.ylabel('|xi_q|^2')
+			plt.title('Mode ' + str(whichmode))
+		return qrad,fourierlong,fouriertrans
 		
 	#def plotModes(self,omegamax=3.0,npts=100):
 		## Straight here: The projection ratios on the sphere/plane
