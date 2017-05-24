@@ -318,6 +318,13 @@ public:
 
   // Compute centre of mass of a molecule
   void molecule_cm(int, double&, double&, double&);
+
+  // Set the record_force_type flag
+  //! \param flag new value of the record_force_type flag
+  void set_record_force_type(bool flag) { m_record_force_type = flag; }
+
+  //! Get value of the record_force_type flag
+  bool record_force_type() { return m_record_force_type; }
     
 private:
   
@@ -347,6 +354,7 @@ private:
   int m_boundary_type;                  //!< Type of the boundary particles that are added for cell simulations
   bool m_has_boundary_neighbours;       //!< If true, systems contains boundary neighbours (used in cells simulations)
   vector<vector<int> > m_molecules;     //!< List of all particles ids in a given molecule
+  bool m_record_force_type;             //!< If true, for each particle record each force type that acts on it
    
 };
 

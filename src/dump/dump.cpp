@@ -210,6 +210,12 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
     m_msg->msg(Messenger::INFO,"Mesh will be included in the dump file.");
     m_msg->write_config("dump."+fname+".include_mesh","true");
   }
+  if ((params.find("record_force_types") != params.end()) && (m_type == "vtp"))
+  {
+    m_system->set_record_force_type(true);
+    m_msg->msg(Messenger::INFO,"Force component for each force type will be recorded in VTP files.");
+    m_msg->write_config("dump."+fname+".record_force_type","true");
+  }
   if (m_type == "vtp" && m_include_bonds && m_include_mesh)
   {
     m_msg->msg(Messenger::ERROR,"Including bonds and mesh in a VTP file would produce an inconsistent file. Therefore, it is not allowed.");
@@ -658,10 +664,12 @@ void Dump::dump_input()
     m_out << "# " << format(" Lx = %10.6f, Ly = %10.6f, Lz = %10.6f") % m_system->get_box()->Lx % m_system->get_box()->Ly % m_system->get_box()->Lz << endl;
     m_out << "# id type  radius x y z vx vy vz nx ny nz  omega length ix iy iz" << endl;
   }
+  m_out << "keys: id molecule type radius  x   y   z   vx   vy   vz   nx   ny   nz  length ix iy iz" << endl;
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(particles[i]);
-    m_out << format("%5d  %2d  %8.4f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %3d  %3d  %3d") % p.get_id() % p.get_type() % p.get_radius() % p.x % p.y % p.z % p.vx % p.vy % p.vz % p.nx % p.ny % p.nz % p.omega % p.get_length() % p.ix % p.iy % p.iz << endl;
+    //m_out << format("%5d  %2d  %8.4f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %3d  %3d  %3d") % p.get_id() % p.get_type() % p.get_radius() % p.x % p.y % p.z % p.vx % p.vy % p.vz % p.nx % p.ny % p.nz % p.omega % p.get_length() % p.ix % p.iy % p.iz << endl;
+    m_out << format("%5d  %3d  %2d  %8.4f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %10.6f  %3d  %3d  %3d") % p.get_id() % p.molecule % p.get_type() % p.get_radius() % p.x % p.y % p.z % p.vx % p.vy % p.vz % p.nx % p.ny % p.nz % p.omega % p.ix % p.iy % p.iz << endl;
   }
 }
 
@@ -941,6 +949,7 @@ void Dump::dump_vtp(int step)
     vtkSmartPointer<vtkDoubleArray> ndir =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> dual_area =  vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> num_neigh =  vtkSmartPointer<vtkDoubleArray>::New();
+    map<string,vtkSmartPointer<vtkDoubleArray> > force_components;
     
     ids->SetName("Id");
     ids->SetNumberOfComponents(1);
@@ -964,6 +973,17 @@ void Dump::dump_vtp(int step)
     dual_area->SetNumberOfComponents(1);
     num_neigh->SetName("NumNeigh");
     num_neigh->SetNumberOfComponents(1);
+
+    if (m_system->record_force_type())
+    {
+      Particle& pi = m_system->get_particle(particles[0]);
+      for (map<string,ForceType>::iterator it_t = pi.get_force_type().begin(); it_t != pi.get_force_type().end(); it_t++)
+      {
+        force_components[(*it_t).first] = vtkSmartPointer<vtkDoubleArray>::New();
+        force_components[(*it_t).first]->SetName((*it_t).first.c_str());
+        force_components[(*it_t).first]->SetNumberOfComponents(3);
+      }
+    }
       
     for (int i = 0; i < N; i++)
     {
@@ -983,6 +1003,14 @@ void Dump::dump_vtp(int step)
       force->InsertNextTuple(f);
       dir->InsertNextTuple(n);
       ndir->InsertNextTuple(nn);
+      if (m_system->record_force_type())
+      {
+        for (map<string,ForceType>::iterator it_t = pi.get_force_type().begin(); it_t != pi.get_force_type().end(); it_t++)
+        {
+          double fc[3] = {(*it_t).second.fx, (*it_t).second.fy, (*it_t).second.fz};
+          force_components[(*it_t).first]->InsertNextTuple(fc);
+        }
+      }
       if (mesh.size() > 0)
       {
         Vertex& V = mesh.get_vertices()[i];
@@ -1009,6 +1037,13 @@ void Dump::dump_vtp(int step)
     {
       polydata->GetPointData()->AddArray(dual_area);
     }
+    if (m_system->record_force_type())
+    {
+      Particle& pi = m_system->get_particle(particles[0]);
+      for (map<string,ForceType>::iterator it_t = pi.get_force_type().begin(); it_t != pi.get_force_type().end(); it_t++)
+        polydata->GetPointData()->AddArray(force_components[(*it_t).first]);
+    }
+
         
     if (m_system->num_bonds() > 0 && m_include_bonds)
     {

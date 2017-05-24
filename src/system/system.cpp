@@ -71,7 +71,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
                                                                              m_dt(0.0),
                                                                              m_max_mesh_iter(100),
                                                                              m_boundary_type(1),
-                                                                             m_has_boundary_neighbours(false)
+                                                                             m_has_boundary_neighbours(false),
+                                                                             m_record_force_type(false)
 {
   vector<int> types;
   vector<string> s_line;

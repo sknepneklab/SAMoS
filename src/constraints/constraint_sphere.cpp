@@ -64,6 +64,19 @@ void ConstraintSphere::enforce(Particle& p)
     p.nx *= inv_len;  p.ny *= inv_len;  p.nz *= inv_len;
     // Set particle normal
     p.Nx = Nx; p.Ny = Ny; p.Nz = Nz;
+    // Project all forces onto tangent plane
+    if (m_system->record_force_type())
+    {
+      map<string,ForceType>& force_type = p.get_force_type();
+      for (map<string,ForceType>::iterator it = force_type.begin(); it != force_type.end(); it++)
+      {
+        double fx = (*it).second.fx, fy = (*it).second.fy, fz = (*it).second.fz; 
+        double f_dot_N = fx*Nx + fy*Ny + fz*Nz;
+        (*it).second.fx -= f_dot_N*Nx; 
+        (*it).second.fy -= f_dot_N*Ny;
+        (*it).second.fz -= f_dot_N*Nz;
+      }
+    }
   }
 }
 

@@ -1079,6 +1079,7 @@ PlotArea& Mesh::plot_area(bool boundary)
         m_plot_area.sides.push_back(sides);
         m_plot_area.area.push_back(this->dual_area(V.id));
         m_plot_area.perim.push_back(this->dual_perimeter(V.id));
+        m_plot_area.type.push_back(V.type);
       }
       if (V.boundary && boundary)
       {
@@ -1089,6 +1090,7 @@ PlotArea& Mesh::plot_area(bool boundary)
         m_plot_area.sides.push_back(sides);
         m_plot_area.area.push_back(this->dual_area(V.id));
         m_plot_area.perim.push_back(this->dual_perimeter(V.id));
+        m_plot_area.type.push_back(V.type);
       }
     }
   }

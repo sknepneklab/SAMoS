@@ -48,6 +48,12 @@ using std::endl;
 
 const int NUM_PART_ATTRIB = 10;  //!< Number of particle attributes
 
+/*! Auxiliary data structure for passing specific types of forces */
+struct ForceType
+{
+   double fx, fy, fz;
+};
+
 /*! Particle class
  *  This is a basic unit in the simulation.
  *  It contains relevant parameters that describe each active particle,
@@ -192,6 +198,45 @@ public:
   
   //! Get parent parameter
   int get_parent() const { return m_parent; }
+
+  //! Sets components of the force type
+  //! \param name force type 
+  //! \param fx x component of the force
+  //! \param fy y component of the force
+  //! \param fz z component of the force
+  void set_force_type(const string& name, double fx, double fy, double fz)
+  {
+    m_force_type[name].fx = fx;
+    m_force_type[name].fy = fy;
+    m_force_type[name].fz = fz;
+  }
+
+  //! Adds components of the force type
+  //! \param name force type 
+  //! \param fx x component of the force
+  //! \param fy y component of the force
+  //! \param fz z component of the force
+  void add_force_type(const string& name, double fx, double fy, double fz)
+  {
+    m_force_type[name].fx += fx;
+    m_force_type[name].fy += fy;
+    m_force_type[name].fz += fz;
+  }
+
+  //! Get values of force types
+  //! \param name force type
+  //! \param fx x component of the force
+  //! \param fy y component of the force
+  //! \param fz z component of the force
+  void get_force_type(const string& name, double& fx, double& fy, double& fz)
+  {
+    fx = m_force_type[name].fx;
+    fy = m_force_type[name].fy;
+    fz = m_force_type[name].fy;
+  }
+
+  //! Get the entire force type data structure
+  map<string,ForceType>& get_force_type() { return m_force_type; }
   
   ///@{
   double x, y, z;              //!< Position in the embedding 3d flat space
@@ -243,6 +288,7 @@ private:  // Make these attributes immutable
   double m_A0;             //!< Default native area. This one is set for the cell type and does not grow. 
   map<string,double> m_pot_eng;   //!< Holds current value of the potential energy of a given type 
   map<string,double> m_align_eng; //!< Holds alignment potential energy of a given type
+  map<string,ForceType> m_force_type;  //<! Holds components of a given type of the force (e.g, soft repulsion, active force, etc.)
     
 };
 
