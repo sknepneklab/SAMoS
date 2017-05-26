@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-# Future work
 # Create an object to represent the input file, then call functions to manipulate the input 
 # and finally have a consistent way of writing out the file
 
@@ -25,8 +24,7 @@ from obstacle import *
 
 
 from tmp_read_data import ReadData
-# Generic function for operating on the data input files 
-# this function could use a rewrite, todo
+# This function has been hijacked to convert ReadData objects into an ordered dictionary because that's what I like to work with
 def rwoperate(ifile):
     # is this ReadData really giving list instead of numpy array?
     rdat = ReadData(ifile)
@@ -714,8 +712,13 @@ def piarea(ifile):
         Ci.outd['area'] = np.full(Ci.N, round(np.pi, 6))
     Ci.dump()
 
-# old style method
+# old style method (doesn't use the CellInput class)
 # extract_boundary
+# Method to extract a .boundary file form a FRESHLY GENERATED .input file
+#  where we assume that the boundary particles are all ordered and placed at the end of the file.
+# If you want to extract a boundary from an simulation output for restarting simulations, you need to run
+# analyse_cells -i <input_file_name>.input mesh --boundary
+# this will produce a file named <input_file_name>.boundary
 def eb(ifile):
     outd = rwoperate(ifile)
     idx = outd['id']

@@ -27,6 +27,7 @@ def f_outnum(dataf):
 
 verb = False
 
+# Hardy stress things, forget them
 from scipy import integrate
 def uniformkernel(wl):
     def unif(r):
@@ -55,7 +56,7 @@ def hash_function(f, linspace):
     return nf
 
 
-# Classes for tracking the data
+# Classes for outputing the data.
 
 # template for Tracker objects
 class Tracker(object):
@@ -172,7 +173,7 @@ class Senario(object):
             raise StopIteration()
 
     def _operate(self):
-        pass # the code to execure on each data file
+        pass # the code to execute on each data file
 
     def _finishup(self):
         pass # the cleanup code that needs to be executed
@@ -243,9 +244,7 @@ class Senario(object):
         pv.set_constants(K, Gamma, cl)
 
 # Bare minimum mesh senario.
-# i.e. want to get the area distributions of the types 
-
-
+# i.e. want to get the area distributions of the cell types 
 
 class Property(Senario):
     def __init__(self, args):
@@ -367,7 +366,7 @@ class Property(Senario):
 
 # old at this point, be careful
 # Senario for calculating stress and all related quantities while we are at it
-# Should use this senario when implementing strain and graner metrics
+# Should use this senario when implementing strain and Graner metrics
 class Stress_Senario(Senario):
     def __init__(self, args):
         super(Stress_Senario, self).__init__(args)
@@ -499,79 +498,9 @@ class Stress_Senario(Senario):
 
 
 
-# The Tone and Tlist classes for tracking transitions
-from transitions import *
-
-# associated with the transtions.py module 
-class Transitions(Senario):
-    def __init__(self, args):
-        super(Transitions, self).__init__(args)
-        # we need to start keeping track of all the pv objects we read in
-        self.helist= OrderedDict()
-        self.prevon = None
-        self.totalt1 = 0
-
-        # set the length under which we start to track edges
-        self.ltracking = 0.1
-        # main object for dealing with transistions
-        self.tlist = None
-        
-        self.pkr = SPickler(os.path.join(args.dir, 'stresses'))
-
-    def _operate(self):
-        args = self.args
-        outnum = self.outnum
-
-        # basic setup
-        rdat = ReadData(self.dataf)
-        facefile = path.join(self.inp_dir, 'faces_' + self.outnum + '.fc')
-        simp, _ = io.readfc(facefile)
-        pv = PVmesh.datbuild(rdat, simp)
-        self._handle_constants(pv)
-
-        # Calculate cell-level virial stress
-        pv.calculate_forces(exclude_boundary=args.exclude)
-        pv.makecellparts()
-        pv.on_centres(adj=args.adj)
-
-        # Save the pv object in an OrderedDict
-        self.helist[outnum] = pv
-
-        # track the transitions
-
-        #if self.fid == 0:
-            #self.tlist = Tlist.populate(pv, outnum)
-        #else:
-            #self.tlist.update(pv, outnum)
-
-        # Analysis output
-        #self.pkr.update(pv, outnum)
-
-        # Basic vtp output 
-        #self._vtp_output(pv)
-
-        # Output structure  tensor
-        vsout = self._name_vtp('structure_')
-        wr.write_stress_ellipses(pv, vsout, pv.structure, normalise=True)
-
-    def _finishup(self):
-        #print 'finished'
-        if self.tlist and hasattr(self.tlist, 'nt'):
-            print 'total t1 transitions', self.tlist.nt
-        else:
-            print 'Did not produce a tlist object'
-
-    def _halfedges(self, simp):
-        lamhedges = lambda si: zip(si, np.roll(si, -1))
-        hearr = np.array(map(lamhedges, simp))
-        # all halfedges
-        hearr= hearr.reshape(-1, hearr.shape[-1])
-        return set(map(tuple, hearr))
-
-
 # Senario for reading the .dat files and returning some simple data
 #  For example the number of ghost particles
-#  In other words the bare minimum, non-mesh senario
+# Use if building the meshes is not necessary
 class Basic(Senario):
     def __init__(self, args):
         super(Basic, self).__init__(args)
@@ -697,3 +626,75 @@ class MSD(Senario):
         return taulist, self.msd
     
     
+
+### Some work towards tracing t1 transtions -- never very effective -- better to start over
+# The Tone and Tlist classes for tracking transitions
+from transitions import *
+
+# associated with the transtions.py module 
+class Transitions(Senario):
+    def __init__(self, args):
+        super(Transitions, self).__init__(args)
+        # we need to start keeping track of all the pv objects we read in
+        self.helist= OrderedDict()
+        self.prevon = None
+        self.totalt1 = 0
+
+        # set the length under which we start to track edges
+        self.ltracking = 0.1
+        # main object for dealing with transistions
+        self.tlist = None
+        
+        self.pkr = SPickler(os.path.join(args.dir, 'stresses'))
+
+    def _operate(self):
+        args = self.args
+        outnum = self.outnum
+
+        # basic setup
+        rdat = ReadData(self.dataf)
+        facefile = path.join(self.inp_dir, 'faces_' + self.outnum + '.fc')
+        simp, _ = io.readfc(facefile)
+        pv = PVmesh.datbuild(rdat, simp)
+        self._handle_constants(pv)
+
+        # Calculate cell-level virial stress
+        pv.calculate_forces(exclude_boundary=args.exclude)
+        pv.makecellparts()
+        pv.on_centres(adj=args.adj)
+
+        # Save the pv object in an OrderedDict
+        self.helist[outnum] = pv
+
+        # track the transitions
+
+        #if self.fid == 0:
+            #self.tlist = Tlist.populate(pv, outnum)
+        #else:
+            #self.tlist.update(pv, outnum)
+
+        # Analysis output
+        #self.pkr.update(pv, outnum)
+
+        # Basic vtp output 
+        #self._vtp_output(pv)
+
+        # Output structure  tensor
+        vsout = self._name_vtp('structure_')
+        wr.write_stress_ellipses(pv, vsout, pv.structure, normalise=True)
+
+    def _finishup(self):
+        #print 'finished'
+        if self.tlist and hasattr(self.tlist, 'nt'):
+            print 'total t1 transitions', self.tlist.nt
+        else:
+            print 'Did not produce a tlist object'
+
+    def _halfedges(self, simp):
+        lamhedges = lambda si: zip(si, np.roll(si, -1))
+        hearr = np.array(map(lamhedges, simp))
+        # all halfedges
+        hearr= hearr.reshape(-1, hearr.shape[-1])
+        return set(map(tuple, hearr))
+
+

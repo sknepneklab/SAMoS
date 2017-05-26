@@ -8,9 +8,6 @@ import numpy as np
 from numpy.linalg import norm, eig
 import scipy.integrate as integrate
 
-npI = np.identity(3)
-def rmmultiply(v, M):
-    return np.einsum('n,nm->m', v, M)
 
 import matplotlib.pyplot as plt
 from collections import OrderedDict
@@ -25,9 +22,13 @@ import sys
 # Samos
 from CellList2D import CellList2D
 
+
+# Yes, these are defined here! I use them a lot
+npI = np.identity(3)
+def rmmultiply(v, M):
+    return np.einsum('n,nm->m', v, M)
+
 # debugging 
-
-
 def diagnose(mesh):
     print 'nedges', mesh.n_edges()
     print 'nvertices', mesh.n_vertices()
@@ -38,8 +39,9 @@ def scat(xyz):
     plt.scatter(xyz[:,0],xyz[:,1])
     plt.show()
 
+### IGNORE. Utility methods for overly complicated hardy stress calculation  
 
-# A function for integration which takes and arraylike and the space its defined on
+# A function for integration which takes and arraylike and the space that it is defined on
 #  and initial and final values 
 def hashintegrate(arromega, arrspace, mm, mp):
     arra = arrspace[0]; arrz = arrspace[-1]
@@ -54,7 +56,6 @@ def hashintegrate(arromega, arrspace, mm, mp):
     print mm, mp
     return integrate.simps(arromega[imm:imp], x=arrspace[imm:imp])
 
-# Start of feature code
 def in0_1(x):
     return x >= 0 and x <= 1
 
@@ -115,21 +116,23 @@ def bond_intersection(x_c, wl, x_a, x_b):
             sys.exit('failed to determine bond intersection')
         return outa, outb, line
 
+# NOT USED
 def henonarea(areatri):
     s = sum(areatri)/2
     a,b,c = areatri
     area = np.sqrt(s*(s-a)*(s-b)*(s-c))
     return area
 
-# Want an object which wraps the Openmesh
+# Want an object which wraps the Openmesh objects
 # We want to easily get list of boundary and bulk elements
 # We want to easily map from vertices of one mesh to the faces of another
 # It's hard to say whether Openmesh is offering advantages over 
 # a pure python mesh implementation --- 
 
+# e_z vector GLOBALLY defined
 normal = np.array([0.,0., 1.])
 class Pymesh(object):
-    # This object just holds methods
+    # This object just holds methods which are commmon the triangle mesh and polymesh sub classes 
 
     # return the pair of vertices associated with an edge in any order
     def getvpair(self, eid):
@@ -139,6 +142,7 @@ class Pymesh(object):
         aux = frozenset([self.to_vertex_handle(heh).idx(), self.from_vertex_handle(heh).idx()])
         return aux
 
+    # get the vertex ids associated with a halfedge
     def vids_from_to(self, heh):
         to = self.to_vertex_handle(heh).idx()
         fr = self.from_vertex_handle(heh).idx()
@@ -149,6 +153,7 @@ class Pymesh(object):
         frvh = self.from_vertex_handle(heh)
         return (self.is_boundary(tovh) and self.is_boundary(frvh))
 
+    # Create a mapping between pairs of vertices and edges
     def vedgemap(self):
         tri = self
         vedge = {}
@@ -161,19 +166,24 @@ class Pymesh(object):
             vedge[(vf, vt)] = heho.idx()
         self.vedge = vedge
 
+    # This is called during the construction of mesh objects to create some useful numpy arrays and data structures
     def finalize(self):
         self._pythonise()
         self._helengths()
         self.normal = normal
 
+    # Openmesh stores vertex positions in such an awkward way, here we duplicate them in to numpy array.
     def _pythonise(mesh):
         meshpt = OrderedDict()
         for vh in mesh.vertices():
             meshpt[vh.idx()] = omvec(mesh.point(vh))
         mesh.pym = meshpt
         
+    # Trading memory for speed by storing edge lengths and vectors that we can re-use
+    # lvec - maps halfedge ids onto a vector
+    # ll - maps halfedge ids onto halfedge lengths
+    # lle - maps edge ids onto edge lengths
     def _helengths(self):
-        # store half edge vectors as half edge property
         tri = self
         pym = tri.pym
         lvec = {}
@@ -197,6 +207,7 @@ class Pymesh(object):
         self.ll = ll
         self.lle = lle
 
+    # Storing squared lengths of halfedges
     def store_llsquared(self):
         ll = self.ll
         llsquared = dict(zip(ll.keys(), map(lambda x: x*x, ll.values())))
@@ -217,6 +228,7 @@ class Pymesh(object):
 
     # -- some tools for iterating through parts of the openmesh --
     # going to assume that we constuct pymesh objects from Samos output and don't mutate the mesh
+    # Return value is a python iterable which yeilds halfedge ids.
     def iterable_boundary(self, vh):
         # vh is the starting vertex which should be on the boundary
         mesh = self
@@ -256,6 +268,8 @@ class Pymesh(object):
         self._boundary = [mesh.to_vertex_handle(heh).idx() for heh in list(itb)]
         return self._boundary
     
+    # support for multiple boundaries is patchy at best!
+    # Returns a list of boundaries, each is a list of halfedge ids
     def get_boundaries(self):
         # iterate through all the vertices and use sets to find all the boundaries
         self.boundaries = []
@@ -285,6 +299,7 @@ class Pymesh(object):
         return bconnect
 
 
+    # map between boundary vertices and their outgoing boundary halfedges?
     @property
     def boundary_hegdes(self):
         if hasattr(self, '_boundary_hedges'):
@@ -326,6 +341,7 @@ class Pymesh(object):
                 break
         return facels
 
+    # outgoing halfedges from a vertex
     def get_star_hedges(self, vhi):
         polygons= self
         hehids = []
@@ -334,6 +350,7 @@ class Pymesh(object):
                 hehids.append(heh.idx())
         return hehids
 
+    # outgoing edges from a vertex
     def get_star_edges(self, vhi):
         polygons = self
         ehids = []
@@ -343,17 +360,17 @@ class Pymesh(object):
                 ehids.append(eh.idx())
         return set(ehids)
 
-# can I just subclass Trimesh / Polymesh
+# I just subclass Openmesh's Trimesh / Polymesh
 
+# Class for the dual mesh
 class NPolyMesh(PolyMesh, Pymesh):
     
-    # overriding pymesh to add a vertex to edge mapping
+    # overriding pymesh to add a vertex to edge mapping (looks like I didn't do this in the end)
     def finalize(self):
         self._pythonise()
         self._helengths()
         self.normal = normal
         
-    
     def _set_face_properties(self):
         # organise the properties we will use
         # mesh area, mesh perimeter, angular defecit
@@ -387,6 +404,7 @@ class NPolyMesh(PolyMesh, Pymesh):
         mesh.prims = prims
         mesh.centroids = centroid
 
+    # We don't use the cell centroids for the stress calculation. 
     def _centroid(self, fpts, area):
         csum = np.zeros(3)
         n = len(fpts)
@@ -401,26 +419,31 @@ class NPolyMesh(PolyMesh, Pymesh):
         #print cent
         return cent
     
+# This objects construction is handled by the constructor 
+# of PVmesh which is the last method of the last object in the file
 class NTriMesh(TriMesh, Pymesh):
-
+    
     #def __init__(self, *args, **kw):
         #super(NTriMesh, self).__init__(*args, **kw)
-    
+
+    # overwriting this method which is used in the construction of the object
     def finalize(self):
         self._pythonise()
         self._helengths()
         self.normal = normal
         self.calc_rcm()
 
+    # the triangulation vertex ids but without the boundary 
     @property
     def bulk(self):
-        # instead of calculating this from self.boundary, use bflag
+        # instead of calculating this from self.boundary, use bflag which is defined in the constructor at the end of the class
         if hasattr(self, '_bulk'):
             return self._bulk
         assert hasattr(self, 'bflag')
         self._bulk = np.where(self.bflag==0)[0]
         return self._bulk
 
+    # NOT USED?
     def get_boundary_normal(self, rcm):
         bdnormals = {}
         boundary = self.boundary 
@@ -448,9 +471,9 @@ class NTriMesh(TriMesh, Pymesh):
         return bdnormals
 
 
-        # find the centre of mass
-        # move this into tri object
-        # I want to do this just for the bulk
+    # find the centre of mass
+    # I want to do this just for the bulk and not the boundary particles
+    # The centre of mass is useful for calculating radial stress profiles
     def calc_rcm(self):
         triptarr = np.array(self.pym.values())[self.bulk]
         ltript = len(triptarr)
@@ -459,6 +482,9 @@ class NTriMesh(TriMesh, Pymesh):
         self.rcmd = map(norm, triptarr - self.rcm)
 
 
+    # Construct the dual mesh as an NPolyMesh (OpenMesh Polymesh object)
+    # I kept adding mappings between elements of the triangulation and dual meshes as they were needed
+    # Other than that the core of the code this function has been the same since approx. May 2016
     def dual(self):
         tri = self
         mesh = NPolyMesh()
@@ -466,13 +492,13 @@ class NTriMesh(TriMesh, Pymesh):
 
         self.slambda = {}
 
-        # prep for mapping dual edges together
+        # prep for mapping dual and triangulation edges together
         # trimap
         trimap = {}
 
         # Trimesh vertice ids and mesh faces ids naturally match up
         ccenters = np.zeros((tri.n_faces(),3))
-        cradius = np.zeros(tri.n_faces())
+        cradius = np.zeros(tri.n_faces()) # for visualisation
         for j, fh in enumerate(tri.faces()):
             # Calculate circumcentres of mesh
             fhid = fh.idx()
@@ -511,9 +537,9 @@ class NTriMesh(TriMesh, Pymesh):
         for j, cc in enumerate(ccenters):
             mverts[j] = mesh.add_vertex(PolyMesh.Point(*cc))
         # Add mesh faces, one for each vertex
-        to_mesh_face = {}
-        to_tri_vertex = {}
-        to_boundary_mesh_vertex = {}
+        # these mappings are extensively used to go between the triangulation and mesh
+        to_mesh_face = {} # mapping between triangulation vertex ids and their cell faces 
+        to_tri_vertex = {} # the opposite mapping to 'to_mesh_face'
         for vh in tri.vertices():
             if tri.is_boundary(vh):
                 pass
@@ -525,16 +551,13 @@ class NTriMesh(TriMesh, Pymesh):
                 mfh = mesh.add_face(vhs)
                 to_mesh_face[vh.idx()] = mfh.idx()
                 to_tri_vertex[mfh.idx()] = vh.idx()
-                #to_boundary_mesh_vertex[mfh.idx()] = vh.idx()
 
         self.trimap = trimap
         # map ordered vertex pairs to halfedges
         mesh.vedgemap()
-        # now map duals
-        to_mesh_edge = {}
 
-        #for vhid in tri.pym.keys():
-        #print [eh.idx() for eh in tri.edges()]
+        # now map dual edges to eachother
+        to_mesh_edge = {}
         
         # construct mapping between edges of each mesh
         for eh in tri.edges():
@@ -581,19 +604,6 @@ class NTriMesh(TriMesh, Pymesh):
             vh = tri.vertex_handle(vhid)
             halfcells[vhid] = halfcell
 
-            # Add vertex
-            #vhpt = tript[vhid]
-            #mvh = mesh.add_vertex(PolyMesh.Point(*vhpt))
-
-            # Add face
-            #hcf = list(mverts[halfcell])
-            #hcf.append(mvh)
-            #mfh = mesh.add_face(hcf)
-
-            #to_boundary_mesh_vertex[vhid] = mvh.idx()
-            #to_mesh_face[vhid] = mfh.idx()
-            #to_tri_vertex[mfh.idx()] = vh.idx()
-
         # Assign the dictionaries to their appropriate object
         self.to_mesh_face = to_mesh_face
         mesh.to_tri_vertex = to_tri_vertex
@@ -601,6 +611,8 @@ class NTriMesh(TriMesh, Pymesh):
         mesh.finalize()
         return mesh
 
+# Passing an ordered dictionary of stress values -- { triangulation vertex id : stress tensor }
+#  -- to this object triggers calculation of shear and normal stress and pressure
 class Vstress(object):
     def __init__(self, stress, clist, name):
         
@@ -612,8 +624,7 @@ class Vstress(object):
         self.lcl = len(self.clist)
 
     def _parts(self):
-        # suppose we always calculate stresses for the full tri_bulk at the moment
-        # still need to save the clist I think
+        # normal stress and pressure are the same but with opposite sign
         self.nstress = OrderedDict()
         self.sstress = OrderedDict()
         self.pressure = OrderedDict()
@@ -653,6 +664,8 @@ class Vstress(object):
 
     # Now we have self.stress and self.pressure the next step is to 
     #  reduce to averaged quantities
+    # The radial stress profile is calculated by binning the cells based on distance from the centre of mass
+    #  Why on earth didn't I just use a sliding window instead?
     def radial(self, rcm, rcmd, nstat=1000.):
         # need to adjust nstat to be a proportion of the number of cells (with stresses)
         nbins = int(m.ceil(self.lcl/nstat))
@@ -690,7 +703,7 @@ class Vstress(object):
         self.ravg = ravg
         self.rspace =rspace
 
-
+    ### some old experimental methods for getting information about the stresses
     def compare(self, vst):
         # The stress should have the same keys as self
         assert self.clist == vst.clist
@@ -724,7 +737,8 @@ class Vstress(object):
 
 debug = False
 
-# The main object for operating on the cell mesh.
+# The main object for operating on the triangulation and dual meshes together.
+# self.tri and self.mesh are the two meshes
 class PVmesh(object):
 
     def __init__(self, tri):
@@ -740,6 +754,7 @@ class PVmesh(object):
 
         # The cell vertex mesh
         if debug: print 'calculating the dual'
+        # Build the dual mesh
         self.mesh = self.tri.dual()
 
         if debug:
@@ -748,9 +763,9 @@ class PVmesh(object):
             diagnose(self.mesh)
 
         self.mesh._set_face_properties()
-        #self._set_angular_defecit()
+        self.stresses = {}
 
-         # want to factor all this out
+         # want to factor all this out since it is only used for Hardy stress calculation
         self.meshes = {}
         self.meshes[0] = self.tri
         self.meshes[1] = self.mesh
@@ -759,11 +774,10 @@ class PVmesh(object):
         self.ptmesh[0] = self.tri.pym
         self.ptmesh[1] = self.mesh.pym
 
-        self.stresses = {}
 
     # We create a mapping between halfedge ids and the lambda parameter
     # for general cell types we need to check the type of each cell adjacent to the edge.
-    # This method was part of the dual Pymesh but now it should be part of PVmesh
+    # NEEDS CHECKING
     def _construct_cl_dict(self, lpairs, boundary_type=1):
         # create a dictionary for the L property 
         L = lpairs['default']
@@ -797,7 +811,7 @@ class PVmesh(object):
             cl_dict[heho.idx()] = l
         return cl_dict
 
-    # RR
+    # NOT USED
     def _set_angular_defecit(self):
         tri = self.tri; mesh = self.mesh
         meshpt = mesh.pym
@@ -817,6 +831,7 @@ class PVmesh(object):
             bthetas[vhid] = ag
         tri.bthetas = bthetas
 
+    # Set the vertex model parameters
     def set_constants(self, K, Gamma, cl_dict):
         # tri vertex id
         kproperty = OrderedDict()
@@ -829,6 +844,7 @@ class PVmesh(object):
         self.mesh.clproperty = cl_dict
 
     # Iterate through the mesh vertices for any cell (even boundary)
+    # return a list of vertex ids and a list of outgoing halfedge ids
     def loop(self, trivh):
         boundary = self.tri.is_boundary(trivh)
         mesh = self.mesh
@@ -847,7 +863,6 @@ class PVmesh(object):
             vhs = mesh.halfcells[trivhid]
             # need to find the correct halfedge here
             start_he = None
-            vh = mesh.vertex_handle(vhs[0])
             for heh in mesh.voh(vh):
                 if mesh.is_boundary_edge(heh):
                     start_he = heh
@@ -859,6 +874,7 @@ class PVmesh(object):
 
         return vhs, hehs
     
+    # NOT USED
     def _energy(self, vhid):
         mesh = self.mesh; tri = self.tri
         prefarea = tri.prefareas[vhid]
@@ -886,6 +902,7 @@ class PVmesh(object):
         fen = farea + fprim + e_cl
         return fen
 
+    # NOT UPDATED, DO NOT USE
     def calculate_energy(self):
         # Storing the energies on each vertex
         vhids = self.tri.bulk
@@ -896,6 +913,7 @@ class PVmesh(object):
         print 'total energy', tenergy
 
     # Angle defecit derivative
+    # NOT USED
     def calc_dzetadr(self):
         tri = self.tri; mesh= self.mesh
         # dzetadr[boundary vertex][i, j, k vertex]
@@ -959,7 +977,8 @@ class PVmesh(object):
                     dzetadr[vhid][nnvhid][mu] = pre_fac * deriv_X
         return dzetadr   
 
-    # needs rewriting
+    # The force calculation which reproduces forces calculated by SAMoS
+    # Written Summer 2016. Last time checked against SAMoS forces, Winter 2016
     def calculate_forces(self, exclude_boundary=True):
         mesh = self.mesh
         tri = self.tri
@@ -1336,7 +1355,8 @@ class PVmesh(object):
 
         return vhids
 
-    # take a list of cells to use to make the virial stress
+    # take a list of cells to use to calculate the virial stress
+    # Just average the contributions to stress from those cells and divide by area
     def virial(self, vhids):
         tri = self.tri; mesh = self.mesh
         stress = np.zeros((3,3))
@@ -1361,7 +1381,9 @@ class PVmesh(object):
 
     # consider using  a circular region to pick appropriate cells to average over.
     # This is an alternative to recursively picking neighbours.
-    #  todo
+    #  todo,
+    # IMPORTANT looks like I left this method half written and never finished it!
+    # I simply preferred using the adjacent cell picking method above.
     def circle_virial(self, vhi, wl):
         # find the cells inside circle radius wl around vhi
         tri, mesh = self.tri, self.mesh
@@ -1380,6 +1402,8 @@ class PVmesh(object):
 
     # Use the network connectivity to find a local averaging region
     # This should work well for small regions
+    # the purpose of this method is to call self.virial for every cell
+    # Stresses are stored in a Vstress object
     def on_centres(self, adj=0):
         self.stressv = OrderedDict()
         for vhi in self.tri.bulk:
@@ -1402,9 +1426,14 @@ class PVmesh(object):
 
 
     #########
+    # Full hardy stress calculation
     # Complicated Stress Calculation which can deal with parts of bonds 
     #  inside the averaging region as well as using (for example) the
     #  geometric centre of the polygons to triangulate them.
+
+    # May 2017  - Currently no reason to use such a complicated solution for calculating stress.
+    # Skip straight to the end of the class and forget this exists
+    # Last used Autumn 2016, likely needs minor updates
 
     def _triangulate_areas(self, centroid):
         tri = self.tri; mesh = self.mesh
@@ -1964,6 +1993,7 @@ class PVmesh(object):
         return pmetric/len(tri.bulk)
 
 
+    # Autumn 2016 - attempt to align stress with texture tensor - just start over
     # Move this method to another class 
     def stress_alignment(self, thresh):
         # calculate the alignment paramter of the major principle stress axis 
@@ -2021,6 +2051,9 @@ class PVmesh(object):
     ''' This is really the constructor '''
     @classmethod
     def datbuild(cls, rdat, simplices=None):
+        # rdat is a ReadData object from tmp_read_data.py which is basically the same as utils/read_data
+        # simplices are the triangulation triangles and are read from the faces output of SAMoS
+        #  otherwise this code can use Scipy.Delaunay to independently calculate the triangulation
 
         keys = rdat.keys
         ids = np.array(rdat.data[keys['id']], dtype=int)
@@ -2048,6 +2081,15 @@ class PVmesh(object):
         if debug:
             print 'number of cells', rvals.shape[0]
             print 'number of points in trimesh', dd.points.shape[0]
+
+        ### Think of this half of the method as part of the constructor of the triangulation mesh object
+        # New properties are justed assigned directly to the new trimesh object instead of being passed to it's constructor 
+        # This properties are currently:
+        #  tri.prefareas  -- the preferred cell areas
+        #  tri.vvals -- the particles velocities
+        #  tri.ftotal -- the forces output from SAMoS
+        #  tri.bflag -- the boundary flag
+        #  tri.types -- the type integer
 
         tri = NTriMesh()
         prefareas = OrderedDict()
@@ -2077,9 +2119,14 @@ class PVmesh(object):
             tp = np.array(rdat.data[keys['type']])
             tri.types = tp
 
+        # finalize() includes even more setup of the triangulation mesh object.
+        # 
         tri.finalize()
+        # Finally passing the triangulation mesh to create a PVmesh object builds the dual mesh
         pv = PVmesh(tri)
-        # we use this value to map openmesh vertex ids onto particle ids
+
+        # we use this value to map openmesh vertex ids onto particle ids, 
+        # this was a rough way of dealing with environment particles at some point 
         pv.startid = startid
         return pv
 

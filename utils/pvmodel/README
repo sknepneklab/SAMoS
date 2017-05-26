@@ -8,3 +8,41 @@ IMPORTANT
 The triangulation produced by scipy.Delaunay is not automatically oriented by default for atleast scipy 0.13 and lower.
 Upgrading to the latest stable version, 0.17.0, fixes the problem and this is currently a requirement for the code.
 
+
+Use cases 
+
+1.
+Restarting a simulation from a SAMoS output ( assuming the SAMoS output has all the necessary information )
+Run 
+    analyse_cells.py -i <output_file_name>.dat mesh --boundary
+
+this will build the triangulation mesh and produce a file named <output_file_name>.boundary
+Run
+    constructmesh.py makeinput <output_file_name>.dat
+
+this will add the necessary (nvx, nvz, nvy) columns to the file so that SAMoS accepts it as an input
+The file will be names <output_file_name>.input.
+
+
+2. 
+Calculating stresses
+
+Calculate stresses for a number of outputs.
+Run
+    analyse_cells.py [-last] [-first] [-start N] [-end N] [-step N] stress [-adj N]
+
+    -adj N , N is the number of adjacent rings of cells to average stress over, default is 0 for a single cell stress
+
+Use [-last] to just calculate stress for the final SAMoS output.
+Use [-start 10000 -stop 90000 -step 10 ] to start calculating stresses for cell_0000010000.dat, stop at cell_0000090000.dat
+ and only compute every 10th output.
+
+2.1 
+Calculating stress for a specific output.  
+Run
+    analyse_cells -i cell_<Number>.dat stress -d output_directory -adj N
+
+Note that the argument to the [-i] option is interpreted as a regex by python. 
+The default output directory is tmp/
+
+
