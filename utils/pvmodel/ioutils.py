@@ -18,7 +18,7 @@ def readfc(fcfile):
         boundary = 'not implemented'
     return simp, boundary
 
-### These are general methods copied from my command.py module
+### These are general methods for reading columnar text files like the SAMoS output
 
 #print square data to file, first column is int and rest are floats.
 def dump(dd, fo, htag='#', outstr=None):

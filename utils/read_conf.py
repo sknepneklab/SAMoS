@@ -50,7 +50,7 @@ class Attribute:
   
   def __init__(self,attrib):
     ln = attrib.split('=')
-    self.name = ln[0]
+    self.name = ln[0].strip()
     if len(ln) > 1:
       # strips the leading and trailing spaces and leaves me with the value (as a string still)
       self.val = ln[1].strip() 

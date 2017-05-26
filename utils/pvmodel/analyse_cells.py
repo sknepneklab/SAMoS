@@ -44,6 +44,8 @@ def process_commands():
     topparser.add_argument("--triangulate", action='store_true', 
             help='use numpy for triangulation')
     topparser.add_argument("-f", '--faces', type=str, help='specify the faces file')
+    topparser.add_argument("-ref", type=str, default=None, 
+            help='specify the number of the reference configuration')
 
     subparsers = topparser.add_subparsers(dest='subcommand')
  
@@ -62,6 +64,7 @@ def process_commands():
 
     parser.add_argument('-lt', '--ltransition', type=float, default=0.02, 
             help = 'Threshold length for a t1 transition')
+    parser.add_argument('--test', action='store_true')
 
     valid_smoothing_functions = ['uniform', 'quartic']
     # flags
@@ -75,7 +78,7 @@ def process_commands():
             help='Mirrors exclude_boundary flag in samso')
 
 
-    # Want a sub parser for simple operations on mesh which don't involve stress calcualtion
+    # Want a sub parser for simple operations on mesh which don't involve stress calculation
     # Examples. Calculating the structure tensor, calculating cell neighbour topology
     # Associated with the 'Property' senario
     meshparser = subparsers.add_parser('mesh', help='Analysis on the mesh')
@@ -143,8 +146,8 @@ def configuration(args):
         is_active_types= True
 
     # Conversion between the names I gave the parameters and the SAMoS names
-    myparams = ['L', 'k', 'gamma']
     samparams = ['lambda', 'K', 'gamma']
+    myparams = ['L', 'k', 'gamma']
     pmap = dict(zip(samparams, myparams))
 
     # This will get the default attributes but not necessarily the correct values 

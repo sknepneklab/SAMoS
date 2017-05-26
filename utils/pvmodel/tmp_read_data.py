@@ -32,13 +32,18 @@
 # Reads in data files. Base handler for data analysis
 
 # Ok we still have no immediate plans to merge my python code with Silkes even
-# though I haven't changed her code so merging it is trivial.
-# I could copy this class and subclass it and use that but screw it. I'll just edit this
+# though I haven't changed Silke code so merging it is trivial.
+# I could copy this class and subclass it and use that but screw it. I'll just copy read_data.py and edit it
 # to my liking.
+
+# Most but not all of the changes to ReadData where to deal with environment particles 
+#  at the same time as cells and boundary particles.
+# If there no environment particles then the original ReadData object should just about work
 
 import gzip
 from collections import OrderedDict
 import copy
+import sys
 
 class ReadData:
 
@@ -70,7 +75,6 @@ class ReadData:
                     header = lines[nheader].strip()[1:]
                     keys = header.split()
                     for k in keys: self.keys[k] = keys.index(k)
-                    #print keys
                     nheader+=1
                     if (self.keys.has_key('id')) or (self.keys.has_key('type')) or (self.keys.has_key('radius')) or(self.keys.has_key('x')):
                         read_keys=True

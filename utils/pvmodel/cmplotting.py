@@ -344,10 +344,11 @@ def growthexp(timeline=None, n_cells=None, ax=ax):
     # general
     #ax.ticklabel_format(style='sci', axis='x')
     ax.xaxis.set_ticks([0, 500000, 1000000])
-    ax.xaxis.set_ticklabels([r'$0$',  r'$5\times 10^5$',  r'$10^6$'])
+    #ax.xaxis.set_ticklabels([r'$0$',  r'$5\times 10^5$',  r'$10^6$'])
+    ax.xaxis.set_ticklabels([r'$0$',  r'2500',  r'5000'])
 
 
-    ax.set_xlabel('timestep')
+    ax.set_xlabel(r'time ($\tau$)')
     ax.set_ylabel('Number of cells')
     #ax.set_title('Growth rate of patch')
 
@@ -406,7 +407,7 @@ def radial_all(gdir='tmp/', ax=ax):
     fig.tight_layout()
 
     ax.set_xlabel('Radial Distance')
-    ax.set_ylabel('Pressure')
+    ax.set_ylabel('Average Pressure')
     ax.set_ylim([0, 3.0])
     #ax.set_title('Radial pressure profiles. Separated by 100,000 timesteps.')
 
@@ -431,9 +432,11 @@ def radial_all(gdir='tmp/', ax=ax):
         else:
             lk = r'$10^6$'
         ax.plot(x, stress.ravg[k], label=lk)
-    legend =ax.legend(title='timestep')
-    legend.get_title().set_fontsize('18.0')
-    legend.get_frame().set_linewidth(1)
+        ax.plot(x, stress.ravg[k], 'bo', label=lk, )
+
+    #legend =ax.legend(title='timestep')
+    #legend.get_title().set_fontsize('18.0')
+    #legend.get_frame().set_linewidth(1)
 
 # helper
 def shiftrspace(rspace):
@@ -469,11 +472,29 @@ def grow_radial():
 
     growthexp(ax=ax1)
     #ax1.set_title('Sharing Y axis')
-    radial_all('test/', ax=ax2)
+    radial_all('tmp/', ax=ax2)
 
 
 
+## plotting texture tensor
 
+@defaultsave
+def dev_texture(xx_shear):
+    plt.clf()
+    x = xx_shear.keys()
+    ymean = map(np.mean, xx_shear.values())
+    yupper = map(max, xx_shear.values())
+    ylower = map(min, xx_shear.values())
+    plt.plot(x, ymean, marker='o')
+    plt.plot(x, yupper, linestyle='--', color='g', marker='o')
+    plt.plot(x, ylower, linestyle='--', color='g', marker='o')
+
+    outd = OrderedDict()
+    outd['adjn'] = x
+    outd['ymean'] = ymean
+    outd['yupper'] = yupper
+    outd['ylower'] = ylower
+    return outd
 
 
 ########################################################################################
@@ -539,7 +560,8 @@ def pretty_nnt(compare='active'):
 
     # search up the data
     dataname = 'nntopology'
-    pdata = Plotcompile(dataname).pdata
+    glo = 're_growA0'
+    pdata = Plotcompile(dataname, glo ).pdata
 
     if compare == 'growth':
         def retrieve_growth(ddir):
@@ -576,17 +598,20 @@ def pretty_nnt(compare='active'):
         nttnormed.append(norm/N)
 
     # 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10,10))
     fig.subplots_adjust(bottom=0.2)
 
     barspace = 0.7 # 0.3 free space
     step = barspace/len(nttnormed)
-    colors = ['r', 'g', 'b', 'y']
+    colors = ['b', 'r', 'g', 'y']
 
     rcts = []
-    keys = get_legend(grs)
+    #keys = get_legend(grs)
     for i, normed in enumerate(nttnormed):
         shift = i * step
+        sides = sides[1:-3]
+        normed = normed[1:-3]
+        print normed
         rct = ax.bar(sides + shift, normed, step, color=colors[i%4])
         rcts.append(rct)
 
@@ -596,9 +621,9 @@ def pretty_nnt(compare='active'):
     ax.set_xlabel('Number of neighbours')
     #ax.set_title(raw_input('title: '))
     
-    legend = ax.legend(rcts, keys, title=r'growth rate ($\eta$)')
-    legend.get_title().set_fontsize('18.0')
-    legend.get_frame().set_linewidth(1)
+    #legend = ax.legend(rcts, keys, title=r'growth rate ($\eta$)')
+    #legend.get_title().set_fontsize('18.0')
+    #legend.get_frame().set_linewidth(1)
 
 
 if __name__=='__main__':

@@ -2,6 +2,7 @@
 import ioutils as io
 import sys, os
 import numpy as np
+from numpy import linalg as lg
 import glob
 import math 
 
@@ -26,6 +27,7 @@ def f_outnum(dataf):
 
 verb = False
 
+# Hardy stress things, forget them
 from scipy import integrate
 def uniformkernel(wl):
     def unif(r):
@@ -54,7 +56,7 @@ def hash_function(f, linspace):
     return nf
 
 
-# Classes for tracking the data
+# Classes for outputing the data.
 
 # template for Tracker objects
 class Tracker(object):
@@ -171,7 +173,7 @@ class Senario(object):
             raise StopIteration()
 
     def _operate(self):
-        pass # the code to execure on each data file
+        pass # the code to execute on each data file
 
     def _finishup(self):
         pass # the cleanup code that needs to be executed
@@ -242,9 +244,7 @@ class Senario(object):
         pv.set_constants(K, Gamma, cl)
 
 # Bare minimum mesh senario.
-# i.e. want to get the area distributions of the types 
-
-
+# i.e. want to get the area distributions of the cell types 
 
 class Property(Senario):
     def __init__(self, args):
@@ -280,14 +280,15 @@ class Property(Senario):
         if args.boundary:
             self.boundary_main(pv)
 
-        # calculate the difference between real areas and critical division areas
-        max_area = 2.8  # read from configuration file
-        rsp, rad = self.radial_area(pv, max_area)
-        outd, ax = cm.arearadial(rsp, rad)
+        if False:
+            # calculate the difference between real areas and critical division areas
+            max_area = 2.8  # read from configuration file
+            rsp, rad = self.radial_area(pv, max_area)
+            outd, ax = cm.arearadial(rsp, rad)
 
-        name = os.path.join('plots/data/','arearadial_'+str(self.outnum)+'.dat' )
-        with open(name, 'w') as fo:
-            io.dump(outd, fo)
+            name = os.path.join('plots/data/','arearadial_'+str(self.outnum)+'.dat' )
+            with open(name, 'w') as fo:
+                io.dump(outd, fo)
 
     def radial_area(self, pv, max_area, nstat=4000.):
         nbins = int(math.ceil(len(pv.tri.rcmd)/nstat))
@@ -364,6 +365,8 @@ class Property(Senario):
 
 
 # old at this point, be careful
+# Senario for calculating stress and all related quantities while we are at it
+# Should use this senario when implementing strain and Graner metrics
 class Stress_Senario(Senario):
     def __init__(self, args):
         super(Stress_Senario, self).__init__(args)
@@ -379,6 +382,17 @@ class Stress_Senario(Senario):
             om = uniformkernel(wl)
         self.omega = om
 
+        self.ref_index = None
+        if args.ref:
+            nums = map(f_outnum, self.infiles)
+            # string comparision 
+            self.ref_index = nums.index(args.ref)
+        else:
+            print 'Warning: reference timestep not set for calculating Strain'
+            self.ref_index = 0
+        self.ref_structure = None
+
+
         self.pkr = SPickler(os.path.join(args.dir, 'stresses'))
 
     def _operate(self):
@@ -388,13 +402,91 @@ class Stress_Senario(Senario):
 
         pv = self._read_pv()
         self._handle_constants(pv)
-        pv.calculate_energy()
+        #pv.calculate_energy()
         pv.calculate_forces()
 
-
         pv.makecellparts()
-        pv.on_centres()
+        pv.on_centres(args.adj)
 
+        if self.fid == self.ref_index:
+            self.ref_structure = {}
+
+
+        if args.test:
+            self.test_convergence(pv)
+
+        # for real 
+        print 'stress averaging adj = ', args.adj
+        adjlist = [0, args.adj]
+        self.calculate_U(pv, adjlist)
+
+        # pickle useful datas
+        self.pkr.update(pv, outnum)
+
+        ### vtp output 
+        self._vtp_output(pv)
+
+    def calculate_U(self, pv, adjlist):
+        self.adjavg_structure(pv, adjlist)
+        #pv.structure_xx
+
+
+    def test_convergence(self, pv):
+        adjlist = [0, 1, 5, 10]
+        self.adjavg_structure(pv, adjlist)
+        cm.dev_texture(pv.xx_shear)
+
+    def adjavg_structure(self, pv, adjlist=[0,1,5]):
+        structure = pv.structure
+        structure_xx = {}
+        xx_trace = OrderedDict()
+        xx_shear = OrderedDict()
+
+        
+        # generic method for decomposing tensors. should be moved somewhere.
+        def decompose(ovtens):
+            #take (.., 3, 3) array of tensors and find principle directions and eigenvalues
+            ovtens = ovtens[:,:2,:2] # assume we need to go to two dimensions
+            evals, evecs = lg.eig(ovtens)
+            def orderedst(eva_evec): 
+                eva, evec = eva_evec
+                # for one set of eigenvalues/vectors order them and find components
+                if abs(eva[1]) > abs(eva[0]):
+                    eva[0], eva[1] = eva[1], eva[0]
+                    evec[0], evec[1] = evec[1], evec[0]
+                shear = (eva[0] - eva[1])/2
+                trace = (eva[0] + eva[1])/2
+                return eva, evec, trace, shear
+            ll = map(orderedst, zip(evals, evecs))
+            # transpose list of list
+            rll = map(list, zip(*ll)) 
+            # cleanup
+            return map(np.array, rll)
+            
+        for adjn in adjlist:
+            adjstr = pv.structure_on_centres(adjn)
+            structure_xx[adjn] = adjstr
+            #evecs, evals = lg.eig(np.array(adjstr.values())[:,:2,:2])
+            evals, evecs, trace, shear = decompose(np.array(adjstr.values()))
+
+            xx_trace[adjn] = trace 
+            xx_shear[adjn] = shear
+
+        pv.xx_trace = xx_trace
+        pv.xx_shear = xx_shear
+
+    #def avg_dev_texture(self, xx_shear):
+        #x = xx_shear.keys()
+        #ymean = map(np.mean, xx_shear.values())
+        #yupper = map(max, xx_shear.values())
+        #ylower = map(min, xx_shear.values())
+        #plt.plot(x, ymean, marker='o')
+        #plt.plot(x, yupper, linestyle='--', color='g', marker='o')
+        #plt.plot(x, ylower, linestyle='--', color='g', marker='o')
+        #plt.show()
+
+    def old_testing_code(self):
+        pass
         #bulkforces = [forces[i] for i in pv.tri.bulk]
         #avg_force = np.mean(map(norm, bulkforces))
         #print 'avg_force', avg_force
@@ -404,86 +496,11 @@ class Stress_Senario(Senario):
         #wr.writepoints(pv.mesh.centroids.values(), self._name_vtp('centroids_'))
         #wr.writemesh(pv.polygons, self._name_vtp('polygons_'))
 
-        # pickle useful datas
-        self.pkr.update(pv, outnum)
-
-        ### vtp output 
-        self._vtp_output(pv)
-
-
-# The Tone and Tlist classes for tracking transitions
-from transitions import *
-
-# associated with the transtions.py module 
-class Transitions(Senario):
-    def __init__(self, args):
-        super(Transitions, self).__init__(args)
-        # we need to start keeping track of all the pv objects we read in
-        self.helist= OrderedDict()
-        self.prevon = None
-        self.totalt1 = 0
-
-        # set the length under which we start to track edges
-        self.ltracking = 0.1
-        # main object for dealing with transistions
-        self.tlist = None
-        
-        self.pkr = SPickler(os.path.join(args.dir, 'stresses'))
-
-    def _operate(self):
-        args = self.args
-        outnum = self.outnum
-
-        # basic setup
-        rdat = ReadData(self.dataf)
-        facefile = path.join(self.inp_dir, 'faces_' + self.outnum + '.fc')
-        simp, _ = io.readfc(facefile)
-        pv = PVmesh.datbuild(rdat, simp)
-        self._handle_constants(pv)
-
-        # Calculate cell-level virial stress
-        pv.calculate_forces(exclude_boundary=args.exclude)
-        pv.makecellparts()
-        pv.on_centres(adj=args.adj)
-
-        # Save the pv object in an OrderedDict
-        self.helist[outnum] = pv
-
-        # track the transitions
-
-        #if self.fid == 0:
-            #self.tlist = Tlist.populate(pv, outnum)
-        #else:
-            #self.tlist.update(pv, outnum)
-
-        # Analysis output
-        #self.pkr.update(pv, outnum)
-
-        # Basic vtp output 
-        #self._vtp_output(pv)
-
-        # Output structure  tensor
-        vsout = self._name_vtp('structure_')
-        wr.write_stress_ellipses(pv, vsout, pv.structure, normalise=True)
-
-    def _finishup(self):
-        #print 'finished'
-        if self.tlist and hasattr(self.tlist, 'nt'):
-            print 'total t1 transitions', self.tlist.nt
-        else:
-            print 'Did not produce a tlist object'
-
-    def _halfedges(self, simp):
-        lamhedges = lambda si: zip(si, np.roll(si, -1))
-        hearr = np.array(map(lamhedges, simp))
-        # all halfedges
-        hearr= hearr.reshape(-1, hearr.shape[-1])
-        return set(map(tuple, hearr))
 
 
 # Senario for reading the .dat files and returning some simple data
 #  For example the number of ghost particles
-#  In other words the bare minimum, non-mesh senario
+# Use if building the meshes is not necessary
 class Basic(Senario):
     def __init__(self, args):
         super(Basic, self).__init__(args)
@@ -609,3 +626,75 @@ class MSD(Senario):
         return taulist, self.msd
     
     
+
+### Some work towards tracing t1 transtions -- never very effective -- better to start over
+# The Tone and Tlist classes for tracking transitions
+from transitions import *
+
+# associated with the transtions.py module 
+class Transitions(Senario):
+    def __init__(self, args):
+        super(Transitions, self).__init__(args)
+        # we need to start keeping track of all the pv objects we read in
+        self.helist= OrderedDict()
+        self.prevon = None
+        self.totalt1 = 0
+
+        # set the length under which we start to track edges
+        self.ltracking = 0.1
+        # main object for dealing with transistions
+        self.tlist = None
+        
+        self.pkr = SPickler(os.path.join(args.dir, 'stresses'))
+
+    def _operate(self):
+        args = self.args
+        outnum = self.outnum
+
+        # basic setup
+        rdat = ReadData(self.dataf)
+        facefile = path.join(self.inp_dir, 'faces_' + self.outnum + '.fc')
+        simp, _ = io.readfc(facefile)
+        pv = PVmesh.datbuild(rdat, simp)
+        self._handle_constants(pv)
+
+        # Calculate cell-level virial stress
+        pv.calculate_forces(exclude_boundary=args.exclude)
+        pv.makecellparts()
+        pv.on_centres(adj=args.adj)
+
+        # Save the pv object in an OrderedDict
+        self.helist[outnum] = pv
+
+        # track the transitions
+
+        #if self.fid == 0:
+            #self.tlist = Tlist.populate(pv, outnum)
+        #else:
+            #self.tlist.update(pv, outnum)
+
+        # Analysis output
+        #self.pkr.update(pv, outnum)
+
+        # Basic vtp output 
+        #self._vtp_output(pv)
+
+        # Output structure  tensor
+        vsout = self._name_vtp('structure_')
+        wr.write_stress_ellipses(pv, vsout, pv.structure, normalise=True)
+
+    def _finishup(self):
+        #print 'finished'
+        if self.tlist and hasattr(self.tlist, 'nt'):
+            print 'total t1 transitions', self.tlist.nt
+        else:
+            print 'Did not produce a tlist object'
+
+    def _halfedges(self, simp):
+        lamhedges = lambda si: zip(si, np.roll(si, -1))
+        hearr = np.array(map(lamhedges, simp))
+        # all halfedges
+        hearr= hearr.reshape(-1, hearr.shape[-1])
+        return set(map(tuple, hearr))
+
+
