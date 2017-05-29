@@ -33,10 +33,11 @@
 
 class Particle:
   
-  def __init__(self, idx, tp=1, R=1.0, l=1.0):
+  def __init__(self, idx, tp=1, R=1.0, l=1.0, mass = 1.0):
     self.idx = idx
     self.tp = tp
     self.R = R
+    self.mass = mass
     self.r = [0.0,0.0,0.0]
     self.v = [0.0,0.0,0.0]
     self.f = [0.0,0.0,0.0]

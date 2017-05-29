@@ -107,6 +107,10 @@ class Plane:
   def set_lens(self,lens):
     for i in xrange(len(lens)):
       self.particles[i].l = lens[i]
+      
+  def set_mass(self,masses):
+    for i in xrange(len(masses)):
+      self.particles[i].mass = masses[i]
   
   def gaussian_bump(self,A=1.0,a=1.0,b=1.0):
     for i in xrange(len(self.particles)):
@@ -119,12 +123,13 @@ class Plane:
     out = open(outfile,'w')
     out.write('# Total of %d particles\n' % self.N)
     out.write('# Generated on : %s\n' % str(gentime))
-    out.write('# id  type radius  x   y   z   vx   vy   vz   nx   ny   nz  omega l\n')
+    #out.write('# id  type radius  x   y   z   vx   vy   vz   nx   ny   nz  omega l\n')
+    out.write('keys: id  type radius mass x   y   z   vx   vy   vz   nx   ny   nz  length\n')
     for p in self.particles:
       x, y, z = p.r
       vx, vy, vz = p.v
       nx, ny, nz = p.n
-      out.write('%d  %d  %f %f  %f  %f  %f  %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz,p.omega,p.l))
+      out.write('%d  %d  %f  %f  %f  %f  %f  %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,p.mass,x,y,z,vx,vy,vz,nx,ny,nz,p.l))
     out.close()
     
 parser = argparse.ArgumentParser()
@@ -144,6 +149,7 @@ parser.add_argument("-b", "--gb",  type=float, default=1.0, help="Gaussian bump 
 parser.add_argument("-l","--lattice", action='store_true', help="make lattice")
 parser.add_argument("-g","--gaussian", action='store_true', help="make Gaussian bump")
 parser.add_argument("-r","--rods", action='store_true', help="make rods")
+parser.add_argument("-m", "--mass",  type=float, default=1.0, help="particle mass (same for all particles)")
 args = parser.parse_args()
 
 if args.gaussian:
@@ -192,18 +198,22 @@ else:
 radii = []
 types = []
 lens = []
+masses = []
 for i in xrange(len(p.particles)):
   if i < args.eta*N: 
     radii.append(args.a1)
     types.append(1)
     lens.append(args.l1)
+    masses.append(args.mass)
   else: 
     radii.append(args.a2)
     types.append(2)
     lens.append(args.l2)
+    masses.append(args.mass)
 p.set_radius(radii)
 p.set_type(types)
 p.set_lens(lens)
+p.set_mass(masses)
 if args.gaussian:
   p.gaussian_bump(args.amplitude,args.ga,args.gb)
 p.write(args.output)

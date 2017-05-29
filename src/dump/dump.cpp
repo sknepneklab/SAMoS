@@ -412,6 +412,9 @@ void Dump::dump(int step)
 //! Dump coordinated in a DCD file
 void Dump::dump_dcd()
 {
+  double Lx = m_system->get_box()->Lx;
+  double Ly = m_system->get_box()->Ly;
+  double Lz = m_system->get_box()->Lz;
   int N = m_system->size();
   float* buffer = new float[N];   // buffer for printing out coordinates; note: DCD requires floats
   double unitcell[6];
@@ -436,7 +439,10 @@ void Dump::dump_dcd()
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(i);
-    buffer[i] = static_cast<float>(p.x);
+    if (m_params.find("unwrap") != m_params.end())
+      buffer[i] = static_cast<float>(p.x+p.ix*Lx);
+    else
+      buffer[i] = static_cast<float>(p.x);
   }
   // write x coords
   write_int(m_file, N * sizeof(float));
@@ -447,7 +453,10 @@ void Dump::dump_dcd()
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(i);
-    buffer[i] = static_cast<float>(p.y);
+    if (m_params.find("unwrap") != m_params.end())
+      buffer[i] = static_cast<float>(p.y+p.iy*Ly);
+    else
+      buffer[i] = static_cast<float>(p.y);
   }
   // write y coords
   write_int(m_file, N * sizeof(float));
@@ -458,7 +467,10 @@ void Dump::dump_dcd()
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(i);
-    buffer[i] = static_cast<float>(p.z);
+    if (m_params.find("unwrap") != m_params.end())
+      buffer[i] = static_cast<float>(p.z+p.iz*Lz);
+    else
+      buffer[i] = static_cast<float>(p.z);
   }
   // write z coords
   write_int(m_file, N * sizeof(float));
