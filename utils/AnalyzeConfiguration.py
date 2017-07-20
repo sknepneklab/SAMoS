@@ -48,6 +48,7 @@ parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many sa
 parser.add_argument("--nematic", action='store_true', default=False, help="Shift n vectors such that particle is in the middle of director.")
 parser.add_argument("--contractile", action='store_true',default=False, help="Adds contractile stresses to calculation")
 parser.add_argument("-a", "--alpha", type=float, default=0.0, help="Prefactor of the contractile term")
+parser.add_argument("--delaunay", action='store_true',default=False, help="Use Delaunay triangulation for tesselation.")
 parser.add_argument("--closeHoles", action='store_true', default=False, help="Closes the holes in the tesselation to help tracking of defects (recommended for low density and/or nematic)")
 parser.add_argument("--makeEdges",action='store_true', default=False, help="Make edges to the tesselation along borders")
 parser.add_argument("-m", "--mult",type = float, default=1.0, help="initial Multiplier for tesselation neighbour radius")
@@ -112,7 +113,10 @@ for f in files:
 		conf.getTangentBundle()
 		tess = Tesselation(conf)
 		print "initialized tesselation"
-		LoopList,Ival,Jval = tess.findLoop(args.closeHoles,args.mult,1.1)
+		if args.delaunay:
+                        LoopList,Ival,Jval = tess.findLoopDelaunay()
+                else:
+                        LoopList,Ival,Jval = tess.findLoop(args.closeHoles,args.mult,1.1)
 		print "found loops"
 		#print LoopList
 		if args.writeD:

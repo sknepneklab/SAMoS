@@ -216,7 +216,20 @@ class Defects:
 		for t in thisLoop[0:len(thisLoop)]:
 			ctheta=np.dot(self.conf.nval[t,:],self.conf.nval[t0,:])    
 			stheta=np.dot(self.normal[t,:],np.cross(self.conf.nval[t,:],self.conf.nval[t0,:]))
+			#print ctheta
+			#print stheta
+			if abs(stheta)>1:
+				stheta=np.sign(stheta)
+                        if abs(ctheta)>1:
+				ctheta=np.sign(ctheta)
+			if np.isnan(stheta):
+				stheta=0
+			if np.isnan(ctheta):
+				ctheta=1
+                        #print ctheta
+                        #print stheta
 			theta=np.arccos(ctheta)*np.sign(stheta)
+			#print theta
 			thetatot+=theta
 			t0=t
 		# Classify according to defects
@@ -229,6 +242,14 @@ class Defects:
 			for t in thisLoop[0:len(thisLoop)]:
 				ctheta=np.dot(self.conf.vhat[t,:],self.conf.vhat[t0,:])    
 				stheta=np.dot(self.normal[t,:],np.cross(self.conf.vhat[t,:],self.conf.vhat[t0,:]))
+				if abs(stheta)>1:
+                                        stheta=np.sign(stheta)
+                                if abs(ctheta)>1:
+                                        ctheta=np.sign(ctheta)
+                                if np.isnan(stheta):
+                                        stheta=0
+                                if np.isnan(ctheta):
+                                        ctheta=1
 				theta=np.arccos(ctheta)*np.sign(stheta)
 				thetatot+=theta
 				t0=t
