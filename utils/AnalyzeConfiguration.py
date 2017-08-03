@@ -45,7 +45,7 @@ parser.add_argument("-c", "--conffile", type=str, help="configuration file")
 parser.add_argument("-d", "--directory", type=str, help="input directory")
 parser.add_argument("-o", "--output", type=str, help="output directory")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
-parser.add_argument("--nematic", action='store_true', default=False, help="Shift n vectors such that particle is in the middle of director.")
+parser.add_argument("--nematic", action='store_true', default=False, help="Track nematic orientation field if turned on. Otherwise track polar velocity field")
 parser.add_argument("--contractile", action='store_true',default=False, help="Adds contractile stresses to calculation")
 parser.add_argument("-a", "--alpha", type=float, default=0.0, help="Prefactor of the contractile term")
 parser.add_argument("--delaunay", action='store_true',default=False, help="Use Delaunay triangulation for tesselation.")
@@ -69,10 +69,12 @@ if len(files) == 0:
   files = sorted(glob(args.directory + args.input+'*.dat.gz'))[args.skip:]
 
 if args.writeD:
-	defects_n_out=[[] for u in range(len(files))]
-	defects_v_out=[[] for u in range(len(files))]
-	numdefects_n_out=np.zeros(len(files))
-	numdefects_v_out=np.zeros(len(files))
+        if args.nematic:
+                defects_n_out=[[] for u in range(len(files))]
+                numdefects_n_out=np.zeros(len(files))
+        else:
+                defects_v_out=[[] for u in range(len(files))]
+                numdefects_v_out=np.zeros(len(files))
 	
 if args.getStatsBasic:
 	vel2av=np.zeros(len(files))
@@ -126,16 +128,18 @@ for f in files:
 			defects = Defects(tess,conf)
 			# Look for nematic defects in the director field, but do not look for velocity defects (since it's a mess)
 			if args.nematic:
-				defects_n, defects_v,numdefect_n,numdefect_v=defects.getDefects('nematic',False)
+				defects_n, numdefect_n=defects.getDefects('nematic','orientation')
+				defects_n_out[u]=defects_n
+				numdefects_n_out[u]=numdefect_n
+				writeme.writeDefects(defects_n, numdefect_n,outdefects)
 			else:
-				defects_n, defects_v,numdefect_n,numdefect_v=defects.getDefects('polar')
+				defects_v,numdefect_v=defects.getDefects('polar','velocity')
+				#plt.show()
+				defects_v_out[u]=defects_v
+				numdefects_v_out[u]=numdefect_v
+				writeme.writeDefects(defects_v,numdefect_v,outdefects)
 			print "found defects"
-			defects_n_out[u]=defects_n
-			defects_v_out[u]=defects_v
-			numdefects_n_out[u]=numdefect_n
-			numdefects_v_out[u]=numdefect_v
 			#defects.PlotDefects()
-			writeme.writeDefects(defects_n, defects_v,numdefect_n,numdefect_v,outdefects)
 		if args.writeT:
 			outpatches = args.output + '/' + args.prefix + '%06d_patches.vtp' % u #+ str(u) + '_patches.vtp'
 			print outpatches
@@ -159,7 +163,10 @@ if ((args.writeD) or (args.getStatsBasic)):
                 except:
                     data={'pot_params':params.pot_params}
 	if args.writeD:
-		dataD={'defects_n':defects_n_out,'defects_v':defects_v_out,'numdefects_n':numdefects_n_out,'numdefects_v':numdefects_v_out}
+                if args.nematic:
+                    dataD={'defects_n':defects_n_out,'numdefects_n':numdefects_n_out}
+		else:
+                    dataD={'defects_v':defects_v_out,'numdefects_v':numdefects_v_out}
 		data.update(dataD)
 	if args.getStatsBasic:
 		dataS={'vel2av':vel2av,'phival':phival,'ndensity':ndensity,'pressure':pressure,'fmoment':fmoment,'energy':energy,'energytot':energytot,'zav':zav}

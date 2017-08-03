@@ -24,6 +24,7 @@ from Configuration import *
 from CellList import *
 import scipy.spatial
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 MMAX=2.0
 class Tesselation:
@@ -125,32 +126,62 @@ class Tesselation:
                             plt.triplot(self.rval[:,0], self.rval[:,1], trishift_y.simplices[toaddy],color='m')
                             #plt.triplot(self.rval[:,0], self.rval[:,1], loops)
                             plt.show()
+                    # Delaunay - Voronoi algorithm by default gives me patches which are ordere clockwise,
+                    # not counterclockwise
+                    # tri.simplices are the triangles, but not necessarily counterclockwise ...
+                    # By default, they are clockwise. Therefore, reverse them
+                    for k in range(len(loops)):
+                            llist0=np.array(loops[k])
+                            llist=list(reversed(llist0))
+                            looppos=self.rval[llist]
+                            # also needs periodic BC: bring them all to the same side as first element
+                            looppos=looppos[0,:]+self.geom.ApplyPeriodic2d(looppos-looppos[0,:])
+                            lcen=[np.mean(looppos[:,0]), np.mean(looppos[:,1]),np.mean(looppos[:,2])]
+                            self.LoopCen.append(lcen)
+                            self.LoopList.append(llist)
+                            self.l+=1
+                    print "Found " + str(len(self.LoopList)) + " loops!"
                 elif (self.geom.manifold == 'sphere'):
                     # A little bird says that this is just the convex hull of my points
-                    #tri = scipy.spatial.ConvexHull(self.rval)
-                    print "Error: Delaunay algorithm not yet implemented for geometry " + self.geometry.manifold
-                    print "Returning empty list. Use regular contact based tesselation instead."
-                    return [],[],[]
-                else:
-                    print "Error: Delaunay algorithm does not exist for geometry " + self.geometry.manifold
-                    print "Returning empty list. Use regular contact based tesselation instead."
-                    return [],[],[]
-               
-                # Delaunay - Voronoi algorithm by default gives me patches which are ordere clockwise,
-                # not counterclockwise
-                # tri.simplices are the triangles, but not necessarily counterclockwise ...
-                # By default, they are clockwise. Therefore, reverse them
-                for k in range(len(loops)):
+                    print "Using convex hull to compute Delaunay triangulation on the sphere"
+                    tri = scipy.spatial.ConvexHull(self.rval)
+                    #print tri.simplices
+                    if debug:
+                        fig = plt.figure()
+                        ax = fig.add_subplot(1, 1, 1, projection='3d')
+                        #plt.triplot(self.rval[:,0], self.rval[:,1], tri.simplices.copy())
+                        #plt.plot(self.rval[:,0], self.rval[:,1], 'o')
+                        ax.plot_trisurf(self.rval[:,0], self.rval[:,1], self.rval[:,2], triangles=tri.simplices)
+                        plt.show()
+                    loops=tri.simplices
+                    # However, these are randomly oriented, so we need to make them all counterclockwise
+                    for k in range(len(loops)):
                         llist0=np.array(loops[k])
-                        llist=list(reversed(llist0))
+                        # get the unit normal at the (geometric) centre of the triangle 
+                        rcent = np.mean(self.rval[llist0,:],axis=0)
+                        norm = self.geom.UnitNormal1d(rcent)
+                        # compute the signed area of the triangle
+                        r01=self.rval[llist0[1],:]-self.rval[llist0[0],:]
+                        r12=self.rval[llist0[2],:]-self.rval[llist0[1],:]
+                        arvec = np.cross(r12,r01)
+                        if (np.dot(arvec,norm) < 0.0):
+                            llist=list(reversed(llist0))
+                        else:
+                            llist=list(llist0)
                         looppos=self.rval[llist]
                         # also needs periodic BC: bring them all to the same side as first element
                         looppos=looppos[0,:]+self.geom.ApplyPeriodic2d(looppos-looppos[0,:])
-			lcen=[np.mean(looppos[:,0]), np.mean(looppos[:,1]),np.mean(looppos[:,2])]
-			self.LoopCen.append(lcen)
-			self.LoopList.append(llist)
-			self.l+=1
-		print "Found " + str(len(self.LoopList)) + " loops!"
+                        lcen=[np.mean(looppos[:,0]), np.mean(looppos[:,1]),np.mean(looppos[:,2])]
+                        self.LoopCen.append(lcen)
+                        self.LoopList.append(llist)
+                        self.l+=1
+                    print "Found " + str(len(self.LoopList)) + " loops!"
+                else:
+                    print "Error: Delaunay algorithm does not exist for geometry " + self.geom.manifold
+                    print "Returning empty list. Use regular contact based tesselation instead."
+                    return [],[],[]
+               
+                
 		# Need to also construct the connectivity matrix
 		# There surely are better ways ...
 		self.Ival=[]
@@ -190,7 +221,7 @@ class Tesselation:
 		# Take these straight from the interaction now
 		# No, this should happen before the call, so that Tesselation is independent of interaction, as it should
 		#dmax=self.conf.inter.dmax
-		dmax=2*self.conf.sigma
+		dmax=2*self.conf.inter.sigma
 		mult=mult0
 		#mult=mult0*self.conf.inter.mult
 		#if self.conf.monodisperse:
@@ -259,7 +290,7 @@ class Tesselation:
 		print "Found " + str(len(neighList)) + " neighbours."
 		while len(neighList)>0:
 			idx=neighList[0]
-			print idx
+			#print idx
 			idxkeep=idx
 			#print idx
 			idx0=[]
@@ -302,7 +333,7 @@ class Tesselation:
 					idx0.append(idx)
 					llist.append(Jarray[idx])
 					self.ParList[Jarray[idx]].append(self.l)
-			print idx0
+			#print idx0
 			#print llist
 			#print len(neighList)
 			for v in idx0:

@@ -47,7 +47,7 @@ parser.add_argument("-g", "--geometry", type=str, default = "plane_periodic", he
 parser.add_argument("--lx", type =float, help = "Lx")
 parser.add_argument("--ly", type =float, help = "Ly")
 parser.add_argument("--lz", type =float, help = "Lz")
-parser.add_argument("--delaunay", action='store_true',default=True, help="Use Delaunay triangulation for tesselation.")
+parser.add_argument("--delaunay", action='store_true',default=False, help="Use Delaunay triangulation for tesselation.")
 parser.add_argument("--nematic", action='store_true', default=False, help="Shift n vectors such that particle is in the middle of director.")
 parser.add_argument("--closeHoles", action='store_true', default=False, help="Closes the holes in the tesselation to help tracking of defects (recommended for low density and/or nematic)")
 parser.add_argument("--makeEdges",action='store_true', default=False, help="Make edges to the tesselation along borders")
@@ -82,8 +82,11 @@ if args.writeD or args.writeT:
         conf.getTangentBundle()
         tess = Tesselation(conf)
         print "initialized tesselation"
-        #LoopList,Ival,Jval = tess.findLoop(args.closeHoles,args.mult,1.1)
-        LoopList,Ival,Jval = tess.findLoopDelaunay(True)
+        if args.delaunay:
+            LoopList,Ival,Jval = tess.findLoopDelaunay(True)
+        else:
+            LoopList,Ival,Jval = tess.findLoop(args.closeHoles,args.mult,1.1)
+        
         print "found loops"
         #print LoopList
         if args.writeD:
