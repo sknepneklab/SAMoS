@@ -204,6 +204,9 @@ public:
   //! Returns true if any of the potentials need neighbour list
   bool need_nlist() { return m_need_nlist; } 
   
+  // Compute total potential energy
+  double compute_potential_energy();
+
   //! Compute all forces and potentials in the system
   void compute(double);
   

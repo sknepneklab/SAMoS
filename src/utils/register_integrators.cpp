@@ -49,4 +49,6 @@ void register_integrators(IntegratorMap& integrators)
   integrators["brownian_align"] = boost::factory<IntegratorBrownianAlignPtr>();
   // Register Langevin dynamics integrator for particle positions with the integrators class factory
   integrators["langevin"] = boost::factory<IntegratorLangevinPtr>();
+  // Register FIRE minimisaton integrator with the integrators class factory
+  integrators["fire"] = boost::factory<IntegratorFIREPtr>();
 }

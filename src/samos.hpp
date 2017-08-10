@@ -107,6 +107,7 @@
 #include "integrator_brownian_pos.hpp"
 #include "integrator_brownian_align.hpp"
 #include "integrator_langevin.hpp"
+#include "integrator_fire.hpp"
 #include "aligner.hpp"
 #include "pair_aligner.hpp"
 #include "pair_polar_aligner.hpp"

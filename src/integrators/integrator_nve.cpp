@@ -40,9 +40,6 @@ void IntegratorNVE::integrate()
   vector<int> particles = m_system->get_group(m_group_name)->get_particles();
   double dt_2 = 0.5*m_dt;
   
-  // reset forces and torques
-  m_system->reset_forces();
-  m_system->reset_torques();
   
   // Perform first half step for velocity
   for (int i = 0; i < N; i++)
@@ -83,12 +80,7 @@ void IntegratorNVE::integrate()
     // Project everything back to the manifold
     m_constrainer->enforce(p);
   }
-  // compute forces in the current configuration
-  if (m_potential)
-    m_potential->compute(m_dt);
-  // compute torques in the current configuration
-  if (m_align)
-    m_align->compute();
+
   // Enforce constraints and update alignment
   for (int i = 0; i < N; i++)
   {
@@ -103,6 +95,18 @@ void IntegratorNVE::integrate()
     m_constrainer->rotate_director(p,dtheta);
     //p.omega = dtheta*m_dt;
   }
+
+  // reset forces and torques
+  m_system->reset_forces();
+  m_system->reset_torques();
+
+  // compute forces in the current configuration
+  if (m_potential)
+    m_potential->compute(m_dt);
+  // compute torques in the current configuration
+  if (m_align)
+    m_align->compute();
+  
   // Perform second half step for velocity only if there is no limit on particle move
   for (int i = 0; i < N; i++)
   {
