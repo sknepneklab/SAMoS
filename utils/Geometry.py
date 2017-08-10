@@ -221,6 +221,12 @@ class GeometrySphere(Geometry):
 		rs = np.sqrt(rval[:,0]**2 + rval[:,1]**2 + rval[:,2]**2)
 		rhat=((rval).transpose()/(rs).transpose()).transpose()
 		return rhat
+            
+        # Complementary: The unit normal
+	def UnitNormal1d(self,rval):
+		rs = np.sqrt(rval[0]**2 + rval[1]**2 + rval[2]**2)
+		rhat=rval/rs
+		return rhat
        
        
 # Plane without periodic boundary conditions

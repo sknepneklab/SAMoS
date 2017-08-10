@@ -23,6 +23,8 @@
 from Configuration import *
 from CellList import *
 import scipy.spatial
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 MMAX=2.0
 class Tesselation:
@@ -34,30 +36,158 @@ class Tesselation:
 		self.debug=debug
                 self.ordered_patches = False
                 
-        def findLoopDelaunay(self):
+        def findLoopDelaunay(self,debug=False):
                 self.LoopList=[]
 		# The dual: which loops belong to which particle
 		self.ParList=[[] for k in range(len(self.rval))]
 		self.LoopCen=[]
 		self.l=0
 		# use properly two-dimensional data
-		print self.rval[:,0:2]
-                tri = scipy.spatial.Delaunay(self.rval[:,0:2])
-                # tri.simplices are the triangles, but not necessarily counterclockwise ...
-                for k in range(len(tri.simplices)):
-                        llist=tri.simplices[k]
+		# This needs to take into account the geometry now. Plane, periodic plane, and sphere are allowed
+		# plane: simplest case
+		if (self.geom.manifold =='plane'):
+                    if (self.geom.periodic == False):
+                        tri = scipy.spatial.Delaunay(self.rval[:,0:2])
+                        loops=tri.simplices
+                        if debug:
+                            plt.figure()
+                            plt.triplot(self.rval[:,0], self.rval[:,1], tri.simplices.copy())
+                            plt.plot(self.rval[:,0], self.rval[:,1], 'o')
+                            plt.show()
+                    else:
+                        # Need to implement copying over stuff here ...
+                        tri0 = scipy.spatial.Delaunay(self.rval[:,0:2])
+                        print "Initially " + str(len(tri0.simplices)) + " triangles found."
+                        #hull = scipy.spatial.ConvexHull(self.rval[:,0:2])
+                        # shift and wrap so that the hull edges are in the centre
+                        rshift =  self.geom.ApplyPeriodic2d(self.rval+0.5*np.array([self.geom.Lx,self.geom.Ly,0.0]))
+                        # And then do it again ...
+                        trishift = scipy.spatial.Delaunay(rshift[:,0:2])
+                        rshift_x =  self.geom.ApplyPeriodic2d(self.rval+0.5*np.array([self.geom.Lx,0.0,0.0]))
+                        rshift_y =  self.geom.ApplyPeriodic2d(self.rval+0.5*np.array([0.0,self.geom.Ly,0.0]))
+                        trishift_x = scipy.spatial.Delaunay(rshift_x[:,0:2])
+                        trishift_y = scipy.spatial.Delaunay(rshift_y[:,0:2])
+                        # And now go through the things and choose the appropiate ones 
+                        # Careful, simplices are not in the same order here
+                        # First, find all the triangle indices in the boundary region in the initial triangulation
+                        pad=0.25*(0.5*self.geom.Lx+0.5*self.geom.Ly)
+                        #print pad
+                        decent=[]
+                        for k in range(len(tri0.simplices)):
+                            centre=np.sum(self.rval[tri0.simplices[k],:],axis=0)/3.0
+                            if (abs(centre[0])<(0.5*self.geom.Lx-pad)) and (abs(centre[1])<(0.5*self.geom.Ly-pad)):
+                                decent.append(k)
+                        # get the unique labels
+                        tokeep=list(set(decent))
+                        # Now in reverse, find all the ones that one might want to add from the other set
+                        better=[]
+                        for k in range(len(trishift.simplices)):
+                            # careful here ..
+                            centre=np.sum(rshift[trishift.simplices[k],:],axis=0)/3.0
+                            if abs(centre[0])<pad:
+                                if abs(centre[1])<(0.5*self.geom.Lx-pad):
+                                    better.append(k)
+                            if abs(centre[1])<pad:
+                                if abs(centre[0])<(0.5*self.geom.Ly-pad):
+                                    better.append(k)
+                        nuggetx=[]
+                        for k in range(len(trishift_x.simplices)):
+                            centre=np.sum(rshift_x[trishift_x.simplices[k],:],axis=0)/3.0
+                            if (abs(centre[0])<pad) and (abs(centre[1])<pad):
+                                nuggetx.append(k)
+                        nuggety=[]
+                        for k in range(len(trishift_y.simplices)):
+                            centre=np.sum(rshift_y[trishift_y.simplices[k],:],axis=0)/3.0
+                            if (abs(centre[0])<pad) and (abs(centre[1])<pad):
+                                nuggety.append(k)
+                        toadd=list(set(better))
+                        toaddx=list(set(nuggetx))
+                        toaddy=list(set(nuggety))
+                        # Then there is a final bit of those guys which are in the original centre, but at the edges of the shifted
+                        # delaunay bit. Take them together and replace
+                        # This is a partial stitch. If we were to use the neighbour information, it's not going to be correct. But simply the simplex list, it's fine
+                        loops=np.zeros((len(tokeep)+len(toadd)+len(toaddx)+len(toaddy),3),dtype=np.int)
+                        loops[:len(tokeep),:]=tri0.simplices[tokeep,:]
+                        loops[len(tokeep):(len(tokeep)+len(toadd)),:]=trishift.simplices[toadd,:]
+                        loops[(len(tokeep)+len(toadd)):(len(tokeep)+len(toadd)+len(toaddx)),:]=trishift_x.simplices[toaddx,:]
+                        loops[(len(tokeep)+len(toadd)+len(toaddx)):(len(tokeep)+len(toadd)+len(toaddx)+len(toaddy)),:]=trishift_y.simplices[toaddy,:]
+                        print "At the end we have " + str(len(loops)) + " triangles."
+                        if debug:
+                            plt.figure()
+                            #plt.triplot(rshift[:,0], rshift[:,1], tri.simplices)
+                            #plt.plot(rshift[:,0], rshift[:,1], 'o')
+                            # add the convex hull for periodic
+                            #plt.plot(rshift[hull.vertices,0], rshift[hull.vertices,1], 'r-', lw=2)
+                            #plt.triplot(rshift[:,0], rshift[:,1], trishift.simplices,color='g')
+                            #print tri0.simplices[tokeep]
+                            plt.triplot(self.rval[:,0], self.rval[:,1], tri0.simplices[tokeep],color='r')
+                            plt.triplot(self.rval[:,0], self.rval[:,1], trishift.simplices[toadd],color='g')
+                            plt.triplot(self.rval[:,0], self.rval[:,1], trishift_x.simplices[toaddx],color='b')
+                            plt.triplot(self.rval[:,0], self.rval[:,1], trishift_y.simplices[toaddy],color='m')
+                            #plt.triplot(self.rval[:,0], self.rval[:,1], loops)
+                            plt.show()
+                    # Delaunay - Voronoi algorithm by default gives me patches which are ordere clockwise,
+                    # not counterclockwise
+                    # tri.simplices are the triangles, but not necessarily counterclockwise ...
+                    # By default, they are clockwise. Therefore, reverse them
+                    for k in range(len(loops)):
+                            llist0=np.array(loops[k])
+                            llist=list(reversed(llist0))
+                            looppos=self.rval[llist]
+                            # also needs periodic BC: bring them all to the same side as first element
+                            looppos=looppos[0,:]+self.geom.ApplyPeriodic2d(looppos-looppos[0,:])
+                            lcen=[np.mean(looppos[:,0]), np.mean(looppos[:,1]),np.mean(looppos[:,2])]
+                            self.LoopCen.append(lcen)
+                            self.LoopList.append(llist)
+                            self.l+=1
+                    print "Found " + str(len(self.LoopList)) + " loops!"
+                elif (self.geom.manifold == 'sphere'):
+                    # A little bird says that this is just the convex hull of my points
+                    print "Using convex hull to compute Delaunay triangulation on the sphere"
+                    tri = scipy.spatial.ConvexHull(self.rval)
+                    #print tri.simplices
+                    if debug:
+                        fig = plt.figure()
+                        ax = fig.add_subplot(1, 1, 1, projection='3d')
+                        #plt.triplot(self.rval[:,0], self.rval[:,1], tri.simplices.copy())
+                        #plt.plot(self.rval[:,0], self.rval[:,1], 'o')
+                        ax.plot_trisurf(self.rval[:,0], self.rval[:,1], self.rval[:,2], triangles=tri.simplices)
+                        plt.show()
+                    loops=tri.simplices
+                    # However, these are randomly oriented, so we need to make them all counterclockwise
+                    for k in range(len(loops)):
+                        llist0=np.array(loops[k])
+                        # get the unit normal at the (geometric) centre of the triangle 
+                        rcent = np.mean(self.rval[llist0,:],axis=0)
+                        norm = self.geom.UnitNormal1d(rcent)
+                        # compute the signed area of the triangle
+                        r01=self.rval[llist0[1],:]-self.rval[llist0[0],:]
+                        r12=self.rval[llist0[2],:]-self.rval[llist0[1],:]
+                        arvec = np.cross(r12,r01)
+                        if (np.dot(arvec,norm) < 0.0):
+                            llist=list(reversed(llist0))
+                        else:
+                            llist=list(llist0)
                         looppos=self.rval[llist]
-			lcen=[np.mean(looppos[:,0]), np.mean(looppos[:,1]),np.mean(looppos[:,2])]
-			self.LoopCen.append(lcen)
-			self.LoopList.append(llist)
-			self.l+=1
-		print "Found " + str(len(self.LoopList)) + " loops!"
+                        # also needs periodic BC: bring them all to the same side as first element
+                        looppos=looppos[0,:]+self.geom.ApplyPeriodic2d(looppos-looppos[0,:])
+                        lcen=[np.mean(looppos[:,0]), np.mean(looppos[:,1]),np.mean(looppos[:,2])]
+                        self.LoopCen.append(lcen)
+                        self.LoopList.append(llist)
+                        self.l+=1
+                    print "Found " + str(len(self.LoopList)) + " loops!"
+                else:
+                    print "Error: Delaunay algorithm does not exist for geometry " + self.geom.manifold
+                    print "Returning empty list. Use regular contact based tesselation instead."
+                    return [],[],[]
+               
+                
 		# Need to also construct the connectivity matrix
 		# There surely are better ways ...
 		self.Ival=[]
 		self.Jval=[]
-		for k in range(len(tri.simplices)):
-                        llist=tri.simplices[k]
+		for k in range(len(loops)):
+                        llist=loops[k]
                         self.Ival.append(llist[0])
                         self.Jval.append(llist[1])
                         self.Ival.append(llist[1])
@@ -91,7 +221,7 @@ class Tesselation:
 		# Take these straight from the interaction now
 		# No, this should happen before the call, so that Tesselation is independent of interaction, as it should
 		#dmax=self.conf.inter.dmax
-		dmax=2*self.conf.sigma
+		dmax=2*self.conf.inter.sigma
 		mult=mult0
 		#mult=mult0*self.conf.inter.mult
 		#if self.conf.monodisperse:
@@ -160,7 +290,7 @@ class Tesselation:
 		print "Found " + str(len(neighList)) + " neighbours."
 		while len(neighList)>0:
 			idx=neighList[0]
-			print idx
+			#print idx
 			idxkeep=idx
 			#print idx
 			idx0=[]
@@ -203,7 +333,7 @@ class Tesselation:
 					idx0.append(idx)
 					llist.append(Jarray[idx])
 					self.ParList[Jarray[idx]].append(self.l)
-			print idx0
+			#print idx0
 			#print llist
 			#print len(neighList)
 			for v in idx0:

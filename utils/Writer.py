@@ -131,29 +131,17 @@ class Writer:
                 writer.SetCompressorTypeToZLib()
 		writer.Write()
 		
-	def writeDefects(self,defects_n, defects_v,numdefect_n,numdefect_v,outfile):
+	def writeDefects(self,defects, numdefect,outfile):
 		# Preparing the vtp output
 		# Create point structure in vtk
-		Points_n = vtk.vtkPoints()
+		Points = vtk.vtkPoints()
 		print "Created Points"
-		Charge_n = vtk.vtkDoubleArray()
-		Charge_n.SetNumberOfComponents(1)
-		Charge_n.SetName('Charge')
-		# Put one point at the centre, and the ndefect ones around it
-		for u in range(numdefect_n):
-			Points_n.InsertNextPoint(defects_n[u][1],defects_n[u][2],defects_n[u][3])
-			Charge_n.InsertNextValue(defects_n[u][0])
-		if not self.nematic:
-			Points_v = vtk.vtkPoints()
-			print "Created Points"
-			Charge_v = vtk.vtkDoubleArray()
-			Charge_v.SetNumberOfComponents(1)
-			Charge_v.SetName('Charge')
-			# Put one point at the centre, and the ndefect ones around it
-			for u in range(numdefect_v):
-				Points_v.InsertNextPoint(defects_v[u][1],defects_v[u][2],defects_v[u][3])
-				Charge_v.InsertNextValue(defects_v[u][0])
-		print "Added Particles and Numbers"
+		Charge = vtk.vtkDoubleArray()
+		Charge.SetNumberOfComponents(1)
+		Charge.SetName('Charge')
+		for u in range(numdefect):
+			Points.InsertNextPoint(defects[u][1],defects[u][2],defects[u][3])
+			Charge.InsertNextValue(defects[u][0])
 		
 		#lines = vtk.vtkCellArray()
 		#line = vtk.vtkLine()
@@ -170,15 +158,10 @@ class Writer:
 		#print "Added lines"
 		
 		polydata = vtk.vtkPolyData()
-		polydata.SetPoints(Points_n)
+		polydata.SetPoints(Points)
 		#polydata.SetLines(lines)
-		polydata.GetPointData().AddArray(Charge_n)
+		polydata.GetPointData().AddArray(Charge)
 		
-		if not self.nematic:
-			polydata = vtk.vtkPolyData()
-			polydata.SetPoints(Points_v)
-			#polydata.SetLines(lines)
-			polydata.GetPointData().AddArray(Charge_v)
 		print "Finished Polydata"
 		polydata.Modified()
 		writer = vtk.vtkXMLPolyDataWriter()

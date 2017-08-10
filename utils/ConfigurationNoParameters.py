@@ -37,12 +37,17 @@ except:
     
 # dummy parameter class for the most typical geometry variables
 class Param:
-    def __init__(self,box,r=30):
+    def __init__(self,box,r=10):
         self.box=box
         self.lx = box[0]
         self.ly = box[1]
         self.r=r
         self.nlist_rcut=2.5
+        
+# dummy parameter class for the most typical geometry variables
+class Interaction:
+    def __init__(self,sigma=1.0):
+        self.sigma=sigma
 
 class Configuration:
 	def __init__(self,filename,constraint,box):
@@ -80,6 +85,7 @@ class Configuration:
 		# Create the right geometry environment (TBC):
 		param=Param(box)
 		self.geom=geometries[constraint](param)
+		self.inter=Interaction()
 		print self.geom
 		
 		if self.geom.periodic:
