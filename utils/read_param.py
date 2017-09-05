@@ -500,8 +500,13 @@ class Param:
 			except:
 				pass
 			if self.potential=='rod':
-				self.mur = self.int_params['mur']
-				print "Rod rotational mobility " + str(self.mur)
+                                try:
+                                    self.mur = self.int_params['mur']
+                                    print "Rod rotational mobility " + str(self.mur)
+                                except:
+                                    self.mu = self.int_params['mu']
+                                    print "Rod rotational mobility " + str(self.mu)
+				
 			self.thermal=False
 			try:
 				self.thermal_type=self.int_params['temperature_control']

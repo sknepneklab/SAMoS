@@ -123,7 +123,9 @@ for f in files:
 		#print LoopList
 		if args.writeD:
 			#print "Still to be done ..."
+			print u
 			outdefects = args.output + '/' + args.prefix + '%06d_defects.vtp' % u # + str(u) + '_defects.vtp'	
+			#outdefects = args.output + '/' + args.prefix + str(u) + '_defects.vtp'	
 			print outdefects
 			defects = Defects(tess,conf)
 			# Look for nematic defects in the director field, but do not look for velocity defects (since it's a mess)

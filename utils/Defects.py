@@ -133,31 +133,38 @@ class Defects:
 		#print "Starting loop " + str(thisLoop) + " in region " + str(self.conf.rval[t0,:])
 		thetadum=[]
                 for t in thisLoop[0:len(thisLoop)]:
-                        #tmp='plane'
-                        if self.conf.geom.manifold == 'plane':
-                        #if tmp == 'plane':
-                                if field == 'orientation':
-                                        ctheta=np.dot(self.conf.nval[t,:],self.conf.nval[t0,:])
-                                        stheta=np.dot(self.normal[t,:],np.cross(self.conf.nval[t,:],self.conf.nval[t0,:]))
-                                else:
-                                        ctheta=np.dot(self.conf.vhat[t,:],self.conf.vhat[t0,:])
-                                        stheta=np.dot(self.normal[t,:],np.cross(self.conf.vhat[t,:],self.conf.vhat[t0,:]))
+                        # This is the old version based on small loops
+                        if field == 'orientation':
+                                ctheta=np.dot(self.conf.nval[t,:],self.conf.nval[t0,:])
+                                stheta=np.dot(self.normal[t,:],np.cross(self.conf.nval[t,:],self.conf.nval[t0,:]))
                         else:
-                                # Need to take into account parallel transport. This is easiest done by just expressing the relevant vectors
-                                # in the proper local coordinate system (associated to the local normal)
-                                # This has been tested for spheres so far
-                                if field == 'orientation':
-                                        s0=np.dot(self.conf.nval[t0,:],self.etheta[t0,:])
-                                        s1=np.dot(self.conf.nval[t,:],self.etheta[t,:])
-                                        c0=np.dot(self.conf.nval[t0,:],self.ephi[t0,:])
-                                        c1=np.dot(self.conf.nval[t,:],self.ephi[t,:])
-                                else:
-                                        s0=np.dot(self.conf.vhat[t0,:],self.etheta[t0,:])
-                                        s1=np.dot(self.conf.vhat[t,:],self.etheta[t,:])
-                                        c0=np.dot(self.conf.vhat[t0,:],self.ephi[t0,:])
-                                        c1=np.dot(self.conf.vhat[t,:],self.ephi[t,:])
-                                ctheta=c1*c0+s1*s0
-                                stheta=s1*c0-c1*s0
+                                ctheta=np.dot(self.conf.vhat[t,:],self.conf.vhat[t0,:])
+                                stheta=np.dot(self.normal[t,:],np.cross(self.conf.vhat[t,:],self.conf.vhat[t0,:]))
+                        # Parallel transport does not seem to reliably work
+                        #if self.conf.geom.manifold == 'sphere':
+                        ##if tmp == 'plane':
+                                #if field == 'orientation':
+                                        #ctheta=np.dot(self.conf.nval[t,:],self.conf.nval[t0,:])
+                                        #stheta=np.dot(self.normal[t,:],np.cross(self.conf.nval[t,:],self.conf.nval[t0,:]))
+                                #else:
+                                        #ctheta=np.dot(self.conf.vhat[t,:],self.conf.vhat[t0,:])
+                                        #stheta=np.dot(self.normal[t,:],np.cross(self.conf.vhat[t,:],self.conf.vhat[t0,:]))
+                        #else:
+                                ## Need to take into account parallel transport. This is easiest done by just expressing the relevant vectors
+                                ## in the proper local coordinate system (associated to the local normal)
+                                ## This has been tested for spheres so far
+                                #if field == 'orientation':
+                                        #s0=np.dot(self.conf.nval[t0,:],self.etheta[t0,:])
+                                        #s1=np.dot(self.conf.nval[t,:],self.etheta[t,:])
+                                        #c0=np.dot(self.conf.nval[t0,:],self.ephi[t0,:])
+                                        #c1=np.dot(self.conf.nval[t,:],self.ephi[t,:])
+                                #else:
+                                        #s0=np.dot(self.conf.vhat[t0,:],self.etheta[t0,:])
+                                        #s1=np.dot(self.conf.vhat[t,:],self.etheta[t,:])
+                                        #c0=np.dot(self.conf.vhat[t0,:],self.ephi[t0,:])
+                                        #c1=np.dot(self.conf.vhat[t,:],self.ephi[t,:])
+                                #ctheta=c1*c0+s1*s0
+                                #stheta=s1*c0-c1*s0
                         if abs(stheta)>1:
                                 stheta=np.sign(stheta)
                         if abs(ctheta)>1:

@@ -106,7 +106,7 @@ class Sphere:
       vx, vy, vz = p.v
       nx, ny, nz = p.n
       if include_len:
-        out.write('%d  %d  %3.2f %f  %f  %f  %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz,p.l+2*p.R))
+        out.write('%d  %d  %3.2f %f  %f  %f  %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz,p.l))
       else:
         out.write('%d  %d  %3.2f %f  %f  %f  %f  %f  %f  %f  %f  %f\n' % (p.idx,p.tp,p.R,x,y,z,vx,vy,vz,nx,ny,nz))
     out.close()
