@@ -146,7 +146,7 @@ class Plane:
         dataline += '\n'
         if header:
             #out.write('# Total of %s particles\n' % str(self.N+self.Nbound))
-            out.write('# Generated on : %s\n' % str(gentime))
+            #out.write('# Generated on : %s\n' % str(gentime))
             out.write('# ' + ('{:<8}  '*len(headers)).format(*headers) + '\n')
 
         for p in self.particles:

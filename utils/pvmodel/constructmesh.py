@@ -20,7 +20,7 @@ from os import path
 from collections import OrderedDict
 
 
-from tmp_read_data import ReadData
+from read_data import ReadData
 # This function has been hijacked to convert ReadData objects into an ordered dictionary because that's what I like to work with
 def rwoperate(ifile):
     # is this ReadData really giving list instead of numpy array?
