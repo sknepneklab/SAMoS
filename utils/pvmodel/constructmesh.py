@@ -19,9 +19,6 @@ import ioutils as io
 from os import path
 from collections import OrderedDict
 
-# tmp
-from obstacle import *
-
 
 from tmp_read_data import ReadData
 # This function has been hijacked to convert ReadData objects into an ordered dictionary because that's what I like to work with
