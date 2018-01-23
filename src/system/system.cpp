@@ -172,7 +172,17 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         if (has_keys)
         {
           if (column_key.find("id") != column_key.end()) 
-            id = lexical_cast<int>(s_line[column_key["id"]]);
+          {
+            try
+            {
+              id = lexical_cast<int>(s_line[column_key["id"]]);
+            }
+            catch(bad_lexical_cast &e)
+            {
+              std::cerr << "Particle id has to be zero or a positive integer." << std::endl;
+              throw;
+            }
+          }
           else
             id++;            
         }
@@ -183,7 +193,17 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         if (has_keys)
         {
           if (column_key.find("type") != column_key.end()) 
-            tp = lexical_cast<int>(s_line[column_key["type"]]);
+          {
+            try
+            {
+              tp = lexical_cast<int>(s_line[column_key["type"]]);
+            }
+            catch(bad_lexical_cast &e)
+            {
+              std::cerr << "Particle type has to be a positive integer." << std::endl;
+              throw;
+            }
+          }
           else 
             tp = 1;
         }
@@ -198,7 +218,17 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
         if (has_keys)
         {
           if (column_key.find("radius") != column_key.end()) 
-            r = lexical_cast<double>(s_line[column_key["radius"]]);
+          {
+            try
+            {
+              r = lexical_cast<double>(s_line[column_key["radius"]]);
+            }
+            catch (bad_lexical_cast &e)
+            {
+              std::cerr << "Particle radius has to be a positive floating point number." << std::endl;
+              throw;
+            }
+          }
           else
             r = 1.0;            
         }
