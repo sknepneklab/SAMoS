@@ -101,7 +101,7 @@ samos
          \pair       - Pairwise aligners (alignments between pairs of particles)
          \external   - Single particle aligners (such as alignment to the extrenal field)
       /constraints   - Implementations of constraints to different curved surfaces 
-      /dump          - Handles output of the simulation data (it supports several standarad foramts, plain text, VTP, mol2, dcd, etc.)
+      /dump          - Handles output of the simulation data (it supports several standard formats, plain text, VTP, mol2, dcd, etc.)
       /integrators   - Implements several integrators of the equations of motion
       /log           - Handles logging of the simulation state (e.g., current time step, total energy, etc.)
       /messenger     - Handles info, warning and error messages produced by the code, as well as generating metadata (JSON of XML format)
