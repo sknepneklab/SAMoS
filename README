@@ -72,6 +72,9 @@ NOTE: Depending on the compiler, you may get a number of warning messages. Those
 NOTE: If you are compiling with gcc 6.x you need to explicitly state that you are using the C++98 standard. This is done by adding -std=c++98 to the
 CMAKE_CXX_FLAGS variable. SAMoS will fail to compile using the C++11 standard! 
 
+WARNING: Some Mac users have reported problems with compiling SAMoS on Sierra and High Sierra using packages installed with 'brew'. Switching to 
+the 'MacPorts' seems to solve the problem.   
+
 
 5. RUNNING SAMoS
 

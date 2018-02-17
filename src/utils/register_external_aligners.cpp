@@ -43,4 +43,6 @@ void register_external_aligners(ExternalAlignerMap& external_aligners)
   external_aligners["tangent"] = boost::factory<ExternalTangentAlignPtr>();
   // Register kenotaxis alignment class
   external_aligners["kenotaxis"] = boost::factory<ExternalKenotaxisAlignPtr>();
+  // Register radial alignment class
+  external_aligners["radial"] = boost::factory<ExternalRadialAlignPtr>();
 }
