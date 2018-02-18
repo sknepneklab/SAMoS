@@ -20,7 +20,7 @@
  *
  * ****************************************************************************/
 
-// cloning and modifying extenal_shape_align.hpp
+// cloning and modifying external_shape_align.hpp
 // Aligner for boundary particles to orient perpendicular to the tissue boundary
 
 #ifndef __EXTERNAL_KENOTAXIS_ALIGN_HPP__
