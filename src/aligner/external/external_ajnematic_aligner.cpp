@@ -60,7 +60,7 @@ void ExternalAJNematicAlign::compute()
     }
     
     if (m_has_params)
-      tau = m_type_params[pi.get_type()].tau;
+      tau = m_type_params[pi.get_type()-1].tau;
     
     pi.tau_x += ni_dot_vi*tau_x/tau;
     pi.tau_y += ni_dot_vi*tau_y/tau;

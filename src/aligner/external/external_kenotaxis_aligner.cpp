@@ -78,7 +78,7 @@ void ExternalKenotaxisAlign::compute()
       double J_factor = force_sign*J;
       double tau_z = pi.nx*y - pi.ny*x;
       //if (m_has_params)
-        //J = m_type_params[pi.get_type()].J
+        //J = m_type_params[pi.get_type()-1].J
         //
       
       pi.tau_x += 0.0;

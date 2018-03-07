@@ -41,7 +41,7 @@ void ExternalSelfPropulsion::compute()
     if (!(m_exclude_boundary && p.boundary))
     {
       if (m_has_params)
-        alpha = m_type_params[p.get_type()]["alpha"];
+        alpha = m_type_params[p.get_type()-1]["alpha"];
       p.fx += alpha*p.nx;
       p.fy += alpha*p.ny;
       p.fz += alpha*p.nz;

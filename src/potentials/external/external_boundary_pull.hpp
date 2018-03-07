@@ -95,7 +95,7 @@ public:
     }
     m_msg->write_config("potential.external.boundary_pull.type_"+pair_param["type"]+".alpha",lexical_cast<string>(param["alpha"]));
 
-    m_type_params[type]["alpha"] = param["alpha"];
+    m_type_params[type-1]["alpha"] = param["alpha"];
     
     m_has_params = true;
   }

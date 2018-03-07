@@ -40,9 +40,9 @@ void ExternalFieldAlign::compute()
     Particle& pi = m_system->get_particle(i);
     if (m_has_params)
     {
-      hx = m_type_params[pi.get_type()].hx;
-      hy = m_type_params[pi.get_type()].hy;
-      hz = m_type_params[pi.get_type()].hz;
+      hx = m_type_params[pi.get_type()-1].hx;
+      hy = m_type_params[pi.get_type()-1].hy;
+      hz = m_type_params[pi.get_type()-1].hz;
     }
     pi.tau_x += hy*pi.nz - hz*pi.ny;
     pi.tau_y += hz*pi.nx - hx*pi.nz;

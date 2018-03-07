@@ -114,8 +114,8 @@ public:
     m_msg->write_config("potential.external.harmonic.type_"+pair_param["type"]+".z0",lexical_cast<string>(param["z0"]));
     
     
-    m_type_params[type]["k"] = param["k"];
-    m_type_params[type]["z0"] = param["z0"];
+    m_type_params[type-1]["k"] = param["k"];
+    m_type_params[type-1]["z0"] = param["z0"];
     
     m_has_params = true;
   }

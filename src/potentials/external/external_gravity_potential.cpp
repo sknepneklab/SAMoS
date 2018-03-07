@@ -40,7 +40,7 @@ void ExternalGravityPotential::compute()
   {
     Particle& p = m_system->get_particle(i);
     if (m_has_params)
-      g = m_type_params[p.get_type()]["g"];
+      g = m_type_params[p.get_type()-1]["g"];
     m_potential_energy += g*p.z;
     p.fz -= g;
   }

@@ -90,7 +90,7 @@ public:
     }
     m_msg->write_config("potential.external.gravity.type_"+pair_param["type"]+".g",lexical_cast<string>(param["g"]));
 
-    m_type_params[type]["g"] = param["g"];
+    m_type_params[type-1]["g"] = param["g"];
     
     m_has_params = true;
   }

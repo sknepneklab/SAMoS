@@ -74,7 +74,7 @@ void ExternalShapeAlign::compute()
         ax /= len_a;  ay /= len_a;
         double tau_z = pi.nx*ay - pi.ny*ax;
         if (m_has_params)
-          J = m_type_params[pi.get_type()].J;
+          J = m_type_params[pi.get_type()-1].J;
         pi.tau_x += 0.0;
         pi.tau_y += 0.0;
         pi.tau_z += J*tau_z;  // per construction torque is only in the z direction

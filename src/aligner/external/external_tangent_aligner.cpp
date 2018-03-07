@@ -50,7 +50,7 @@ void ExternalTangentAlign::compute()
     double tau_y = pi.nz*dx - pi.nx*dz;
     double tau_z = pi.nx*dy - pi.ny*dx;
     if (m_has_params)
-      tau = m_type_params[pi.get_type()].tau;
+      tau = m_type_params[pi.get_type()-1].tau;
     pi.tau_x += tau_x/tau;
     pi.tau_y += tau_y/tau;
     pi.tau_z += tau_z/tau;
@@ -59,7 +59,7 @@ void ExternalTangentAlign::compute()
     tau_y = pj.nz*dx - pj.nx*dz;
     tau_z = pj.nx*dy - pj.ny*dx;
     if (m_has_params)
-      tau = m_type_params[pj.get_type()].tau;
+      tau = m_type_params[pj.get_type()-1].tau;
     pj.tau_x += tau_x/tau;
     pj.tau_y += tau_y/tau;
     pj.tau_z += tau_z/tau;

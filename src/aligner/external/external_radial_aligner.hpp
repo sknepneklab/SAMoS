@@ -183,9 +183,9 @@ public:
     }
     m_msg->write_config("aligner.external.radial.type."+self_param["type"]+".pos_y",lexical_cast<string>(param["pos_y"]));
     
-    m_type_params[type].J = param["J"];
-    m_type_params[type].pos_x = param["pos_x"];
-    m_type_params[type].pos_y = param["pos_y"];
+    m_type_params[type-1].J = param["J"];
+    m_type_params[type-1].pos_x = param["pos_x"];
+    m_type_params[type-1].pos_y = param["pos_y"];
     
     m_has_params = true;
   }

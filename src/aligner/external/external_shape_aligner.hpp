@@ -119,7 +119,7 @@ public:
     }
     m_msg->write_config("aligner.external.shape.type."+self_param["type"]+".J",lexical_cast<string>(param["J"]));
     
-    m_type_params[type].J = param["J"];
+    m_type_params[type-1].J = param["J"];
         
     m_has_params = true;
   }

@@ -59,9 +59,9 @@ void ExternalRadialAlign::compute()
     {
       if (m_has_params)
       {
-        J = m_type_params[pi.get_type()].J;
-        pos_x = m_type_params[pi.get_type()].pos_x;
-        pos_y = m_type_params[pi.get_type()].pos_y;
+        J = m_type_params[pi.get_type()-1].J;
+        pos_x = m_type_params[pi.get_type()-1].pos_x;
+        pos_y = m_type_params[pi.get_type()-1].pos_y;
       }
       double X = pos_x + x_c, Y = pos_y + y_c;
       double x = pi.x - X, y = pi.y - Y;

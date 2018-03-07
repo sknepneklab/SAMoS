@@ -123,7 +123,7 @@ public:
     }
     m_msg->write_config("aligner.external.ajnematic.type."+self_param["type"]+".tau",lexical_cast<string>(param["tau"]));
     
-    m_type_params[type].tau = param["tau"];
+    m_type_params[type-1].tau = param["tau"];
         
     m_has_params = true;
   }

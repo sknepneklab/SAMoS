@@ -42,8 +42,8 @@ void ExternalHarmonicPotential::compute()
     Particle& p = m_system->get_particle(i);
     if (m_has_params)
     {
-      k = m_type_params[p.get_type()]["k"];
-      z0 = m_type_params[p.get_type()]["z0"];
+      k = m_type_params[p.get_type()-1]["k"];
+      z0 = m_type_params[p.get_type()-1]["z0"];
     }
     double dz = p.z - z0;
     m_potential_energy += 0.5*k*dz*dz;

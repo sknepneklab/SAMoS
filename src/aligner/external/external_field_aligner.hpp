@@ -158,9 +158,9 @@ public:
     }
     m_msg->write_config("aligner.external.field.type."+self_param["type"]+".hz",lexical_cast<string>(param["hz"]));
     
-    m_type_params[type].hx = param["hx"];
-    m_type_params[type].hy = param["hy"];
-    m_type_params[type].hz = param["hz"];
+    m_type_params[type-1].hx = param["hx"];
+    m_type_params[type-1].hy = param["hy"];
+    m_type_params[type-1].hz = param["hz"];
     
     m_has_params = true;
   }

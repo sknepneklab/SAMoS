@@ -93,7 +93,7 @@ public:
       param["J"] = m_J;
     }
     
-    m_type_params[type].J = param["J"];
+    m_type_params[type-1].J = param["J"];
         
     m_has_params = true;
   }
