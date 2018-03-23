@@ -1100,6 +1100,12 @@ int main(int argc, char* argv[])
             {
               if (qi::phrase_parse(group_data.params.begin(), group_data.params.end(), param_parser, qi::space, parameter_data))
               {
+                // Protect against groups boundary and tissue being redefined 
+                if (group_data.name == "boundary" || group_data.name == "tissue")
+                {
+                  msg->msg(Messenger::ERROR,"Groups \"tissue\" and \"boundary\" are reserved and cannot be used.");
+                  throw std::runtime_error("Trying to redefine reserved group name."); 
+                }
                 sys->make_group(group_data.name,parameter_data);
                 msg->msg(Messenger::INFO,"Adding group "+group_data.name+".");
               }

@@ -266,7 +266,7 @@ public:
   double age;                  //!< Particle age (used when deciding to remove and split the particle)
   double A0;                   //!< Native area for cell simulations
   bool boundary;               //!< Flag used to distinguish particle at the boundary for tissue simulations
-  bool in_tissue;              //!< Flag uset to distinguish particles that belong to a tissue (part of triangulation) and those that do not
+  bool in_tissue;              //!< Flag used to distinguish particles that belong to a tissue (part of triangulation) and those that do not
   list<string> groups;         //!< List of all groups particle belongs to.
   vector<int> bonds;           //!< List of all bonds this particle belongs to
   vector<int> angles;          //!< List of all angles this particle belongs to

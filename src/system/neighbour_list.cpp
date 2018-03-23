@@ -30,7 +30,7 @@
 #include "neighbour_list.hpp"
 
 /* Get neighbour opposite to an edge
- * \note This is extremly unelegant. However, I cannot figure out
+ * \note This is extremely inelegant. However, I cannot figure out
  * a simple way to tall CGAL directly to get me the other vertex 
  * opposite to an edge.
 */
@@ -156,7 +156,7 @@ void NeighbourList::build_mesh()
   {
     if (!m_system->has_boundary_neighbours())
     {
-      m_msg->msg(Messenger::INFO,"Boundary neighrours have to be defined in a tissue simulations. Please use command \"read_cell_boundary\" in the config file.");
+      m_msg->msg(Messenger::INFO,"Boundary neighbours have to be defined in a tissue simulations. Please use command \"read_cell_boundary\" in the config file.");
       throw runtime_error("Boundary neighbours not defined.");
     }
     m_contact_list.clear();
@@ -335,11 +335,11 @@ void NeighbourList::build_faces(bool flag)
 bool NeighbourList::build_triangulation()
 {
   vector< pair<Point,unsigned> > points;
-  vector< Point > points_for_boundary;  // need to double the data strcuture do the the way CGAL constrained traingulations work
+  vector< Point > points_for_boundary;  // need to double the data structure do the the way CGAL constrained triangulations work
   vector< pair<int,int> > boundary_indices;  // pairs of edges at the boundary 
 
   int N = m_system->size();
-  vector<int> tissue_id;   // Bookgkeeping vector for building triangulation
+  vector<int> tissue_id;   // Bookkeeping vector for building triangulation
   vector<int> index_map(N,-1);
   int tissue_count = 0;
   for (int i = 0; i < N; i++)
@@ -385,7 +385,7 @@ bool NeighbourList::build_triangulation()
     int to_flip;
     bool can_add = false;
     bool simple_add = true;
-    // if f1 or f2 are boudnary handle this first
+    // if f1 or f2 are boundary handle this first
     if (triangulation.is_infinite(f1) || triangulation.is_infinite(f2))
     {
       if (triangulation.is_infinite(f2))
@@ -451,8 +451,8 @@ bool NeighbourList::build_triangulation()
         Particle& p3 = m_system->get_particle(i3);
 
         double x, y, z;                  // contains coordinates of mirrored particles 
-        mirror(p3, p1, p2, x, y, z);     // compute poistion of mirrored particle 
-        Particle p(m_system->size(), p1.get_type(), p1.get_radius());    // generate new particle with the "last" id and inhereted type and radus from p1
+        mirror(p3, p1, p2, x, y, z);     // compute position of mirrored particle 
+        Particle p(m_system->size(), p1.get_type(), p1.get_radius());    // generate new particle with the "last" id and inhereted type and radius from p1
         i4 = p.get_id();                                            
         // set parameters for the new particle
         p.x = x; p.y = y; p.z = z;
@@ -460,12 +460,12 @@ bool NeighbourList::build_triangulation()
         p.nx = p3.nx;  p.ny = p3.ny;  p.nz = p3.nz;
         p.vx = 0.5*(p1.vx+p2.vx);  p.vy = 0.5*(p1.vy+p2.vy);  p.vz = 0.5*(p1.vz+p2.vz);
         p.coordination = 0;
-        p.groups.push_back("all");
+        // copy all the groups of p3
+        for(list<string>::iterator it_g = p3.groups.begin(); it_g != p3.groups.end(); it_g++)
+          p.groups.push_back(*it_g);
+        // also make sure that the new particle belongs to the boundary group
         if (m_system->has_group("boundary"))
-        {
           p.groups.push_back("boundary");
-          p.groups.push_back("tissue");
-        }
         // Note: Make sure that new particle is added to all necessary groups. 
         p.boundary = true;
         p.in_tissue = true;

@@ -325,7 +325,7 @@ void Mesh::order_star(int v)
 }
 
 /*! Order dual vertices in the star. This is important as it may happen that 
- *  trianges within the star become obtuse which may lead to wrong ordering of 
+ *  triangles within the star become obtuse which may lead to wrong ordering of 
  *  dual centres and areas and perimeters not being properly ordered.
  *  We need to check this after every time step.
  *  \param v vertex id
@@ -431,7 +431,7 @@ void Mesh::order_dual(int v)
     {
       cerr << endl;
       cerr << "Unable to order dual vertices of vertex " << V.id << ". There is likely a problem with the mesh itself. ";
-      cerr << "Such problems typically arise if the parametrs lead to situations such as a very thin (one-cell-wide) neck of cells or ";
+      cerr << "Such problems typically arise if the parameters lead to situations such as a very thin (one-cell-wide) neck of cells or ";
       cerr << "a part of the system trying to detach from the bulk, which is currently not supported. " << endl;
       //this->debug_dump("test.off");
       throw runtime_error("Unable to order vertex dual.");
@@ -832,7 +832,7 @@ void Mesh::fc_jacobian(int f)
   face.drcdr[2].M[2][2] = dl1_div_Lam_drk.z*ri.z + dl2_div_Lam_drk.z*rj.z + dl3_div_Lam_drk.z*rk.z + l3_div_Lam;
 }
 
-/*! This is an auxiliary member fucntion that loops over all faces
+/*! This is an auxiliary member function that loops over all faces
  *  and updates its properties such as the boundary and obtuse flags.
 **/
 void Mesh::update_face_properties()
@@ -876,9 +876,9 @@ bool Mesh::remove_obtuse_boundary()
   return no_removals;
 }
 
-/*! Loop over all boundary edges. If the angle oposite to the boundary 
+/*! Loop over all boundary edges. If the angle opposite to the boundary 
  * edge is obtuse, mirror the vertex belonging to the obtuse angle across the 
- * boundary and and two edges and one triangle. In the next step, equiangulation 
+ * boundary and add two edges and one triangle. In the next step, equiangulation 
  * move will pick and flip this edge. This prevents sudden jumps in the force. 
  * This function returns list of newly added vertices, which will be used to 
  * add actual particles to the system. 
@@ -1478,8 +1478,8 @@ void Mesh::remove_face(int f)
 } 
 
 /*! Remove edge face.
- *  This funcion is used in conjunction with remove_edge_triangles function 
- *  to remove all trianges that live at the bounday and and have one 
+ *  This function is used in conjunction with remove_edge_triangles function 
+ *  to remove all triangles that live at the boundary and and have one 
  *  of its vertices having only two neighbours. This situation leads to 
  *  ill-defined angle deficits.
  *  \param f id of the face to remove
@@ -1587,7 +1587,7 @@ bool Mesh::remove_edge_face(int f)
 }
 
 /*! Compute coordinates of a vertex that is a mirror image (with respect to an edge)
- *  of a vetex opposite to a boundary edge edge.
+ *  of a vertex opposite to a boundary edge edge.
  *  
  *  \param edge index of the edge 
  */

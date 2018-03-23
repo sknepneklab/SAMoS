@@ -77,8 +77,12 @@ public:
   //! \param id particle id to add
   void add_particle(int id) 
   { 
-    m_particles.push_back(id);
-    m_size++;
+    // protect against same particle being added two or more times to a group
+    if (find(m_particles.begin(),m_particles.end(),id) == m_particles.end())
+    {
+      m_particles.push_back(id);
+      m_size++;
+    }
   }
   
   //! Remove particle from group
