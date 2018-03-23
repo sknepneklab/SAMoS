@@ -93,6 +93,7 @@ void PopulationDensity::divide(int t)
         p_new.set_radius(p.get_radius());
         p_new.set_length(p.get_length());
         p_new.set_default_area(p.get_A0());
+        p_new.A0 = p.A0;
         if (m_rng->drnd() < m_type_change_prob_1)  // Attempt to change type and group for first child
         {
           if (m_new_type == 0)
