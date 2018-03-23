@@ -375,7 +375,7 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
             m_boundary.push_back(p.get_id());
           }
           else p.boundary = false;
-          if (column_key.find("in_tissue") == column_key.end())  // boundary flags given but no in_tisse flag set, assume all in tissue
+          if (column_key.find("in_tissue") == column_key.end())  // boundary flags given but no in_tissue flag set, assume all in tissue
             p.in_tissue = true; 
         }
         if (has_keys && (column_key.find("in_tissue") != column_key.end()))

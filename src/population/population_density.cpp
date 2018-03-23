@@ -89,6 +89,7 @@ void PopulationDensity::divide(int t)
         p_new.age = 0.0; // age of child is 0
         for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)
           p_new.groups.push_back(*it_g);
+        if (p.in_tissue) p_new.in_tissue = true;
         if (m_rng->drnd() < m_type_change_prob_1)  // Attempt to change type and group for first child
         {
           if (m_new_type == 0)
@@ -110,7 +111,7 @@ void PopulationDensity::divide(int t)
           m_system->change_group(pr,m_old_group,m_new_group);
         }
         // For the polydispersity function: Change radius of second child.
-        if (m_new_radius==0.0)
+        if (m_new_radius == 0.0)
           new_r = pr.get_radius(); 
         else 
         {
