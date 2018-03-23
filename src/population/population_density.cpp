@@ -90,6 +90,9 @@ void PopulationDensity::divide(int t)
         for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)
           p_new.groups.push_back(*it_g);
         if (p.in_tissue) p_new.in_tissue = true;
+        p_new.set_radius(p.get_radius());
+        p_new.set_length(p.get_length());
+        p_new.set_default_area(p.get_A0());
         if (m_rng->drnd() < m_type_change_prob_1)  // Attempt to change type and group for first child
         {
           if (m_new_type == 0)
