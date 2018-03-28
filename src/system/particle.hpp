@@ -235,6 +235,14 @@ public:
     fz = m_force_type[name].fy;
   }
 
+  //! Add group name to the list of particle's groups
+  //! \param name group name
+  void add_group(const string& name) 
+  { 
+    if (find(groups.begin(), groups.end(), name) == groups.end())
+      groups.push_back(name);
+  }
+
   //! Get the entire force type data structure
   map<string,ForceType>& get_force_type() { return m_force_type; }
   

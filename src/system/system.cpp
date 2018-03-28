@@ -310,9 +310,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
           p.omega = 0.0;
           if (column_key.find("omega") != column_key.end())   p.omega = lexical_cast<double>(s_line[column_key["omega"]]);            
         }
-        else
-	      if (s_line.size() > 12)
-            p.omega = lexical_cast<double>(s_line[12]);
+        else if (s_line.size() > 12)
+          p.omega = lexical_cast<double>(s_line[12]);
         // read length
         p.set_length(1.0);
         if (has_keys)
@@ -403,33 +402,33 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
   inp.close();
   
   // Populate group 'all'
-  // As well as boundary and internal groups, is those are present
+  // As well as boundary and internal groups, if those are present
   for (unsigned int i = 0; i < m_particles.size(); i++)
   {
     m_group["all"]->add_particle(i);
-    m_particles[i].groups.push_back("all");
+    m_particles[i].add_group("all");
     if (has_boundary)
     {
       Particle& p = m_particles[i];
       if (p.in_tissue)
       {
         m_group["tissue"]->add_particle(i);
-        m_particles[i].groups.push_back("tissue");
+        m_particles[i].add_group("tissue");
         if (p.boundary)
         {
           m_group["boundary"]->add_particle(i);
-          m_particles[i].groups.push_back("boundary");
+          m_particles[i].add_group("boundary");
         }
         else
         {
           m_group["internal"]->add_particle(i);
-          m_particles[i].groups.push_back("internal");
+          m_particles[i].add_group("internal");
         }
       }
       else
       {
         m_group["environment"]->add_particle(i);
-        m_particles[i].groups.push_back("environment");
+        m_particles[i].add_group("environment");
       }
     }
   }
@@ -563,7 +562,7 @@ void System::make_group(const string name, pairs_type& param)
     {
       Particle& p = m_particles[i];
       m_group[name]->add_particle(i);
-      p.groups.push_back(name);
+      p.add_group(name);
     }
   }
   
@@ -665,14 +664,14 @@ void System::change_group(Particle& p, const string& old_group, const string& ne
     p.groups.erase(it_g);
   
   if (new_group != "all") // It's already in "all"
-    p.groups.push_back(new_group);
+    p.add_group(new_group);
   
   m_group[old_group]->remove_particle(p.get_id());
   if (new_group != "all") // It's already in "all"
     m_group[new_group]->add_particle(p.get_id());
-//   cout << "Particle after group change: " << endl;
-//   cout << p;
-//   cout << "++++++++++++++++++++++++++++++++++++++" << endl;
+  cout << "Particle after group change: " << endl;
+  cout << p;
+  cout << "++++++++++++++++++++++++++++++++++++++" << endl;
 }
 
 /*! Kill off any non-zero momentum and angular momentum that a group of particles might have pick up

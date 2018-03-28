@@ -124,7 +124,7 @@ void PopulationCell::divide(int t)
           p_new.set_default_area(p.get_A0());
           p_new.in_tissue = true;
           for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)
-            p_new.groups.push_back(*it_g);
+            p_new.add_group(*it_g);
           m_system->add_particle(p_new);
         }
       }
@@ -168,7 +168,8 @@ void PopulationCell::remove(int t)
       // P_div = (attempt_freq * dt) [1+m_death_rate*(age-age_max)]. This death rate is an inverse time scale
       //double prob_death =m_freq*m_system->get_integrator_step()*exp((p.age-m_max_age)*m_death_rate); 
       // Trying a very simple, linearly increasing death chance
-      double prob_death = fact*p.age/m_max_age;
+      //double prob_death = fact*p.age/m_max_age;
+      double prob_div = m_div_rate*m_freq*m_system->get_integrator_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
       if (p.in_tissue && !p.boundary && m_rng->drnd() < prob_death)
           to_remove.push_back(p.get_id());
     }

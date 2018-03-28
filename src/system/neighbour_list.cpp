@@ -462,10 +462,10 @@ bool NeighbourList::build_triangulation()
         p.coordination = 0;
         // copy all the groups of p3
         for(list<string>::iterator it_g = p3.groups.begin(); it_g != p3.groups.end(); it_g++)
-          p.groups.push_back(*it_g);
+          p.add_group(*it_g);
         // also make sure that the new particle belongs to the boundary group
         if (m_system->has_group("boundary"))
-          p.groups.push_back("boundary");
+          p.add_group("boundary");
         // Note: Make sure that new particle is added to all necessary groups. 
         p.boundary = true;
         p.in_tissue = true;

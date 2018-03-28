@@ -88,7 +88,7 @@ void PopulationDensity::divide(int t)
         p.age = 0.0;     // age of parent is 0
         p_new.age = 0.0; // age of child is 0
         for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)
-          p_new.groups.push_back(*it_g);
+          p_new.add_group(*it_g);
         if (p.in_tissue) p_new.in_tissue = true;
         p_new.set_radius(p.get_radius());
         p_new.set_length(p.get_length());
@@ -103,31 +103,33 @@ void PopulationDensity::divide(int t)
           p.set_type(new_type);
           m_system->change_group(p,m_old_group,m_new_group);
         }
-        m_system->add_particle(p_new);
-        Particle& pr = m_system->get_particle(p_new.get_id());
-        if (m_rng->drnd() < m_type_change_prob_2)  // Attempt to change type and group for second child
-        {
-          if (m_new_type == 0)
-            new_type = pr.get_type();
-          else
-            new_type = m_new_type;
-          pr.set_type(new_type);
-          m_system->change_group(pr,m_old_group,m_new_group);
-        }
         // For the polydispersity function: Change radius of second child.
         if (m_new_radius == 0.0)
-          new_r = pr.get_radius(); 
+          new_r = p_new.get_radius(); 
         else 
         {
           if (m_poly == 0.0)
             new_r = m_new_radius;
           else 
-          {
-            new_r = m_new_radius*(1+m_poly*(m_rng->drnd()-0.5));
-            //cout << "new radius " << new_r << endl;
-          }
+            new_r = m_new_radius*(1.0 + m_poly*(m_rng->drnd() - 0.5));
         }
-        pr.set_radius(new_r);
+        p_new.set_radius(new_r);
+        if (m_rng->drnd() < m_type_change_prob_2)  // Attempt to change type and group for second child
+        {
+          if (m_new_type == 0)
+            new_type = p_new.get_type();
+          else
+            new_type = m_new_type;
+          p_new.set_type(new_type);
+          m_system->add_particle(p_new);
+          m_system->change_group(p_new,m_old_group,m_new_group);
+          //cout << "---------------------------------------" << endl;
+          //cout << " p " << m_system->get_particle(p.get_id()) << endl;
+          //cout << " p_new " << m_system->get_particle(p_new.get_id()) << endl;
+          //cout << "+++++++++++++++++++++++++++++++++++++++" << endl;
+        }
+        else
+          m_system->add_particle(p_new); 
       }
     }
     if (!m_system->group_ok(m_group_name))

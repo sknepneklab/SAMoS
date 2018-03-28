@@ -36,7 +36,8 @@ ostream& operator<<(ostream& out, const Particle& p)
   << format("flag : %d\n") % p.get_flag()
   << format("type : %d\n") % p.get_type()
   << format("radius : %15.9e\n") % p.get_radius()       
-  << format("age : %15.9e\n") % p.age       
+  << format("age : %15.9e\n") % p.age    
+  << format("parent : %d\n") % p.get_parent()
   << format("(x,y,z) : (%15.9e,%15.9e,%15.9e)\n") % p.x % p.y % p.z
   << format("(vx,vy,vz) : (%15.9e,%15.9e,%15.9e)\n") % p.vx % p.vy % p.vz
   << format("(nx,ny,nz) : (%15.9e,%15.9e,%15.9e)\n") % p.nx % p.ny % p.nz

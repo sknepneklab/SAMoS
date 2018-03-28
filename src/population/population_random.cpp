@@ -96,7 +96,7 @@ void PopulationRandom::divide(int t)
         p.age = 0.0;
         p_new.age = 0.0;
         for(list<string>::iterator it_g = p.groups.begin(); it_g != p.groups.end(); it_g++)
-          p_new.groups.push_back(*it_g);
+          p_new.add_group(*it_g);
         if (m_rng->drnd() < m_type_change_prob_1)  // Attempt to change type, radius and group for first child
         {
           if (m_new_type == 0)
