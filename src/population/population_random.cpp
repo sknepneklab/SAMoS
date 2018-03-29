@@ -109,7 +109,7 @@ void PopulationRandom::divide(int t)
           else
             new_r = m_new_radius;
           p.set_radius(new_r);
-          m_system->change_group(p,m_old_group,m_new_group);
+          m_system->change_group(p.get_id(),m_old_group,m_new_group);
         }
         m_system->add_particle(p_new);
         Particle& pr = m_system->get_particle(p_new.get_id());
@@ -125,7 +125,7 @@ void PopulationRandom::divide(int t)
           else
             new_r = m_new_radius;
           pr.set_radius(new_r);
-          m_system->change_group(pr,m_old_group,m_new_group);
+          m_system->change_group(pr.get_id(),m_old_group,m_new_group);
         }
       }
     }
@@ -150,10 +150,10 @@ void PopulationRandom::remove(int t)
     vector<int> to_remove;
     double prob_death = m_death_rate*m_freq*m_system->get_integrator_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
     if (prob_death>1.0)
-      {
-	cout << "Error: death probability " << prob_death << " is too large for current time step and attempt rate!" << endl;
-	throw runtime_error("Too high death.");
-      }
+    {
+	    cout << "Error: death probability " << prob_death << " is too large for current time step and attempt rate!" << endl;
+	    throw runtime_error("Too high death.");
+    }
     for (int i = 0; i < N; i++)
     {
       int pi = particles[i];

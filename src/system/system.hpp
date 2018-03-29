@@ -216,7 +216,7 @@ public:
   void remove_particle(int);
   
   //! Move particle from one group to the other
-  void change_group(Particle&, const string&, const string&);
+  void change_group(int, const string&, const string&);
     
   //! Enable per particle energy tracking
   void enable_per_particle_eng() { m_compute_per_particle_eng = true; }

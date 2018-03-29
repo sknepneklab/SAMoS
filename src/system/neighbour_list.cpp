@@ -408,9 +408,9 @@ bool NeighbourList::build_triangulation()
       k = tissue_id[f1->vertex(eit->second)->info()];                
       //  l is the index of the index opposite to the edge (i,j) for face f2
       l = tissue_id[get_opposite(f2, f1->vertex(f1->cw(eit->second))->info(), f1->vertex(f1->ccw(eit->second))->info())];   
-      Particle& pi = m_system->get_particle(i);
-      Particle& pj = m_system->get_particle(j);
-      Particle& pk = m_system->get_particle(k);
+      Particle& pi = m_system->get_particle(i);   
+      Particle& pj = m_system->get_particle(j);  
+      Particle& pk = m_system->get_particle(k);  
       Particle& pl = m_system->get_particle(l);
       bool all_f1_boundary = pi.boundary && pj.boundary && pk.boundary;
       bool all_f2_boundary = pi.boundary && pj.boundary && pl.boundary;
@@ -446,9 +446,9 @@ bool NeighbourList::build_triangulation()
       else
       {
         int i1 = i, i2 = j, i3 = to_flip, i4;
-        Particle& p1 = m_system->get_particle(i1);
-        Particle& p2 = m_system->get_particle(i2);
-        Particle& p3 = m_system->get_particle(i3);
+        Particle& p1 = m_system->get_particle(i1);  // boundary particle
+        Particle& p2 = m_system->get_particle(i2);  // boundary particle
+        Particle& p3 = m_system->get_particle(i3);  // internal particle
 
         double x, y, z;                  // contains coordinates of mirrored particles 
         mirror(p3, p1, p2, x, y, z);     // compute position of mirrored particle 
@@ -460,8 +460,8 @@ bool NeighbourList::build_triangulation()
         p.nx = p3.nx;  p.ny = p3.ny;  p.nz = p3.nz;
         p.vx = 0.5*(p1.vx+p2.vx);  p.vy = 0.5*(p1.vy+p2.vy);  p.vz = 0.5*(p1.vz+p2.vz);
         p.coordination = 0;
-        // copy all the groups of p3
-        for(list<string>::iterator it_g = p3.groups.begin(); it_g != p3.groups.end(); it_g++)
+        // copy all the groups of p1 (we need to do this as internal particles might be in the different group than the boundary)
+        for(list<string>::iterator it_g = p1.groups.begin(); it_g != p1.groups.end(); it_g++)
           p.add_group(*it_g);
         // also make sure that the new particle belongs to the boundary group
         if (m_system->has_group("boundary"))

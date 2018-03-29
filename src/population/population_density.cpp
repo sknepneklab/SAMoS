@@ -101,7 +101,7 @@ void PopulationDensity::divide(int t)
           else
             new_type = m_new_type;
           p.set_type(new_type);
-          m_system->change_group(p,m_old_group,m_new_group);
+          m_system->change_group(p.get_id(),m_old_group,m_new_group);
         }
         // For the polydispersity function: Change radius of second child.
         if (m_new_radius == 0.0)
@@ -122,11 +122,7 @@ void PopulationDensity::divide(int t)
             new_type = m_new_type;
           p_new.set_type(new_type);
           m_system->add_particle(p_new);
-          m_system->change_group(p_new,m_old_group,m_new_group);
-          //cout << "---------------------------------------" << endl;
-          //cout << " p " << m_system->get_particle(p.get_id()) << endl;
-          //cout << " p_new " << m_system->get_particle(p_new.get_id()) << endl;
-          //cout << "+++++++++++++++++++++++++++++++++++++++" << endl;
+          m_system->change_group(p_new.get_id(),m_old_group,m_new_group);
         }
         else
           m_system->add_particle(p_new); 

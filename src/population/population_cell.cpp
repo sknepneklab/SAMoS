@@ -169,7 +169,7 @@ void PopulationCell::remove(int t)
       //double prob_death =m_freq*m_system->get_integrator_step()*exp((p.age-m_max_age)*m_death_rate); 
       // Trying a very simple, linearly increasing death chance
       //double prob_death = fact*p.age/m_max_age;
-      double prob_div = m_div_rate*m_freq*m_system->get_integrator_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
+      double prob_death = m_death_rate*m_freq*m_system->get_integrator_step(); // actual probability of dividing now: rate * (attempt_freq * dt)
       if (p.in_tissue && !p.boundary && m_rng->drnd() < prob_death)
           to_remove.push_back(p.get_id());
     }

@@ -646,8 +646,10 @@ void System::remove_particle(int id)
  *  \param old_group Old group
  *  \param new_group New group 
 */
-void System::change_group(Particle& p, const string& old_group, const string& new_group)
+void System::change_group(int id, const string& old_group, const string& new_group)
 {
+  Particle& p = m_particles[id];
+  
   if (old_group == "all" && new_group != "all")
   {
     m_msg->msg(Messenger::ERROR,"Particle "+lexical_cast<string>(p.get_id())+": Cannot change from \"all\" to other group ("+new_group+").");
@@ -669,9 +671,6 @@ void System::change_group(Particle& p, const string& old_group, const string& ne
   m_group[old_group]->remove_particle(p.get_id());
   if (new_group != "all") // It's already in "all"
     m_group[new_group]->add_particle(p.get_id());
-  cout << "Particle after group change: " << endl;
-  cout << p;
-  cout << "++++++++++++++++++++++++++++++++++++++" << endl;
 }
 
 /*! Kill off any non-zero momentum and angular momentum that a group of particles might have pick up
