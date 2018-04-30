@@ -23,7 +23,7 @@
 /*!
  * \file integrator_Sepulveda.hpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 29-Dec-2015
+ * \date 30-Apr-2018
  * \brief Declaration of IntegratorSepulveda class
  */ 
 
