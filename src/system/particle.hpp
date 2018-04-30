@@ -232,7 +232,7 @@ public:
   {
     fx = m_force_type[name].fx;
     fy = m_force_type[name].fy;
-    fz = m_force_type[name].fy;
+    fz = m_force_type[name].fz;
   }
 
   //! Add group name to the list of particle's groups
