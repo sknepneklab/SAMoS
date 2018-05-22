@@ -153,6 +153,8 @@ private:
   void dump_faces();
   //! Dump mesh (for tissues)
   void dump_mesh();
+  //! Dump boundary (for restarting tissue simulations)
+  void dump_boundary();
 #ifdef HAS_VTK
   //! Dump VTK files
   void dump_vtp(int);

@@ -75,6 +75,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
   m_type_ext["face"] = "fc";
   m_type_ext["mesh"] = "off";
   m_type_ext["vtp"] = "vtp";
+  m_type_ext["boundary"] = "boundary";
   
   string fname = filename;
   
@@ -394,6 +395,8 @@ void Dump::dump(int step)
     this->dump_faces();
   else if (m_type == "mesh")
     this->dump_mesh();
+  else if (m_type == "boundary")
+    this->dump_boundary();
 #ifdef HAS_VTK  
   else if (m_type == "vtp")
     this->dump_vtp(step);
@@ -930,6 +933,18 @@ void Dump::dump_mesh()
         m_out << vertices[i].faces[k] << " ";
       m_out << endl;
     }
+}
+
+//! Dump vertices that are on the boundary 
+//! This is primarily used to for restarting tissue simulations. 
+void Dump::dump_boundary()
+{
+  Mesh& mesh = m_system->get_mesh();
+  int i = 0;
+  if (m_print_header)
+    m_out << "# id  v1  v2" << endl;
+  for (vector<pair<int,int> >::iterator it = mesh.get_boundary().begin(); it != mesh.get_boundary().end(); it++)
+    m_out << i++ << "  " << (*it).first << "  " << (*it).second << endl;
 }
 
 #ifdef HAS_VTK
