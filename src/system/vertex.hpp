@@ -90,6 +90,7 @@ struct Vertex
    boundary = false;
    ordered = false;
    attached = true;
+   if (!p.in_tissue) attached = false;
   }
   
   ~Vertex()

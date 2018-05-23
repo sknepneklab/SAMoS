@@ -1048,7 +1048,6 @@ PlotArea& Mesh::plot_area(bool boundary)
     Vertex& V = m_vertices[v];
     if (V.attached)
     {
-      m_plot_area.type.push_back(V.type);
       for (int f = 0; f < V.n_faces; f++)
       {
         Face& face = m_faces[V.dual[f]];

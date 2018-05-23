@@ -1195,7 +1195,6 @@ void Dump::dump_vtp(int step)
       points->InsertNextPoint(pa.points[f].x, pa.points[f].y, pa.points[f].z);
       circum_radius->InsertNextValue(pa.circum_radius[f]);
       ids->InsertNextValue(f);
-      types->InsertNextValue(pa.type[f]);
     }
     polydata->SetPoints(points);
     polydata->GetPointData()->AddArray(ids);
@@ -1210,6 +1209,7 @@ void Dump::dump_vtp(int step)
       areas->InsertNextValue(pa.area[f]);
       perims->InsertNextValue(pa.perim[f]);
       p0->InsertNextValue(pa.perim[f]/sqrt(pa.area[f]));
+      types->InsertNextValue(pa.type[f]);
     }
     
     polydata->SetPolys(faces);

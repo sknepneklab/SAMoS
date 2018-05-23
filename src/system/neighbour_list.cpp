@@ -314,8 +314,8 @@ void NeighbourList::build_faces(bool flag)
   {
     Particle& pi = m_system->get_particle(i);
     mesh.add_vertex(pi);
-    for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
-      mesh.add_edge(i,m_contact_list[i][j]);
+      for (unsigned int j = 0; j < m_contact_list[i].size(); j++)
+        mesh.add_edge(i,m_contact_list[i][j]);
   }
 
   mesh.set_circumcenter(m_circumcenter);
