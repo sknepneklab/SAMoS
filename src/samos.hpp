@@ -96,6 +96,7 @@
 #include "pair_boundary_bending_potential.hpp"
 #include "pair_boundary_attraction_potential.hpp"
 #include "pair_motor_potential.hpp"
+#include "pair_yukawa_potential.hpp"
 #include "potential.hpp"
 #include "integrator.hpp"
 #include "integrator_brownian.hpp"

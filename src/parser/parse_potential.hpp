@@ -78,6 +78,7 @@ public:
                   | qi::as_string[keyword["boundary_attraction"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ] /*! Handles boundary attraction potential */
                   | qi::as_string[keyword["motor"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]    /*! Handles motor pair potential */
                   | qi::as_string[keyword["active_nematic"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]   /*! Handles active nematic potential */
+                  | qi::as_string[keyword["yukawa"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]   /*! Handles Yukawa potential */
                   /* to add new potential: | qi::as_string[keyword["newpotential"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&PotentialData::params, phx::ref(potential_data)) = qi::_1 ]
