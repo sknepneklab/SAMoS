@@ -121,6 +121,7 @@ parser.add_argument("-v", "--vavr", type=float, default=1.0, help="average veloc
 parser.add_argument("-l", "--length", type=float, default=2.0, help="rod length (straight part); set to zero to get sperical particles")
 parser.add_argument("-a", "--rod_rad", type=float, default=0.5, help="rod radius")
 parser.add_argument("--include_len", action="store_true", help="include rod lenght")
+parser.add_argument("--make_rods", action="store_true", help="make rods (otherwise make spherical particles)")
 args = parser.parse_args()
 
 print
@@ -133,7 +134,10 @@ print "\t(c) 2013"
 print "\t----------------------------------------------"
 print 
 V = 4.0*args.radius**2*pi
-part_area = args.rod_rad*(2*args.length + pi*args.rod_rad)
+if args.make_rods:
+  part_area = args.rod_rad*(2*args.length + pi*args.rod_rad)
+else:
+  part_area = pi*args.rod_rad**2
 N = int(round(args.phi*V/part_area))
 print "\tRadius : ", args.radius
 print "\tPacking fraction : ", args.phi
