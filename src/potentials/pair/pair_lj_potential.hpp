@@ -71,6 +71,7 @@ public:
     m_known_params.push_back("use_particle_radii");
     m_known_params.push_back("phase_in");
     m_known_params.push_back("shifted");
+    m_known_params.push_back("WCA");
     string param_test = this->params_ok(param);
     if (param_test != "")
     {
@@ -118,6 +119,14 @@ public:
       m_msg->msg(Messenger::WARNING,"Lennard-Jones pair potential is set to use particle radii to control its range. Parameter sigma will be ignored.");
       m_use_particle_radii = true;
       m_msg->write_config("potential.pair.lj.use_particle_radii","true");
+    }
+    if (param.find("WCA") != param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Rod Lennard-Jones pair potential. Using WCA repulsive potential.");
+      m_rcut = 1.122462048309373*m_sigma;
+      m_shifted = true;
+      m_msg->write_config("potential.pair.lj.rcut",lexical_cast<string>(m_rcut));
+      m_msg->write_config("potential.pair.lj.WCA","true");
     }
     if (param.find("phase_in") != param.end())
     {
@@ -208,6 +217,14 @@ public:
     {
       m_msg->msg(Messenger::INFO,"Lennard Jones pair potential. Using default rcut ("+lexical_cast<string>(m_rcut)+") for particle pair of types "+lexical_cast<string>(type_1)+" and "+lexical_cast<string>(type_2)+").");
       param["rcut"] = m_rcut;
+    }
+    if (pair_param.find("WCA") != pair_param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"Rod Lennard-Jones pair potential. Using WCA repulsive potential.");
+      param["rcut"] = 1.122462048309373*param["sigma"];
+      m_shifted = true;
+      m_msg->write_config("potential.pair.lj.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".WCA","true");
+      m_msg->write_config("potential.pair.lj.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".shifted","true");
     }
     m_msg->write_config("potential.pair.lj.type_"+pair_param["type_1"]+"_and_type_"+pair_param["type_2"]+".rcut",lexical_cast<string>(param["rcut"]));
        
