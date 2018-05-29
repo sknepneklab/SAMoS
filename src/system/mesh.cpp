@@ -290,7 +290,7 @@ void Mesh::order_star(int v)
       for (unsigned int e = 0; e < V.edges.size(); e++)
       {
         Edge& Ej = m_edges[V.edges[e]];
-        if (find(edges.begin(), edges.end(), Ej.id) == edges.end())  // Check if the edge has not already been included (note that most likly we don't even need this test, since angles are ordered)
+        if (find(edges.begin(), edges.end(), Ej.id) == edges.end())  // Check if the edge has not already been included (note that most likely we don't even need this test, since angles are ordered)
         {
           Vertex& Vj = m_vertices[Ej.to];
           Vector3d rj = Vj.r - V.r;
@@ -1013,8 +1013,8 @@ double Mesh::circum_radius(int f)
   return face.radius;
 }
 
-/*! This member fucntion is used to produce data 
- *  for plottin polygons into a VTK file.
+/*! This member function is used to produce data 
+ *  for plotting polygons into a VTK file.
  *  \param boundary if true, include boundary vertices as well
 */
 PlotArea& Mesh::plot_area(bool boundary)
@@ -1024,10 +1024,13 @@ PlotArea& Mesh::plot_area(bool boundary)
   m_plot_area.area.clear();
   m_plot_area.perim.clear();
   m_plot_area.circum_radius.clear();
+  m_plot_area.boundary_faces.clear();
   m_plot_area.type.clear();
   map<int,int> bnd_vert;
   map<int,int> face_idx;
   vector<int> added_faces;
+  map<int,vector<int> > bnd_neigh; 
+  vector<int> bnd_faces;
   int idx = 0;
   for (int v = 0; v < m_size; v++)
   {
@@ -1052,6 +1055,7 @@ PlotArea& Mesh::plot_area(bool boundary)
       {
         Face& face = m_faces[V.dual[f]];
         if (!face.is_hole)
+        {
           if (find(added_faces.begin(),added_faces.end(),face.id) == added_faces.end())
           {
             this->compute_circumcentre(face.id);
@@ -1060,9 +1064,18 @@ PlotArea& Mesh::plot_area(bool boundary)
             added_faces.push_back(face.id);
             face_idx[face.id] = idx++;
           }
-      }
+          if (V.boundary)
+            if (find(bnd_faces.begin(),bnd_faces.end(),face_idx[face.id]) == bnd_faces.end()) bnd_faces.push_back(face_idx[face.id]);
+        }
+     }
     }
   }
+
+  Vector3d rc(0.0,0.0,0.0);
+  for (int i = 0; i < bnd_faces.size(); i++)
+    rc += m_plot_area.points[bnd_faces[i]];
+
+  rc.scale(1.0/bnd_faces.size());
   
   vector<int> sides;
   for (int v = 0; v < m_size; v++)
@@ -1080,6 +1093,11 @@ PlotArea& Mesh::plot_area(bool boundary)
         m_plot_area.perim.push_back(this->dual_perimeter(V.id));
         m_plot_area.type.push_back(V.type);
       }
+      if (V.boundary)
+      {
+        for (int f = 0; f < V.n_faces-2; f++)
+          bnd_neigh[face_idx[V.dual[f]]].push_back(face_idx[V.dual[f+1]]); 
+      }
       if (V.boundary && boundary)
       {
         sides.clear();
@@ -1093,6 +1111,30 @@ PlotArea& Mesh::plot_area(bool boundary)
       }
     }
   }
+
+  // Order boundary face centres in the clockwise fashion
+  map<int,vector<int> >::iterator it = bnd_neigh.begin();
+  int start = (*it).first;
+  Vector3d r1 = m_plot_area.points[start];
+  int next = ((*it).second)[0];
+  Vector3d r2 = m_plot_area.points[next];
+  Vector3d r01 = r1 - rc;
+  Vector3d r02 = r2 - rc;
+  Vector3d rcross = cross(r01,r02);
+  if (rcross.z > 0)
+    next = ((*it).second)[1];
+
+  m_plot_area.boundary_faces.push_back(start);
+  m_plot_area.boundary_faces.push_back(next);
+
+  while (m_plot_area.boundary_faces.size() < bnd_faces.size())
+  {
+    next = m_plot_area.boundary_faces[m_plot_area.boundary_faces.size()-1];
+    int nnext = bnd_neigh[next][0];
+    if (find(m_plot_area.boundary_faces.begin(),m_plot_area.boundary_faces.end(),nnext) == m_plot_area.boundary_faces.end()) m_plot_area.boundary_faces.push_back(nnext);
+    else m_plot_area.boundary_faces.push_back(bnd_neigh[next][1]);
+  }
+
   
   return m_plot_area;
 }

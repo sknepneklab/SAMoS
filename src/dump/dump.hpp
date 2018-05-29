@@ -155,6 +155,8 @@ private:
   void dump_mesh();
   //! Dump boundary (for restarting tissue simulations)
   void dump_boundary();
+  //! Dump AJM (dump dual lattice that can be used as input for tissue simulation with Active Junction Model)
+  void dump_ajm(int);
 #ifdef HAS_VTK
   //! Dump VTK files
   void dump_vtp(int);

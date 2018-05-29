@@ -75,6 +75,7 @@ typedef struct
   vector<double> perim;
   vector<double> circum_radius;
   vector<int> type;
+  vector<int> boundary_faces;
 } PlotArea;
 
 /*! Mesh class handles basic manipuations with mesesh

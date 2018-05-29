@@ -76,6 +76,7 @@ Dump::Dump(SystemPtr sys, MessengerPtr msg, NeighbourListPtr nlist, const string
   m_type_ext["mesh"] = "off";
   m_type_ext["vtp"] = "vtp";
   m_type_ext["boundary"] = "boundary";
+  m_type_ext["ajm"] = "ajm";
   
   string fname = filename;
   
@@ -359,15 +360,15 @@ void Dump::dump(int step)
     if (m_compress)
     {
       file_name += ".gz";
-      if (m_ext != "vtp")
+      if (m_ext != "vtp" && m_ext != "ajm")
         m_file.open(file_name.c_str(),std::ios_base::out | std::ios_base::binary);
     }
     else
     {  
-      if (m_ext != "vtp")
+      if (m_ext != "vtp" && m_ext != "ajm")
         m_file.open(file_name.c_str()); 
     }
-    if (m_ext != "vtp")
+    if (m_ext != "vtp" && m_ext != "ajm")
       m_out.push(m_file);
   }
   
@@ -397,13 +398,15 @@ void Dump::dump(int step)
     this->dump_mesh();
   else if (m_type == "boundary")
     this->dump_boundary();
+  else if (m_type == "ajm")
+    this->dump_ajm(step);
 #ifdef HAS_VTK  
   else if (m_type == "vtp")
     this->dump_vtp(step);
 #endif
   
   if (m_multi_print)
-    if (m_ext != "vtp")
+    if (m_ext != "vtp" && m_ext != "ajm")
     {
       m_out.pop();
       m_file.close();
@@ -945,6 +948,39 @@ void Dump::dump_boundary()
     m_out << "# id  v1  v2" << endl;
   for (vector<pair<int,int> >::iterator it = mesh.get_boundary().begin(); it != mesh.get_boundary().end(); it++)
     m_out << i++ << "  " << (*it).first << "  " << (*it).second << endl;
+}
+
+//! Dump three files (vertices, faces and boundary)  
+//! This is to be used to for simulations with the Active Junction Model 
+void Dump::dump_ajm(int step)
+{
+  Mesh& mesh = m_system->get_mesh();
+  string vert_file_name = m_directory+"/"+m_file_name+"_vert_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
+  string cell_file_name = m_directory+"/"+m_file_name+"_cell_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
+  string bnd_file_name = m_directory+"/"+m_file_name+"_boundary_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
+  ofstream vert_file, cell_file, bnd_file;
+
+  vert_file.open(vert_file_name.c_str());
+  cell_file.open(cell_file_name.c_str());
+  bnd_file.open(bnd_file_name.c_str());
+
+  PlotArea& pa = mesh.plot_area(false);
+  for (unsigned int f = 0; f < pa.points.size(); f++)
+    vert_file << format("%5d   %.7f    %.7f") % f % pa.points[f].x % pa.points[f].y << endl;
+  
+  for (unsigned int f = 0; f < pa.sides.size(); f++)
+  {
+    for (unsigned int d = 0; d < pa.sides[f].size(); d++)
+      cell_file << format("%5d  ") % pa.sides[f][d];
+    cell_file << endl;
+  }
+
+  for (unsigned int f = 0; f < pa.boundary_faces.size(); f++)
+    bnd_file << format("%5d") % pa.boundary_faces[f] << endl;
+  
+  vert_file.close();
+  cell_file.close();
+  bnd_file.close();
 }
 
 #ifdef HAS_VTK
