@@ -976,7 +976,11 @@ void Dump::dump_ajm(int step)
   }
 
   for (unsigned int f = 0; f < pa.boundary_faces.size(); f++)
+  {
+    cell_file << format("%5d  ") % pa.boundary_faces[f];  
     bnd_file << format("%5d") % pa.boundary_faces[f] << endl;
+  }
+  cell_file << endl;
   
   vert_file.close();
   cell_file.close();

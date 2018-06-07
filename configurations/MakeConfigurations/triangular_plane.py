@@ -67,17 +67,17 @@ class TriangularPlane:
     self.particles = [Particle(i) for i in range(self.N)]
     # Triangular lattice now. Is nside x nside, first put it on a tilted polygon compatible with the lattice
     # Apply periodic boundary conditions if necessary
-    dx=self.L[0]/self.nside
-    dy=self.L[1]/self.nside*np.sin(np.pi/3)
+    dx = self.L[0]/self.nside
+    dy = self.L[1]/self.nside*np.sin(np.pi/3)
     for i in range(self.nside):
-	  for j in range(self.nside):
-		x=i*dx+0.5*j*dx
-		if x>self.L[0]:
-		  x=x-self.L[0]
-		y=j*dy
-		z=0
-		k=nside*j+i
-		self.particles[k].r=[x,y,z]
+      for j in range(self.nside):
+	x = i*dx + 0.5*j*dx
+	if x > self.L[0]:
+          x = x - self.L[0]
+	y = j*dy
+	z = 0
+	k = nside*j+i
+	self.particles[k].r = [x,y,z]
 
 
   def __generate_vel(self,vav=1.0):
