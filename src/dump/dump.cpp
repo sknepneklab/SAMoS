@@ -958,11 +958,13 @@ void Dump::dump_ajm(int step)
   string vert_file_name = m_directory+"/"+m_file_name+"_vert_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
   string cell_file_name = m_directory+"/"+m_file_name+"_cell_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
   string bnd_file_name = m_directory+"/"+m_file_name+"_boundary_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
-  ofstream vert_file, cell_file, bnd_file;
+  string tp_file_name = m_directory+"/"+m_file_name+"_types_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
+  ofstream vert_file, cell_file, bnd_file, tp_file;
 
   vert_file.open(vert_file_name.c_str());
   cell_file.open(cell_file_name.c_str());
   bnd_file.open(bnd_file_name.c_str());
+  tp_file.open(tp_file_name.c_str());
 
   PlotArea& pa = mesh.plot_area(false);
   for (unsigned int f = 0; f < pa.points.size(); f++)
@@ -974,6 +976,13 @@ void Dump::dump_ajm(int step)
       cell_file << format("%5d  ") % pa.sides[f][d];
     cell_file << endl;
   }
+  
+  for (unsigned int f =0; f < pa.type.size(); f++)
+  {
+      // because ajm types start at 0, because fuck you
+      tp_file << format("%2d") % (pa.type[f]-1) << endl;
+  }
+  tp_file << endl;
 
   for (unsigned int f = 0; f < pa.boundary_faces.size(); f++)
   {
@@ -985,6 +994,7 @@ void Dump::dump_ajm(int step)
   vert_file.close();
   cell_file.close();
   bnd_file.close();
+  tp_file.close();
 }
 
 #ifdef HAS_VTK
