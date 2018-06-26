@@ -968,7 +968,7 @@ void Dump::dump_ajm(int step)
 
   PlotArea& pa = mesh.plot_area(false);
   for (unsigned int f = 0; f < pa.points.size(); f++)
-    vert_file << format("%5d   %.7f    %.7f") % f % pa.points[f].x % pa.points[f].y << endl;
+    vert_file << format("%5d   %.7f   %.7f") % f % pa.points[f].x % pa.points[f].y << endl;
   
   for (unsigned int f = 0; f < pa.sides.size(); f++)
   {
@@ -978,10 +978,8 @@ void Dump::dump_ajm(int step)
   }
   
   for (unsigned int f =0; f < pa.type.size(); f++)
-  {
-      // because ajm types start at 0, because fuck you
-      tp_file << format("%2d") % (pa.type[f]-1) << endl;
-  }
+    tp_file << format("%2d") % (pa.type[f]-1) << endl;
+
   tp_file << endl;
 
   for (unsigned int f = 0; f < pa.boundary_faces.size(); f++)

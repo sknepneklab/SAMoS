@@ -123,8 +123,8 @@ void IntegratorNVE::integrate()
       if (v*m_dt > m_limit)
       {
         p.vx = p.vx/v*m_limit/m_dt;
-        p.vy = p.vx/v*m_limit/m_dt;
-        p.vz = p.vx/v*m_limit/m_dt;
+        p.vy = p.vy/v*m_limit/m_dt;
+        p.vz = p.vz/v*m_limit/m_dt;
       }
     }
     // Project everything back to the manifold
