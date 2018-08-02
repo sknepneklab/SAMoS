@@ -242,6 +242,13 @@ public:
     if (find(groups.begin(), groups.end(), name) == groups.end())
       groups.push_back(name);
   }
+  
+  //! Debugging output
+  void print_groups()
+  {
+    for (list<string>::const_iterator it = groups.begin(); it != groups.end(); it++)
+    std::cout << format(" %s ") % (*it);
+  }
 
   //! Get the entire force type data structure
   map<string,ForceType>& get_force_type() { return m_force_type; }

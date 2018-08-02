@@ -92,6 +92,8 @@ public:
     m_has_nlist = true;
   }
   
+  string get_group() { return m_group_name; }
+  
   //! Particle division (emulates cell division)
   virtual void divide(int) = 0;
   

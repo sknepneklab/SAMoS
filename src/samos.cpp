@@ -883,6 +883,7 @@ int main(int argc, char* argv[])
                 {
                   for (vector<PopulationPtr>::iterator it_pop = population.begin(); it_pop != population.end(); it_pop++)
                   {
+                    cout << "Handling population of group " << (*it_pop)->get_group() << endl;
                     (*it_pop)->divide(time_step);
                     if (sys->get_force_nlist_rebuild() && ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist())))
                     {

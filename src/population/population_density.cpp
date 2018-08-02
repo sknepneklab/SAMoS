@@ -47,6 +47,7 @@ void PopulationDensity::divide(int t)
 {
   if (m_freq > 0 && t % m_freq == 0 && m_div_rate > 0.0)  // Attempt division only at certain time steps
   { 
+    cout << "Handling divisions for group " << m_group_name << endl;
     if (!m_system->group_ok(m_group_name))
     {
       cout << "Before divide P: Group info mismatch for group : " << m_group_name << endl;
@@ -70,6 +71,7 @@ void PopulationDensity::divide(int t)
       Particle& p = m_system->get_particle(pi); 
       if (m_rng->drnd() < prob_div*(1.0-p.coordination/m_rho_max))
       {
+        cout << " dividing particle of type " << p.get_type() << endl;
         Particle p_new(m_system->size(), p.get_type(), p.get_radius());
         p_new.x = p.x + m_alpha*m_split_distance*p.get_radius()*p.nx;
         p_new.y = p.y + m_alpha*m_split_distance*p.get_radius()*p.ny;
@@ -125,7 +127,17 @@ void PopulationDensity::divide(int t)
           m_system->change_group(p_new.get_id(),m_old_group,m_new_group);
         }
         else
-          m_system->add_particle(p_new); 
+          m_system->add_particle(p_new);
+        cout << "old particle: " << p << endl;
+        cout << "new particle: " << p << endl;
+        cout << "groups of new particle: " << endl;
+        for (list<string>::const_iterator it = p_new.groups.begin(); it != p_new.groups.end(); it++)
+            cout << format(" %s ") % (*it);
+        cout << endl << "groups of old particle: " << endl;
+        for (list<string>::const_iterator it = p.groups.begin(); it != p.groups.end(); it++)
+            cout << format(" %s ") % (*it);
+        //p.print_groups();
+        //p_new.print_groups();
       }
     }
     if (!m_system->group_ok(m_group_name))
@@ -149,6 +161,7 @@ void PopulationDensity::remove(int t)
 {
   if (m_freq > 0 && t % m_freq == 0 && m_death_rate > 0.0)  // Attempt removal only at certain time steps
   { 
+    cout << "Handling deaths for group " << m_group_name << endl;
     if (!m_system->group_ok(m_group_name))
     {
       cerr << "Before Remove P: Group info mismatch for group : " << m_group_name << endl;
@@ -167,8 +180,10 @@ void PopulationDensity::remove(int t)
     {
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi);
-      if (m_rng->drnd() < prob_death)
+      if (m_rng->drnd() < prob_death) {
+        cout << "particle of type " << p.get_type() << " died " << endl;
         to_remove.push_back(p.get_id());
+      }
     }
     int offset = 0;
     for (vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); it++)
