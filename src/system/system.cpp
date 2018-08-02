@@ -461,7 +461,8 @@ System::System(const string& input_filename, MessengerPtr msg, BoxPtr box) : m_m
 */
 void System::make_group(const string name, pairs_type& param)
 {
-  m_group[name] = make_shared<Group>(Group(m_num_groups++, name));
+  if (m_group.find(name) == m_group.end())
+    m_group[name] = make_shared<Group>(Group(m_num_groups++, name));
   map<string, vector<bool> > to_add;
   if (param.find("type") != param.end())
   {
