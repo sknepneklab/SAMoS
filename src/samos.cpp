@@ -43,48 +43,53 @@
 #include "factory_types.hpp"
 #include "register.hpp"
 
+using std::map;
+using std::string;
+
 
 int main(int argc, char* argv[])
 {
   // Parser data
-  CommandData         command_data;
-  BoxData             box_data;
-  InputData           input_data;
-  ExternalData        external_data;
-  LogDumpData         log_dump_data;
-  PotentialData       potential_data;
-  IntegratorData      integrator_data;
-  ConstraintlData     constraint_data;
-  RunData             run_data;
-  AlignData           pair_align_data;
-  ExternalAlignData   external_align_data;
-  GroupData           group_data;
-  DisableData         disable_data;
-  PopulationData      population_data;
-  BondData            bond_data;
-  AngleData           angle_data;
-  TimeStepData        timestep_data;
-  pairs_type          parameter_data;   // All parameters for different commands
+  CommandData             command_data;
+  BoxData                 box_data;
+  InputData               input_data;
+  ExternalData            external_data;
+  LogDumpData             log_dump_data;
+  PotentialData           potential_data;
+  IntegratorData          integrator_data;
+  ConstraintlData         constraint_data;
+  RunData                 run_data;
+  AlignData               pair_align_data;
+  ExternalAlignData       external_align_data;
+  GroupData               group_data;
+  DisableData             disable_data;
+  PopulationData          population_data;
+  DisablePopulationData   population_disable_data;
+  BondData                bond_data;
+  AngleData               angle_data;
+  TimeStepData            timestep_data;
+  pairs_type              parameter_data;   // All parameters for different commands
   
   // Parser grammars
-  command_grammar         command_parser(command_data);
-  box_grammar             box_parser(box_data);
-  input_grammar           input_parser(input_data);
-  external_grammar        external_parser(external_data); 
-  log_dump_grammar        log_dump_parser(log_dump_data);
-  potential_grammar       potential_parser(potential_data);
-  integrator_grammar      integrator_parser(integrator_data);  
-  constraint_grammar      constraint_parser(constraint_data);
-  run_grammar             run_parser(run_data);
-  align_grammar           align_parser(pair_align_data);
-  external_align_grammar  external_align_parser(external_align_data);
-  group_grammar           group_parser(group_data);
-  disable_grammar         disable_parser(disable_data);
-  population_grammar      population_parser(population_data);
-  bond_grammar            bond_parser(bond_data);
-  angle_grammar           angle_parser(angle_data);
-  timestep_grammar        timestep_parser(timestep_data);
-  key_value_sequence      param_parser;
+  command_grammar                 command_parser(command_data);
+  box_grammar                     box_parser(box_data);
+  input_grammar                   input_parser(input_data);
+  external_grammar                external_parser(external_data); 
+  log_dump_grammar                log_dump_parser(log_dump_data);
+  potential_grammar               potential_parser(potential_data);
+  integrator_grammar              integrator_parser(integrator_data);  
+  constraint_grammar              constraint_parser(constraint_data);
+  run_grammar                     run_parser(run_data);
+  align_grammar                   align_parser(pair_align_data);
+  external_align_grammar          external_align_parser(external_align_data);
+  group_grammar                   group_parser(group_data);
+  disable_grammar                 disable_parser(disable_data);
+  population_grammar              population_parser(population_data);
+  disable_population_grammar      disable_population_parser(population_disable_data);
+  bond_grammar                    bond_parser(bond_data);
+  angle_grammar                   angle_parser(angle_data);
+  timestep_grammar                timestep_parser(timestep_data);
+  key_value_sequence              param_parser;
   
   // Class factories 
   ConstraintMap constraints;
@@ -107,12 +112,12 @@ int main(int argc, char* argv[])
   PotentialPtr pot;                                // Handles all potentials
   ConstrainerPtr constraint;                       // Handles constrints to the manifold
   NeighbourListPtr nlist;                          // Handles global neighbour list
-  std::map<std::string,IntegratorPtr> integrator;  // Handles the integrator
+  map<string,IntegratorPtr> integrator;            // Handles the integrator
   AlignerPtr    aligner;                           // Handles all aligners
   ExternalAlignPtr external_aligner;               // Handles all external aligners
   vector<DumpPtr> dump;                            // Handles all different dumps
   vector<LoggerPtr> log;                           // Handles all different logs
-  vector<PopulationPtr>  population;               // Handles all population methods
+  map<string,PopulationPtr>  population;           // Handles all population methods
   
   bool periodic = false;        // If true, use periodic boundary conditions
   bool has_potential = false;   // If false, potential handling object (Potential class) has not be initialized yet
@@ -137,7 +142,7 @@ int main(int argc, char* argv[])
   defined["angle"] = false;            // If false, no angles have been defined in the system
   defined["read_bonds"] = false;       // If false, no bond potentials have been defined
   defined["read_angles"] = false;      // If false, no angle potentials have been defined
-  
+  defined["population"] = false;       // If false, no populations have been defined
     
   register_constraints(constraints);                     // Register all constraints
   register_pair_potentials(pair_potentials);             // Register all pair potentials 
@@ -646,14 +651,14 @@ int main(int argc, char* argv[])
             {
               if (qi::phrase_parse(integrator_data.params.begin(), integrator_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                if (integrator.find(integrator_data.type) == integrator.end())
+                std::string group_name;
+                if (parameter_data.find("group") == parameter_data.end())
+                  group_name = "all";
+                else
+                  group_name = parameter_data["group"];
+                if (integrator.find(integrator_data.type+"_"+group_name) == integrator.end())
                 {
-                  std::string group_name;
                   std::string temperature_control;
-                  if (parameter_data.find("group") == parameter_data.end())
-                    group_name = "all";
-                  else
-                    group_name = parameter_data["group"];
                   if (parameter_data.find("temperature_control") == parameter_data.end())
                     temperature_control = "constant";
                   else
@@ -671,11 +676,11 @@ int main(int argc, char* argv[])
                                                                                                     parameter_data
                                                                                                   )
                                                                                                  );
-                  msg->msg(Messenger::INFO,"Adding integrator of type "+integrator_data.type+".");
+                  msg->msg(Messenger::INFO,"Adding integrator of type "+integrator_data.type+" (for group "+group_name+").");
                 }
                 else
                 {
-                  msg->msg(Messenger::ERROR,"Integrator of type "+integrator_data.type+" already exists. You need to disable the old one first.");
+                  msg->msg(Messenger::ERROR,"Integrator of type "+integrator_data.type+" (for group "+group_name+") already exists. You need to disable the old one first.");
                   throw std::runtime_error("Integrator already exists.");
                 }
               }
@@ -881,23 +886,23 @@ int main(int argc, char* argv[])
                   (*it_integ).second->integrate();
                 if (has_population)
                 {
-                  for (vector<PopulationPtr>::iterator it_pop = population.begin(); it_pop != population.end(); it_pop++)
+                  for (map<string,PopulationPtr>::iterator it_pop = population.begin(); it_pop != population.end(); it_pop++)
                   {
-                    (*it_pop)->divide(time_step);
+                    (*it_pop).second->divide(time_step);
                     if (sys->get_force_nlist_rebuild() && ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist())))
                     {
                       nlist->build();
                       nlist_builds++;
                       sys->set_force_nlist_rebuild(false);
                     }
-                    (*it_pop)->remove(time_step);
+                    (*it_pop).second->remove(time_step);
                     if (sys->get_force_nlist_rebuild() && ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist())))
                     {
                       nlist->build();
                       nlist_builds++;
                       sys->set_force_nlist_rebuild(false);
                     }
-                    (*it_pop)->grow(time_step);
+                    (*it_pop).second->grow(time_step);
                     if (sys->get_force_nlist_rebuild() && ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist())))
                     {
                       if (sys->get_nlist_rescale() != 1.0)
@@ -908,7 +913,7 @@ int main(int argc, char* argv[])
                       sys->set_force_nlist_rebuild(false);
                       sys->set_nlist_rescale(1.0);
                     }
-                    (*it_pop)->elongate(time_step);
+                    (*it_pop).second->elongate(time_step);
                     if (sys->get_force_nlist_rebuild() && ((pot && pot->need_nlist()) || (aligner && aligner->need_nlist())))
                     {
                       if (sys->get_nlist_rescale() != 1.0)
@@ -1161,46 +1166,6 @@ int main(int argc, char* argv[])
               throw std::runtime_error("Error parsing disable line.");
             }
           }
-          else if (command_data.command == "disable")       // if command is disable, parse it and disable given integrator 
-          {
-            if (!defined["integrator"])
-            {
-              msg->msg(Messenger::ERROR,"Integrator has not been defined. Please define it using \"integrator\" command before trying to disable it.");
-              throw std::runtime_error("Integrator not defined.");
-            }
-            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), disable_parser, qi::space))
-            {
-              if (qi::phrase_parse(disable_data.params.begin(), disable_data.params.end(), param_parser, qi::space, parameter_data))
-              {
-                std::string group_name;
-                if (parameter_data.find("group") == parameter_data.end())
-                  group_name = "all";
-                else
-                  group_name = parameter_data["group"];
-                std::string to_disable = disable_data.type+"_"+group_name;
-                if (integrator.find(to_disable) == integrator.end())
-                {
-                  msg->msg(Messenger::ERROR,"Integrator "+to_disable+" has not been defined. Cannot disable it.");
-                  throw std::runtime_error("Trying to disable non-existent integrator.");
-                }
-                else
-                {
-                  msg->msg(Messenger::INFO,"Disabling integrator "+to_disable+".");
-                  integrator.erase(to_disable);
-                }
-              }
-              else
-              {
-                msg->msg(Messenger::ERROR,"Could not parse parameters for integrator disable "+disable_data.type+" at line "+lexical_cast<string>(current_line)+".");
-                throw std::runtime_error("Error parsing disable parameters.");
-              }
-            }
-            else
-            {
-              msg->msg(Messenger::ERROR,"Error parsing disable command as line "+lexical_cast<string>(current_line)+".");
-              throw std::runtime_error("Error parsing disable line.");
-            }
-          }
           else if (command_data.command == "population")       // if command is population, parse it and add create appropriate population object
           {
             if (!defined["input"])  // we need to have system defined before we can add any population 
@@ -1215,11 +1180,24 @@ int main(int argc, char* argv[])
             {
               if (qi::phrase_parse(population_data.params.begin(), population_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                population.push_back(boost::shared_ptr<Population>(populations[population_data.type](sys,msg,parameter_data)));  // dirty workaround shared_ptr and inherited classes
-                if (defined["nlist"])
-                  population[population.size()-1]->set_nlist(nlist);
-                msg->msg(Messenger::INFO,"Adding population of type "+population_data.type+".");
-                has_population = true;
+                std::string group_name;
+                if (parameter_data.find("group") == parameter_data.end())
+                  group_name = "all";
+                else
+                  group_name = parameter_data["group"];
+                if (population.find(population_data.type+"_"+group_name) == population.end())
+                {
+                  population[population_data.type+"_"+group_name] = boost::shared_ptr<Population>(populations[population_data.type](sys,msg,parameter_data));  // dirty workaround shared_ptr and inherited classes
+                  if (defined["nlist"])
+                    population[population_data.type+"_"+group_name]->set_nlist(nlist);
+                  msg->msg(Messenger::INFO,"Adding population of type "+population_data.type+" (for group "+group_name+").");
+                  has_population = true;
+                }
+                else
+                {
+                  msg->msg(Messenger::ERROR,"Population control "+population_data.type+" (for type "+group_name+") already exists. Please disable it first.");
+                  throw std::runtime_error("Population already exists.");
+                }
               }
               else
               {
@@ -1231,6 +1209,46 @@ int main(int argc, char* argv[])
             {
               msg->msg(Messenger::ERROR,"Could not parse population command at line "+lexical_cast<string>(current_line));
               throw std::runtime_error("Error parsing population line.");
+            }
+          }
+          else if (command_data.command == "disable_population")       // if command is disable_population, parse it and disable given population 
+          {
+            if (!defined["population"])
+            {
+              msg->msg(Messenger::ERROR,"Population has not been defined. Please define it using \"population\" command before trying to disable it.");
+              throw std::runtime_error("Population not defined.");
+            }
+            if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), disable_population_parser, qi::space))
+            {
+              if (qi::phrase_parse(population_disable_data.params.begin(), population_disable_data.params.end(), param_parser, qi::space, parameter_data))
+              {
+                std::string group_name;
+                if (parameter_data.find("group") == parameter_data.end())
+                  group_name = "all";
+                else
+                  group_name = parameter_data["group"];
+                std::string to_disable = population_disable_data.type+"_"+group_name;
+                if (population.find(to_disable) == population.end())
+                {
+                  msg->msg(Messenger::ERROR,"Population "+to_disable+" has not been defined. Cannot disable it.");
+                  throw std::runtime_error("Trying to disable non-existent population control.");
+                }
+                else
+                {
+                  msg->msg(Messenger::INFO,"Disabling population "+to_disable+".");
+                  population.erase(to_disable);
+                }
+              }
+              else
+              {
+                msg->msg(Messenger::ERROR,"Could not parse parameters for population disable "+disable_data.type+" at line "+lexical_cast<string>(current_line)+".");
+                throw std::runtime_error("Error parsing disable population parameters.");
+              }
+            }
+            else
+            {
+              msg->msg(Messenger::ERROR,"Error parsing disable_population command as line "+lexical_cast<string>(current_line)+".");
+              throw std::runtime_error("Error parsing disable_population line.");
             }
           }
           else if (command_data.command == "zero_momentum")       // if command is used to zero total momentum of a group of particles

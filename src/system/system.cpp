@@ -907,7 +907,7 @@ void System::read_angles(const string& angle_file)
   m_n_angle_types = types.size();
 }
 
-/*! Read in conectivity information for boundary particles in tissue simulations
+/*! Read in connectivity information for boundary particles in tissue simulations
  *  Boundary neighbours file has the following structure
  *  # - comments
  *  id i j
