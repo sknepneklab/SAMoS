@@ -1094,6 +1094,9 @@ void Dump::dump_vtp(int step)
          else  dual_area->InsertNextValue(0.0);
         num_neigh->InsertNextValue(V.n_edges);
       }
+      else
+        num_neigh->InsertNextValue(pi.coordination);
+
     }
     
     polydata->SetPoints(points);
@@ -1107,7 +1110,7 @@ void Dump::dump_vtp(int step)
     polydata->GetPointData()->AddArray(force);
     polydata->GetPointData()->AddArray(dir);
     polydata->GetPointData()->AddArray(ndir);
-    //polydata->GetPointData()->AddArray(num_neigh); # A header for this with no data gets put into the .vtp file even when there is no mesh
+    polydata->GetPointData()->AddArray(num_neigh); // A header for this with no data gets put into the .vtp file even when there is no mesh
     if (mesh.size() > 0)
     {
       polydata->GetPointData()->AddArray(dual_area);

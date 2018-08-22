@@ -168,6 +168,7 @@ void NeighbourList::build_mesh()
 #endif
 }
 
+
 // Private methods below
 
 /* Do actual building. */
@@ -513,7 +514,6 @@ bool NeighbourList::build_triangulation()
 }
 #endif
 
-
 //! Remove all edges that have two or less contacts
 void NeighbourList::remove_dangling()
 {
@@ -560,6 +560,7 @@ void NeighbourList::remove_dangling()
    Mesh& mesh = m_system->get_mesh();
    if (mesh.size() == 0) return; 
    
+
    vector<int> to_remove;
    int offset = 0;  // We need to shift vertex ids to match them in the removal
    for (unsigned int i = 0; i < m_contact_list.size(); i++)

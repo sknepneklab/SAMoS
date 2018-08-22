@@ -562,7 +562,7 @@ int Mesh::opposite_vertex(int e)
 
 /*! This is one of the simplest mesh moves that changes it topology. 
  *  Namely we flip an edge (pair of half-edges) shred by two trangles. Needless to say,
- *  this move is only defiened for triangulations.
+ *  this move is only defined for triangulations.
  *  \param e id of the half-edge to flip (its pair is also flipped)
 */
 void Mesh::edge_flip(int e)
@@ -684,6 +684,9 @@ void Mesh::edge_flip(int e)
   this->compute_centre(F.id);
   this->compute_angles(Fp.id);
   this->compute_centre(Fp.id);
+
+  if ((V1.n_edges <= 2) || (V2.n_edges <= 2) || (V3.n_edges <= 2) || (V4.n_edges <= 2))
+    this->m_has_dangling = true;
     
 }
 
@@ -698,6 +701,7 @@ bool Mesh::equiangulate()
   if (!m_is_triangulation)
     return true;   // We cannot equiangulate a non-triangular mesh
   //cout << "Still in equiangulate" << endl;
+  this->m_has_dangling = false;
   bool flips = true;
   bool no_flips = true;
   while (flips)
