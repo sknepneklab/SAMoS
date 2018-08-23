@@ -316,7 +316,7 @@ void Mesh::order_star(int v)
     
     // Vertex star is not ordered
     V.ordered = true;
-    // Make sure that the star of boudaries is in proper order
+    // Make sure that the star of the boundary is in proper order
     if (V.boundary)
       this->order_boundary_star(V.id);
     this->order_dual(v);
@@ -1033,7 +1033,7 @@ PlotArea& Mesh::plot_area(bool boundary)
   map<int,int> bnd_vert;
   map<int,int> face_idx;
   vector<int> added_faces;
-  map<int,vector<int> > bnd_neigh; 
+  map<int,vector<int> > bnd_neigh;  // collect points that belong to the boundary of the dual mesh (for AJM simulations output)
   vector<int> bnd_faces;
   int idx = 0;
   for (int v = 0; v < m_size; v++)
@@ -1049,6 +1049,7 @@ PlotArea& Mesh::plot_area(bool boundary)
       }
   }
   
+  // Here we collect all faces (cells) that need to be ploted
   idx = m_plot_area.points.size();
   for (int v = 0; v < m_size; v++)
   {
@@ -1067,9 +1068,9 @@ PlotArea& Mesh::plot_area(bool boundary)
             m_plot_area.circum_radius.push_back(this->circum_radius(face.id));
             added_faces.push_back(face.id);
             face_idx[face.id] = idx++;
+            if (V.boundary)
+              if (find(bnd_faces.begin(), bnd_faces.end(), face_idx[face.id]) == bnd_faces.end()) bnd_faces.push_back(face_idx[face.id]);
           }
-          if (V.boundary)
-            if (find(bnd_faces.begin(),bnd_faces.end(),face_idx[face.id]) == bnd_faces.end()) bnd_faces.push_back(face_idx[face.id]);
         }
      }
     }
@@ -1080,7 +1081,7 @@ PlotArea& Mesh::plot_area(bool boundary)
     rc += m_plot_area.points[bnd_faces[i]];
 
   rc.scale(1.0/bnd_faces.size());
-  
+
   vector<int> sides;
   for (int v = 0; v < m_size; v++)
   {
@@ -1097,10 +1098,13 @@ PlotArea& Mesh::plot_area(bool boundary)
         m_plot_area.perim.push_back(this->dual_perimeter(V.id));
         m_plot_area.type.push_back(V.type);
       }
-      if (V.boundary)
+      else
       {
         for (int f = 0; f < V.n_faces-2; f++)
-          bnd_neigh[face_idx[V.dual[f]]].push_back(face_idx[V.dual[f+1]]); 
+        {
+          if (find(bnd_neigh[face_idx[V.dual[f]]].begin(), bnd_neigh[face_idx[V.dual[f]]].end(), face_idx[V.dual[f+1]]) == bnd_neigh[face_idx[V.dual[f]]].end()) bnd_neigh[face_idx[V.dual[f]]].push_back(face_idx[V.dual[f+1]]); 
+          if (find(bnd_neigh[face_idx[V.dual[f+1]]].begin(), bnd_neigh[face_idx[V.dual[f+1]]].end(), face_idx[V.dual[f]]) == bnd_neigh[face_idx[V.dual[f+1]]].end()) bnd_neigh[face_idx[V.dual[f+1]]].push_back(face_idx[V.dual[f]]); 
+        }
       }
       if (V.boundary && boundary)
       {
@@ -1128,6 +1132,7 @@ PlotArea& Mesh::plot_area(bool boundary)
   if (rcross.z > 0)
     next = ((*it).second)[1];
 
+  // This is used for output in AJM format
   m_plot_area.boundary_faces.push_back(start);
   m_plot_area.boundary_faces.push_back(next);
 
@@ -1135,10 +1140,9 @@ PlotArea& Mesh::plot_area(bool boundary)
   {
     next = m_plot_area.boundary_faces[m_plot_area.boundary_faces.size()-1];
     int nnext = bnd_neigh[next][0];
-    if (find(m_plot_area.boundary_faces.begin(),m_plot_area.boundary_faces.end(),nnext) == m_plot_area.boundary_faces.end()) m_plot_area.boundary_faces.push_back(nnext);
+    if (find(m_plot_area.boundary_faces.begin(), m_plot_area.boundary_faces.end(), nnext) == m_plot_area.boundary_faces.end()) m_plot_area.boundary_faces.push_back(nnext);
     else m_plot_area.boundary_faces.push_back(bnd_neigh[next][1]);
   }
-
   
   return m_plot_area;
 }
