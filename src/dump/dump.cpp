@@ -631,16 +631,16 @@ void Dump::dump_data()
     if (m_params.find("parent") != m_params.end())
       m_out << format(" %3d ") % p.get_parent();
     if (m_params.find("area") != m_params.end())
-      m_out << format("%10.6f ") % p.A0;
+      m_out << format("%16.6f ") % p.A0;
     if (m_params.find("cell_area") != m_params.end())
     {
         if (m_nlist->has_faces())
-          m_out << format("%10.6f ") % V.area;
+          m_out << format("%16.6f ") % V.area;
     }
     if (m_params.find("cell_perim") != m_params.end())
     {
         if (m_nlist->has_faces())
-        m_out << format("%10.6f ") % V.perim;
+        m_out << format("%16.6f ") % V.perim;
     }
     if (m_params.find("cont_num") != m_params.end())
     {

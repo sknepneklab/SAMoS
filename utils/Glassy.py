@@ -271,6 +271,71 @@ class SimRun:
 			#plt.show()
 		return xval, self.msd
             
+        def getVelAuto(self,verbose=True):
+		self.velauto=np.empty((self.Nsnap,))
+		v2av=np.empty((self.Nsnap,))
+		# in case of tracers, simply use the tracer rval isolated above
+		#if self.usetype=='all':
+                #stupid data duplication
+                if self.tracer:
+                    vnormed=np.zeros((self.Nsnap,self.Ntracer,3))
+                else:
+                    vnormed=np.zeros((self.Nsnap,self.N,3))
+		for u in range(self.Nsnap):
+                    if self.tracer:
+                        v2av[u]=np.sum(np.sum((self.vtracers[u,:,:])**2,axis=1),axis=0)/(self.Ntracer)
+                        vnormed[u,:,:]=self.vtracers[u,:,:]/np.sqrt(v2av[u])
+                    else:
+                        v2av[u]=np.sum(np.sum((self.vval[u,:,:])**2,axis=1),axis=0)/(self.N)
+                        vnormed[u,:,:]=self.vval[u,:,:]/np.sqrt(v2av[u]) 
+                for u in range(self.Nsnap):
+                        smax=self.Nsnap-u
+                        if self.Nvariable:
+                                if self.tracer:
+                                        #self.velauto[u]=np.sum(np.sum((self.vtracers[:smax,:,0]*self.vtracers[u:,:,0]+self.vtracers[:smax,:,1]*self.vtracers[u:,:,1]+self.vtracers[:smax,:,2]*self.vtracers[u:,:,2]),axis=1),axis=0)/(self.Ntracer*smax)
+                                        #v2av[u]=np.sum(np.sum((self.vtracers[u,:,:])**2,axis=1),axis=0)/(self.Ntracer)
+                                        self.velauto[u]=np.sum(np.sum((vnormed[:smax,:,0]*vnormed[u:,:,0]+vnormed[:smax,:,1]*vnormed[u:,:,1]+vnormed[:smax,:,2]*vnormed[u:,:,2]),axis=1),axis=0)/(self.Ntracer*smax)
+                                else:
+                                        print "Sorry: Velocity autocorrelation for dividing particles is ambiguous and currently not implemented!"
+                        else:
+                                #self.velauto[u]=np.sum(np.sum((self.vval[:smax,:,0]*self.vval[u:,:,0]+self.vval[:smax,:,1]*self.vval[u:,:,1]+self.vval[:smax,:,2]*self.vval[u:,:,2]),axis=1),axis=0)/(self.N*smax)
+                                self.velauto[u]=np.sum(np.sum((vnormed[:smax,:,0]*vnormed[u:,:,0]+vnormed[:smax,:,1]*vnormed[u:,:,1]+vnormed[:smax,:,2]*vnormed[u:,:,2]),axis=1),axis=0)/(self.N*smax)
+                                
+		xval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
+		if verbose:
+			fig=plt.figure()
+			plt.loglog(xval,self.velauto,'r.-',lw=2)
+			plt.xlabel('time')
+			plt.ylabel('Velocity autocorrelation')
+			
+			#plt.show()
+		return xval, self.velauto, v2av
+            
+        # relative velocity distribution (and average velocity)
+        # component wise as well, assumes x and y directions only
+        def getVelDist(self,bins,bins2):
+            vav=np.zeros((self.Nsnap,))
+            vdist=np.zeros((len(bins)-1,))
+            vdist2=np.zeros((len(bins2)-1,))
+            for u in range(self.Nsnap):
+                #print u
+                if self.Nvariable:
+                    vmagnitude=np.sqrt(self.vval[u,:self.Nval[u],0]**2+self.vval[u,:self.Nval[u],1]**2+self.vval[u,:self.Nval[u],2]**2)
+                    vcomponents = self.vval[u,:self.Nval[u],0:2].flatten()
+                else:
+                    vmagnitude=np.sqrt(self.vval[u,:,0]**2+self.vval[u,:,1]**2+self.vval[u,:,2]**2)
+                    vcomponents = self.vval[u,:self.N,0:2].flatten()
+                vav[u]=np.mean(vmagnitude)
+                vdist0,dummy=np.histogram(vmagnitude/vav[u],bins,density=True)
+                #vdist0,dummy=np.histogram(vmagnitude/vavuse,bins,density=True)
+                vdist+=vdist0
+                vdist20,dummy=np.histogram(vcomponents/vav[u],bins2,density=True)
+                #vdist20,dummy=np.histogram(vcomponents/vavuse,bins2,density=True)
+                vdist2+=vdist20
+            vdist/=self.Nsnap
+            vdist2/=self.Nsnap
+            return vav, vdist,vdist2
+        
         def getNonGaussian(self,verbose=True):
 		self.msd=np.empty((self.Nsnap,))
 		kurtosis=np.empty((self.Nsnap,))
@@ -611,7 +676,8 @@ class SimRun:
 		# Note to self: only low q values will be interesting in any case. 
 		# The stepping is in multiples of the inverse box size. Assuming a square box.
 		print "Fourier transforming velocities"
-		dq=2.0*np.pi/self.geom.Lx
+		#dq=2.0*np.pi/self.geom.Lx
+		dq=np.pi/self.geom.Lx
 		nq=int(qmax/dq)
 		print "Stepping Fourier transform with step " + str(dq)+ ", resulting in " + str(nq)+ " steps."
 		qx, qy, qrad, ptsx, ptsy=self.makeQrad(dq,qmax,nq)
@@ -620,22 +686,25 @@ class SimRun:
 		for kx in range(nq):
 			for ky in range(nq):
 				# And, alas, no FFT since we are most definitely off grid. And averaging is going to kill everything.
-				fourierval[kx,ky,0]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:,0]+qy[ky]*self.rval[whichframe,:,1]))*self.vval[whichframe,:,0])/len(self.rval[whichframe,:,0])
-				fourierval[kx,ky,1]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:,0]+qy[ky]*self.rval[whichframe,:,1]))*self.vval[whichframe,:,1])/len(self.rval[whichframe,:,0])
+				fourierval[kx,ky,0]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:,0]+qy[ky]*self.rval[whichframe,:,1]))*self.vval[whichframe,:,0])/self.N
+				fourierval[kx,ky,1]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:,0]+qy[ky]*self.rval[whichframe,:,1]))*self.vval[whichframe,:,1])/self.N 
 		# Sq = \vec{v_q}.\vec{v_-q}, assuming real and symmetric
 		# = \vec{v_q}.\vec{v_q*} = v
 		Sq=np.real(fourierval[:,:,0])**2+np.imag(fourierval[:,:,0])**2+np.real(fourierval[:,:,1])**2+np.imag(fourierval[:,:,1])**2
+		# Produce a radial averaging to see if anything interesting happens
+		nq2=int(2**0.5*nq)
+		Sqrad=np.zeros((nq2,))
+		for l in range(nq2):
+			Sqrad[l]=np.mean(Sq[ptsx[l],ptsy[l]])
+		
 		plotval_x=np.sqrt(np.real(fourierval[:,:,0])**2+np.imag(fourierval[:,:,0])**2)
 		plotval_y=np.sqrt(np.real(fourierval[:,:,1])**2+np.imag(fourierval[:,:,1])**2)
 		# Produce a radial averaging to see if anything interesting happens
-		nq2=int(2**0.5*nq)
 		valrad=np.zeros((nq2,2))
-		Sqrad=np.zeros((nq2,))
 		for l in range(nq2):
 			valrad[l,0]=np.mean(plotval_x[ptsx[l],ptsy[l]])
 			valrad[l,1]=np.mean(plotval_y[ptsx[l],ptsy[l]])
-			Sqrad[l]=np.mean(Sq[ptsx[l],ptsy[l]])
-		
+
 		print verbose
 		print "Before plotting!"
 		if verbose:
@@ -872,7 +941,6 @@ class SimRun:
 		plt.title('Square velocity projections, v0=' + str(self.param.v0)+ ' tau=' + str(tau))
 		
 		
-			
 			
 	
 

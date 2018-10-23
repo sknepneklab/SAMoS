@@ -281,7 +281,8 @@ class Hessian:
 				frac=np.sum(thproj**2)+np.sum(phiproj**2)
 				plt.title('Eigenvector #' + str(u) + ' ' + str(frac) +' on sphere') 
 		
-	# writing eigenvectors to Paraview
-	#def writeVectors(self,outdir):
+	
+                        
+	
 		
 		

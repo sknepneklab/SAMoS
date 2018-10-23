@@ -70,7 +70,7 @@ class Hessian2d:
 		self.inter=self.conf.inter
 		self.debug=debug
                 
-	def makeMatrix(self,addRestoring=True,ksurf=10.0):
+	def makeMatrix(self):
 		# This matrix is in principle 3N by 3N. We will have to be careful later on in throwing out extra off-surface modes
 		print "Hessian: Info - allocating the " + str(2*self.N) + " by " + str(2*self.N) + " 2d Hessian matrix."
 		self.Hessian=np.zeros((2*self.Nrigid,2*self.N))
@@ -187,7 +187,7 @@ class Hessian2d:
 		return qx, qy, qrad, ptsx, ptsy
 		
 	# project the modes into Fourier space to see how it's scaling
-	def ModesFourier(self,whichmode,qmax=0.3,verbose=True):
+	def ModesFourierLongTrans(self,whichmode,qmax=0.3,verbose=True):
 		eps=0.001
 		print "Fourier transforming mode" + str(whichmode)
 		dq=2.0*np.pi/self.geom.Lx
@@ -224,76 +224,88 @@ class Hessian2d:
 			plt.title('Mode ' + str(whichmode))
 		return qrad,fourierlong,fouriertrans
 		
-	#def plotModes(self,omegamax=3.0,npts=100):
-		## Straight here: The projection ratios on the sphere/plane
-		#projrat=np.zeros((3*self.N,))
-		## Get the tangent bundle and coordinates
-		## Note: this works for anything! In the plane, these are x, y, ex, ey
-		#theta,phi,etheta,ephi=self.geom.TangentBundle(self.rval)
-		#for u in range(3*self.N):
-			#thproj=etheta[:,0]*self.eigvec[0:3*self.N:3,u]+etheta[:,1]*self.eigvec[1:3*self.N:3,u]+etheta[:,2]*self.eigvec[2:3*self.N:3,u]
-			#phiproj=ephi[:,0]*self.eigvec[0:3*self.N:3,u]+ephi[:,1]*self.eigvec[1:3*self.N:3,u]+ephi[:,2]*self.eigvec[2:3*self.N:3,u]
-			#projrat[u]=np.sum(thproj**2)+np.sum(phiproj**2)	
-		## For this histogram and only this histogram: replace negative eigenvalues by zeros
-		#eigplot=self.eigval
-		#badlist=list(np.where(eigplot<0.0)[0])
-		#eigplot[badlist]=0.0
-		#omega=np.real(np.sqrt(eigplot))
-		#ombin=np.linspace(0,omegamax,npts)
-		#dom=ombin[1]-ombin[0]
-		#omhist, bin_edges = np.histogram(omega,bins=ombin)
-		#omlabel=(np.round(omega/dom)).astype(int)
-		#projhist=np.zeros((npts-1,))
-		#projcount=np.zeros((npts-1,))
-		#for l in range(npts-1):
-			#pts=np.nonzero(omlabel==l)[0]
-			#projhist[l]+=sum(projrat[pts])
-			#projcount[l]+=len(pts)
-		#isdata=[index for index, value in enumerate(projcount) if value>0]
-		#projhist[isdata]/=projcount[isdata]
-					
-		#plt.figure()
-		#plt.plot(ombin[1:]-dom/2,omhist,'o-k',label='DOS')
-		#plt.xlim(0,omegamax)
-		#plt.xlabel('omega')
-		#plt.ylabel('D(omega)')
-		#plt.title('Density of states')
+	# project the modes into Fourier space to see how it's scaling
+	def ModesFourier(self,whichmode,qmax=0.3,verbose=True):
+		eps=0.001
+		print "Fourier transforming mode" + str(whichmode)
+		dq=2.0*np.pi/self.geom.Lx
+		nq=int(qmax/dq)
+		print "Stepping Fourier transform with step " + str(dq)+ ", resulting in " + str(nq)+ " steps."
+		qx, qy, qrad, ptsx, ptsy=self.makeQrad(dq,qmax,nq)
+		fouriertrans=np.zeros((nq,nq,2),dtype=complex)
+		eigx=self.eigvec[0:2*self.N:2,whichmode]
+		eigy=self.eigvec[1:2*self.N:2,whichmode]
+		for kx in range(nq):
+			for ky in range(nq):
+				# we need to be doing longitudinal and transverse here
+				# Both have the same FT, but the local bits are q . e, and q X e
+				fouriertrans[kx,ky,0]=np.sum(np.exp(1j*(qx[kx]*self.rval[:,0]+qy[ky]*self.rval[:,1]))*eigx)/self.N #len(self.rval[:,0])
+				fouriertrans[kx,ky,1]=np.sum(np.exp(1j*(qx[kx]*self.rval[:,0]+qy[ky]*self.rval[:,1]))*eigy)/self.N # len(self.rval[:,0])
+                Sq=np.real(fouriertrans[:,:,0])**2+np.imag(fouriertrans[:,:,0])**2+np.real(fouriertrans[:,:,1])**2+np.imag(fouriertrans[:,:,1])**2
+		# Produce a radial averaging to see if anything interesting happens
+		nq2=int(2**0.5*nq)
+		Sqrad=np.zeros((nq2,))
+		for l in range(nq2):
+                        Sqrad[l]=np.mean(Sq[ptsx[l],ptsy[l]])
+		return qrad,Sqrad
+	
+	# get the elastic moduli cleanly once and for all. We won't diagonalise the dynamical matrix, but Fourier transform it instead
+	# We have the dynamical matrix in real space as self.Hessian
+	def getModuli(self,qmax=1.5,verbose=True):
+                print "Fourier transforming Hessian"
+		dq=2.0*np.pi/self.geom.Lx
+		nq=int(qmax/dq)
+		print "Stepping Fourier transform with step " + str(dq)+ ", resulting in " + str(nq)+ " steps."
+                qx, qy, qrad, ptsx, ptsy=self.makeQrad(dq,qmax,nq)
+		print "After qrad"
+		longitudinal0=np.zeros((nq,nq))
+		transverse0=np.zeros((nq,nq))
+		for k in range(nq):
+                        kx=qx[k]
+			for l in range(nq):
+                            ky=qy[l]
+                            if verbose:
+                                print kx
+                                print ky
+                            # In Fourier space, for a given k (vector), we define the 2x2 k hessian as
+                            khessian=np.zeros((2,2),dtype=complex)
+                            # Hessian is defined with an upfront minus sign for some reason ...
+                            #khessian[0,0]=-np.sum(np.exp(1j*kx*self.rval[:,0])*np.sum(self.Hessian[0:2*self.N:2,0:2*self.N:2]*np.exp(1j*kx*self.rval[:,0]),axis=1),axis=0)
+                            #khessian[0,1]=-np.sum(np.exp(1j*kx*self.rval[:,0])*np.sum(self.Hessian[0:2*self.N:2,1:2*self.N:2]*np.exp(1j*ky*self.rval[:,1]),axis=1),axis=0)
+                            #khessian[1,0]=-np.sum(np.exp(1j*ky*self.rval[:,1])*np.sum(self.Hessian[1:2*self.N:2,0:2*self.N:2]*np.exp(1j*kx*self.rval[:,0]),axis=1),axis=0)
+                            #khessian[1,1]=-np.sum(np.exp(1j*ky*self.rval[:,1])*np.sum(self.Hessian[1:2*self.N:2,1:2*self.N:2]*np.exp(1j*ky*self.rval[:,1]),axis=1),axis=0)
+                            khessian[0,0]=np.dot(np.exp(1j*kx*self.rval[:,0]),np.dot(self.Hessian[0:2*self.N:2,0:2*self.N:2],np.exp(-1j*kx*self.rval[:,0])))/self.N
+                            khessian[0,1]=np.dot(np.exp(1j*kx*self.rval[:,0]),np.dot(self.Hessian[0:2*self.N:2,1:2*self.N:2],np.exp(-1j*ky*self.rval[:,1])))/self.N
+                            khessian[1,0]=np.dot(np.exp(1j*ky*self.rval[:,1]),np.dot(self.Hessian[1:2*self.N:2,0:2*self.N:2],np.exp(-1j*kx*self.rval[:,0])))/self.N
+                            khessian[1,1]=np.dot(np.exp(1j*ky*self.rval[:,1]),np.dot(self.Hessian[1:2*self.N:2,1:2*self.N:2],np.exp(-1j*ky*self.rval[:,1])))/self.N
+                            # Its eigenvalues are then (B+\mu) k^2 and k^2, in principle
+                            eigk, eigveck = LA.eig(khessian)
+                            # We won't get proper, pure longitudinal and transverse eigenvectors
+                            # project them onto k, and take the one more along k as the longitudinal one
+                            proj1= kx*eigveck[0,0]+ky*eigveck[0,1]
+                            proj2= kx*eigveck[1,0]+ky*eigveck[1,1]
+                            if abs(proj2)>abs(proj1):
+                                longitudinal0[k,l]=eigk[1]
+                                transverse0[k,l]=eigk[0]
+                            else:
+                                longitudinal0[k,l]=eigk[0]
+                                transverse0[k,l]=eigk[1]
+                            if verbose:
+                                print "Found eigenvalues long " + str(longitudinal0[k,l]) + " and transverse " + str(transverse0[k,l])
+                nq2=int(2**0.5*nq)
+		longitudinal=np.zeros((nq2,))
+		transverse=np.zeros((nq2,))
+		for l in range(nq2):
+			longitudinal[l]=np.mean(longitudinal0[ptsx[l],ptsy[l]])
+			transverse[l]=np.mean(transverse0[ptsx[l],ptsy[l]])
 		
-		#plt.figure()
-		#plt.plot(ombin[isdata]+dom/2,projhist[isdata],'o-r',label='Surface projection')
-		#plt.ylim(0,1.1)
-		#plt.xlim(0,omegamax)
-		#plt.xlabel('omega')
-		#plt.ylabel('projection')
-		#plt.title('Surface projection value')
-		
-		## Plotting eigenvectors (#0, #N and #2N)
-		#if self.geom.manifold=='plane':
-			#usepts=[0,1,2,3,self.N,2*self.N-1,3*self.N-1]
-			#for u in usepts:
-				#plt.figure()
-				#plt.quiver(self.rval[:,0],self.rval[:,1],self.eigvec[0:3*self.N:3,u],self.eigvec[1:3*self.N:3,u])
-				## dimensional contributions
-				#wx=np.sum(self.eigvec[0:3*self.N:3,u]**2)
-				#wy=np.sum(self.eigvec[1:3*self.N:3,u]**2)
-				#wz=np.sum(self.eigvec[2:3*self.N:3,u]**2)
-				#plt.title('Eigenvector #' + str(u) + ' ' + str(wx+wy) + ' on plane')
-				
-		#if self.geom.manifold=='sphere':
-			## Get the tangent bundle and coordinates
-			#theta,phi,etheta,ephi=self.geom.TangentBundle(self.rval)
-			#usepts=[0,1,2,3,self.N,2*self.N-1,3*self.N-1]
-			#for u in usepts:
-				#fig = plt.figure()
-				#ax = fig.add_subplot(111, projection='3d')
-				#ax.quiver(self.rval[:,0], self.rval[:,1], self.rval[:,2], self.eigvec[0:3*self.N:3,u], self.eigvec[1:3*self.N:3,u], self.eigvec[2:3*self.N:3,u])
-				## See how much of the mode is along the sphere here
-				#thproj=etheta[:,0]*self.eigvec[0:3*self.N:3,u]+etheta[:,1]*self.eigvec[1:3*self.N:3,u]+etheta[:,2]*self.eigvec[2:3*self.N:3,u]
-				#phiproj=ephi[:,0]*self.eigvec[0:3*self.N:3,u]+ephi[:,1]*self.eigvec[1:3*self.N:3,u]+ephi[:,2]*self.eigvec[2:3*self.N:3,u]
-				#frac=np.sum(thproj**2)+np.sum(phiproj**2)
-				#plt.title('Eigenvector #' + str(u) + ' ' + str(frac) +' on sphere') 
-		
-	# writing eigenvectors to Paraview
-	#def writeVectors(self,outdir):
+		if verbose:
+			plt.figure()
+			plt.plot(qrad**2,longitudinal,'ok')
+			plt.plot(qrad**2,transverse,'or')
+                return qrad, longitudinal, transverse
+                
+                
+                
 		
 		
