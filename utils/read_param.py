@@ -523,13 +523,13 @@ class Param:
 				pass
 			print "Moving group: " + self.movegroup
 		elif self.integrator=='vicsek':
-			self.dt =self.int_params['dt'] 
+			self.dt =float(self.int_params['dt']) 
 			self.seed = self.int_params['seed']
 			self.mu = self.int_params['mu']
 			self.v0 = self.int_params['v0']
 			self.nu = self.int_params['eta']
 		else:
-			self.dt =self.int_params['dt'] 
+			self.dt =float(self.int_params['dt']) 
 			print "Warning: unknown integrator type " + self.integrator + ". Parameters are stored in the dictionary self.int_params."
 			return 1
 		return 0
