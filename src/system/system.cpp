@@ -907,7 +907,7 @@ void System::read_angles(const string& angle_file)
   m_n_angle_types = types.size();
 }
 
-/*! Read in conectivity information for boundary particles in tissue simulations
+/*! Read in connectivity information for boundary particles in tissue simulations
  *  Boundary neighbours file has the following structure
  *  # - comments
  *  id i j
@@ -1169,6 +1169,8 @@ void System::update_mesh()
       m_mesh.update_dual_mesh();
       m_mesh.update_face_properties();
       if (m_mesh.has_obtuse_boundary())
+        this->set_force_nlist_rebuild(true);
+      if (m_mesh.has_dangling_vertices())
         this->set_force_nlist_rebuild(true);
       //converged = converged && m_mesh.equiangulate();
       iter++;

@@ -54,6 +54,7 @@
 #include "parse_bond.hpp"
 #include "parse_angle.hpp"
 #include "parse_timestep.hpp"
+#include "parse_population_disable.hpp"
 #include "constraint.hpp"
 #include "constraint_sphere.hpp"
 #include "constraint_plane.hpp"

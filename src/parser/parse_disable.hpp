@@ -45,7 +45,7 @@ struct DisableData
  * 
  *  for example:
  * 
- *  disable nvt 
+ *  disable nvt { group = all }
  * 
  * This parser disable integrator of a given type (in this case "nvt")
  * 

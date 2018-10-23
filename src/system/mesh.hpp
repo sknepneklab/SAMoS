@@ -90,7 +90,8 @@ public:
            m_nface(0), 
            m_is_triangulation(true), 
            m_max_face_perim(20.0),
-           m_circumcenter(true)
+           m_circumcenter(true),
+           m_has_dangling(false)
   {   }
   
   //! Get mesh size
@@ -228,11 +229,22 @@ public:
   //! Compute data for plotting polygons
   PlotArea& plot_area(bool);
   
-  //! Return true if the mesh has at least one obruse boundary triangle
+  //! Return true if the mesh has at least one obtuse boundary triangle
   bool has_obtuse_boundary() 
   {
     if (m_obtuse_boundary.size() != 0) return true;
     else return false;
+  }
+
+  //! Return true if mesh has dangling vertices (vertices with coordination 2)
+  bool has_dangling_vertices()
+  {
+    /*
+    for (vector<Vertex>::iterator it = m_vertices.begin(); it != m_vertices.end(); it++)
+      if ((*it).n_edges <= 2) return true;
+    return false;
+    */
+    return m_has_dangling;
   }
 
   //! Dump mesh into off file for debugging purposes
@@ -246,6 +258,7 @@ private:
   bool m_is_triangulation;    //!< If true, all faces are triangles (allows more assumptions)
   double m_max_face_perim;    //!< If face perimeter is greater than this value, reject face and treat it as a hole.
   bool m_circumcenter;        //!< If true, compute face circumcenters. Otherwise compute geometric centre. 
+  bool m_has_dangling;        //!< If true, the mesh will have dangling vertices (i.e., vertices with only two neighbours)
     
   vector<Vertex> m_vertices;           //!< Contains all vertices
   vector<Edge> m_edges;                //!< Contains all edge

@@ -299,12 +299,13 @@ private:
   
    //! Build faces
   void build_faces(bool);
- 
+
   // Remove dangling edges
   void remove_dangling();
   
   // Remove detached particles
   void remove_detached();
+ 
   
 #ifdef HAS_CGAL
   // Build Delaunay triangulation
