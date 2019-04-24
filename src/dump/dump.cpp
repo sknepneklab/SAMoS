@@ -955,44 +955,124 @@ void Dump::dump_boundary()
 void Dump::dump_ajm(int step)
 {
   Mesh& mesh = m_system->get_mesh();
-  string vert_file_name = m_directory+"/"+m_file_name+"_vert_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
-  string cell_file_name = m_directory+"/"+m_file_name+"_cell_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
-  string bnd_file_name = m_directory+"/"+m_file_name+"_boundary_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
-  string tp_file_name = m_directory+"/"+m_file_name+"_types_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
-  ofstream vert_file, cell_file, bnd_file, tp_file;
-
-  vert_file.open(vert_file_name.c_str());
-  cell_file.open(cell_file_name.c_str());
-  bnd_file.open(bnd_file_name.c_str());
-  tp_file.open(tp_file_name.c_str());
-
-  PlotArea& pa = mesh.plot_area(false);
-  for (unsigned int f = 0; f < pa.points.size(); f++)
-    vert_file << format("%5d   %.7f   %.7f") % f % pa.points[f].x % pa.points[f].y << endl;
-  
-  for (unsigned int f = 0; f < pa.sides.size(); f++)
+  if (m_params.find("json") == m_params.end())
   {
-    for (unsigned int d = 0; d < pa.sides[f].size(); d++)
-      cell_file << format("%5d  ") % pa.sides[f][d];
+    string vert_file_name = m_directory+"/"+m_file_name+"_vert_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
+    string cell_file_name = m_directory+"/"+m_file_name+"_cell_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
+    string bnd_file_name = m_directory+"/"+m_file_name+"_boundary_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
+    string tp_file_name = m_directory+"/"+m_file_name+"_types_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+"."+m_ext;
+    ofstream vert_file, cell_file, bnd_file, tp_file;
+
+    vert_file.open(vert_file_name.c_str());
+    cell_file.open(cell_file_name.c_str());
+    bnd_file.open(bnd_file_name.c_str());
+    tp_file.open(tp_file_name.c_str());
+
+    PlotArea& pa = mesh.plot_area(false);
+    for (unsigned int f = 0; f < pa.points.size(); f++)
+      vert_file << format("%5d   %.7f   %.7f") % f % pa.points[f].x % pa.points[f].y << endl;
+    
+    for (unsigned int f = 0; f < pa.sides.size(); f++)
+    {
+      for (unsigned int d = 0; d < pa.sides[f].size(); d++)
+        cell_file << format("%5d  ") % pa.sides[f][d];
+      cell_file << endl;
+    }
+    
+    for (unsigned int f = 0; f < pa.type.size(); f++)
+      tp_file << format("%2d") % (pa.type[f]-1) << endl;
+
+    tp_file << endl;
+
+    for (unsigned int f = 0; f < pa.boundary_faces.size(); f++)
+    {
+      cell_file << format("%5d  ") % pa.boundary_faces[f];  
+      bnd_file << format("%5d") % pa.boundary_faces[f] << endl;
+    }
     cell_file << endl;
+    
+    vert_file.close();
+    cell_file.close();
+    bnd_file.close();
+    tp_file.close();
   }
-  
-  for (unsigned int f =0; f < pa.type.size(); f++)
-    tp_file << format("%2d") % (pa.type[f]-1) << endl;
-
-  tp_file << endl;
-
-  for (unsigned int f = 0; f < pa.boundary_faces.size(); f++)
+  else
   {
-    cell_file << format("%5d  ") % pa.boundary_faces[f];  
-    bnd_file << format("%5d") % pa.boundary_faces[f] << endl;
+    pt::ptree json; 
+    string json_file_name = m_directory+"/"+m_file_name+"_"+lexical_cast<string>(format("%010d") % (step+m_time_step_offset))+".json";  
+    PlotArea& pa = mesh.plot_area(false);
+
+    // collect vertices
+    pt::ptree vertices;
+    for (unsigned int f = 0; f < pa.points.size(); f++)    
+    {
+      pt::ptree vertex;
+      vertex.put("id", f);
+      pt::ptree r; 
+      pt::ptree pos;
+      pos.put("",pa.points[f].x);
+      r.push_back(std::make_pair("",pos));
+      pos.put("",pa.points[f].y);
+      r.push_back(std::make_pair("",pos));
+      vertex.add_child("r", r);
+      if (find(pa.boundary_faces.begin(),pa.boundary_faces.end(), f) == pa.boundary_faces.end())
+        vertex.put("boundary", "false");
+      else
+        vertex.put("boundary", "true");
+      vertex.put("constraint", "none");
+      vertex.put("type", "regular");
+      vertices.push_back(std::make_pair("", vertex));
+    }
+    json.add_child("mesh.vertices", vertices);
+    // collect cells
+    pt::ptree cells;
+    for (unsigned int f = 0; f < pa.sides.size(); f++)
+    {
+      pt::ptree cell;
+      cell.put("id",f);
+      if (m_params.find("A0") != m_params.end())
+        cell.put("A0", lexical_cast<double>(m_params["A0"]));
+      else
+        cell.put("A0", pa.area[f]);  
+      if (m_params.find("P0") != m_params.end())
+        cell.put("P0", lexical_cast<double>(m_params["P0"]));
+      else
+        cell.put("P0", pa.perim[f]);  
+      pt::ptree vert; 
+      for (unsigned int d = 0; d < pa.sides[f].size(); d++)
+      {
+        pt::ptree val; 
+        val.put("", pa.sides[f][d]);
+        vert.push_back(std::make_pair("", val));
+      }
+      cell.add_child("vertices",vert);
+      cell.put("type", pa.type[f]);
+      cell.put("outer", "false");
+      cell.put("nsides", pa.sides[f].size());
+      cells.push_back(std::make_pair("", cell));
+    }
+    // collect the outer face
+    pt::ptree outer;
+    outer.put("id",pa.sides.size());
+    outer.put("A0", 0.0);
+    outer.put("P0", 0.0);
+    pt::ptree vert;
+    for (unsigned int d = 0; d < pa.boundary_faces.size(); d++)
+    {
+      pt::ptree val; 
+      val.put("", pa.boundary_faces[d]);
+      vert.push_back(std::make_pair("", val));
+    }
+    outer.add_child("vertices",vert);
+    outer.put("outer", "true");
+    outer.put("type", "passive");
+    outer.put("nsides", pa.boundary_faces.size());
+    cells.push_back(std::make_pair("", outer));
+    json.add_child("mesh.faces", cells);
+
+    // Write everything to the file
+    pt::write_json(json_file_name, json);
   }
-  cell_file << endl;
-  
-  vert_file.close();
-  cell_file.close();
-  bnd_file.close();
-  tp_file.close();
 }
 
 #ifdef HAS_VTK

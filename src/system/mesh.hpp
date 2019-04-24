@@ -66,7 +66,7 @@ using std::endl;
 
 typedef pair<int,int> VertexPair;
 
-//!< Data structure that holds data for ploting poygons
+//!< Data structure that holds data for ploting polygons
 typedef struct
 {
   vector<Vector3d> points;
@@ -78,7 +78,7 @@ typedef struct
   vector<int> boundary_faces;
 } PlotArea;
 
-/*! Mesh class handles basic manipuations with mesesh
+/*! Mesh class handles basic manipulations with meshes.
  *
  */
 class Mesh

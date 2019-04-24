@@ -35,6 +35,7 @@
 #include <string>
 #include <map>
 #include <list>
+#include <utility>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -43,6 +44,10 @@
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+
+// Handles JSON output for AJM
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 // Handle VTP output
 #ifdef HAS_VTK
@@ -60,6 +65,7 @@
 #endif
 
 namespace bo = boost::iostreams;
+namespace pt = boost::property_tree;
 
 #include "system.hpp"
 #include "parse_parameters.hpp"
