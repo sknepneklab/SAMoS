@@ -1136,7 +1136,7 @@ PlotArea& Mesh::plot_area(bool boundary)
   m_plot_area.boundary_faces.push_back(start);
   m_plot_area.boundary_faces.push_back(next);
 
-  while (m_plot_area.boundary_faces.size() < bnd_faces.size())
+  while (m_plot_area.boundary_faces.size() < bnd_neigh.size())
   {
     next = m_plot_area.boundary_faces[m_plot_area.boundary_faces.size()-1];
     int nnext = bnd_neigh[next][0];
