@@ -50,7 +50,7 @@ struct TangentAlignParameters
  *  For a bead in the polymer chain we compute torque as 
  *  \f$ \vec \tau_i = -1/tau \sum_j\vec n_i\times\vec b_{ij} \f$,
  *  where \f$ tau \f$ is the coupling alignment time and \f$ \vec b_{ij} \f$ is the unit-length vector 
- *  pointing along the bond connecting partiles \f$ i \f$ and \f$ j $\f. 
+ *  pointing along the bond connecting partiles \f$ i \f$ and \f$ j \f$. 
  *  \note For this alignment to work, bonds have to be defined. User has to supply properly 
  *  ordered bonds in order to ensure that computed torques have desirable behaviour, e.g., to 
  *  align the director in the local direction of the polymer.   
