@@ -1121,6 +1121,22 @@ PlotArea& Mesh::plot_area(bool boundary)
   }
 
   // Order boundary face centres in the clockwise fashion
+  vector<vert_angle> angles;
+  for (int i = 0; i < bnd_faces.size(); i++)
+  {
+    double dx = m_plot_area.points[bnd_faces[i]].x - rc.x;
+    double dy = m_plot_area.points[bnd_faces[i]].y - rc.y;
+    angles.push_back(make_pair(i,atan2(dy,dx)));
+  }
+  
+  sort(angles.begin(), angles.end(), comp);
+
+  for (int i = 0; i < angles.size(); i++)
+    m_plot_area.boundary_faces.push_back(angles[i].first);
+
+  reverse(m_plot_area.boundary_faces.begin(), m_plot_area.boundary_faces.end());
+
+  /*
   map<int,vector<int> >::iterator it = bnd_neigh.begin();
   int start = (*it).first;
   Vector3d r1 = m_plot_area.points[start];
@@ -1143,7 +1159,7 @@ PlotArea& Mesh::plot_area(bool boundary)
     if (find(m_plot_area.boundary_faces.begin(), m_plot_area.boundary_faces.end(), nnext) == m_plot_area.boundary_faces.end()) m_plot_area.boundary_faces.push_back(nnext);
     else m_plot_area.boundary_faces.push_back(bnd_neigh[next][1]);
   }
-  
+  */
   return m_plot_area;
 }
 
