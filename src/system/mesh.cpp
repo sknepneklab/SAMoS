@@ -1068,9 +1068,9 @@ PlotArea& Mesh::plot_area(bool boundary)
             m_plot_area.circum_radius.push_back(this->circum_radius(face.id));
             added_faces.push_back(face.id);
             face_idx[face.id] = idx++;
-            if (V.boundary)
-              if (find(bnd_faces.begin(), bnd_faces.end(), face_idx[face.id]) == bnd_faces.end()) bnd_faces.push_back(face_idx[face.id]);
           }
+          if (V.boundary)
+            if (find(bnd_faces.begin(), bnd_faces.end(), face_idx[face.id]) == bnd_faces.end()) bnd_faces.push_back(face_idx[face.id]);
         }
      }
     }
@@ -1126,16 +1126,16 @@ PlotArea& Mesh::plot_area(bool boundary)
   {
     double dx = m_plot_area.points[bnd_faces[i]].x - rc.x;
     double dy = m_plot_area.points[bnd_faces[i]].y - rc.y;
-    angles.push_back(make_pair(i,atan2(dy,dx)));
+    angles.push_back(make_pair(bnd_faces[i],atan2(dy,dx)));
   }
   
   sort(angles.begin(), angles.end(), comp);
-
+  
   for (int i = 0; i < angles.size(); i++)
     m_plot_area.boundary_faces.push_back(angles[i].first);
-
+  
   reverse(m_plot_area.boundary_faces.begin(), m_plot_area.boundary_faces.end());
-
+  
   /*
   map<int,vector<int> >::iterator it = bnd_neigh.begin();
   int start = (*it).first;
