@@ -11,7 +11,9 @@ build scripts. This has not been tested.
 ## 2. TUTORIALS
 
 A detailed tutorial on how to setup a simulation in SAMoS can be found in 
-SAMoS/doc/tutorial/tutorial.html
+/path/to/SAMoS_install/doc/tutorial/tutorial.html
+
+here */path/to/SAMoS_install/* is the directory where SAMoS is installed (see section 5 below).
 
 ## 3. REQUIREMENTS
 
