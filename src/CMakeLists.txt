@@ -65,6 +65,7 @@ install(FILES ${ANALYSIS_FILES} DESTINATION "analysis")
 install(FILES ${EXAMPLE1_FILES} DESTINATION "examples/cells_fixed")
 install(FILES ${EXAMPLE2_FILES} DESTINATION "examples/circular_patch")
 install(FILES ${EXAMPLE3_FILES} DESTINATION "examples/growth")
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/doc/tutorial/ DESTINATION "doc/tutorial")
 install(CODE "MESSAGE(\"
 -------------------------------------------------------------------------------------------- 
 

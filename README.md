@@ -1,24 +1,3 @@
- * ***************************************************************************
- *
- *  Copyright (C) 2013-2016 University of Dundee
- *  All rights reserved. 
- *
- *  This file is part of SAMoS (Soft Active Matter on Surfaces) program.
- *
- *  SAMoS is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  SAMoS is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * ****************************************************************************
 
 # Soft Active Matter on Surfaces (SAMoS)
 
@@ -32,7 +11,7 @@ build scripts. This has not been tested.
 ## 2. TUTORIALS
 
 A detailed tutorial on how to setup a simulation in SAMoS can be found in 
-samos/doc/tutorial/tutorial.html
+SAMoS/doc/tutorial/tutorial.html
 
 ## 3. REQUIREMENTS
 
@@ -47,9 +26,9 @@ building tools are written in Python 2.7 and require NumPy to run.
 * VTK library (version 5 or 6)
 * CGAL library (version 4.3 or newer). NOTE: Code will fail to compile with CGAL 4.2 or older
 
-*NOTE:* On Mac OS X, it is suggested to use Mac Ports to install all necessary libraries.
+**NOTE:** On Mac OS X, it is suggested to use Mac Ports to install all necessary libraries.
 
-*NOTE:* SAMoS is able to generate VTP files as its output. We suggest installing and using ParaView 
+**NOTE:** SAMoS is able to generate VTP files as its output. We suggest installing and using ParaView 
 to visualise the results. 
 
 ## 4. COMPILING 
@@ -59,24 +38,34 @@ a) Clone the code from the GitHub repository using
     git clone https://github.com/sknepneklab/SAMoS.git
 
 b) cd SAMoS (or the name of the directory you chose to download the code into)
+
 c) mkdir build 
+
 d) cd build
+
 e) ccmake ../
+
 f) Use the CMake's GUI to chose appropriate settings
+
 g) Press 'c' key several times to configure
+
 h) If all libraries have been found, CMake will allow you to create a Makefile. If not, please exit CMake GUI and install missing libraries.
+
 i) Press 'g' to create Make files. This will terminate CMake's GUI is return you to the shell
-j) Type 'make -j 8' (-j option tells make how many parallel threads to use to compile; on a 4-core machine one can typically use 8 threads). NOTE:
-Some Linux distributions with newer C++ compilers may have problems with running 8 parallel threads and can cause the machine to crash. If this 
-happens, use '-j 2', which is likely not to cause any problems on most modern computers. 
-k) If the compilation is successful, an executable 'samos' should appear in the build directory. NOTE: SAMoS uses many templated libraries in Boost. 
-Compiling it may take several minutes even on a very fast machine.
 
-*NOTE:* Depending on the compiler, you may get a number of warning messages. Those are harmless and you may safely ignore them.  
-*NOTE:* If you are compiling with gcc 6.x you need to explicitly state that you are using the C++98 standard. This is done by adding -std=c++98 to the
-CMAKE_CXX_FLAGS variable. SAMoS will fail to compile using the C++11 standard! 
+j) Type 'make -j 8' (-j option tells make how many parallel threads to use to compile; on a 4-core machine one can typically use 8 threads). 
 
-*WARNING:* Some Mac users have reported problems with compiling SAMoS on Sierra and High Sierra using packages installed with 'brew'. Switching to 
+**NOTE:** Some Linux distributions with newer C++ compilers may have problems with running 8 parallel threads and can cause the machine to crash. 
+If this happens, use '-j 2', which is likely not to cause any problems on most modern computers. 
+
+k) If the compilation is successful, an executable 'samos' should appear in the build directory. 
+
+**NOTE:** SAMoS uses many templated libraries in Boost. Compiling it may take several minutes even on a very fast machine.
+
+**NOTE:** Depending on the compiler, you may get a number of warning messages. Those are harmless and you may safely ignore them.  
+**NOTE:** SAMoS will fail to compile using the C++11 standard! 
+
+**WARNING:** Some Mac users have reported problems with compiling SAMoS on Sierra and High Sierra using packages installed with 'brew'. Switching to 
 the 'MacPorts' seems to solve the problem.   
 
 ## 5. INSTALLING SAMoS 
@@ -91,10 +80,11 @@ the environment variable containing full path to your home directory.
   - SAMoS binary (samos) will be placed in $HOME/samos/bin 
   - Examples will be in  $HOME/samos/examples 
   - Analysis scripts will be placed in $HOME/samos/analysis 
+  - Basic tutorial files will be placed in $HOME/samos/doc/tutorial
 
 Please make sure to add $HOME/samos/analysis to your PYTHONPATH shell variable and $HOME/samos/bin to the PATH variable.
 
-*NOTE:* You can change the default installation directory by setting CMAKE_INSTALL_PREFIX variable in step 4. 
+**NOTE:** You can change the default installation directory by setting CMAKE_INSTALL_PREFIX variable in step 4. 
 
 
 ## 6. RUNNING SAMoS
@@ -104,7 +94,7 @@ The code requires two files to run:
    1. conf file containing simulation parameters, force field, integrator type, etc.
    2. data file containing initial position of particles (see configurations directory for a number of examples)
 
-*NOTE:* Format of the configuration and data files can be found in the 'configurations' directory.
+**NOTE:** Format of the configuration and data files can be found in the 'configurations' directory.
 
 code is executed with 
 
@@ -112,6 +102,7 @@ code is executed with
 
 ## 7. SOURCE DIRECTORY STRUCTURE
 
+```
 samos 
    /FormerAnalysis   - some earlier versions of scripts for data analysis
    /analysis         - current set of tools for analysing simulation results 
@@ -138,7 +129,7 @@ samos
          /pair       - Pair (or multibody) forces acting as the result of interparticle interactions (e.g., Lennard-Jones)
       /system        - Definition of the base classes that define the system (particles, simulation box, mesh, etc.)
       /utils         - Several utility functions (e.g., random number generator classes)
-
+```
 
 ## 8. CREDITS
 
@@ -149,7 +140,9 @@ Rastko Sknepnek (University of Dundee, UK)
 Major contributors to the code:
 
 Silke Henkes (University of Aberdeen, UK)   - many tools for building inital configurations and analysis tools
+
 Daniel Barton (University of Dundee, UK)    - tools for building and analysing tissue mechanics simulations 
+
 Amit Das (National Institute for Biological Sciences, India)  - tools for building and analysing actomyosin simulations 
 
 
