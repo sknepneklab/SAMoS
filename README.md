@@ -37,32 +37,24 @@ a) Clone the code from the GitHub repository using
 
     git clone https://github.com/sknepneklab/SAMoS.git
 
-b) cd SAMoS (or the name of the directory you chose to download the code into)
-
-c) mkdir build 
-
-d) cd build
-
-e) ccmake ../
-
-f) Use the CMake's GUI to chose appropriate settings
-
-g) Press 'c' key several times to configure
-
-h) If all libraries have been found, CMake will allow you to create a Makefile. If not, please exit CMake GUI and install missing libraries.
-
-i) Press 'g' to create Make files. This will terminate CMake's GUI is return you to the shell
-
-j) Type 'make -j 8' (-j option tells make how many parallel threads to use to compile; on a 4-core machine one can typically use 8 threads). 
+b) cd SAMoS (or the name of the directory you chose to download the code into) <br />
+c) mkdir build <br />
+d) cd build <br />
+e) ccmake ../ <br />
+f) Use the CMake's GUI to chose appropriate settings <br />
+g) Press 'c' key several times to configure <br />
+h) If all libraries have been found, CMake will allow you to create a Makefile. If not, please exit CMake GUI and install missing libraries. <br />
+i) Press 'g' to create Make files. This will terminate CMake's GUI is return you to the shell. <br />
+j) Type 'make -j 8' (-j option tells make how many parallel threads to use to compile; on a 4-core machine one can typically use 8 threads). <br /> 
+k) If the compilation is successful, an executable 'samos' should appear in the build directory.
 
 **NOTE:** Some Linux distributions with newer C++ compilers may have problems with running 8 parallel threads and can cause the machine to crash. 
 If this happens, use '-j 2', which is likely not to cause any problems on most modern computers. 
 
-k) If the compilation is successful, an executable 'samos' should appear in the build directory. 
-
 **NOTE:** SAMoS uses many templated libraries in Boost. Compiling it may take several minutes even on a very fast machine.
 
 **NOTE:** Depending on the compiler, you may get a number of warning messages. Those are harmless and you may safely ignore them.  
+
 **NOTE:** SAMoS will fail to compile using the C++11 standard! 
 
 **WARNING:** Some Mac users have reported problems with compiling SAMoS on Sierra and High Sierra using packages installed with 'brew'. Switching to 
@@ -133,16 +125,14 @@ samos
 
 ## 8. CREDITS
 
-Lead developer:
+### Lead developer:
 
 Rastko Sknepnek (University of Dundee, UK) 
 
-Major contributors to the code:
+### Major contributors to the code:
 
-Silke Henkes (University of Aberdeen, UK)   - many tools for building inital configurations and analysis tools
-
-Daniel Barton (University of Dundee, UK)    - tools for building and analysing tissue mechanics simulations 
-
+Silke Henkes (University of Aberdeen, UK)   - many tools for building inital configurations and analysis tools <br />
+Daniel Barton (University of Dundee, UK)    - tools for building and analysing tissue mechanics simulations <br />
 Amit Das (National Institute for Biological Sciences, India)  - tools for building and analysing actomyosin simulations 
 
 
