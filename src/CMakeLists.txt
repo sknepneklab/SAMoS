@@ -51,3 +51,31 @@ target_link_libraries(samos  ${SAMoS_LIBS} ${THREAD_LIB})
 
 set_target_properties(samos PROPERTIES PREFIX ""  OUTPUT_NAME "samos")
 
+IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  SET(CMAKE_INSTALL_PREFIX $ENV{HOME}/samos CACHE PATH "Setting default install path" FORCE)
+ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+
+file(GLOB ANALYSIS_FILES "${PROJECT_SOURCE_DIR}/utils/*.py")
+file(GLOB EXAMPLE1_FILES "${PROJECT_SOURCE_DIR}/configurations/cells_fixed/*")
+file(GLOB EXAMPLE2_FILES "${PROJECT_SOURCE_DIR}/configurations/circular_patch/*")
+file(GLOB EXAMPLE3_FILES "${PROJECT_SOURCE_DIR}/configurations/growth/*")
+
+install(TARGETS samos DESTINATION bin)
+install(FILES ${ANALYSIS_FILES} DESTINATION "analysis")
+install(FILES ${EXAMPLE1_FILES} DESTINATION "examples/cells_fixed")
+install(FILES ${EXAMPLE2_FILES} DESTINATION "examples/circular_patch")
+install(FILES ${EXAMPLE3_FILES} DESTINATION "examples/growth")
+install(CODE "MESSAGE(\"
+-------------------------------------------------------------------------------------------- 
+
+ Please add ${CMAKE_INSTALL_PREFIX}/bin to the PATH variable 
+        and ${CMAKE_INSTALL_PREFIX}/analysis to the PYTHONPATH variable 
+      
+ In BASH you can do this by typing: 
+
+        export PATH=$PATH:${CMAKE_INSTALL_PREFIX}/bin \n
+        export PYTHONPATH=$PYTHONPATH:${CMAKE_INSTALL_PREFIX}/analysis 
+        
+ In order to make the change permanent, please add above two lines to you .bashrc script. 
+
+-------------------------------------------------------------------------------------------- \")" )

@@ -41,12 +41,12 @@ matplotlib.rcParams['font.size']=16.0
 matplotlib.rcParams['legend.fontsize']=14.0
 
 cdict = {'red':   [(0.0,  0.0, 0.5),
-				   (0.35,  1.0, 0.75),
+				  				 (0.35,  1.0, 0.75),
                    (0.45,  0.75, 0.0),
                    (1.0,  0.0, 0.0)],
 
          'green': [(0.0,  0.0, 0.0),
-				   (0.35,  0.0, 0.5),
+				   				 (0.35,  0.0, 0.5),
                    (0.5, 1.0, 1.0),
                    (0.8,  0.5, 0.0),
                    (1.0,  0.0, 0.0)],
@@ -86,29 +86,27 @@ if len(files_cells) == 0:
   files_cells = sorted(glob(args.directory + args.input+'*.dat.gz'))[args.skip:]
   files_faces = sorted(glob(args.directory + args.inface+'*.fc.gz'))[args.skip:]
 
-vel2av=np.zeros((len(files_cells),))
-f2av=np.zeros((len(files_cells),))
-areav=np.zeros((len(files_cells),))
-pratav=np.zeros((len(files_cells),))
-zav=np.zeros((len(files_cells),))
-borderlen=np.zeros((len(files_cells),))
-bfrac=np.zeros((len(files_cells),))
-Ninside=np.zeros((len(files_cells),))
+vel2av = np.zeros((len(files_cells),))
+f2av = np.zeros((len(files_cells),))
+areav = np.zeros((len(files_cells),))
+pratav = np.zeros((len(files_cells),))
+zav = np.zeros((len(files_cells),))
+borderlen = np.zeros((len(files_cells),))
+bfrac = np.zeros((len(files_cells),))
+Ninside = np.zeros((len(files_cells),))
 
-areabin=np.linspace(1,5,args.nprat+1)
-ratbin=np.linspace(3,5,args.nprat+1)
-conbin=np.linspace(0,10,args.nz+1)
-print conbin
-areadist=np.zeros((len(files_cells),args.nprat))
-pratdist=np.zeros((len(files_cells),args.nprat))
-zdist=np.zeros((len(files_cells),args.nz))
+areabin = np.linspace(1,5,args.nprat+1)
+ratbin = np.linspace(3,5,args.nprat+1)
+conbin = np.linspace(0,10,args.nz+1)
 
-u=0
+areadist = np.zeros((len(files_cells),args.nprat))
+pratdist = np.zeros((len(files_cells),args.nprat))
+zdist = np.zeros((len(files_cells),args.nz))
+
+u = 0
 for u in range(len(files_cells)):
-        fcells=files_cells[u]
-        ffaces=files_faces[u]
-	#print fcells
-	#print ffaces
+  fcells=files_cells[u]
+  ffaces=files_faces[u]
 	# Ignore here is to simply calculate interactions of multiple types of particles (they have the same potential)
 	conf = CellConfiguration(params,fcells,ffaces,True,False)
 	#plt.show()#
@@ -120,22 +118,19 @@ for u in range(len(files_cells)):
 	print "Mean perimeter ratio: " + str(pratav[u])
 	print "Contact number: " + str(zav[u])
 	u+=1
-data={}
-#try:
-	#data={'v':params.v0,'kappa':params.pot_params['kappa'],'gamma':params.pot_params['gamma'],'lambdaval':params.pot_params['lambdaval'],'population':params.population,'pop_params':params.pop_params}
-#except:
-	#data={'v':params.v0,'kappa':params.pot_params['kappa'],'gamma':params.pot_params['gamma'],'lambdaval':params.pot_params['lambdaval']}
-dataS={'vel2av':vel2av,'f2av':f2av,'areav':areav,'areadist':areadist,'pratav':pratav,'ratbin':ratbin,'pratdist':pratdist,'zbin':conbin,'zdist':zdist,'zav':zav,'borderlen':borderlen,'bfrac':bfrac,'Ninside':Ninside,'mask':args.mask}
+data = {}
+
+dataS = {'vel2av':vel2av,'f2av':f2av,'areav':areav,'areadist':areadist,'pratav':pratav,'ratbin':ratbin,'pratdist':pratdist,'zbin':conbin,'zdist':zdist,'zav':zav,'borderlen':borderlen,'bfrac':bfrac,'Ninside':Ninside,'mask':args.mask}
 data.update(dataS)
-if args.prefix=='CellStats':
-	outpickle=args.output+'CellStats.p'
+if args.prefix == 'CellStats':
+	outpickle = args.output+'CellStats.p'
 else:
-	outpickle=args.output+args.prefix+'_CellsStats.p'
-print outpickle
+	outpickle = args.output+args.prefix+'_CellsStats.p'
+print 'Using pickle file : ', outpickle
 pickle.dump(data,open(outpickle,'wb'))
 
 if args.verbose:
-        areaplot=np.mean(areadist,axis=0)
+  areaplot=np.mean(areadist,axis=0)
 	plt.figure()
 	plt.plot(areabin[:-1],areaplot,'.-')
 	plt.xlabel('cell area')

@@ -1,33 +1,24 @@
-# * *************************************************************
-# *  
-# *   Soft Active Mater on Surfaces (SAMoS)
-# *   
-# *   Author: Rastko Sknepnek
-# *  
-# *   Division of Physics
-# *   School of Engineering, Physics and Mathematics
-# *   University of Dundee
-# *   
-# *   (c) 2013, 2014
-# * 
-# *   School of Science and Engineering
-# *   School of Life Sciences 
-# *   University of Dundee
-# * 
-# *   (c) 2015
-# * 
-# *   Author: Silke Henkes
-# * 
-# *   Department of Physics 
-# *   Institute for Complex Systems and Mathematical Biology
-# *   University of Aberdeen  
-# * 
-# *   (c) 2014, 2015
-# *  
-# *   This program cannot be used, copied, or modified without
-# *   explicit written permission of the authors.
-# * 
-# * ***************************************************************
+# ***************************************************************************
+# *
+# *  Copyright (C) 2013-2016 University of Dundee
+# *  All rights reserved. 
+# *
+# *  This file is part of SAMoS (Soft Active Matter on Surfaces) program.
+# *
+# *  SAMoS is free software; you can redistribute it and/or modify
+# *  it under the terms of the GNU General Public License as published by
+# *  the Free Software Foundation; either version 2 of the License, or
+# *  (at your option) any later version.
+# *
+# *  SAMoS is distributed in the hope that it will be useful,
+# *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+# *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# *  GNU General Public License for more details.
+# *
+# *  You should have received a copy of the GNU General Public License
+# *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# *
+# *****************************************************************************
 
 import sys
 import argparse
@@ -69,12 +60,12 @@ if len(files) == 0:
   files = sorted(glob(args.directory + args.input+'*.dat.gz'))[args.skip:]
 
 if args.writeD:
-        if args.nematic:
-                defects_n_out=[[] for u in range(len(files))]
-                numdefects_n_out=np.zeros(len(files))
-        else:
-                defects_v_out=[[] for u in range(len(files))]
-                numdefects_v_out=np.zeros(len(files))
+	if args.nematic:
+		defects_n_out=[[] for u in range(len(files))]
+		numdefects_n_out=np.zeros(len(files))
+	else:
+		defects_v_out=[[] for u in range(len(files))]
+		numdefects_v_out=np.zeros(len(files))
 	
 if args.getStatsBasic:
 	vel2av=np.zeros(len(files))
@@ -116,9 +107,9 @@ for f in files:
 		tess = Tesselation(conf)
 		print "initialized tesselation"
 		if args.delaunay:
-                        LoopList,Ival,Jval = tess.findLoopDelaunay()
-                else:
-                        LoopList,Ival,Jval = tess.findLoop(args.closeHoles,args.mult,1.1)
+      LoopList,Ival,Jval = tess.findLoopDelaunay()
+    else:
+      LoopList,Ival,Jval = tess.findLoop(args.closeHoles,args.mult,1.1)
 		print "found loops"
 		#print LoopList
 		if args.writeD:
@@ -160,15 +151,15 @@ if ((args.writeD) or (args.getStatsBasic)):
 	try:
 		data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params,'population':params.population,'pop_params':params.pop_params}
 	except:
-                try:
-                    data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params}
-                except:
-                    data={'pot_params':params.pot_params}
+		try:
+				data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params}
+		except:
+				data={'pot_params':params.pot_params}
 	if args.writeD:
-                if args.nematic:
-                    dataD={'defects_n':defects_n_out,'numdefects_n':numdefects_n_out}
-		else:
-                    dataD={'defects_v':defects_v_out,'numdefects_v':numdefects_v_out}
+		if args.nematic:
+				dataD={'defects_n':defects_n_out,'numdefects_n':numdefects_n_out}
+	else:
+		dataD={'defects_v':defects_v_out,'numdefects_v':numdefects_v_out}
 		data.update(dataD)
 	if args.getStatsBasic:
 		dataS={'vel2av':vel2av,'phival':phival,'ndensity':ndensity,'pressure':pressure,'fmoment':fmoment,'energy':energy,'energytot':energytot,'zav':zav}

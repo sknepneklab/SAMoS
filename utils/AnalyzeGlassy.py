@@ -59,83 +59,83 @@ args = parser.parse_args()
 sim = SimRun(args.directory,args.conffile,args.input,args.radii,args.skip,args.tracer,args.ignore,args.drift,args.usetype)
 data={'input':args.input,'configuration':args.conffile}
 if args.getMSD:
-        #getMSD(self,verbose=True):
+  #getMSD(self,verbose=True):
 	tplot,msd = sim.getMSD(args.plot)
 	dataMSD={'tplot':tplot,'msd':msd,}
 	data.update(dataMSD)
 if args.getSelfInt:
-        ##This tends to be too slow except for when tracer particles are used
-        #qval=np.linspace(0,np.pi,20)
-        #SelfInt=np.zeros((len(qval),sim.Nsnap))
-        #for q in range(len(qval)):
-                #qvalintermediate=qval[q]*np.array([1,1,0])
-                #print qval[q]
-                #tval,SelfInt[q,:] = sim.SelfIntermediate(qvalintermediate,args.plot)
-        #dataSelfInt={'qval':qval,'tval':tval,'SelfInt':SelfInt}
-        #data.update(dataSelfInt)
-        # Take a single slice at pi (magnitude)
-        qval=np.pi
-        SelfInt=np.zeros((sim.Nsnap,))
-        qvalintermediate=qval*np.array([1,1,0])/np.sqrt(2)
-        tval,SelfInt = sim.SelfIntermediate(qvalintermediate,args.plot)
-        dataSelfInt={'qval':qval,'tval':tval,'SelfInt':SelfInt}
-        data.update(dataSelfInt)
+  ##This tends to be too slow except for when tracer particles are used
+  #qval=np.linspace(0,np.pi,20)
+  #SelfInt=np.zeros((len(qval),sim.Nsnap))
+  #for q in range(len(qval)):
+          #qvalintermediate=qval[q]*np.array([1,1,0])
+          #print qval[q]
+          #tval,SelfInt[q,:] = sim.SelfIntermediate(qvalintermediate,args.plot)
+  #dataSelfInt={'qval':qval,'tval':tval,'SelfInt':SelfInt}
+  #data.update(dataSelfInt)
+  # Take a single slice at pi (magnitude)
+  qval=np.pi
+  SelfInt=np.zeros((sim.Nsnap,))
+  qvalintermediate=qval*np.array([1,1,0])/np.sqrt(2)
+  tval,SelfInt = sim.SelfIntermediate(qvalintermediate,args.plot)
+  dataSelfInt={'qval':qval,'tval':tval,'SelfInt':SelfInt}
+  data.update(dataSelfInt)
 if args.getFourPoint:
-        afourpoint=0.5
-        qmax=np.pi
-        nmax=50
-        #def FourPoint(self,a,qmax=3.14,verbose=True,nmax=20):
-        tvalFourPoint, FourPoint=sim.FourPoint(afourpoint,qmax,args.plot,nmax)
-        dataFourPoint={'afourpoint':afourpoint,'qmax':qmax,'nmax':nmax,'tvalFourPoint':tvalFourPoint,'FourPoint':FourPoint}
-        data.update(dataFourPoint)
+  afourpoint=0.5
+  qmax=np.pi
+  nmax=50
+  #def FourPoint(self,a,qmax=3.14,verbose=True,nmax=20):
+  tvalFourPoint, FourPoint=sim.FourPoint(afourpoint,qmax,args.plot,nmax)
+  dataFourPoint={'afourpoint':afourpoint,'qmax':qmax,'nmax':nmax,'tvalFourPoint':tvalFourPoint,'FourPoint':FourPoint}
+  data.update(dataFourPoint)
 if args.getDynStruct:  
-        nmax=50
-        qmax=np.pi
-        omegamax=0.1
-        # def getDynStruct(self,qmax,omegamax,verbose=True,nmax=50):
-        omega,qrad,DynStruct=sim.getDynStruct(qmax,omegamax,args.plot,nmax)
-        dataDynStruct={'omegamax':omegamax,'qrad':qrad,'DynStruct':DynStruct}
-        data.update(dataDynStruct)
+  nmax=50
+  qmax=np.pi
+  omegamax=0.1
+  # def getDynStruct(self,qmax,omegamax,verbose=True,nmax=50):
+  omega,qrad,DynStruct=sim.getDynStruct(qmax,omegamax,args.plot,nmax)
+  dataDynStruct={'omegamax':omegamax,'qrad':qrad,'DynStruct':DynStruct}
+  data.update(dataDynStruct)
 if args.getFourier:
-        Sqvel=np.zeros((107,))
-        Sqrad=np.zeros((107,))
-        qmaxFourier=4.0
-        npts=sim.Nsnap/args.step
-        #plt.figure()
-        for u in range(0,sim.Nsnap,args.step):
-                #qradv,velrad,Sqvel=sim.FourierTransVel(u,qmaxFourier,args.plot)
-                #Sqvel+=Sqvel
-                qrad2,posrad=sim.FourierTrans(u,qmaxFourier,args.plot)
-                Sqrad+=posrad
-                #plt.plot(qrad2,posrad)
-                #plt.text(qrad2[100],posrad[100],str(u))
-        Sqvel/=npts
-        Sqrad/=npts
-        if args.plot:
-            plt.figure()
-            plt.plot(qrad2,Sqrad)
-            plt.xlabel('q')
-            plt.ylabel('S(q)')
-            plt.title('Positions - after averaging')
-        #dataFourier={'npts':npts,'qmaxFourier':qmaxFourier,'qrad2':qrad2,'qradv':qradv,'Sqrad':Sqrad,'Sqvel':Sqvel}
-        dataFourier={'npts':npts,'qmaxFourier':qmaxFourier,'qrad2':qrad2,'Sqrad':Sqrad}
-        data.update(dataFourier)
+  Sqvel=np.zeros((107,))
+  Sqrad=np.zeros((107,))
+  qmaxFourier=4.0
+  npts=sim.Nsnap/args.step
+  #plt.figure()
+  for u in range(0,sim.Nsnap,args.step):
+    #qradv,velrad,Sqvel=sim.FourierTransVel(u,qmaxFourier,args.plot)
+    #Sqvel+=Sqvel
+    qrad2,posrad=sim.FourierTrans(u,qmaxFourier,args.plot)
+    Sqrad+=posrad
+    #plt.plot(qrad2,posrad)
+    #plt.text(qrad2[100],posrad[100],str(u))
+  Sqvel/=npts
+  Sqrad/=npts
+  if args.plot:
+    plt.figure()
+    plt.plot(qrad2,Sqrad)
+    plt.xlabel('q')
+    plt.ylabel('S(q)')
+    plt.title('Positions - after averaging')
+  #dataFourier={'npts':npts,'qmaxFourier':qmaxFourier,'qrad2':qrad2,'qradv':qradv,'Sqrad':Sqrad,'Sqvel':Sqvel}
+  dataFourier={'npts':npts,'qmaxFourier':qmaxFourier,'qrad2':qrad2,'Sqrad':Sqrad}
+  data.update(dataFourier)
 if args.getVelcorr:
-        dx=0.1
-        xmax=20
-        nbins=int(xmax/dx)
-        velcorr=np.zeros((nbins,))
-        npts=sim.Nsnap/args.step
-        for u in range(0,sim.Nsnap,args.step):
-                #def getVelcorrSingle(self,whichframe,dx,xmax,verbose=True):
-                bins,velcorr0=sim.getVelcorrSingle(u,0.1,20,args.plot)
-                velcorr+=velcorr0
-        velcorr/=npts
+  dx=0.1
+  xmax=20
+  nbins=int(xmax/dx)
+  velcorr=np.zeros((nbins,))
+  npts=sim.Nsnap/args.step
+  for u in range(0,sim.Nsnap,args.step):
+    #def getVelcorrSingle(self,whichframe,dx,xmax,verbose=True):
+    bins,velcorr0=sim.getVelcorrSingle(u,0.1,20,args.plot)
+    velcorr+=velcorr0
+  velcorr/=npts
 	dataVelcorr={'dx':dx,'xmax':xmax,'nbins':nbins,'bins':bins,'velcorr':velcorr}
 	data.update(dataVelcorr)	
 if args.getNonGaussian:
-        #getMSD(self,verbose=True):
-        tplot,msd, kurtosis, nongaussian=sim.getNonGaussian(args.plot)
+    #getMSD(self,verbose=True):
+    tplot,msd, kurtosis, nongaussian=sim.getNonGaussian(args.plot)
 	dataNonGauss={'tplot':tplot,'msd':msd,'kurtosis':kurtosis,'nongaussian':nongaussian}
 	data.update(dataNonGauss)
 

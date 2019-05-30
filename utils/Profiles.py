@@ -26,9 +26,9 @@ from Configuration import *
 try:
 	import matplotlib.pyplot as plt
 	from mpl_toolkits.mplot3d import Axes3D
-	HAS_MATPLOTLIB=True
+	HAS_MATPLOTLIB = True
 except:
-	HAS_MATPLOTLIB=False
+	HAS_MATPLOTLIB = False
 	pass
 
 # Profiles for the spherical case. 

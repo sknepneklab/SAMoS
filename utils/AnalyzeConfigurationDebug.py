@@ -1,33 +1,24 @@
-# * *************************************************************
-# *  
-# *   Soft Active Mater on Surfaces (SAMoS)
-# *   
-# *   Author: Rastko Sknepnek
-# *  
-# *   Division of Physics
-# *   School of Engineering, Physics and Mathematics
-# *   University of Dundee
-# *   
-# *   (c) 2013, 2014
-# * 
-# *   School of Science and Engineering
-# *   School of Life Sciences 
-# *   University of Dundee
-# * 
-# *   (c) 2015
-# * 
-# *   Author: Silke Henkes
-# * 
-# *   Department of Physics 
-# *   Institute for Complex Systems and Mathematical Biology
-# *   University of Aberdeen  
-# * 
-# *   (c) 2014, 2015
-# *  
-# *   This program cannot be used, copied, or modified without
-# *   explicit written permission of the authors.
-# * 
-# * ***************************************************************
+# ***************************************************************************
+# *
+# *  Copyright (C) 2013-2016 University of Dundee
+# *  All rights reserved. 
+# *
+# *  This file is part of SAMoS (Soft Active Matter on Surfaces) program.
+# *
+# *  SAMoS is free software; you can redistribute it and/or modify
+# *  it under the terms of the GNU General Public License as published by
+# *  the Free Software Foundation; either version 2 of the License, or
+# *  (at your option) any later version.
+# *
+# *  SAMoS is distributed in the hope that it will be useful,
+# *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+# *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# *  GNU General Public License for more details.
+# *
+# *  You should have received a copy of the GNU General Public License
+# *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# *
+# *****************************************************************************
 
 import sys
 import argparse
@@ -67,48 +58,48 @@ box = [args.lx, args.ly, args.lz]
 conf = Configuration(filename,args.geometry,box)
 writeme = Writer(args.nematic)
 if args.writeP:
-        outparticles = args.output + '/'+ args.prefix + '_particles.vtp' 
-        print outparticles
-        writeme.writeConfigurationVTK(conf,outparticles)
+  outparticles = args.output + '/'+ args.prefix + '_particles.vtp' 
+  print outparticles
+writeme.writeConfigurationVTK(conf,outparticles)
 #plt.show()
 if args.getStatsBasic:
-        vel2av, phival,ndensity,zav=conf.getStatsBasic()
-        #vel2av[u], phival[u],pressav[u],energy[u]= conf.getStatsBasic()
-        print "Mean square velocity: " + str(vel2av)
-        print "Packing fraction: " + str(phival)
-        print "Number density: " + str(ndensity)
-        print "Contact number: " + str(zav)
+  vel2av, phival,ndensity,zav=conf.getStatsBasic()
+  #vel2av[u], phival[u],pressav[u],energy[u]= conf.getStatsBasic()
+  print "Mean square velocity: " + str(vel2av)
+  print "Packing fraction: " + str(phival)
+  print "Number density: " + str(ndensity)
+  print "Contact number: " + str(zav)
 if args.writeD or args.writeT:
-        conf.getTangentBundle()
-        tess = Tesselation(conf)
-        print "initialized tesselation"
-        if args.delaunay:
-            LoopList,Ival,Jval = tess.findLoopDelaunay(True)
-        else:
-            LoopList,Ival,Jval = tess.findLoop(args.closeHoles,args.mult,1.1)
-        
-        print "found loops"
-        #print LoopList
-        if args.writeD:
-                #print "Still to be done ..."
-                outdefects = args.output + '/' + args.prefix + '_defects.vtp'
-                print outdefects
-                defects = Defects(tess,conf)
-                # Look for nematic defects in the director field, but do not look for velocity defects (since it's a mess)
-                if args.nematic:
-                        defects_n, defects_v,numdefect_n,numdefect_v=defects.getDefects('nematic',False)
-                else:
-                        defects_n, defects_v,numdefect_n,numdefect_v=defects.getDefects('polar')
-                print "found defects"
-                writeme.writeDefects(defects_n, defects_v,numdefect_n,numdefect_v,outdefects)
-        if args.writeT:
-                outpatches = args.output + '/' + args.prefix + '_patches.vtp'
-                print outpatches
-                if args.makeEdges:
-                        tess.makeEdges(3.0)   
-                tess.OrderPatches()
-                print "ordered patches"
-                writeme.writePatches(tess,outpatches,True)
-                        
+  conf.getTangentBundle()
+  tess = Tesselation(conf)
+  print "initialized tesselation"
+  if args.delaunay:
+    LoopList,Ival,Jval = tess.findLoopDelaunay(True)
+  else:
+    LoopList,Ival,Jval = tess.findLoop(args.closeHoles,args.mult,1.1)
+  
+  print "found loops"
+  #print LoopList
+  if args.writeD:
+    #print "Still to be done ..."
+    outdefects = args.output + '/' + args.prefix + '_defects.vtp'
+    print outdefects
+    defects = Defects(tess,conf)
+    # Look for nematic defects in the director field, but do not look for velocity defects (since it's a mess)
+    if args.nematic:
+      defects_n, defects_v,numdefect_n,numdefect_v=defects.getDefects('nematic',False)
+    else:
+      defects_n, defects_v,numdefect_n,numdefect_v=defects.getDefects('polar')
+    print "found defects"
+    writeme.writeDefects(defects_n, defects_v,numdefect_n,numdefect_v,outdefects)
+  if args.writeT:
+    outpatches = args.output + '/' + args.prefix + '_patches.vtp'
+    print outpatches
+    if args.makeEdges:
+      tess.makeEdges(3.0)   
+    tess.OrderPatches()
+    print "ordered patches"
+    writeme.writePatches(tess,outpatches,True)
+                  
 
 	
