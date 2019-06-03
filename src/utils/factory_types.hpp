@@ -45,8 +45,6 @@ typedef boost::function< IntegratorPtr(SystemPtr, MessengerPtr, PotentialPtr, Al
 typedef boost::function< PairAlignPtr(SystemPtr, MessengerPtr, NeighbourListPtr, pairs_type&) > pair_aligner_factory;                                                     //!< Type that handles all pairwise alignment
 typedef boost::function< ExternalAlignPtr(SystemPtr, MessengerPtr, pairs_type&) > external_aligner_factory;                                                               //!< Type that handles all external alignment
 typedef boost::function< PopulationPtr(SystemPtr, MessengerPtr, pairs_type&) > population_factory;                                                                        //!< Type that handles all populations
-typedef boost::function< BondPotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > bond_potential_factory;                                                                 //!< Type that handles all bond potentials
-typedef boost::function< AnglePotentialPtr(SystemPtr, MessengerPtr, pairs_type&) > angle_potential_factory;                                                               //!< Type that handles all angle potentials
 typedef boost::function< ValuePtr(MessengerPtr, pairs_type&) > value_factory;                                                                                             //!< Type that handles all value control objects
 
 
@@ -57,8 +55,6 @@ typedef std::map<std::string, integrator_factory> IntegratorMap;
 typedef std::map<std::string, pair_aligner_factory> PairAlignerMap;
 typedef std::map<std::string, external_aligner_factory> ExternalAlignerMap;
 typedef std::map<std::string, population_factory> PopulationMap;
-typedef std::map<std::string, bond_potential_factory> BondPotentialMap;
-typedef std::map<std::string, angle_potential_factory> AnglePotentialMap;
 typedef std::map<std::string, value_factory> ValueMap;
 
 

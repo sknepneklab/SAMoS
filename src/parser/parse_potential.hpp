@@ -62,23 +62,14 @@ public:
   {
     potential = (
                   qi::as_string[keyword["lj"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]         /*! Handles Lennard-Jones potential */
-                  | qi::as_string[keyword["coulomb"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]  /*! Handles Coulomb potential */
-                  | qi::as_string[keyword["debye"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]    /*! Handles Debye-Hueckel potential */
-                  | qi::as_string[keyword["morse"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]    /*! Handles Morse potential */
                   | qi::as_string[keyword["soft"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]     /*! Handles soft-core potential */
-                  | qi::as_string[keyword["gaussian"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ] /*! Handles Gaussian potential */
                   | qi::as_string[keyword["morse"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]    /*! Handles Morse potential */
                   | qi::as_string[keyword["active"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]   /*! Handles active potential */
-                  | qi::as_string[keyword["rod"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]      /*! Handles soft rod potential */
-                  | qi::as_string[keyword["ljrod"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]    /*! Handles Lennard-Jones rod potential */
                   | qi::as_string[keyword["soft_attractive"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]    /*! Handles soft attractive potential */
                   | qi::as_string[keyword["vp"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]       /*! Handles vertex-particle potential */
                   | qi::as_string[keyword["line_tension"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]     /*! Handles line-tension potential */
                   | qi::as_string[keyword["boundary_bending"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ] /*! Handles boundary bending potential */
                   | qi::as_string[keyword["boundary_attraction"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ] /*! Handles boundary attraction potential */
-                  | qi::as_string[keyword["motor"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]    /*! Handles motor pair potential */
-                  | qi::as_string[keyword["active_nematic"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]   /*! Handles active nematic potential */
-                  | qi::as_string[keyword["yukawa"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ]   /*! Handles Yukawa potential */
                   /* to add new potential: | qi::as_string[keyword["newpotential"]][phx::bind(&PotentialData::type, phx::ref(potential_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&PotentialData::params, phx::ref(potential_data)) = qi::_1 ]

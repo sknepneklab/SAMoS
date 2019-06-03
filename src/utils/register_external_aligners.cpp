@@ -33,16 +33,4 @@ void register_external_aligners(ExternalAlignerMap& external_aligners)
 {
   // Register active jamming polar external alignment to the external align class factory
   external_aligners["ajpolar"] = boost::factory<ExternalAJPolarAlignPtr>();
-  // Register external alignment a vector filed to the external align class factory
-  external_aligners["field"] = boost::factory<ExternalFieldAlignPtr>();
-  // Register active jamming nematic external alignment to the external align class factory
-  external_aligners["ajnematic"] = boost::factory<ExternalAJNematicAlignPtr>();
-  // Register cell shape external alignment to the external align class factory
-  external_aligners["cell_shape"] = boost::factory<ExternalShapeAlignPtr>();
-  // Register alignment to polymer tangent to the external align class factory
-  external_aligners["tangent"] = boost::factory<ExternalTangentAlignPtr>();
-  // Register kenotaxis alignment class
-  external_aligners["kenotaxis"] = boost::factory<ExternalKenotaxisAlignPtr>();
-  // Register radial alignment class
-  external_aligners["radial"] = boost::factory<ExternalRadialAlignPtr>();
 }

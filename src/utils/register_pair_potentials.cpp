@@ -33,20 +33,10 @@ void register_pair_potentials(PairPotentialMap& pair_potentials)
 {
   // Register Lennard-Jones pair potential with the pair potentials class factory
   pair_potentials["lj"] = boost::factory<PairLJPotentialPtr>();
-  // Register Coulomb pair potential with the pair potentials class factory
-  pair_potentials["coulomb"] = boost::factory<PairCoulombPotentialPtr>();
   // Register soft pair potential with the pair potentials class factory
   pair_potentials["soft"] = boost::factory<PairSoftPotentialPtr>();
-  // Register Gaussian pair potential with the pair potentials class factory
-  pair_potentials["gaussian"] = boost::factory<PairGaussianPotentialPtr>();  
-  // Register Morse pair potential with the pair potentials class factory
-  pair_potentials["morse"] = boost::factory<PairMorsePotentialPtr>();  
   // Register active pair potential with the pair potentials class factory
   pair_potentials["active"] = boost::factory<PairActivePotentialPtr>(); 
-  // Register soft rod pair potential with the pair potentials class factory
-  pair_potentials["rod"] = boost::factory<PairRodPotentialPtr>(); 
-  // Register Lennard-Jones rod pair potential with the pair potentials class factory
-  pair_potentials["ljrod"] = boost::factory<PairLJRodPotentialPtr>(); 
   // Register soft attractive pair potential with the pair potentials class factory
   pair_potentials["soft_attractive"] = boost::factory<PairSoftAttractivePotentialPtr>();
   // Register vertex particle pair potential for tissues with the pair potentials class factory
@@ -57,10 +47,5 @@ void register_pair_potentials(PairPotentialMap& pair_potentials)
   pair_potentials["boundary_bending"] = boost::factory<PairBoundaryBendingPotentialPtr>();
   // Register boundary attraction pair potential for tissues with the pair potentials class factory
   pair_potentials["boundary_attraction"] = boost::factory<PairBoundaryAttractionPotentialPtr>();
-  // Register motor pair potential with the pair potentials class factory
-  pair_potentials["motor"] = boost::factory<PairMotorPotentialPtr>();
-  // Register active nematic pair potential with the pair potentials class factory
-  pair_potentials["active_nematic"] = boost::factory<PairActiveNematicPotentialPtr>(); 
-  // Register Yukawa pair potential with the pair potentials class factory
-  pair_potentials["yukawa"] = boost::factory<PairYukawaPotentialPtr>(); 
+  
 }

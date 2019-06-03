@@ -49,8 +49,6 @@
 #include "log_vec_velocity.hpp"
 #include "log_pair_eng.hpp"
 #include "log_pair_align.hpp"
-#include "log_bond_eng.hpp"
-#include "log_angle_eng.hpp"
 #include "log_external_eng.hpp"
 #include "log_area.hpp"
 #include "log_perim.hpp"

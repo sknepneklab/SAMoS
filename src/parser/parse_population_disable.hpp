@@ -60,12 +60,6 @@ public:
                             qi::as_string[keyword["random"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ]    /*! Disables random population */
                           | qi::as_string[keyword["density"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ]    /*! Disables density population */
                           | qi::as_string[keyword["grow"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ]    /*! Disables grow population */
-                          | qi::as_string[keyword["elongate"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ]    /*! Disables elongate population */
-                          | qi::as_string[keyword["cell"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ]    /*! Disables radnom population */
-                          | qi::as_string[keyword["actomyosin"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ]    /*! Disables actomyosin population */
-                          | qi::as_string[keyword["actomyosin_poisson"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ]    /*! Disables acotmyosin_poisson population */
-                          | qi::as_string[keyword["actomyosin_molecule"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ]    /*! Disables actomyosin_molecule population */
-                          | qi::as_string[keyword["actomyosin_head"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ]    /*! Disables actomyosin_head population */
                           /* to add new disable population: | qi::as_string[keyword["newintegrator"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ] */
                         )
                         >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&DisablePopulationData::params, phx::ref(disable_population_data)) = qi::_1 ]

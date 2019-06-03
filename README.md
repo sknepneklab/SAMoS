@@ -1,6 +1,13 @@
 
 # Soft Active Matter on Surfaces (SAMoS)
 
+**NOTE:** This is a stripped down version of the code used to produce simulation part 
+of the paper: "Universal motion patterns in confluent cell monolayers" by
+Silke Henkes, Kaja Kostanjevec, J. Martin Collinson, Rastko Sknepnek, Eric Bertin
+https://arxiv.org/abs/1901.04763
+
+For the full version of SAMoS please refer to the development branch.
+
 ## 1. OS
 
 The code has been developed and tested under Linux and Mac OS X. 
@@ -117,8 +124,6 @@ samos
       /parser        - Set of Boost Spirit parsers for parsing configuration files
       /population    - Handles 'population' control (e.g., cell division and death, particle type change, particle removal and addition, etc.)
       /potential     - Implements various interactions (some of them may not be actual potential)
-         /angle      - Angle potentials for filament simulations
-         /bond       - Bond potentials for filament simulations 
          /external   - Potentials (and forces) acting on a single particle (such as external field)
          /pair       - Pair (or multibody) forces acting as the result of interparticle interactions (e.g., Lennard-Jones)
       /system        - Definition of the base classes that define the system (particles, simulation box, mesh, etc.)

@@ -48,10 +48,6 @@ void register_pair_aligners(PairAlignerMap&);
 void register_external_aligners(ExternalAlignerMap&);
 //Register populations
 void register_populations(PopulationMap&);
-//Register bond potentials
-void register_bond_potentials(BondPotentialMap&);
-//Register angle potentials
-void register_angle_potentials(AnglePotentialMap&);
 //Register values
 void register_values(ValueMap&);
 

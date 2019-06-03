@@ -31,32 +31,7 @@
 
 void register_constraints(ConstraintMap& constraints)
 {
-  // Register spherical constraint with the constraint class factory
-  constraints["sphere"] = boost::factory<ConstraintSpherePtr>();
   // Register xy plane constraint with the constraint class factory
   constraints["plane"] = boost::factory<ConstraintPlanePtr>();
   // Register plane walls constraint with the constraint class factory
-  constraints["walls"] = boost::factory<ConstraintPlaneWallsPtr>();
-  // Register cylindrical constraint with the constraint class factory
-  constraints["cylinder"] = boost::factory<ConstraintCylinderPtr>();
-  // Register peanut constraint with the constraint class factory
-  constraints["peanut"] = boost::factory<ConstraintPeanutPtr>();
-  // Register torus constraint with the constraint class factory
-  constraints["torus"] = boost::factory<ConstraintTorusPtr>();
-  // Register ellipsoid constraint with the constraint class factory
-  constraints["ellipsoid"] = boost::factory<ConstraintEllipsoidPtr>();
-  // Register gyroid constraint with the constraint class factory
-  constraints["gyroid"] = boost::factory<ConstraintGyroidPtr>();
-  // Register actomyo constraint with the constraint class factory
-  constraints["actomyo"] = boost::factory<ConstraintActomyoPtr>();
-  // Register hourglass constraint with the constraint class factory
-  constraints["hourglass"] = boost::factory<ConstraintHourglassPtr>();
-  // Register Gaussian bump constraint with the constraint class factory
-  constraints["gaussian_bump"] = boost::factory<ConstraintGaussianBumpPtr>();
-  // Register dummy constraint with the constraint class factory
-  constraints["none"] = boost::factory<ConstraintNonePtr>();
-  // Register constraint on the surface with tetraherdal symmetry with the constraint class factory
-  constraints["tetrahedron"] = boost::factory<ConstraintTetrahedronPtr>();
-  // Register constraint to move in a slab between to planes parallel to xy plane with the constraint class factory
-  constraints["slab"] = boost::factory<ConstraintSlabPtr>();
 }

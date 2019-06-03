@@ -61,18 +61,9 @@ public:
   integrator_grammar(IntegratorData& integrator_data) : integrator_grammar::base_type(integrator)
   {
     integrator = ( 
-                  qi::as_string[keyword["nve"]][phx::bind(&IntegratorData::type, phx::ref(integrator_data)) = qi::_1 ]              /*! Handles NVE integrator */
-                  | qi::as_string[keyword["nvt"]][phx::bind(&IntegratorData::type, phx::ref(integrator_data)) = qi::_1 ]            /*! Handles NVT integrator */
-                  | qi::as_string[keyword["brownian"]][phx::bind(&IntegratorData::type, phx::ref(integrator_data)) = qi::_1 ]       /*! Handles stochastic integrator */
-                  | qi::as_string[keyword["vicsek"]][phx::bind(&IntegratorData::type, phx::ref(integrator_data)) = qi::_1 ]         /*! Handles Vicsek integrator */
-                  | qi::as_string[keyword["nematic"]][phx::bind(&IntegratorData::type, phx::ref(integrator_data)) = qi::_1 ]        /*! Handles nematic integrator */
-                  | qi::as_string[keyword["actomyo"]][phx::bind(&IntegratorData::type, phx::ref(integrator_data)) = qi::_1 ]        /*! Handles actomyo integrator */
-                  | qi::as_string[keyword["brownian_rod"]][phx::bind(&IntegratorData::type, phx::ref(integrator_data)) = qi::_1 ]   /*! Handles stochastic integrator for rods */
+                    qi::as_string[keyword["brownian"]][phx::bind(&IntegratorData::type, phx::ref(integrator_data)) = qi::_1 ]       /*! Handles stochastic integrator */
                   | qi::as_string[keyword["brownian_pos"]][phx::bind(&IntegratorData::type, phx::ref(integrator_data)) = qi::_1 ]   /*! Handles stochastic integrator for particle position */
                   | qi::as_string[keyword["brownian_align"]][phx::bind(&IntegratorData::type, phx::ref(integrator_data)) = qi::_1 ] /*! Handles stochastic integrator for particle alignment */
-                  | qi::as_string[keyword["langevin"]][phx::bind(&IntegratorData::type, phx::ref(integrator_data)) = qi::_1 ]       /*! Handles Langevin stochastic integrator */
-                  | qi::as_string[keyword["fire"]][phx::bind(&IntegratorData::type, phx::ref(integrator_data)) = qi::_1 ]           /*! Handles FIRE minimisation integrator */
-                  | qi::as_string[keyword["sepulveda"]][phx::bind(&IntegratorData::type, phx::ref(integrator_data)) = qi::_1 ]      /*! Handles Sepulveda integrator */
                   /* to add new integrator: | qi::as_string[keyword["newintegrator"]][phx::bind(&IntegratorData::type, phx::ref(integrator_data)) = qi::_1 ] */
                  )
                  >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&IntegratorData::params, phx::ref(integrator_data)) = qi::_1 ]

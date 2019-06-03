@@ -85,12 +85,6 @@ public:
                  | qi::as_string[keyword["disable"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]         /*! Handles disabling integrators. */
                  | qi::as_string[keyword["population"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]      /*! Handles population control. */
                  | qi::as_string[keyword["zero_momentum"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]   /*! Handles zeroing momentum of a group of particles. */
-                 | qi::as_string[keyword["bond"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]            /*! Handles bond potentials. */
-                 | qi::as_string[keyword["bond_param"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]      /*! Handles bond potential parameters. */
-                 | qi::as_string[keyword["angle"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]           /*! Handles angle potentials. */
-                 | qi::as_string[keyword["angle_param"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]     /*! Handles angle potential parameters. */
-                 | qi::as_string[keyword["read_bonds"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]      /*! Handles bonds file. */
-                 | qi::as_string[keyword["read_angles"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]     /*! Handles angles file. */
                  | qi::as_string[keyword["read_cell_boundary"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]    /*! Handles cell boundary connectivity file. */
                  | qi::as_string[keyword["ntypes"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]          /*! Handles number of types. */
                  | qi::as_string[keyword["config"]][ phx::bind(&CommandData::command, phx::ref(command_data)) = qi::_1 ]          /*! Handles configuration file. */

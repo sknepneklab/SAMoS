@@ -37,16 +37,4 @@ void register_populations(PopulationMap& populations)
   populations["density"] = boost::factory<PopulationDensityPtr>();
   // Register growth population control with the class factory
   populations["grow"] = boost::factory<PopulationGrowthPtr>();
-  // Register elongation population control with the class factory
-  populations["elongate"] = boost::factory<PopulationElongationPtr>();
-  // Register cell population control with the class factory
-  populations["cell"] = boost::factory<PopulationCellPtr>();
-  // Register actomyosin population control with the class factory
-  populations["actomyosin"] = boost::factory<PopulationActomyosinPtr>();
-  // Register actomyosin poisson population control with the class factory
-  populations["actomyosin_poisson"] = boost::factory<PopulationActomyosinPoissonPtr>();
-  // Register actomyosin molecule population control with the class factory
-  populations["actomyosin_molecule"] = boost::factory<PopulationActomyosinMoleculePtr>();
-  // Register actomyosin head population control with the class factory
-  populations["actomyosin_head"] = boost::factory<PopulationActomyosinHeadPtr>();
 }
