@@ -1,8 +1,8 @@
 # NOTE: C++11 required!!!
 
-While most of the code still uses the C++98 standard, in order to compile is a C++11 compiler is required.
+While most of the code still uses the C++98 standard, in order to compile it a C++11 compiler is required.
 Due to problems with the boost/functional/factory library when compiling on Mac OS X (OS X High Sierra and later)
-SAMoS no longer uses boost/functional/factory library. Instead a light-weight class factory was implemented using 
+SAMoS no longer uses that library. Instead a light-weight class factory was implemented using the
 C++11 standard (it relies on variadic templates).
 
 # Soft Active Matter on Surfaces (SAMoS)
