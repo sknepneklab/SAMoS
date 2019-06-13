@@ -1,6 +1,6 @@
 /* ***************************************************************************
  *
- *  Copyright (C) 2013-2016 University of Dundee
+ *  Copyright (C) 2013-20119 University of Dundee
  *  All rights reserved. 
  *
  *  This file is part of SAMoS (Soft Active Matter on Surfaces) program.
@@ -21,50 +21,36 @@
  * ****************************************************************************/
 
 /*!
- * \file rng.hpp
+ * \file class_factory.hpp
  * \author Rastko Sknepnek, sknepnek@gmail.com
- * \date 24-Oct-2013
- * \brief Class RNG provides wrappers for the GSL random number generate
- */ 
+ * \date 13-Jun-2019
+ * \brief Define class factory 
+*/
 
-#ifndef __RNG_H__
-#define __RNG_H__
+#ifndef __CLASS_FACTORY_HPP__
+#define __CLASS_FACTORY_HPP__
 
 #include <memory>
 
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
+using std::make_shared;
 
-using std::shared_ptr;
-
-/*! Class handles random numbers in the system */
-class RNG
+template<typename ptrT>
+class factory
 {
-public:
-  
-  //! Constructor (initialize random number generator)
-  RNG(int);
-  
-  //! Destructor
-  ~RNG();
-  
-  //! Return random number between 0 and 1
-  double drnd();
-  
-  //! Return random integer between 0 and N
-  int lrnd(int);
-  
-  //! Return a Gaussian distributed number with a given standard deviation
-  double gauss_rng(double);
+  public:
 
-private:
-  
-  int m_seed;   //!< Random number generator seed
-  const gsl_rng_type* GSL_RANDOM_TYPE;  //!< Pointer to the gsl_rng_type structure which handles the RNG type
-  gsl_rng* GSL_RANDOM_GENERATOR;        //!< Pointer which holds the actual random number generator
+    factory() { }
+
+    template <typename... Args>
+    ptrT operator()(Args ... args) 
+    {
+      return make_shared<T>(args ...);
+    }
+
+  private:
+
+    typedef typename ptrT::element_type T;
 
 };
-
-typedef shared_ptr<RNG> RNGPtr;
 
 #endif

@@ -32,7 +32,7 @@
 void register_angle_potentials(AnglePotentialMap& angle_potentials)
 {
   // Register harmonic angle potential with the class factory
-  angle_potentials["harmonic"] = boost::factory<AngleHarmonicPotentialPtr>();
+  angle_potentials["harmonic"] = factory<AngleHarmonicPotentialPtr>();
     // Register cosine angle potential with the class factory
-  angle_potentials["cosine"] = boost::factory<AngleCosinePotentialPtr>();
+  angle_potentials["cosine"] = factory<AngleCosinePotentialPtr>();
 }

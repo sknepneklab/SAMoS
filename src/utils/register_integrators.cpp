@@ -32,25 +32,25 @@
 void register_integrators(IntegratorMap& integrators)
 {
   // Register Brownian dynamics integrator with the integrators class factory
-  integrators["brownian"] = boost::factory<IntegratorBrownianPtr>();
+  integrators["brownian"] = factory<IntegratorBrownianPtr>();
   // Register Vicsek dynamics integrator with the integrators class factory
-  integrators["vicsek"] = boost::factory<IntegratorVicsekPtr>();
+  integrators["vicsek"] = factory<IntegratorVicsekPtr>();
   // Register NVE integrator with the integrators class factory
-  integrators["nve"] = boost::factory<IntegratorNVEPtr>();
+  integrators["nve"] = factory<IntegratorNVEPtr>();
   // Register nematic integrator with the integrators class factory
-  integrators["nematic"] = boost::factory<IntegratorNematicPtr>();
+  integrators["nematic"] = factory<IntegratorNematicPtr>();
   // Register actomyo integrator with the integrators class factory
-  integrators["actomyo"] = boost::factory<IntegratorActomyoPtr>();
+  integrators["actomyo"] = factory<IntegratorActomyoPtr>();
   // Register Brownian rod dynamics integrator with the integrators class factory
-  integrators["brownian_rod"] = boost::factory<IntegratorBrownianRodPtr>();
+  integrators["brownian_rod"] = factory<IntegratorBrownianRodPtr>();
   // Register Brownian dynamics integrator for particle position with the integrators class factory
-  integrators["brownian_pos"] = boost::factory<IntegratorBrownianPosPtr>();
+  integrators["brownian_pos"] = factory<IntegratorBrownianPosPtr>();
   // Register Brownian dynamics integrator for alignment with the integrators class factory
-  integrators["brownian_align"] = boost::factory<IntegratorBrownianAlignPtr>();
+  integrators["brownian_align"] = factory<IntegratorBrownianAlignPtr>();
   // Register Langevin dynamics integrator for particle positions with the integrators class factory
-  integrators["langevin"] = boost::factory<IntegratorLangevinPtr>();
+  integrators["langevin"] = factory<IntegratorLangevinPtr>();
   // Register FIRE minimisaton integrator with the integrators class factory
-  integrators["fire"] = boost::factory<IntegratorFIREPtr>();
+  integrators["fire"] = factory<IntegratorFIREPtr>();
   // Register Sepulveda minimisaton integrator with the integrators class factory
-  integrators["sepulveda"] = boost::factory<IntegratorSepulvedaPtr>();
+  integrators["sepulveda"] = factory<IntegratorSepulvedaPtr>();
 }

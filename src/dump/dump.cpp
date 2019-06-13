@@ -600,7 +600,6 @@ void Dump::dump_data()
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(particles[i]);
-    Vertex& V = mesh.get_vertices()[p.get_id()];
     if (m_params.find("id") != m_params.end())
       m_out << format("%5d ") % p.get_id();
     if (m_params.find("tp") != m_params.end())
@@ -632,15 +631,21 @@ void Dump::dump_data()
       m_out << format(" %3d ") % p.get_parent();
     if (m_params.find("area") != m_params.end())
       m_out << format("%16.6f ") % p.A0;
-    if (m_params.find("cell_area") != m_params.end())
+    if (m_nlist->has_faces())
     {
-        if (m_nlist->has_faces())
-          m_out << format("%16.6f ") % V.area;
-    }
-    if (m_params.find("cell_perim") != m_params.end())
-    {
-        if (m_nlist->has_faces())
+      Vertex& V = mesh.get_vertices()[p.get_id()];
+      if (m_params.find("cell_area") != m_params.end())
+      {
+        m_out << format("%16.6f ") % V.area;
+      }
+      if (m_params.find("cell_perim") != m_params.end())
+      {
         m_out << format("%16.6f ") % V.perim;
+      }
+      if (m_params.find("shape_param") != m_params.end())
+      {
+        m_out << format("%10.6f ") % (V.perim/sqrt(V.area));
+      }
     }
     if (m_params.find("cont_num") != m_params.end())
     {
@@ -663,11 +668,6 @@ void Dump::dump_data()
     }  
     if (m_params.find("molecule") != m_params.end())
       m_out << format("%2d ") % p.molecule;
-    if (m_params.find("shape_param") != m_params.end())
-    {
-      if (m_nlist->has_faces())
-        m_out << format("%10.6f ") % (V.perim/sqrt(V.area));
-    }
     m_out << endl;
   }
 }

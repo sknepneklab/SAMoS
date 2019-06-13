@@ -32,21 +32,21 @@
 void register_populations(PopulationMap& populations)
 {
   // Register random population control with the class factory
-  populations["random"] = boost::factory<PopulationRandomPtr>();
+  populations["random"] = factory<PopulationRandomPtr>();
   // Register density population control with the class factory
-  populations["density"] = boost::factory<PopulationDensityPtr>();
+  populations["density"] = factory<PopulationDensityPtr>();
   // Register growth population control with the class factory
-  populations["grow"] = boost::factory<PopulationGrowthPtr>();
+  populations["grow"] = factory<PopulationGrowthPtr>();
   // Register elongation population control with the class factory
-  populations["elongate"] = boost::factory<PopulationElongationPtr>();
+  populations["elongate"] = factory<PopulationElongationPtr>();
   // Register cell population control with the class factory
-  populations["cell"] = boost::factory<PopulationCellPtr>();
+  populations["cell"] = factory<PopulationCellPtr>();
   // Register actomyosin population control with the class factory
-  populations["actomyosin"] = boost::factory<PopulationActomyosinPtr>();
+  populations["actomyosin"] = factory<PopulationActomyosinPtr>();
   // Register actomyosin poisson population control with the class factory
-  populations["actomyosin_poisson"] = boost::factory<PopulationActomyosinPoissonPtr>();
+  populations["actomyosin_poisson"] = factory<PopulationActomyosinPoissonPtr>();
   // Register actomyosin molecule population control with the class factory
-  populations["actomyosin_molecule"] = boost::factory<PopulationActomyosinMoleculePtr>();
+  populations["actomyosin_molecule"] = factory<PopulationActomyosinMoleculePtr>();
   // Register actomyosin head population control with the class factory
-  populations["actomyosin_head"] = boost::factory<PopulationActomyosinHeadPtr>();
+  populations["actomyosin_head"] = factory<PopulationActomyosinHeadPtr>();
 }

@@ -213,7 +213,7 @@ int main(int argc, char* argv[])
                 else  std::cout << "Error parsing simulation box parameters."  << std::endl;
                 throw std::runtime_error("Error parsing box parameters.");
               }
-              box = boost::make_shared<Box>(Box(lx,ly,lz));
+              box = std::make_shared<Box>(Box(lx,ly,lz));
               if (defined["messages"])   msg->msg(Messenger::INFO,"Simulation box is "+box_data.type+" with size (lx,ly,lz) = ("+lexical_cast<string>(lx)+","+lexical_cast<string>(ly)+","+lexical_cast<string>(lz)+").");
               else  std::cout << "Simulation box is "+box_data.type+" with size (lx,ly,lz) = ("+lexical_cast<string>(lx)+","+lexical_cast<string>(ly)+","+lexical_cast<string>(lz)+")." << std::endl;
             }
@@ -227,7 +227,7 @@ int main(int argc, char* argv[])
           {
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), input_parser, qi::space))  // Note that Messenger uses the same parser as the input files parser
             {
-              msg = boost::shared_ptr<Messenger>(new Messenger(input_data.name));
+              msg = std::shared_ptr<Messenger>(new Messenger(input_data.name));
               msg->msg(Messenger::INFO,"Messages will be sent to "+input_data.name+".");
             }
             else
@@ -243,7 +243,7 @@ int main(int argc, char* argv[])
               if (!defined["messages"])  // If messenger is not defined, send to default messenger defined at the top of this file
               {
                 string msg_name = DEFAULT_MESSENGER;
-                msg = boost::shared_ptr<Messenger>(new Messenger(msg_name));
+                msg = std::shared_ptr<Messenger>(new Messenger(msg_name));
                 msg->msg(Messenger::WARNING,"Messenger was not defined prior to the reading in data. If not redefined all messages will be sent to "+msg_name+".");
               }
               if (!defined["box"])   // Cannot run without a box
@@ -251,7 +251,7 @@ int main(int argc, char* argv[])
                 msg->msg(Messenger::ERROR,"Simulation box has not been defined. Please define it before reading in coordinates.");
                 throw std::runtime_error("Simulation box not defined.");
               }
-              sys = boost::make_shared<System>(System(input_data.name,msg,box));
+              sys = std::make_shared<System>(System(input_data.name,msg,box));
               sys->set_periodic(periodic);
               msg->msg(Messenger::INFO,"Finished reading system coordinates from "+input_data.name+".");
             }
@@ -338,7 +338,7 @@ int main(int argc, char* argv[])
             {
               if (!has_potential) 
               {
-                pot = boost::make_shared<Potential>(Potential(sys,msg));
+                pot = std::make_shared<Potential>(Potential(sys,msg));
                 has_potential = true;
               }
               if (qi::phrase_parse(potential_data.params.begin(), potential_data.params.end(), param_parser, qi::space, parameter_data))
@@ -346,7 +346,7 @@ int main(int argc, char* argv[])
                 if (!defined["nlist"]) // Create a default neighbour list if none has been defined
                 {
                   msg->msg(Messenger::WARNING,"No neighbour list defined. Some pair potentials (e.g. Lennard-Jones) need it. We are making one with default cutoff and padding.");
-                  nlist = boost::make_shared<NeighbourList>(NeighbourList(sys,msg,DEFAULT_CUTOFF,DEFAULT_PADDING,parameter_data));
+                  nlist = std::make_shared<NeighbourList>(NeighbourList(sys,msg,DEFAULT_CUTOFF,DEFAULT_PADDING,parameter_data));
                   defined["nlist"] = true;
                 }
                 std::string phase_in = "constant";
@@ -356,7 +356,7 @@ int main(int argc, char* argv[])
                                                                                                   sys,
                                                                                                   msg,
                                                                                                   nlist,
-                                                                                                  boost::shared_ptr<Value>(values[phase_in](msg,parameter_data)),
+                                                                                                  std::shared_ptr<Value>(values[phase_in](msg,parameter_data)),
                                                                                                   parameter_data
                                                                                                  ));
                 msg->msg(Messenger::INFO,"Added "+potential_data.type+" to the list of pair potentials.");
@@ -388,7 +388,7 @@ int main(int argc, char* argv[])
             {
               if (!has_potential) 
               {
-                pot = boost::make_shared<Potential>(Potential(sys,msg));
+                pot = std::make_shared<Potential>(Potential(sys,msg));
                 has_potential = true;
               }
               if (qi::phrase_parse(external_data.params.begin(), external_data.params.end(), param_parser, qi::space, parameter_data))
@@ -430,7 +430,7 @@ int main(int argc, char* argv[])
             {
               if (!has_potential) 
               {
-                pot = boost::make_shared<Potential>(Potential(sys,msg));
+                pot = std::make_shared<Potential>(Potential(sys,msg));
                 has_potential = true;
               }
               if (qi::phrase_parse(bond_data.params.begin(), bond_data.params.end(), param_parser, qi::space, parameter_data))
@@ -473,7 +473,7 @@ int main(int argc, char* argv[])
             {
               if (!has_potential) 
               {
-                pot = boost::make_shared<Potential>(Potential(sys,msg));
+                pot = std::make_shared<Potential>(Potential(sys,msg));
                 has_potential = true;
               }
               if (qi::phrase_parse(angle_data.params.begin(), angle_data.params.end(), param_parser, qi::space, parameter_data))
@@ -508,12 +508,12 @@ int main(int argc, char* argv[])
             {
               if (!has_constraints) 
               {
-                constraint = boost::make_shared<Constrainer>(Constrainer(sys,msg));
+                constraint = std::make_shared<Constrainer>(Constrainer(sys,msg));
                 has_constraints = true;
               }
               if (qi::phrase_parse(constraint_data.params.begin(), constraint_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                //constraint = boost::shared_ptr<Constraint>(constraints[constraint_data.type](sys,msg,parameter_data));  // dirty workaround shared_ptr and inherited classes
+                //constraint = std::shared_ptr<Constraint>(constraints[constraint_data.type](sys,msg,parameter_data));  // dirty workaround shared_ptr and inherited classes
                 constraint->add_constraint(constraint_data.type,constraints[constraint_data.type](sys,msg,parameter_data));
                 msg->msg(Messenger::INFO,"Adding constraint of type "+constraint_data.type+".");
                 // Enforce constraint so we make sure all particles lie on it
@@ -548,7 +548,7 @@ int main(int argc, char* argv[])
               double pad = DEFAULT_PADDING;
               if (parameter_data.find("rcut") != parameter_data.end()) rcut = lexical_cast<double>(parameter_data["rcut"]);
               if (parameter_data.find("pad") != parameter_data.end())  pad = lexical_cast<double>(parameter_data["pad"]);
-              nlist = boost::make_shared<NeighbourList>(NeighbourList(sys,msg,rcut,pad,parameter_data));
+              nlist = std::make_shared<NeighbourList>(NeighbourList(sys,msg,rcut,pad,parameter_data));
               msg->msg(Messenger::INFO,"Created neighbour list with cutoff "+lexical_cast<string>(rcut)+" and padding distance "+lexical_cast<string>(pad)+".");
               defined["nlist"] = true;
             }
@@ -572,7 +572,7 @@ int main(int argc, char* argv[])
             {
               if (qi::phrase_parse(log_dump_data.params.begin(), log_dump_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                dump.push_back(boost::shared_ptr<Dump>(new Dump(sys,msg,nlist,log_dump_data.name,parameter_data)));
+                dump.push_back(std::shared_ptr<Dump>(new Dump(sys,msg,nlist,log_dump_data.name,parameter_data)));
                 msg->msg(Messenger::INFO,"Adding dump to file "+log_dump_data.name+".");
                 for(pairs_type::iterator it = parameter_data.begin(); it != parameter_data.end(); it++)
                   if ((*it).second != "")
@@ -610,7 +610,7 @@ int main(int argc, char* argv[])
             {
               if (qi::phrase_parse(log_dump_data.params.begin(), log_dump_data.params.end(), param_parser, qi::space, parameter_data))
               {
-                log.push_back(boost::shared_ptr<Logger>(new Logger(sys,msg,pot,aligner,log_dump_data.name,parameter_data)));
+                log.push_back(std::shared_ptr<Logger>(new Logger(sys,msg,pot,aligner,log_dump_data.name,parameter_data)));
                 msg->msg(Messenger::INFO,"Adding logger to file "+log_dump_data.name+".");
               }
               else
@@ -663,7 +663,7 @@ int main(int argc, char* argv[])
                     temperature_control = "constant";
                   else
                     temperature_control = parameter_data["temperature_control"];
-                  integrator[integrator_data.type+"_"+group_name] = boost::shared_ptr<Integrator>(
+                  integrator[integrator_data.type+"_"+group_name] = std::shared_ptr<Integrator>(
                                                                                                   integrators[integrator_data.type]
                                                                                                   (
                                                                                                     sys,
@@ -672,7 +672,7 @@ int main(int argc, char* argv[])
                                                                                                     aligner,
                                                                                                     nlist,
                                                                                                     constraint,
-                                                                                                    boost::shared_ptr<Value>(values[temperature_control](msg,parameter_data)),
+                                                                                                    std::shared_ptr<Value>(values[temperature_control](msg,parameter_data)),
                                                                                                     parameter_data
                                                                                                   )
                                                                                                  );
@@ -976,7 +976,7 @@ int main(int argc, char* argv[])
             {
               if (!has_aligner) 
               {
-                aligner = boost::make_shared<Aligner>(Aligner(sys,msg));
+                aligner = std::make_shared<Aligner>(Aligner(sys,msg));
                 has_aligner = true;
               }
               if (qi::phrase_parse(pair_align_data.params.begin(), pair_align_data.params.end(), param_parser, qi::space, parameter_data))
@@ -984,7 +984,7 @@ int main(int argc, char* argv[])
                 if (!defined["nlist"]) // Create a default neighbour list if non has been defined
                 {
                   msg->msg(Messenger::WARNING,"No neighbour list defined. Some pair aligners (e.g. mf) need it. We are making one with default cutoff and padding.");
-                  nlist = boost::make_shared<NeighbourList>(NeighbourList(sys,msg,DEFAULT_CUTOFF,DEFAULT_PADDING, parameter_data));
+                  nlist = std::make_shared<NeighbourList>(NeighbourList(sys,msg,DEFAULT_CUTOFF,DEFAULT_PADDING, parameter_data));
                   defined["nlist"] = true;
                 }
                 aligner->add_pair_align(pair_align_data.type, pair_aligners[pair_align_data.type](sys,msg,nlist,parameter_data));
@@ -1043,7 +1043,7 @@ int main(int argc, char* argv[])
             {
               if (!has_aligner) 
               {
-                aligner = boost::make_shared<Aligner>(Aligner(sys,msg));
+                aligner = std::make_shared<Aligner>(Aligner(sys,msg));
                 has_aligner = true;
                 defined["external_aligner"] = true;
               }
@@ -1187,7 +1187,7 @@ int main(int argc, char* argv[])
                   group_name = parameter_data["group"];
                 if (population.find(population_data.type+"_"+group_name) == population.end())
                 {
-                  population[population_data.type+"_"+group_name] = boost::shared_ptr<Population>(populations[population_data.type](sys,msg,parameter_data));  // dirty workaround shared_ptr and inherited classes
+                  population[population_data.type+"_"+group_name] = std::shared_ptr<Population>(populations[population_data.type](sys,msg,parameter_data));  // dirty workaround shared_ptr and inherited classes
                   if (defined["nlist"])
                     population[population_data.type+"_"+group_name]->set_nlist(nlist);
                   msg->msg(Messenger::INFO,"Adding population of type "+population_data.type+" (for group "+group_name+").");

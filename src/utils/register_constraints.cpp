@@ -32,31 +32,31 @@
 void register_constraints(ConstraintMap& constraints)
 {
   // Register spherical constraint with the constraint class factory
-  constraints["sphere"] = boost::factory<ConstraintSpherePtr>();
+  constraints["sphere"] = factory<ConstraintSpherePtr>();
   // Register xy plane constraint with the constraint class factory
-  constraints["plane"] = boost::factory<ConstraintPlanePtr>();
+  constraints["plane"] = factory<ConstraintPlanePtr>();
   // Register plane walls constraint with the constraint class factory
-  constraints["walls"] = boost::factory<ConstraintPlaneWallsPtr>();
+  constraints["walls"] = factory<ConstraintPlaneWallsPtr>();
   // Register cylindrical constraint with the constraint class factory
-  constraints["cylinder"] = boost::factory<ConstraintCylinderPtr>();
+  constraints["cylinder"] = factory<ConstraintCylinderPtr>();
   // Register peanut constraint with the constraint class factory
-  constraints["peanut"] = boost::factory<ConstraintPeanutPtr>();
+  constraints["peanut"] = factory<ConstraintPeanutPtr>();
   // Register torus constraint with the constraint class factory
-  constraints["torus"] = boost::factory<ConstraintTorusPtr>();
+  constraints["torus"] = factory<ConstraintTorusPtr>();
   // Register ellipsoid constraint with the constraint class factory
-  constraints["ellipsoid"] = boost::factory<ConstraintEllipsoidPtr>();
+  constraints["ellipsoid"] = factory<ConstraintEllipsoidPtr>();
   // Register gyroid constraint with the constraint class factory
-  constraints["gyroid"] = boost::factory<ConstraintGyroidPtr>();
+  constraints["gyroid"] = factory<ConstraintGyroidPtr>();
   // Register actomyo constraint with the constraint class factory
-  constraints["actomyo"] = boost::factory<ConstraintActomyoPtr>();
+  constraints["actomyo"] = factory<ConstraintActomyoPtr>();
   // Register hourglass constraint with the constraint class factory
-  constraints["hourglass"] = boost::factory<ConstraintHourglassPtr>();
+  constraints["hourglass"] = factory<ConstraintHourglassPtr>();
   // Register Gaussian bump constraint with the constraint class factory
-  constraints["gaussian_bump"] = boost::factory<ConstraintGaussianBumpPtr>();
+  constraints["gaussian_bump"] = factory<ConstraintGaussianBumpPtr>();
   // Register dummy constraint with the constraint class factory
-  constraints["none"] = boost::factory<ConstraintNonePtr>();
+  constraints["none"] = factory<ConstraintNonePtr>();
   // Register constraint on the surface with tetraherdal symmetry with the constraint class factory
-  constraints["tetrahedron"] = boost::factory<ConstraintTetrahedronPtr>();
+  constraints["tetrahedron"] = factory<ConstraintTetrahedronPtr>();
   // Register constraint to move in a slab between to planes parallel to xy plane with the constraint class factory
-  constraints["slab"] = boost::factory<ConstraintSlabPtr>();
+  constraints["slab"] = factory<ConstraintSlabPtr>();
 }

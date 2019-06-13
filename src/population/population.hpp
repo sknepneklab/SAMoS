@@ -32,8 +32,7 @@
 
 #include <string>
 #include <vector>
-
-#include <boost/make_shared.hpp>
+#include <memory>
 
 #include "messenger.hpp"
 #include "system.hpp"
@@ -44,7 +43,7 @@
 using std::string;
 using std::vector;
 
-using boost::make_shared;
+using std::make_shared;
 
 /*! Population class is the abstract parent class that handles all population control 
  *  mechanism (division and death/removal of particles).

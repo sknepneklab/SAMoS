@@ -1,3 +1,9 @@
+# NOTE: C++11 required!!!
+
+While most of the code still uses the C++98 standard, in order to compile is a C++11 compiler is required.
+Due to problems with the boost/functional/factory library when compiling on Mac OS X (OS X High Sierra and later)
+SAMoS no longer uses boost/functional/factory library. Instead a light-weight class factory was implemented using 
+C++11 standard (it relies on variadic templates).
 
 # Soft Active Matter on Surfaces (SAMoS)
 
@@ -10,17 +16,17 @@ build scripts. This has not been tested.
 
 ## 2. TUTORIALS
 
-A detailed tutorial on how to setup a simulation in SAMoS can be found in 
+A detailed tutorial on how to set up a simulation in SAMoS can be found in 
 /path/to/SAMoS_install/doc/tutorial/tutorial.html
 
 here */path/to/SAMoS_install/* is the directory where SAMoS is installed (see section 5 below).
 
 ## 3. REQUIREMENTS
 
-SAMoS code is written in C++ using C++98 standard. Data analysis and initial configuration 
+SAMoS code is written in C++. Data analysis and initial configuration 
 building tools are written in Python 2.7 and require NumPy to run.
 
-* Modern C++ compiler, such as g++ 4.4 or newer (code uses the C++98 standard)
+* Modern C++ compiler supporting the C++11 standard 
 * Boost libraries (1.48 or newer, in particular Spirit parser)
 * GNU Scientific Library (GSL) - version 1.13 or newer 
 * CMake (2.8 or newer) - it is recommended to install ccmake GUI
@@ -57,7 +63,7 @@ If this happens, use '-j 2', which is likely not to cause any problems on most m
 
 **NOTE:** Depending on the compiler, you may get a number of warning messages. Those are harmless and you may safely ignore them.  
 
-**NOTE:** SAMoS will fail to compile using the C++11 standard! 
+**NOTE:** SAMoS will only compile using c++11 (or newer) standard.
 
 **WARNING:** Some Mac users have reported problems with compiling SAMoS on Sierra and High Sierra using packages installed with 'brew'. Switching to 
 the 'MacPorts' seems to solve the problem.   

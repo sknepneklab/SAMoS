@@ -32,11 +32,11 @@
 void register_pair_aligners(PairAlignerMap& pair_aligners)
 {
   // Register polar aligner with the pairwise aligner class factory
-  pair_aligners["polar"] = boost::factory<PairPolarAlignPtr>();
+  pair_aligners["polar"] = factory<PairPolarAlignPtr>();
   // Register nematic aligner with the pairwise aligner class factory
-  pair_aligners["nematic"] = boost::factory<PairNematicAlignPtr>();
+  pair_aligners["nematic"] = factory<PairNematicAlignPtr>();
   // Register Vicsek aligner with the pairwise aligner class factory
-  pair_aligners["vicsek"] = boost::factory<PairVicsekAlignPtr>();
+  pair_aligners["vicsek"] = factory<PairVicsekAlignPtr>();
   // Register velocity aligner with the pairwise aligner class factory
-  pair_aligners["velocity"] = boost::factory<PairVelocityAlignPtr>();
+  pair_aligners["velocity"] = factory<PairVelocityAlignPtr>();
 }

@@ -31,8 +31,8 @@
 #define __INTEGRATOR_H__
 
 #include <string>
+#include <memory>
 
-#include <boost/make_shared.hpp>
 
 #include "system.hpp"
 #include "messenger.hpp"
@@ -44,7 +44,7 @@
 
 using std::string;
 
-using boost::make_shared;
+using std::make_shared;
 
 /*! Integrator class is the base class for handling different numerical 
  *  integrators for integrating equations of motion (e.g., NVE).

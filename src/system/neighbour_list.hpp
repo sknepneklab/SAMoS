@@ -36,9 +36,8 @@
 #include <string>
 #include <fstream>
 #include <list>
+#include <memory>
 
-//#include <boost/property_map/property_map.hpp>
-//#include <boost/ref.hpp>
 
 #ifdef HAS_CGAL
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
@@ -58,6 +57,7 @@ using std::pair;
 using std::string;
 using std::ofstream;
 using std::list;
+using std::shared_ptr;
 
 #ifdef HAS_CGAL
 
@@ -138,7 +138,7 @@ public:
     if (m_system->get_box()->Lx > 2.0*(cutoff+pad) && m_system->get_box()->Ly > 2.0*(cutoff+pad) && m_system->get_box()->Lz > 2.0*(cutoff+pad))
     {
       m_use_cell_list = true;
-      m_cell_list = boost::shared_ptr<CellList>(new CellList(m_system,m_msg,cutoff+pad));
+      m_cell_list = shared_ptr<CellList>(new CellList(m_system,m_msg,cutoff+pad));
       m_msg->msg(Messenger::INFO,"Using cell lists for neighbour list builds.");
       m_msg->write_config("nlist.build_type","cell");
     }
@@ -254,7 +254,7 @@ public:
     m_cut *= scale;
     if (m_use_cell_list && m_system->get_box()->Lx > 2.0*(m_cut+m_pad) && m_system->get_box()->Ly > 2.0*(m_cut+m_pad) && m_system->get_box()->Lz > 2.0*(m_cut+m_pad))
     {
-      m_cell_list = boost::shared_ptr<CellList>(new CellList(m_system,m_msg,m_cut+m_pad));
+      m_cell_list = shared_ptr<CellList>(new CellList(m_system,m_msg,m_cut+m_pad));
       m_msg->msg(Messenger::INFO,"Rescaling neighbour list cutoff.");
       m_msg->msg(Messenger::INFO,"Still using cell lists for neighbour list builds.");
     }

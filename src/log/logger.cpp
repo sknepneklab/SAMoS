@@ -46,33 +46,33 @@ Logger::Logger(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr ali
 {
   
   // List of known log types
-  m_logger["step"] = boost::make_shared<LogStep>(LogStep(sys, msg, pot, align));
-  m_logger["velocity"] = boost::make_shared<LogVelocity>(LogVelocity(sys, msg, pot, align));
-  m_logger["vec_velocity"] = boost::make_shared<LogVecVelocity>(LogVecVelocity(sys, msg, pot, align));
-  m_logger["soft_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"soft")); 
-  m_logger["soft_attractive_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"soft_attractive")); 
-  m_logger["gaussian_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"gaussian"));
-  m_logger["morse_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"morse")); 
-  m_logger["lj_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"lj")); 
-  m_logger["rod_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"rod"));
-  m_logger["ljrod_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"ljrod"));
-  m_logger["vp_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"vp"));
-  m_logger["line_tension_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"line_tension")); 
-  m_logger["boundary_bending_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"boundary_bending")); 
-  m_logger["boundary_attraction_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"boundary_attraction"));
-  m_logger["coulomb_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"coulomb"));
-  m_logger["yukawa_energy"] = boost::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"yukawa"));
-  m_logger["polar_align"] = boost::make_shared<LogPairAlign>(LogPairAlign(sys, msg, pot, align,"polar")); 
-  m_logger["nematic_align"] = boost::make_shared<LogPairAlign>(LogPairAlign(sys, msg, pot, align,"nematic")); 
-  m_logger["harmonic_bond_energy"] = boost::make_shared<LogBondEng>(LogBondEng(sys, msg, pot, align,"harmonic")); 
-  m_logger["harmonic_angle_energy"] = boost::make_shared<LogAngleEng>(LogAngleEng(sys, msg, pot, align,"harmonic")); 
-  m_logger["cosine_angle_energy"] = boost::make_shared<LogAngleEng>(LogAngleEng(sys, msg, pot, align,"cosine")); 
-  m_logger["external_gravity_energy"] = boost::make_shared<LogExternalEng>(LogExternalEng(sys, msg, pot, align,"gravity")); 
-  m_logger["external_harmonic_energy"] = boost::make_shared<LogExternalEng>(LogExternalEng(sys, msg, pot, align,"harmonic")); 
-  m_logger["area"] = boost::make_shared<LogArea>(LogArea(sys, msg, pot, align));
-  m_logger["avg_perim"] = boost::make_shared<LogPerim>(LogPerim(sys, msg, pot, align));
-  m_logger["size"] = boost::make_shared<LogSize>(LogSize(sys, msg, pot, align));
-  m_logger["kinetic_energy"] = boost::make_shared<LogKineticEng>(LogKineticEng(sys, msg, pot, align));
+  m_logger["step"] = std::make_shared<LogStep>(LogStep(sys, msg, pot, align));
+  m_logger["velocity"] = std::make_shared<LogVelocity>(LogVelocity(sys, msg, pot, align));
+  m_logger["vec_velocity"] = std::make_shared<LogVecVelocity>(LogVecVelocity(sys, msg, pot, align));
+  m_logger["soft_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"soft")); 
+  m_logger["soft_attractive_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"soft_attractive")); 
+  m_logger["gaussian_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"gaussian"));
+  m_logger["morse_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"morse")); 
+  m_logger["lj_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"lj")); 
+  m_logger["rod_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"rod"));
+  m_logger["ljrod_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"ljrod"));
+  m_logger["vp_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"vp"));
+  m_logger["line_tension_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"line_tension")); 
+  m_logger["boundary_bending_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"boundary_bending")); 
+  m_logger["boundary_attraction_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"boundary_attraction"));
+  m_logger["coulomb_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"coulomb"));
+  m_logger["yukawa_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"yukawa"));
+  m_logger["polar_align"] = std::make_shared<LogPairAlign>(LogPairAlign(sys, msg, pot, align,"polar")); 
+  m_logger["nematic_align"] = std::make_shared<LogPairAlign>(LogPairAlign(sys, msg, pot, align,"nematic")); 
+  m_logger["harmonic_bond_energy"] = std::make_shared<LogBondEng>(LogBondEng(sys, msg, pot, align,"harmonic")); 
+  m_logger["harmonic_angle_energy"] = std::make_shared<LogAngleEng>(LogAngleEng(sys, msg, pot, align,"harmonic")); 
+  m_logger["cosine_angle_energy"] = std::make_shared<LogAngleEng>(LogAngleEng(sys, msg, pot, align,"cosine")); 
+  m_logger["external_gravity_energy"] = std::make_shared<LogExternalEng>(LogExternalEng(sys, msg, pot, align,"gravity")); 
+  m_logger["external_harmonic_energy"] = std::make_shared<LogExternalEng>(LogExternalEng(sys, msg, pot, align,"harmonic")); 
+  m_logger["area"] = std::make_shared<LogArea>(LogArea(sys, msg, pot, align));
+  m_logger["avg_perim"] = std::make_shared<LogPerim>(LogPerim(sys, msg, pot, align));
+  m_logger["size"] = std::make_shared<LogSize>(LogSize(sys, msg, pot, align));
+  m_logger["kinetic_energy"] = std::make_shared<LogKineticEng>(LogKineticEng(sys, msg, pot, align));
 
   // ------------------------------------------------------------------
     

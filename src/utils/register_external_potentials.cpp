@@ -32,11 +32,11 @@
 void register_external_potentials(ExternalPotentialMap& external_potentials)
 {
   // Register gravity to the external potential class factory
-  external_potentials["gravity"] = boost::factory<ExternalGravityPotentialPtr>();
+  external_potentials["gravity"] = factory<ExternalGravityPotentialPtr>();
   // Register harmonic potential to the external potential class factory
-  external_potentials["harmonic"] = boost::factory<ExternalHarmonicPotentialPtr>();
+  external_potentials["harmonic"] = factory<ExternalHarmonicPotentialPtr>();
   // Register self propulsion to the external potential class factory
-  external_potentials["self_propulsion"] = boost::factory<ExternalSelfPropulsionPtr>();
+  external_potentials["self_propulsion"] = factory<ExternalSelfPropulsionPtr>();
   // Register boundary pull to the external potential class factory
-  external_potentials["boundary_pull"] = boost::factory<ExternalBoundaryPullPtr>();
+  external_potentials["boundary_pull"] = factory<ExternalBoundaryPullPtr>();
 }

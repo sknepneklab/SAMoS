@@ -34,16 +34,14 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 
 using std::ostream;
 using std::vector;
 using std::string;
 using std::find;
-
-using boost::shared_ptr;
+using std::shared_ptr;
 
 /*! Group class
  *  This class defines groups of particles 
