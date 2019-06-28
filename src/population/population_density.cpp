@@ -128,14 +128,14 @@ void PopulationDensity::divide(int t)
         }
         else
           m_system->add_particle(p_new);
-        cout << "old particle: " << p << endl;
-        cout << "new particle: " << p << endl;
-        cout << "groups of new particle: " << endl;
-        for (list<string>::const_iterator it = p_new.groups.begin(); it != p_new.groups.end(); it++)
-            cout << format(" %s ") % (*it);
-        cout << endl << "groups of old particle: " << endl;
-        for (list<string>::const_iterator it = p.groups.begin(); it != p.groups.end(); it++)
-            cout << format(" %s ") % (*it);
+        //cout << "old particle: " << p << endl;
+        //cout << "new particle: " << p << endl;
+        //cout << "groups of new particle: " << endl;
+        //for (list<string>::const_iterator it = p_new.groups.begin(); it != p_new.groups.end(); it++)
+        //    cout << format(" %s ") % (*it);
+        //cout << endl << "groups of old particle: " << endl;
+        //for (list<string>::const_iterator it = p.groups.begin(); it != p.groups.end(); it++)
+         //   cout << format(" %s ") % (*it);
         //p.print_groups();
         //p_new.print_groups();
       }

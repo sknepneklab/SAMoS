@@ -226,7 +226,7 @@ class SimRun:
                                         dr=self.geom.ApplyPeriodic2d(self.rval[u,:,:]-self.rval[u-1,:,:])
                                         drift0=np.sum(dr,axis=0)/self.N
                                         self.drift[u,:]=self.drift[u-1,:]+drift0
-                                        print self.drift[u,:]
+                                        #print self.drift[u,:]
 			  
 		
 	def getMSD(self,verbose=True):
@@ -271,8 +271,8 @@ class SimRun:
 			#plt.show()
 		return xval, self.msd
             
-        def getVelAuto(self,verbose=True):
-		self.velauto=np.empty((self.Nsnap,))
+        def getVelAuto(self,verbose=True,Nmax=100):
+		self.velauto=np.empty((Nmax,))
 		v2av=np.empty((self.Nsnap,))
 		# in case of tracers, simply use the tracer rval isolated above
 		#if self.usetype=='all':
@@ -288,7 +288,7 @@ class SimRun:
                     else:
                         v2av[u]=np.sum(np.sum((self.vval[u,:,:])**2,axis=1),axis=0)/(self.N)
                         vnormed[u,:,:]=self.vval[u,:,:]/np.sqrt(v2av[u]) 
-                for u in range(self.Nsnap):
+                for u in range(Nmax):
                         smax=self.Nsnap-u
                         if self.Nvariable:
                                 if self.tracer:
@@ -301,7 +301,7 @@ class SimRun:
                                 #self.velauto[u]=np.sum(np.sum((self.vval[:smax,:,0]*self.vval[u:,:,0]+self.vval[:smax,:,1]*self.vval[u:,:,1]+self.vval[:smax,:,2]*self.vval[u:,:,2]),axis=1),axis=0)/(self.N*smax)
                                 self.velauto[u]=np.sum(np.sum((vnormed[:smax,:,0]*vnormed[u:,:,0]+vnormed[:smax,:,1]*vnormed[u:,:,1]+vnormed[:smax,:,2]*vnormed[u:,:,2]),axis=1),axis=0)/(self.N*smax)
                                 
-		xval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
+		xval=np.linspace(0,Nmax*self.param.dt*self.param.dump['freq'],num=Nmax)
 		if verbose:
 			fig=plt.figure()
 			plt.loglog(xval,self.velauto,'r.-',lw=2)
@@ -313,18 +313,22 @@ class SimRun:
             
         # relative velocity distribution (and average velocity)
         # component wise as well, assumes x and y directions only
+        # And adding the Vicsek style order parameter for velocity
         def getVelDist(self,bins,bins2):
             vav=np.zeros((self.Nsnap,))
             vdist=np.zeros((len(bins)-1,))
             vdist2=np.zeros((len(bins2)-1,))
+            vorder=np.zeros((self.Nsnap,))
             for u in range(self.Nsnap):
                 #print u
                 if self.Nvariable:
                     vmagnitude=np.sqrt(self.vval[u,:self.Nval[u],0]**2+self.vval[u,:self.Nval[u],1]**2+self.vval[u,:self.Nval[u],2]**2)
                     vcomponents = self.vval[u,:self.Nval[u],0:2].flatten()
+                    vorder[u]=np.sqrt(np.sum(self.vval[u,:self.Nval[u],0])**2+np.sum(self.vval[u,:self.Nval[u],1])**2+np.sum(self.vval[u,:self.Nval[u],2])**2)/self.Nval[u]
                 else:
                     vmagnitude=np.sqrt(self.vval[u,:,0]**2+self.vval[u,:,1]**2+self.vval[u,:,2]**2)
                     vcomponents = self.vval[u,:self.N,0:2].flatten()
+                    vorder[u]=np.sqrt(np.sum(self.vval[u,:,0])**2+np.sum(self.vval[u,:,1])**2+np.sum(self.vval[u,:,2])**2)/self.N
                 vav[u]=np.mean(vmagnitude)
                 vdist0,dummy=np.histogram(vmagnitude/vav[u],bins,density=True)
                 #vdist0,dummy=np.histogram(vmagnitude/vavuse,bins,density=True)
@@ -334,7 +338,8 @@ class SimRun:
                 vdist2+=vdist20
             vdist/=self.Nsnap
             vdist2/=self.Nsnap
-            return vav, vdist,vdist2
+            tval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
+            return vav, vdist,vdist2,vorder,tval
         
         def getNonGaussian(self,verbose=True):
 		self.msd=np.empty((self.Nsnap,))
@@ -427,9 +432,6 @@ class SimRun:
                                         SelfInt[u]=np.sum(np.sum(np.exp(1.0j*qval[0]*(-self.rval[:smax,:,0]+self.rval[u:,:,0]+takeoff[:,:,0])+1.0j*qval[1]*(-self.rval[:smax,:,1]+self.rval[u:,:,1]+takeoff[:,:,1])+1.0j*qval[2]*(-self.rval[:smax,:,2]+self.rval[u:,:,2]+takeoff[:,:,2])),axis=1),axis=0)/(self.N*smax)
 		tval=np.linspace(0,self.Nsnap*self.param.dt*self.param.dump['freq'],num=self.Nsnap)
 		#print tval
-		print self.Nsnap
-		print self.param.dt
-		print self.param.dump['freq']
 		# Looking at the absolute value of it here
 		SelfInt2=(np.real(SelfInt)**2 + np.imag(SelfInt)**2)**0.5
 		qnorm=np.sqrt(qval[0]**2+qval[1]**2+qval[2]**2)
@@ -672,25 +674,34 @@ class SimRun:
 			plt.ylabel('FourPoint')			
 		return tval, FourPoint
 	
-	def FourierTransVel(self,whichframe,qmax=0.3,verbose=True):
+	def FourierTransVel(self,whichframe,qmax=0.3,verbose=True,externalL=False,Lext=100):
 		# Note to self: only low q values will be interesting in any case. 
 		# The stepping is in multiples of the inverse box size. Assuming a square box.
 		print "Fourier transforming velocities"
 		#dq=2.0*np.pi/self.geom.Lx
-		dq=np.pi/self.geom.Lx
+		if externalL:
+			dq=np.pi/Lext
+		else:
+			dq=np.pi/self.geom.Lx
 		nq=int(qmax/dq)
 		print "Stepping Fourier transform with step " + str(dq)+ ", resulting in " + str(nq)+ " steps."
 		qx, qy, qrad, ptsx, ptsy=self.makeQrad(dq,qmax,nq)
 		print "After qrad"
 		fourierval=np.zeros((nq,nq,2),dtype=complex)
+		if self.Nvariable:
+                    Nuse = self.Nval[whichframe]
+                else:
+                    Nuse = self.N
+		print Nuse
 		for kx in range(nq):
 			for ky in range(nq):
 				# And, alas, no FFT since we are most definitely off grid. And averaging is going to kill everything.
-				fourierval[kx,ky,0]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:,0]+qy[ky]*self.rval[whichframe,:,1]))*self.vval[whichframe,:,0])/self.N
-				fourierval[kx,ky,1]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:,0]+qy[ky]*self.rval[whichframe,:,1]))*self.vval[whichframe,:,1])/self.N 
+				fourierval[kx,ky,0]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:Nuse,0]+qy[ky]*self.rval[whichframe,:Nuse,1]))*self.vval[whichframe,:Nuse,0])/Nuse
+				fourierval[kx,ky,1]=np.sum(np.exp(1j*(qx[kx]*self.rval[whichframe,:Nuse,0]+qy[ky]*self.rval[whichframe,:Nuse,1]))*self.vval[whichframe,:Nuse,1])/Nuse 
 		# Sq = \vec{v_q}.\vec{v_-q}, assuming real and symmetric
 		# = \vec{v_q}.\vec{v_q*} = v
 		Sq=np.real(fourierval[:,:,0])**2+np.imag(fourierval[:,:,0])**2+np.real(fourierval[:,:,1])**2+np.imag(fourierval[:,:,1])**2
+		Sq=Nuse*Sq
 		# Produce a radial averaging to see if anything interesting happens
 		nq2=int(2**0.5*nq)
 		Sqrad=np.zeros((nq2,))
