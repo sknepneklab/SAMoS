@@ -63,8 +63,8 @@ void ExternalShapeAlign::compute()
         }
         A /= V.dual.size();  B /= V.dual.size();  C /= V.dual.size();
         // Maximum eigenvalue is 
-        double l1 = 0.5*(A+C + sqrt((A+C)*(A+C)+4*B*B));
-        double l2 = 0.5*(A+C - sqrt((A+C)*(A+C)+4*B*B));
+        double l1 = 0.5*(A+C + sqrt((A-C)*(A-C)+4*B*B));
+        double l2 = 0.5*(A+C - sqrt((A-C)*(A-C)+4*B*B));
         double lambda = (l1 > l2) ? l1 : l2;
         // compute corresponding eigen vector
         ax = B;
