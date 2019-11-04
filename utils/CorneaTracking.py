@@ -129,7 +129,7 @@ class TrackDefects:
 	    ntypical=len(ismone)+len(isone)
 	    if (ndef-ntypical)>0:
 		print "There are " + str(ndef-ntypical) + " unusual defects in snapshot " + str(u)
-		print charge
+		#print charge
 	    if verbose:
                 print u
                 print "# of -1 defects: " + str(len(ismone))

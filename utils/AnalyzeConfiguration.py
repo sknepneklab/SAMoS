@@ -36,6 +36,7 @@ parser.add_argument("-c", "--conffile", type=str, help="configuration file")
 parser.add_argument("-d", "--directory", type=str, help="input directory")
 parser.add_argument("-o", "--output", type=str, help="output directory")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
+parser.add_argument("-n", "--nsnap", type=int, default=10, help="analyse these many samples in a row")
 parser.add_argument("--nematic", action='store_true', default=False, help="Track nematic orientation field if turned on. Otherwise track polar velocity field")
 parser.add_argument("--cornea", action='store_true', default=False, help="Track polar orientation field for cornea")
 parser.add_argument("--contractile", action='store_true',default=False, help="Adds contractile stresses to calculation")
@@ -55,10 +56,10 @@ args = parser.parse_args()
 params = Param(args.directory+args.conffile)
 print params
 
-files = sorted(glob(args.directory + args.input+'*.dat'))[args.skip:]
+files = sorted(glob(args.directory + args.input+'*.dat'))[args.skip:(args.skip+args.nsnap)]
 
 if len(files) == 0:
-  files = sorted(glob(args.directory + args.input+'*.dat.gz'))[args.skip:]
+  files = sorted(glob(args.directory + args.input+'*.dat.gz'))[args.skip:(args.skip+args.nsnap)]
 
 if args.writeD:
 	if args.nematic or args.cornea:
