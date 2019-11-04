@@ -451,7 +451,10 @@ class Param:
 						try:
 							self.pop_params[k][str.strip(conf.key_words['population'][k].attributes[l].name)]=float(conf.key_words['population'][k].attributes[l].val)
 						except:
-							self.pop_params[k][str.strip(conf.key_words['population'][k].attributes[l].name)]=str.strip(conf.key_words['population'][k].attributes[l].val)
+                                                        try:
+                                                            self.pop_params[k][str.strip(conf.key_words['population'][k].attributes[l].name)]=str.strip(conf.key_words['population'][k].attributes[l].val)
+                                                        except:
+                                                            pass
 				print "Populations: "
 				print self.population
 				print "Population parameters: "

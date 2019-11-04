@@ -47,7 +47,7 @@ void PopulationDensity::divide(int t)
 {
   if (m_freq > 0 && t % m_freq == 0 && m_div_rate > 0.0)  // Attempt division only at certain time steps
   { 
-    cout << "Handling divisions for group " << m_group_name << endl;
+    //cout << "Handling divisions for group " << m_group_name << endl;
     if (!m_system->group_ok(m_group_name))
     {
       cout << "Before divide P: Group info mismatch for group : " << m_group_name << endl;
@@ -71,7 +71,7 @@ void PopulationDensity::divide(int t)
       Particle& p = m_system->get_particle(pi); 
       if (m_rng->drnd() < prob_div*(1.0-p.coordination/m_rho_max))
       {
-        cout << " dividing particle of type " << p.get_type() << endl;
+        //cout << " dividing particle of type " << p.get_type() << endl;
         Particle p_new(m_system->size(), p.get_type(), p.get_radius());
         p_new.x = p.x + m_alpha*m_split_distance*p.get_radius()*p.nx;
         p_new.y = p.y + m_alpha*m_split_distance*p.get_radius()*p.ny;
@@ -161,7 +161,7 @@ void PopulationDensity::remove(int t)
 {
   if (m_freq > 0 && t % m_freq == 0 && m_death_rate > 0.0)  // Attempt removal only at certain time steps
   { 
-    cout << "Handling deaths for group " << m_group_name << endl;
+    //cout << "Handling deaths for group " << m_group_name << endl;
     if (!m_system->group_ok(m_group_name))
     {
       cerr << "Before Remove P: Group info mismatch for group : " << m_group_name << endl;
@@ -181,7 +181,7 @@ void PopulationDensity::remove(int t)
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi);
       if (m_rng->drnd() < prob_death) {
-        cout << "particle of type " << p.get_type() << " died " << endl;
+        //cout << "particle of type " << p.get_type() << " died " << endl;
         to_remove.push_back(p.get_id());
       }
     }

@@ -202,16 +202,16 @@ class Defects:
                                 #else:
                                         #self.ax.scatter(self.conf.rval[t,0], self.conf.rval[t,1], self.conf.rval[t,2],marker='o',s=50,color='g')
 		# except at the poles: that stuff is garbage?
-                if self.conf.geom.manifold == 'sphere':
-                    if abs(charge)>0.1:
-                        if self.theta[t]<self.THETAMIN:
-                            charge=0
-                            if self.verbose:
-                                    print "nuked this " + field + " field defect"
-                        if self.theta[t]>(np.pi-self.THETAMIN):
-                            charge=0
-                            if self.verbose:
-                                    print "nuked this " + field + " field defect"
+                #if self.conf.geom.manifold == 'sphere':
+                    #if abs(charge)>0.1:
+                        #if self.theta[t]<self.THETAMIN:
+                            #charge=0
+                            #if self.verbose:
+                                    #print "nuked this " + field + " field defect"
+                        #if self.theta[t]>(np.pi-self.THETAMIN):
+                            #charge=0
+                            #if self.verbose:
+                                    #print "nuked this " + field + " field defect"
                 return charge
             
             

@@ -28,19 +28,42 @@ from Interaction import *
 
 
 class Configuration:
-	def __init__(self,param,filename,ignore=False,debug=False):
+	def __init__(self,param,filename,ignore=False,maxtype=-1,debug=False):
 		self.param=param
 		# Outdated list of geometries
 		#geometries={'sphere':GeometrySphere,'plane':GeometryPeriodicPlane,'none':Geometry,'tube':GeometryTube,'peanut':GeometryPeanut,'hourglass':GeometryHourglass}
 		geometries={'sphere':GeometrySphere,'plane':GeometryPlane,'plane_periodic':GeometryPeriodicPlane,'none':Geometry,'tube':GeometryTube,'peanut':GeometryPeanut,'hourglass':GeometryHourglass}
 		print "Processing file : ", filename
 		data = ReadData(filename)
-		x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
-		vx, vy, vz = np.array(data.data[data.keys['vx']]), np.array(data.data[data.keys['vy']]), np.array(data.data[data.keys['vz']])
-		try:
-			nx, ny, nz = np.array(data.data[data.keys['nx']]), np.array(data.data[data.keys['ny']]), np.array(data.data[data.keys['nz']])
-		except KeyError:
-			nx, ny, nz = np.zeros(np.shape(x)),np.zeros(np.shape(y)),np.zeros(np.shape(z))
+		if (maxtype==-1):
+                    x, y, z = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
+                    vx, vy, vz = np.array(data.data[data.keys['vx']]), np.array(data.data[data.keys['vy']]), np.array(data.data[data.keys['vz']])
+                    try:
+                            nx, ny, nz = np.array(data.data[data.keys['nx']]), np.array(data.data[data.keys['ny']]), np.array(data.data[data.keys['nz']])
+                    except KeyError:
+                            nx, ny, nz = np.zeros(np.shape(x)),np.zeros(np.shape(y)),np.zeros(np.shape(z))
+                else:
+                    if data.keys.has_key('type'):
+			self.ptype = data.data[data.keys['type']]
+			usedata = [index for index,value in enumerate(self.ptype) if value < maxtype]
+			x0, y0, z0 = np.array(data.data[data.keys['x']]), np.array(data.data[data.keys['y']]), np.array(data.data[data.keys['z']])
+                        vx0, vy0, vz0 = np.array(data.data[data.keys['vx']]), np.array(data.data[data.keys['vy']]), np.array(data.data[data.keys['vz']])
+                        try:
+                                nx0, ny0, nz0 = np.array(data.data[data.keys['nx']]), np.array(data.data[data.keys['ny']]), np.array(data.data[data.keys['nz']])
+                        except KeyError:
+                                nx0, ny0, nz0 = np.zeros(np.shape(x)),np.zeros(np.shape(y)),np.zeros(np.shape(z))
+			x=x0[usedata]
+			y=y0[usedata]
+			z=z0[usedata]
+			vx=vx0[usedata]
+			vy=vy0[usedata]
+			vz=vz0[usedata]
+			nx=nx0[usedata]
+			ny=ny0[usedata]
+			nz=nz0[usedata]
+                    else:
+                        print "Error: Can't selectively read data by type if there are no types."
+                        return 1
 		self.monodisperse=False
 		self.N=len(x)
 		if not data.keys.has_key('radius'): 

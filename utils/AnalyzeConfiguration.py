@@ -37,6 +37,7 @@ parser.add_argument("-d", "--directory", type=str, help="input directory")
 parser.add_argument("-o", "--output", type=str, help="output directory")
 parser.add_argument("-s", "--skip", type=int, default=0, help="skip this many samples")
 parser.add_argument("--nematic", action='store_true', default=False, help="Track nematic orientation field if turned on. Otherwise track polar velocity field")
+parser.add_argument("--cornea", action='store_true', default=False, help="Track polar orientation field for cornea")
 parser.add_argument("--contractile", action='store_true',default=False, help="Adds contractile stresses to calculation")
 parser.add_argument("-a", "--alpha", type=float, default=0.0, help="Prefactor of the contractile term")
 parser.add_argument("--delaunay", action='store_true',default=False, help="Use Delaunay triangulation for tesselation.")
@@ -60,7 +61,7 @@ if len(files) == 0:
   files = sorted(glob(args.directory + args.input+'*.dat.gz'))[args.skip:]
 
 if args.writeD:
-	if args.nematic:
+	if args.nematic or args.cornea:
 		defects_n_out=[[] for u in range(len(files))]
 		numdefects_n_out=np.zeros(len(files))
 	else:
@@ -81,7 +82,11 @@ u=0
 for f in files:
 	print f
 	# Ignore here is to simply calculate interactions of multiple types of particles (they have the same potential)
-	conf = Configuration(params,f,True)
+	if args.cornea:
+                # compute defects only on TA cells, i.e. types 1 and 2
+                conf = Configuration(params,f,True,3)
+        else:
+                conf = Configuration(params,f,True)
 	if args.contractile:
 		writeme = Writer(args.nematic,args.alpha)
 	else:
@@ -107,9 +112,9 @@ for f in files:
 		tess = Tesselation(conf)
 		print "initialized tesselation"
 		if args.delaunay:
-      LoopList,Ival,Jval = tess.findLoopDelaunay()
-    else:
-      LoopList,Ival,Jval = tess.findLoop(args.closeHoles,args.mult,1.1)
+                    LoopList,Ival,Jval = tess.findLoopDelaunay()
+                else:
+                    LoopList,Ival,Jval = tess.findLoop(args.closeHoles,args.mult,1.1)
 		print "found loops"
 		#print LoopList
 		if args.writeD:
@@ -125,12 +130,18 @@ for f in files:
 				defects_n_out[u]=defects_n
 				numdefects_n_out[u]=numdefect_n
 				writeme.writeDefects(defects_n, numdefect_n,outdefects)
+                        elif args.cornea:
+                                defects_n, numdefect_n=defects.getDefects('polar','orientation')
+				defects_n_out[u]=defects_n
+				numdefects_n_out[u]=numdefect_n
+				writeme.writeDefects(defects_n, numdefect_n,outdefects)
 			else:
 				defects_v,numdefect_v=defects.getDefects('polar','velocity')
 				#plt.show()
 				defects_v_out[u]=defects_v
 				numdefects_v_out[u]=numdefect_v
 				writeme.writeDefects(defects_v,numdefect_v,outdefects)
+                        
 			print "found defects"
 			#defects.PlotDefects()
 		if args.writeT:
@@ -152,15 +163,15 @@ if ((args.writeD) or (args.getStatsBasic)):
 		data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params,'population':params.population,'pop_params':params.pop_params}
 	except:
 		try:
-				data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params}
+                        data={'J':params.J,'v':params.v0,'k':params.pot_params['k'],'pot_params':params.pot_params}
 		except:
-				data={'pot_params':params.pot_params}
+                        data={'pot_params':params.pot_params}
 	if args.writeD:
-		if args.nematic:
-				dataD={'defects_n':defects_n_out,'numdefects_n':numdefects_n_out}
-	else:
-		dataD={'defects_v':defects_v_out,'numdefects_v':numdefects_v_out}
-		data.update(dataD)
+		if args.nematic or args.cornea:
+                        dataD={'defects_n':defects_n_out,'numdefects_n':numdefects_n_out}
+                else:
+                        dataD={'defects_v':defects_v_out,'numdefects_v':numdefects_v_out}
+                data.update(dataD)
 	if args.getStatsBasic:
 		dataS={'vel2av':vel2av,'phival':phival,'ndensity':ndensity,'pressure':pressure,'fmoment':fmoment,'energy':energy,'energytot':energytot,'zav':zav}
 		data.update(dataS)
