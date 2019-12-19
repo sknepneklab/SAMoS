@@ -121,8 +121,45 @@ class Defects:
                         print 'Number of velocity field defects: ' + str(self.numdefect_v)
                         print 'Total charge of velocity field defects: ' + str(char_v)
                         return self.defects_v,self.numdefect_v
-                                        
-			
+	
+	# This gets the defects based on the integrated flow field, and separately the director field
+	# Both are assumed to be polar
+	def getCorneaDefects(self,flow_field): 
+		# Generalized algorithm for defects of any type
+		# Count the defect charge. Times two, to use integers and easier if statements
+		# Need to reinitialize defects in case multiple trackings are done on the same system
+		#print "Looking for orientation field defects!"
+		#self.numdefect_n=0
+		#self.defects_n=[]
+		#char_n=0
+		print "Looking for velocity field defects!"
+		self.flow_dir=flow_field/np.sqrt(np.sum(flow_field**2,axis=1))
+		self.numdefect_v=0
+		self.defects_v=[]
+		char_v=0
+	
+		for u in range(len(self.LoopList)):
+			thisLoop=self.LoopList[u]
+			# first velocity, then orientation
+			charge=self.computeDefect(thisLoop,'flow','polar')
+			if abs(charge)>0:
+				print "Found Defect in flow field!"
+				print charge
+				char_v+=charge
+				# Construct the geometric centre of the defect
+				r0s=self.conf.rval[thisLoop]
+				rmval=np.mean(r0s,axis=0)
+				rabs=np.sqrt(rmval[0]**2+rmval[1]**2+rmval[2]**2)
+				rmval=rmval/rabs*self.conf.geom.R
+				# Charge of the defect
+				defbit=[charge]
+				defbit.extend(list(rmval))
+				self.defects_v.append(defbit)
+				self.numdefect_v+=1
+		print 'Number of velocity field defects: ' + str(self.numdefect_v)
+		print 'Total charge of velocity field defects: ' + str(char_v)
+		return self.defects_v,self.numdefect_v		
+		
         
 	def computeDefect(self,thisLoop,field,symtype): 
 		# Generalized algorithm for defects of any type
@@ -137,6 +174,9 @@ class Defects:
                         if field == 'orientation':
                                 ctheta=np.dot(self.conf.nval[t,:],self.conf.nval[t0,:])
                                 stheta=np.dot(self.normal[t,:],np.cross(self.conf.nval[t,:],self.conf.nval[t0,:]))
+						elif field == 'flow':
+							ctheta=np.dot(self.flow_dir[t,:],self.flow_dir[t0,:])
+							stheta=np.dot(self.normal[t,:],np.cross(self.flow_dir[t,:],self.flow_dir[t0,:]))
                         else:
                                 ctheta=np.dot(self.conf.vhat[t,:],self.conf.vhat[t0,:])
                                 stheta=np.dot(self.normal[t,:],np.cross(self.conf.vhat[t,:],self.conf.vhat[t0,:]))
