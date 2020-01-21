@@ -32,5 +32,5 @@
 void register_external_aligners(ExternalAlignerMap& external_aligners)
 {
   // Register active jamming polar external alignment to the external align class factory
-  external_aligners["ajpolar"] = boost::factory<ExternalAJPolarAlignPtr>();
+  external_aligners["ajpolar"] = factory<ExternalAJPolarAlignPtr>();
 }

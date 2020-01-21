@@ -39,13 +39,13 @@
 #include <map>
 #include <list>
 #include <algorithm>
+#include <memory>
 
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/regex.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
+
 
 #include "particle.hpp"
 #include "bond.hpp"
@@ -68,12 +68,11 @@ using std::map;
 using std::list;
 using std::find;
 using std::min_element;
+using std::make_shared;
 using boost::lexical_cast;
 using boost::bad_lexical_cast;
 using boost::split_regex;
 using boost::regex;
-using boost::shared_ptr;
-using boost::make_shared;
 using namespace boost::algorithm;
 
 /*! This class handles collection of all particles, i.e. the entire system.

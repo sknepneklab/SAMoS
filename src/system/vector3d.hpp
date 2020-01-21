@@ -34,20 +34,23 @@
 #include <iostream>
 
 #include "particle.hpp"
+#include "box.hpp"
 
 /*! Vector3d class
- *  Handles vectors in 3d Eucledian space
+ *  Handles vectors in 3d Euclidean space
  */
 class Vector3d
 {
 public:
   
-  //! Deault constructor
-  Vector3d() : x(0.0), y(0.0), z(0.0) { }
+  //! Default constructor
+  Vector3d() : x(0.0), y(0.0), z(0.0), box(nullptr) { }
   //! Constructor for a vector object
-  Vector3d(double x, double y, double z) : x(x), y(y), z(z) { }
+  Vector3d(double x, double y, double z) : x(x), y(y), z(z), box(nullptr)  { }
+  //! Constructor for a vector object with a periodic box 
+  Vector3d(double x, double y, double z, const BoxPtr& box) : x(x), y(y), z(z), box(box)  { }
   //! Copy constructor  
-  Vector3d(const Vector3d& v) { x = v.x; y = v.y; z = v.z; }
+  Vector3d(const Vector3d& v) { x = v.x; y = v.y; z = v.z; box = v.box; }
   //! Assignment operator
   Vector3d& operator=(const Vector3d& rhs)
   {
@@ -113,7 +116,7 @@ public:
     return x*v.x + y*v.y + z*v.z;
   }
   
-  //! Cross prduct with another vector
+  //! Cross product with another vector
   Vector3d cross(const Vector3d& v)
   {
     return Vector3d(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
@@ -125,13 +128,13 @@ public:
   //! Vector length squared
   double len2() { return x*x + y*y + z*z; }
   
-  //! Rescale vactor
+  //! Rescale vector
   void scale(double s) { x *= s; y *= s;  z *= s;  }
   
-  //! Return rescale vactor
+  //! Return rescale vector
   Vector3d scaled(double s) { return Vector3d(s*x,s*y,s*z);  }
   
-  //! Make the vector has unit lenght
+  //! Make the vector has unit length
   void normalize()
   {
     double len = this->len();
@@ -180,8 +183,8 @@ public:
 
   ///@{
   double x, y, z;              //!< Position in the embedding 3d flat space
+  BoxPtr box;
   //@}
-
 };
 
 //! Compute cross product between two vectors

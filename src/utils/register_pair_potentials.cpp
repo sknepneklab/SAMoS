@@ -32,20 +32,20 @@
 void register_pair_potentials(PairPotentialMap& pair_potentials)
 {
   // Register Lennard-Jones pair potential with the pair potentials class factory
-  pair_potentials["lj"] = boost::factory<PairLJPotentialPtr>();
+  pair_potentials["lj"] = factory<PairLJPotentialPtr>();
   // Register soft pair potential with the pair potentials class factory
-  pair_potentials["soft"] = boost::factory<PairSoftPotentialPtr>();
+  pair_potentials["soft"] = factory<PairSoftPotentialPtr>();
   // Register active pair potential with the pair potentials class factory
-  pair_potentials["active"] = boost::factory<PairActivePotentialPtr>(); 
+  pair_potentials["active"] = factory<PairActivePotentialPtr>(); 
   // Register soft attractive pair potential with the pair potentials class factory
-  pair_potentials["soft_attractive"] = boost::factory<PairSoftAttractivePotentialPtr>();
+  pair_potentials["soft_attractive"] = factory<PairSoftAttractivePotentialPtr>();
   // Register vertex particle pair potential for tissues with the pair potentials class factory
-  pair_potentials["vp"] = boost::factory<PairVertexParticlePotentialPtr>();
+  pair_potentials["vp"] = factory<PairVertexParticlePotentialPtr>();
   // Register line tension pair potential for tissues with the pair potentials class factory
-  pair_potentials["line_tension"] = boost::factory<PairLineTensionPotentialPtr>();
+  pair_potentials["line_tension"] = factory<PairLineTensionPotentialPtr>();
   // Register boundary bending pair potential for tissues with the pair potentials class factory
-  pair_potentials["boundary_bending"] = boost::factory<PairBoundaryBendingPotentialPtr>();
+  pair_potentials["boundary_bending"] = factory<PairBoundaryBendingPotentialPtr>();
   // Register boundary attraction pair potential for tissues with the pair potentials class factory
-  pair_potentials["boundary_attraction"] = boost::factory<PairBoundaryAttractionPotentialPtr>();
+  pair_potentials["boundary_attraction"] = factory<PairBoundaryAttractionPotentialPtr>();
   
 }

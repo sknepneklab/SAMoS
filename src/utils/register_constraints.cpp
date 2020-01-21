@@ -32,6 +32,6 @@
 void register_constraints(ConstraintMap& constraints)
 {
   // Register xy plane constraint with the constraint class factory
-  constraints["plane"] = boost::factory<ConstraintPlanePtr>();
+  constraints["plane"] = factory<ConstraintPlanePtr>();
   // Register plane walls constraint with the constraint class factory
 }

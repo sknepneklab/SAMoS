@@ -31,9 +31,9 @@
 #define __BOX_H__
 
 #include <cassert>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
 //! Simulation box data 
 /*! Defines a rectangular simulation box. 

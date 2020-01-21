@@ -4,9 +4,14 @@
 **NOTE:** This is a stripped down version of the code used to produce simulation part 
 of the paper: "Universal motion patterns in confluent cell monolayers" by
 Silke Henkes, Kaja Kostanjevec, J. Martin Collinson, Rastko Sknepnek, Eric Bertin
+Nature Communications XX, pg (2020).
 https://arxiv.org/abs/1901.04763
 
-For the full version of SAMoS please refer to the development branch.
+Please check the **NatCommScripts** directory for the set of scripts used to reproduce all simulation results published in the paper.
+
+Please refer to the **README.pdf** file in the **NatCommScripts** directory for how to run those scripts.
+
+**NOTE:** For the full version of SAMoS please refer to the development branch.
 
 ## 1. OS
 
@@ -105,8 +110,7 @@ code is executed with
 
 ```
 samos 
-   /FormerAnalysis   - some earlier versions of scripts for data analysis
-   /analysis         - current set of tools for analysing simulation results 
+   /NatCommScripts   - Scripts and documentation to reproduce results published in Henkes, et al., Nat. Comm. (2020)/
    /build            - build directory (contains the executable)
    /configurations   - contains set of directories with examples of different systems that can be studies with SAMoS. Some directories 
                        contain Python scripts for generating initial configurations. 
@@ -115,7 +119,7 @@ samos
    /src              - Source code 
       \aligner       - Implementations of different alignment interactions that control particle orientation 
          \pair       - Pairwise aligners (alignments between pairs of particles)
-         \external   - Single particle aligners (such as alignment to the extrenal field)
+         \external   - Single particle aligners (such as alignment to the external field)
       /constraints   - Implementations of constraints to different curved surfaces 
       /dump          - Handles output of the simulation data (it supports several standard formats, plain text, VTP, mol2, dcd, etc.)
       /integrators   - Implements several integrators of the equations of motion
@@ -138,9 +142,9 @@ Rastko Sknepnek (University of Dundee, UK)
 
 ### Major contributors to the code:
 
-Silke Henkes (University of Aberdeen, UK)   - many tools for building inital configurations and analysis tools <br />
+Silke Henkes (University of Aberdeen, UK)   - many tools for building initial configurations and analysis tools <br />
 Daniel Barton (University of Dundee, UK)    - tools for building and analysing tissue mechanics simulations <br />
-Amit Das (National Institute for Biological Sciences, India)  - tools for building and analysing actomyosin simulations 
+
 
 
 

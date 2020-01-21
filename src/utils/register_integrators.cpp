@@ -32,10 +32,10 @@
 void register_integrators(IntegratorMap& integrators)
 {
   // Register Brownian dynamics integrator with the integrators class factory
-  integrators["brownian"] = boost::factory<IntegratorBrownianPtr>();
+  integrators["brownian"] = factory<IntegratorBrownianPtr>();
   // Register Brownian dynamics integrator for particle position with the integrators class factory
-  integrators["brownian_pos"] = boost::factory<IntegratorBrownianPosPtr>();
+  integrators["brownian_pos"] = factory<IntegratorBrownianPosPtr>();
   // Register Brownian dynamics integrator for alignment with the integrators class factory
-  integrators["brownian_align"] = boost::factory<IntegratorBrownianAlignPtr>();
+  integrators["brownian_align"] = factory<IntegratorBrownianAlignPtr>();
 
 }

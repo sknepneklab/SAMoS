@@ -32,9 +32,9 @@
 void register_populations(PopulationMap& populations)
 {
   // Register random population control with the class factory
-  populations["random"] = boost::factory<PopulationRandomPtr>();
+  populations["random"] = factory<PopulationRandomPtr>();
   // Register density population control with the class factory
-  populations["density"] = boost::factory<PopulationDensityPtr>();
+  populations["density"] = factory<PopulationDensityPtr>();
   // Register growth population control with the class factory
-  populations["grow"] = boost::factory<PopulationGrowthPtr>();
+  populations["grow"] = factory<PopulationGrowthPtr>();
 }

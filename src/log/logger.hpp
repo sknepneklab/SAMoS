@@ -35,7 +35,7 @@
 #include <string>
 #include <map>
 #include <list>
-#include <boost/make_shared.hpp>
+#include <memory>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -55,14 +55,16 @@
 #include "log_size.hpp"
 #include "log_kinetic_eng.hpp"
 
-using std::string;
-using std::ofstream;
-using std::map;
-using std::endl;
-using std::list;
+using boost::bad_lexical_cast;
 using boost::format;
 using boost::lexical_cast;
-using boost::bad_lexical_cast;
+using std::endl;
+using std::list;
+using std::make_shared;
+using std::map;
+using std::ofstream;
+using std::shared_ptr;
+using std::string;
 
 /*! Logger class handles output of various measurements,
  *  such as average velocity, energies, etc.

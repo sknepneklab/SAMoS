@@ -282,8 +282,8 @@ private:
   double m_gamma;                   //!< cell perimeter stiffness
   double m_lambda;                  //!< cell contact stiffness
   bool m_has_part_params;           //!< true if type specific particle parameters are given
-  int m_mesh_update_steps;          //!< number of time steps between mesh (tessalation) recalculation
-  bool m_include_boundary;          //!< if true, include boudary terms in force calculation
+  int m_mesh_update_steps;          //!< number of time steps between mesh (tessellation) recalculation
+  bool m_include_boundary;          //!< if true, include boundary terms in force calculation
   VertexParticleParameters*  m_particle_params;   //!< type specific particle parameters 
   VertexParticleParameters** m_pair_params;       //!< type specific pair parameters 
      

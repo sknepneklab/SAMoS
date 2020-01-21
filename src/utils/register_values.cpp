@@ -32,7 +32,7 @@
 void register_values(ValueMap& values)
 {
   // Register constant value control the class factory
-  values["constant"] = boost::factory<ValueConstantPtr>();
+  values["constant"] = factory<ValueConstantPtr>();
   // Register linear value control the class factory
-  values["linear"] = boost::factory<ValueLinearPtr>();
+  values["linear"] = factory<ValueLinearPtr>();
 }

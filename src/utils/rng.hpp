@@ -30,12 +30,12 @@
 #ifndef __RNG_H__
 #define __RNG_H__
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
 /*! Class handles random numbers in the system */
 class RNG

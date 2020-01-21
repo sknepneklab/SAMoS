@@ -34,14 +34,14 @@
 
 
 /*! ExternalBoundaryPull handles pulling force onto the boundary of a tissue layer. 
- *  For a boundary particle \f$ i $\f we apply a force of magnitude \f$ \alpha \f$ in 
- *  the direction \f$ -\left(\vec r{ji} + \vec r_{ki}\right) \f$, where \f$ \vec r_{ji} \f$ 
- *  in the vecror along the edge connecting particle \f$ i \f$ and it boundary neighbour
- *  \f$ j \f$. Similarly, \f$ \vec r_{ki} $\f is the vector connecting particle \f$ i \f$
+ *  For a boundary particle \f$ i \f$ we apply a force of magnitude \f$ \alpha \f$ in 
+ *  the direction \f$ -\left(\vec{r}_{ji} + \vec{r}_{ki}\right) \f$, where \f$ \vec{r}_{ji} \f$ 
+ *  in the vector along the edge connecting particle \f$ i \f$ and it boundary neighbour
+ *  \f$ j \f$. Similarly, \f$ \vec{r}_{ki} \f$ is the vector connecting particle \f$ i \f$
  *  with its other boundary neighbour \f$ k \f$. Both vectors point away from particle \f$ i \f$. 
  *  \note This is not a potential, but to avoid code bloating we place it
  *  in the same class structure as regular external potential.
- *  \note The force always acts in the direction \f$ -\left(\vec r{ji} + \vec r_{ki}\right) \f$. For 
+ *  \note The force always acts in the direction \f$ -\left(\vec{r}_{ji} + \vec{r}_{ki}\right) \f$. For 
  *  a non-convex region of the boundary can lead to the inward pointing force. 
 */
 class ExternalBoundaryPull : public ExternalPotential

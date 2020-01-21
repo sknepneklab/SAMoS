@@ -34,27 +34,27 @@
 #include <fstream>
 #include <string>
 #include <map>
+#include <memory>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/info_parser.hpp>
 
-using std::ostream;
 using std::cout;
-using std::ofstream;
-using std::string;
-using std::map;
 using std::endl;
 using std::ios_base;
+using std::map;
+using std::ofstream;
+using std::ostream;
+using std::shared_ptr;
+using std::string;
 
 using boost::to_lower_copy;
 using namespace boost::posix_time;
 using namespace boost::gregorian;
-using boost::shared_ptr;
 namespace pt = boost::property_tree;
 
 /*! Messenger class handles all sort of messages that can either be sent to 

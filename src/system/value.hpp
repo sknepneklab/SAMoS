@@ -32,17 +32,17 @@
 
 #include <string>
 #include <exception>
+#include <memory>
 
-#include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include "messenger.hpp"
 #include "parse_parameters.hpp"
 
-using std::string;
+using std::make_shared;
 using std::runtime_error;
+using std::string;
 
-using boost::make_shared;
 using boost::lexical_cast;
 using boost::bad_lexical_cast;
 
