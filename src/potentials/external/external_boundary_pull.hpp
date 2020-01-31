@@ -34,7 +34,7 @@
 
 
 /*! ExternalBoundaryPull handles pulling force onto the boundary of a tissue layer. 
- *  For a boundary particle \f$ i $\f we apply a force of magnitude \f$ \alpha \f$ in 
+ *  For a boundary particle \f$ i \f$ we apply a force of magnitude \f$ \alpha \f$ in 
  *  the direction \f$ -\left(\vec r{ji} + \vec r_{ki}\right) \f$, where \f$ \vec r_{ji} \f$ 
  *  in the vecror along the edge connecting particle \f$ i \f$ and it boundary neighbour
  *  \f$ j \f$. Similarly, \f$ \vec r_{ki} $\f is the vector connecting particle \f$ i \f$

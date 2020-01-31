@@ -116,8 +116,8 @@ protected:
   string m_group_name;           //!< Name of the group to apply this population to
   int m_freq;                    //!< Frequency (in the number of time steps) with which to attempt population control
   double m_l_rescale;            //!< Rescale particle length by total of this amount
-  int m_l_rescale_steps;         //!< Rescale particle lenght over this many steps
-  double m_l_scale;              //!< Rescale particle lenth by this much in each step (=m_l_rescale**(m_grow_l_freq/m_l_rescale_steps))
+  int m_l_rescale_steps;         //!< Rescale particle length over this many steps
+  double m_l_scale;              //!< Rescale particle length by this much in each step (=m_l_rescale**(m_grow_l_freq/m_l_rescale_steps))
   bool m_has_nlist;              //!< If true, population has neighbour list set
    
 };

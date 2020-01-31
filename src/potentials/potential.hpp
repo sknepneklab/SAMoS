@@ -52,7 +52,7 @@ typedef map<string,AnglePotentialPtr> AnglePotType;
 
 /*! Potential class handles all potentials (pair interactions, external forces, bonds and angles) present 
  *  in the system. All potentials are stored in two STL maps which both have strings as keys
- *  while items are pointers (boost shared_ptr) to the PairPotential and ExternalPotential abstract classes,
+ *  while items are pointers (std shared_ptr) to the PairPotential and ExternalPotential abstract classes,
  *  respectively. The integrator part of the code calls member functions of this class
  *  to perform actual force and potential computations.
 */

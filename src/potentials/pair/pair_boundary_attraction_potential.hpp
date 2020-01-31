@@ -50,7 +50,7 @@ struct BoundaryAttractionParameters
 /*! PairBoundaryAttractionPotential implements the attraction between boundary cells and the bulk in the active vertex tissue model.
  *  Force is only existed on the boundary cells and is modelled based on the corase-grained model of Cooke, at al. (Phys. Rev. E 72, 011506 (2005)).
  *  If the distance between cell centres is between \f$ r_c $\f and \f$ r_c + w_c $\f force is equal to 
- *  \f$ -\frac{\pi\varepsilon}{2w_c}\sin\left(\frac{\pi(r_{ij}-r_c)}{w_c}\right){\hat\vec r}_{ij} $\f,
+ *  \f$ -\frac{\pi\varepsilon}{2w_c}\sin\left(\frac{\pi(r_{ij}-r_c)}{w_c}\right){\hat\vec r}_{ij} \f$,
  *  where \f$ \varepsilon $\f measures interaction strength. 
  */
 class PairBoundaryAttractionPotential : public PairPotential

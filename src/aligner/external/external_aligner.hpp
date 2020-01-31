@@ -62,6 +62,9 @@ public:
                                                                       m_has_params(false)
                                                                       { }
     
+  
+  virtual ~ExternalAlign() { }
+
   //! Set pair parameters data for external alignment 
   virtual void set_parameters(pairs_type&) = 0;
   
