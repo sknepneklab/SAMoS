@@ -125,6 +125,7 @@
 #include "external_tangent_aligner.hpp"
 #include "external_kenotaxis_aligner.hpp"
 #include "external_radial_aligner.hpp"
+#include "external_piv_aligner.hpp"
 #include "population.hpp"
 #include "population_random.hpp"
 #include "population_density.hpp"

@@ -34,8 +34,11 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <algorithm>
 
 #include <boost/filesystem.hpp>
+#include <boost/regex.hpp>
+
 
 #include "external_aligner.hpp"
 
@@ -44,6 +47,7 @@ using std::make_pair;
 using std::sqrt;
 using std::string;
 using std::vector;
+using std::sort;
 using namespace boost::filesystem;
 
 //! Structure that handles parameters for the polar alignment 
@@ -55,7 +59,7 @@ struct PIVData
 struct PIVAlignParameters
 {
   double gamma;  // Alignment strength
-}
+};
 
 /*! ExternalPIVAlign implements the alignment to the velocity field obtained from 
  *  experiments in embryos. Given a local vector vector \f$ \vec v_i \f$. Torque on particle \f$ i \f$ is then 
@@ -76,55 +80,133 @@ public:
   ExternalPIVAlign(SystemPtr sys, MessengerPtr msg, pairs_type& param) : ExternalAlign(sys,msg,param)
   {
     int ntypes = m_system->get_ntypes();
-    if (param.find("xfile") == param.end())
+
+    if (param.find("gamma") == param.end())
     {
-      m_msg->msg(Messenger::ERROR,"External PIV aligner. No x component of file external PIV given.");
-      throw runtime_error("No x component file provided for the external PIV alignment.");
+      m_msg->msg(Messenger::WARNING,"External PIV aligner. No alignment strength given. Assuming 1.0.");
+      m_gamma = 1.0;
     }
     else
     {
-      path p(param["xfile"]);
-      if (exists(p))
+      m_msg->msg(Messenger::INFO, "External PIV aligner. Setting alignent strength to " + param["gamma"] + ".");
+      m_gamma = lexical_cast<double>(param["gamma"]);
+    }
+    m_msg->write_config("aligner.external.piv.gamma",lexical_cast<string>(m_gamma));
+    if (param.find("xmin") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"External PIV aligner. No minimum value of x of the grid set. Assuming -0.5.");
+      m_xlow = -0.5;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO, "External PIV aligner. Setting minimum value of x of the grid to " + param["xmin"] + ".");
+      m_xlow = lexical_cast<double>(param["xmin"]);
+    }
+    m_msg->write_config("aligner.external.piv.xlow",lexical_cast<string>(m_xlow));
+    if (param.find("xmax") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"External PIV aligner. No maximum value of x of the grid set. Assuming 0.5.");
+      m_xhi = 0.5;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO, "External PIV aligner. Setting maximum value of x of the grid to " + param["xmax"] + ".");
+      m_xhi = lexical_cast<double>(param["xmax"]);
+    }
+    m_msg->write_config("aligner.external.piv.xhi",lexical_cast<string>(m_xhi));
+    if (param.find("ymin") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"External PIV aligner. No minimum value of y of the grid set. Assuming -0.5.");
+      m_ylow = -0.5;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO, "External PIV aligner. Setting minimum value of y of the grid to " + param["ymin"] + ".");
+      m_ylow = lexical_cast<double>(param["ymin"]);
+    }
+    m_msg->write_config("aligner.external.piv.ylow",lexical_cast<string>(m_ylow));
+    if (param.find("ymax") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"External PIV aligner. No maximum value of y of the grid set. Assuming 0.5.");
+      m_yhi = 0.5;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO, "External PIV aligner. Setting maximum value of y of the grid to " + param["ymax"] + ".");
+      m_yhi = lexical_cast<double>(param["ymax"]);
+    }
+    m_msg->write_config("aligner.external.piv.yhi",lexical_cast<string>(m_yhi));
+    if (param.find("piv_path") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"External PIV aligner. No path to PIV files given. Assuming current directory.");
+      m_path = "./";
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"External PIV aligner. Path of PIV files set to "+param["piv_path"]+".");
+      m_path = param["piv_path"];
+    }
+    m_msg->write_config("aligner.external.piv.piv_path",m_path);
+    if (param.find("piv_ext") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"External PIV aligner. No extension for PIV files given. Assuming csv.");
+      m_ext = "csv";
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"External PIV aligner. Extension for PIV files set to "+param["piv_ext"]+".");
+      m_ext = param["piv_ext"];
+    }
+    m_msg->write_config("aligner.external.piv.piv_ext",m_ext);
+    if (param.find("piv_steps") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"External PIV aligner. Number of simulation steps between two consecutive PIV snapshots not given. Assuming 1000.");
+      m_n_piv_steps = 1000;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO, "External PIV aligner. Number of simulation steps between two consecutive PIV snapshots set to " + param["piv_steps"] + ".");
+      m_n_piv_steps = lexical_cast<int>(param["piv_steps"]);
+    }
+
+    if (param.find("ufiles") == param.end())
+    {
+      m_msg->msg(Messenger::ERROR,"External PIV aligner. No base name of x velocity components given.");
+      throw runtime_error("No u component file provided for the external PIV alignment.");
+    }
+    else
+    {
+      vector<string> filelist;
+      this->__get_file_list(param["ufiles"], filelist);
+      for (auto f : filelist)
       {
-        this->__read_csv(param["xfile"], m_x);
+        PIVData piv;
+        this->__read_csv(f, piv);
+        m_u.push_back(piv);
       }
-      else
-        throw runtime_error("File " + param["xfile"] + " does not exist.");
     }
-    if (param.find("hx") == param.end())
-    {
-      m_msg->msg(Messenger::WARNING,"External PIV aligner. No x component of external PIV given. Assuming 0.");
-      m_hx = 0.0;
-    }
-    else
-    {
-      m_msg->msg(Messenger::INFO,"External PIV aligner. x component of the external PIV set to "+param["hx"]+".");
-      m_hx = lexical_cast<double>(param["hx"]);
-    }
-    m_msg->write_config("aligner.external.PIV.hx",lexical_cast<string>(m_hx));
-    if (param.find("hy") == param.end())
-    {
-      m_msg->msg(Messenger::WARNING,"External PIV aligner. No y component of external PIV given. Assuming 0.");
-      m_hy = 0.0;
-    }
-    else
-    {
-      m_msg->msg(Messenger::INFO,"External PIV aligner. y component of the external PIV set to "+param["hy"]+".");
-      m_hy = lexical_cast<double>(param["hy"]);
-    }
-    m_msg->write_config("aligner.external.PIV.hy",lexical_cast<string>(m_hy));
-    if (param.find("hz") == param.end())
-    {
-      m_msg->msg(Messenger::WARNING,"External PIV aligner. No z component of external PIV given. Assuming 0.");
-      m_hz = 0.0;
-    }
-    else
-    {
-      m_msg->msg(Messenger::INFO,"External PIV aligner. z component of the external PIV set to "+param["hz"]+".");
-      m_hz = lexical_cast<double>(param["hz"]);
-    }
-    m_msg->write_config("aligner.external.PIV.hz",lexical_cast<string>(m_hz));
     
+    if (param.find("vfiles") == param.end())
+    {
+      m_msg->msg(Messenger::ERROR,"External PIV aligner. No base name of y velocity components given.");
+      throw runtime_error("No v component file provided for the external PIV alignment.");
+    }
+    else
+    {
+      vector<string> filelist;
+      this->__get_file_list(param["vfiles"], filelist);
+      for (auto f : filelist)
+      {
+        PIVData piv;
+        this->__read_csv(f, piv);
+        m_v.push_back(piv);
+      }
+    }
+
+    // Do some bookkeeping
+    m_nx = m_u[0].piv_data[0].size();
+    m_ny = m_u[0].piv_data.size();
+
     m_type_params = new PIVAlignParameters[ntypes];
     for (int i = 0; i < ntypes; i++)
     {
@@ -152,43 +234,19 @@ public:
     type = lexical_cast<int>(self_param["type"]);
     
     
-    if (self_param.find("hx") != self_param.end())
+    if (self_param.find("gamma") != self_param.end())
     {
-      m_msg->msg(Messenger::INFO,"External PIV aligner. Setting x component of external filed to "+self_param["hx"]+" for particle pair of type ("+lexical_cast<string>(type)+").");
-      param["hx"] = lexical_cast<double>(self_param["hx"]);
+      m_msg->msg(Messenger::INFO,"External PIV aligner. Setting alignment strength to "+self_param["gamma"]+" for particle pair of type ("+lexical_cast<string>(type)+").");
+      param["gamma"] = lexical_cast<double>(self_param["gamma"]);
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"External PIV aligner. Using default x component of external filed ("+lexical_cast<string>(m_hx)+") for particle pair of types ("+lexical_cast<string>(type)+")");
-      param["hx"] = m_hx;
+      m_msg->msg(Messenger::INFO,"External PIV aligner. Using default alignment strength ("+lexical_cast<string>(m_gamma)+") for particle pair of types ("+lexical_cast<string>(type)+")");
+      param["gamma"] = m_gamma;
     }
-    m_msg->write_config("aligner.external.PIV.type."+self_param["type"]+".hx",lexical_cast<string>(param["hx"]));
-    if (self_param.find("hy") != self_param.end())
-    {
-      m_msg->msg(Messenger::INFO,"External PIV aligner. Setting y component of external filed to "+self_param["hy"]+" for particle pair of type ("+lexical_cast<string>(type)+").");
-      param["hy"] = lexical_cast<double>(self_param["hy"]);
-    }
-    else
-    {
-      m_msg->msg(Messenger::INFO,"External PIV aligner. Using default y component of external filed ("+lexical_cast<string>(m_hy)+") for particle pair of types ("+lexical_cast<string>(type)+")");
-      param["hy"] = m_hy;
-    }
-    m_msg->write_config("aligner.external.PIV.type."+self_param["type"]+".hy",lexical_cast<string>(param["hy"]));
-    if (self_param.find("hz") != self_param.end())
-    {
-      m_msg->msg(Messenger::INFO,"External PIV aligner. Setting z component of external filed to "+self_param["hz"]+" for particle pair of type ("+lexical_cast<string>(type)+").");
-      param["hz"] = lexical_cast<double>(self_param["hz"]);
-    }
-    else
-    {
-      m_msg->msg(Messenger::INFO,"External PIV aligner. Using default z component of external filed ("+lexical_cast<string>(m_hz)+") for particle pair of types ("+lexical_cast<string>(type)+")");
-      param["hz"] = m_hz;
-    }
-    m_msg->write_config("aligner.external.PIV.type."+self_param["type"]+".hz",lexical_cast<string>(param["hz"]));
+    m_msg->write_config("aligner.external.PIV.type."+self_param["type"]+".gamma",lexical_cast<string>(param["gamma"]));
     
-    m_type_params[type-1].hx = param["hx"];
-    m_type_params[type-1].hy = param["hy"];
-    m_type_params[type-1].hz = param["hz"];
+    m_type_params[type-1].gamma = param["gamma"];
     
     m_has_params = true;
   }
@@ -200,15 +258,32 @@ public:
   
 private:
 
-  PIVData  m_x;          // x components of the grid
-  PIVData  m_y;          // y components of the grid
-  vector<PIVData> m_u;   // Holds x components of the velocity over time    
+  double m_xlow;         // Minimum value of x of the grid
+  double m_xhi;          // Maximum value of x of the grid
+  double m_ylow;         // Minimum value of y of the grid
+  double m_yhi;          // Maximum value of y of the grid
+  int m_nx;              // Number of grid points along x
+  int m_ny;              // Number of grid points along y
+
+  string m_path;         // Path to PIV data
+  string m_ext;          // PIV files extension
+
+  int m_n_piv_steps;     // Number of simulation steps between two consecutive PIV frames.
+
+  vector<PIVData> m_u;   // Holds x components of the velocity over time
   vector<PIVData> m_v;   // Holds y components of the velocity over time
+  
   int m_max_time;        // Total number of time steps
   int m_step_gap;        // Number of steps between two consecutive PIV snapshots
   double m_gamma;        // Alignment strength
 
+  int m_piv_frame_counter;
+  int m_step_counter;
+
+  PIVAlignParameters* m_type_params;   //!< type specific alignment  
+
   void __read_csv(const string &, PIVData &);
+  void __get_file_list(const string &, vector<string> &);
 };
 
 typedef shared_ptr<ExternalPIVAlign> ExternalPIVAlignPtr;
