@@ -69,6 +69,7 @@ public:
                      | qi::as_string[keyword["tangent"]][phx::bind(&ExternalAlignData::type, phx::ref(external_align_data)) = qi::_1 ]    /*! Handles alignment polymer tangent */
                      | qi::as_string[keyword["kenotaxis"]][phx::bind(&ExternalAlignData::type, phx::ref(external_align_data)) = qi::_1 ]    /*! Handles kenotaxis alignment  */
                      | qi::as_string[keyword["radial"]][phx::bind(&ExternalAlignData::type, phx::ref(external_align_data)) = qi::_1 ]    /*! Handles radial alignment  */
+                     | qi::as_string[keyword["piv"]][phx::bind(&ExternalAlignData::type, phx::ref(external_align_data)) = qi::_1 ]    /*! Handles radial alignment  */
                        /* to add new potential: | qi::as_string[keyword["newpotential"]][phx::bind(&ExternalAlignData::type, phx::ref(external_align_data)) = qi::_1 ] */
                      )
                      >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&ExternalAlignData::params, phx::ref(external_align_data)) = qi::_1 ]
