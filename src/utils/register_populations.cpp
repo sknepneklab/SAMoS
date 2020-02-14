@@ -49,4 +49,6 @@ void register_populations(PopulationMap& populations)
   populations["actomyosin_molecule"] = factory<PopulationActomyosinMoleculePtr>();
   // Register actomyosin head population control with the class factory
   populations["actomyosin_head"] = factory<PopulationActomyosinHeadPtr>();
+  // Register population regions control with the class factory
+  populations["region"] = factory<PopulationRegionPtr>();
 }

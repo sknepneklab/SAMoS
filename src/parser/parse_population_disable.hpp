@@ -66,6 +66,7 @@ public:
                           | qi::as_string[keyword["actomyosin_poisson"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ]    /*! Disables acotmyosin_poisson population */
                           | qi::as_string[keyword["actomyosin_molecule"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ]    /*! Disables actomyosin_molecule population */
                           | qi::as_string[keyword["actomyosin_head"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ]    /*! Disables actomyosin_head population */
+                          | qi::as_string[keyword["region"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ]    /*! Disables region population */
                           /* to add new disable population: | qi::as_string[keyword["newintegrator"]][phx::bind(&DisablePopulationData::type, phx::ref(disable_population_data)) = qi::_1 ] */
                         )
                         >> qi::as_string[qi::no_skip[+qi::char_]][phx::bind(&DisablePopulationData::params, phx::ref(disable_population_data)) = qi::_1 ]
