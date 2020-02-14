@@ -602,8 +602,20 @@ void System::remove_particle(int id)
   {
     Particle& pj = m_particles[pi.boundary_neigh[0]];
     Particle& pk = m_particles[pi.boundary_neigh[1]];
-    pj.boundary_neigh[(pj.boundary_neigh[0] == id) ? 0 : 1] = pk.get_id();
-    pk.boundary_neigh[(pk.boundary_neigh[0] == id) ? 0 : 1] = pj.get_id();
+    Mesh& mesh = this->get_mesh();
+    Vertex vi = mesh.get_vertices()[id];
+    if (!(vi.neigh[0] == pj.get_id() || vi.neigh[0] == pk.get_id()))
+      throw runtime_error("Particle removal. Something is wrong with the ordering of one of the boundary vertices.");
+    int first_neigh = vi.neigh[0] == pj.get_id() ? pj.get_id() : pk.get_id();
+    int last_neigh  = vi.neigh[0] == pj.get_id() ? pk.get_id() : pj.get_id();
+    m_particles[first_neigh].boundary_neigh[m_particles[first_neigh].boundary_neigh[0] == id ? 0 : 1] = vi.neigh[1];
+    for (int i = 1; i < vi.neigh.size() - 1; i++)
+    {
+      m_particles[vi.neigh[i]].boundary = true;
+      m_particles[vi.neigh[i]].boundary_neigh[0] = vi.neigh[i - 1];
+      m_particles[vi.neigh[i]].boundary_neigh[1] = vi.neigh[i + 1];
+    }
+    m_particles[last_neigh].boundary_neigh[m_particles[last_neigh].boundary_neigh[0] == id ? 0 : 1] = vi.neigh[vi.neigh.size()-1];
   }
   vector<int>::iterator it_m = find(m_molecules[mol_id].begin(), m_molecules[mol_id].end(),id);
   m_molecules[mol_id].erase(it_m);
