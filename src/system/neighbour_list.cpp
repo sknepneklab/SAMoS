@@ -435,7 +435,7 @@ bool NeighbourList::build_triangulation()
         }
       }
     }
-    if (m_static_boundary)  // In case boundary is static, ignore all addition of new vertices
+    if (m_static_boundary)  // In case boundary is static, ignore all additions of new vertices
       simple_add = true;
     if (can_add)
     {
@@ -552,7 +552,7 @@ void NeighbourList::remove_dangling()
 }
 
 /*! Loop over all vertices and remove particles that belong to cells that are detached from the
- *  rest of the tissue. This is clearly only possible is triangulation has been set, i.e., for
+ *  rest of the tissue. This is clearly only possible if triangulation has been set, i.e., for
  *  tissue simulations. 
  */
  void NeighbourList::remove_detached()
