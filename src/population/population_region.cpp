@@ -56,7 +56,7 @@ void PopulationRegion::remove(int t)
     {
       int pi = particles[i];
       Particle& p = m_system->get_particle(pi);
-      if (p.in_tissue)
+      if (p.in_tissue && !p.boundary)
       {
         bool remove_particle = false;
         if (m_has_left_bound && p.x < m_xmin)
