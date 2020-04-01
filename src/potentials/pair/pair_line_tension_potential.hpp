@@ -45,9 +45,9 @@ struct LineTensionParameters
 };
 
 /*! PairLineTensionPotential implements the line tension term in the model for an active tissue model.
- *  Force only exists along boundary edges and is proportional to the lenght of the edge, i.e., 
- *  \f$ \vec f_i = \lambda \left|\vec r_{ij}\right|\hat\vec r_{ij} \f$ and \f$ \vec f_j -= \lambda \left|\vec r_{ij}\right|\hat\vec r_{ij} \f$,
- *  where \f$ \vec r_{ij} \f$ if the vector along the edge connecting vertices beloing to it.
+ *  Force only exists along boundary edges and is proportional to the length of the edge, i.e., 
+ *  \f$ \vec f_i = \lambda \left|\vec r_{ij}\right|\hat{\vec r}_{ij} \f$ and \f$ \vec f_j = -\lambda \left|\vec r_{ij}\right|\hat{\vec r}_{ij} \f$,
+ *  where \f$ \vec r_{ij} \f$ if the vector along the edge connecting vertices belong to it.
  */
 class PairLineTensionPotential : public PairPotential
 {

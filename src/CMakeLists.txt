@@ -45,11 +45,22 @@ add_source_dir(${dir})
 endforeach (dir)
 
 
+
 add_executable(samos samos.cpp ${_samos_sources})
+
+target_compile_options(samos PUBLIC $<$<CONFIG:RELEASE>:-O3 -funroll-loops -ffast-math -DNDEBUG>)
+target_compile_options(samos PUBLIC $<$<CONFIG:DEBUG>:-O0 -g3 -Wall>)
+
 target_link_libraries(samos  ${SAMoS_LIBS} ${THREAD_LIB})
 
 
-set_target_properties(samos PROPERTIES PREFIX ""  OUTPUT_NAME "samos")
+set_target_properties(samos PROPERTIES 
+    PREFIX ""  
+    OUTPUT_NAME "samos" 
+    CXX_STANDARD ${CXX_STANDARD}
+    CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS NO
+    )
 
 IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   SET(CMAKE_INSTALL_PREFIX $ENV{HOME}/samos CACHE PATH "Setting default install path" FORCE)

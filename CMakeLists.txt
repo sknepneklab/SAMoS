@@ -69,6 +69,7 @@ set(MATH_LIB -lm)
 set(SAMoS_LIBS ${GSL_LIBS} ${MATH_LIB} ${BOOST_LIBS} ${VTK_LIBS})
 
 
+
 # ##############################################
 # place all executables in the build directory 
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
