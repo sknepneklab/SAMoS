@@ -63,4 +63,6 @@ void register_pair_potentials(PairPotentialMap& pair_potentials)
   pair_potentials["active_nematic"] = factory<PairActiveNematicPotentialPtr>(); 
   // Register Yukawa pair potential with the pair potentials class factory
   pair_potentials["yukawa"] = factory<PairYukawaPotentialPtr>(); 
+  // Register bare Coulomb pair potential with the pair potentials class factory
+  pair_potentials["bare_coulomb"] = factory<PairBareCoulombPotentialPtr>(); 
 }
