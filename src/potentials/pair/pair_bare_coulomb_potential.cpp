@@ -80,6 +80,9 @@ void PairBareCoulombPotential::compute(double dt)
         for (int i = 0; i < N; i++)
         {
             Particle &pi = m_system->get_particle(i);
+// #ifdef __AVX2__
+//                 __m256d ri = _mm256_set_pd(0.0, pi.z, pi.y, pi.x);   // Load all three components of the position of particle pi into the AVX register
+// #endif            
             for (int j = i + 1; j < N; j++)
             {
                 Particle &pj = m_system->get_particle(j);
@@ -88,9 +91,21 @@ void PairBareCoulombPotential::compute(double dt)
                     int pi_t = pi.get_type() - 1, pj_t = pj.get_type() - 1;
                     alpha = m_pair_params[pi_t][pj_t].alpha;
                 }
-                double dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
-                // m_system->apply_periodic(dx, dy, dz);
-                double r_sq = dx * dx + dy * dy + dz * dz;
+                double dx, dy, dz, r_sq;
+// #ifdef __AVX2__
+//                 __m256d rj  = _mm256_set_pd(0.0, pj.z, pj.y, pj.x); // Load all three components of the position of particle pj into the AVX register
+//                 __m256d dr  = _mm256_sub_pd(rj, ri);  // Calculate difference between two position vectors
+//                 __m256d dr2 = _mm256_mul_pd(dr, dr);  // Compute square of each component 
+//                 __m128d vlow  = _mm256_extractf128_pd(dr2, 0); // Get first two values of the vector (lower 128 bits)
+//                 __m128d vhigh = _mm256_extractf128_pd(dr2, 1); // Get second two values of the vector (higher 128 bits)
+//                 __m128d sum1 =   _mm_add_pd(vlow, vhigh);
+//                 __m128d swapped = _mm_shuffle_pd(sum1, sum1, 0b01);   // or unpackhi
+//                 __m128d dotproduct = _mm_add_pd(sum1, swapped);
+//                 r_sq = _mm_cvtsd_f64(dotproduct);  // reduce to scalar
+// #else
+                dx = pj.x - pi.x, dy = pj.y - pi.y, dz = pj.z - pi.z;
+                r_sq = dx * dx + dy * dy + dz * dz;
+//#endif
                 double r = sqrt(r_sq);
                 // Handle potential
                 double potential_energy = alpha / r;
@@ -98,6 +113,20 @@ void PairBareCoulombPotential::compute(double dt)
                 // Handle force
                 double r_3 = r * r_sq;
                 double force_factor = alpha / r_3;
+// #ifdef __AVX2__
+//                 __m256d ff = _mm256_set1_pd(force_factor);
+//                 __m256d f = _mm256_mul_pd(dr, ff);
+//                 alignas(32) double df[4];
+//                 _mm256_storeu_pd(df, f);
+//                 fx_loc[tid][i] -= df[0];
+//                 fy_loc[tid][i] -= df[1];
+//                 fz_loc[tid][i] -= df[2];
+
+//                 // Use 3d Newton's law
+//                 fx_loc[tid][j] += df[0];
+//                 fy_loc[tid][j] += df[1];
+//                 fz_loc[tid][j] += df[2];
+// #else
                 fx_loc[tid][i] -= force_factor * dx;
                 fy_loc[tid][i] -= force_factor * dy;
                 fz_loc[tid][i] -= force_factor * dz;
@@ -106,6 +135,7 @@ void PairBareCoulombPotential::compute(double dt)
                 fx_loc[tid][j] += force_factor * dx;
                 fy_loc[tid][j] += force_factor * dy;
                 fz_loc[tid][j] += force_factor * dz;
+//#endif
             }
         }
 #pragma omp critical

@@ -151,4 +151,6 @@
 #include "face.hpp"
 #include "mesh.hpp"
 
+#include <x86intrin.h> //AVX/SSE Extensions
+
 #endif

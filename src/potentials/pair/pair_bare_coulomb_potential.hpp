@@ -33,6 +33,10 @@
 #include <cmath>
 #include <omp.h>
 
+#ifdef __AVX2__
+#include <immintrin.h>
+#endif
+
 #include "pair_potential.hpp"
 
 using std::make_pair;
