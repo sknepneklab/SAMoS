@@ -48,15 +48,15 @@ void IntegratorVicsek::integrate()
   vector<int> particles = m_system->get_group(m_group_name)->get_particles();
   
   // reset forces and torques
-  m_system->reset_forces();
-  m_system->reset_torques();
+  //m_system->reset_forces();
+  //m_system->reset_torques();
   
   // compute forces in the current configuration
-  if (m_potential)
-    m_potential->compute(m_dt);
+  //if (m_potential)
+  //  m_potential->compute(m_dt);
   // compute torques in the current configuration
-  if (m_align)
-    m_align->compute();
+  //if (m_align)
+  //  m_align->compute();
   // iterate over all particles 
   for (int i = 0; i < N; i++)
   {

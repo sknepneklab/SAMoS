@@ -44,7 +44,7 @@ void IntegratorBrownianAlign::integrate()
   vector<int> particles = m_system->get_group(m_group_name)->get_particles();
   
   // reset torques
-  m_system->reset_torques();
+  //m_system->reset_torques();
   
   // If nematic, attempt to flip directors
   if (m_nematic)
@@ -59,8 +59,8 @@ void IntegratorBrownianAlign::integrate()
     }
   
   // compute torques in the current configuration
-  if (m_align)
-    m_align->compute();
+  //if (m_align)
+  //  m_align->compute();
   // iterate over all particles 
   for (int i = 0; i < N; i++)
   {

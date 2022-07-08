@@ -43,22 +43,34 @@ void ExternalAJPolarAlign::compute()
     // 1/tau(\theta_v-theta_i); use variant 1/tau sin(\theta_v-theta_i)
     // or in vectorial: -1/tau (n_i \times v_i). ez
     // or calculate that vector and then give it to the projection
-    double tau_x = pi.ny*pi.vz - pi.nz*pi.vy;
-    double tau_y = pi.nz*pi.vx - pi.nx*pi.vz;
-    double tau_z = pi.nx*pi.vy - pi.ny*pi.vx;
-    
-    // Do normalisation here if useful
+    double vx = pi.vx, vy = pi.vy, vz = pi.vz;
     if (m_normalise)
     {
-      double vnorm = sqrt(pi.vx*pi.vx + pi.vy*pi.vy + pi.vz*pi.vz);
-      //cout << vnorm;
-      if (vnorm > 0)
+      double v = sqrt(vx*vx + vy*vy + vz*vz);
+      if (v > 0)
       {
-        tau_x /= vnorm;
-        tau_y /= vnorm;
-        tau_z /= vnorm;
+        vx /= v;
+        vy /= v;
+        vz /= v;
       }
     }
+
+    double tau_x = pi.ny*vz - pi.nz*vy;
+    double tau_y = pi.nz*vx - pi.nx*vz;
+    double tau_z = pi.nx*vy - pi.ny*vx;
+    
+    // Do normalisation here if useful
+    // if (m_normalise)
+    // {
+    //   double vnorm = sqrt(pi.vx*pi.vx + pi.vy*pi.vy + pi.vz*pi.vz);
+    //   //cout << vnorm;
+    //   if (vnorm > 0)
+    //   {
+    //     tau_x /= vnorm;
+    //     tau_y /= vnorm;
+    //     tau_z /= vnorm;
+    //   }
+    // }
     
     if (m_has_params)
       tau = m_type_params[pi.get_type()-1].tau;

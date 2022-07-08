@@ -143,6 +143,7 @@ int main(int argc, char* argv[])
   defined["read_bonds"] = false;       // If false, no bond potentials have been defined
   defined["read_angles"] = false;      // If false, no angle potentials have been defined
   defined["population"] = false;       // If false, no populations have been defined
+  defined["timestep"] = false;         // If false, no time step is defined
     
   register_constraints(constraints);                     // Register all constraints
   register_pair_potentials(pair_potentials);             // Register all pair potentials 
@@ -647,6 +648,11 @@ int main(int argc, char* argv[])
               msg->msg(Messenger::ERROR,"Constraint has not been defined. Please define them using \"constraint\" command before adding integrator.");
               throw std::runtime_error("Constraint not defined.");
             }
+            if (!defined["timestep"])
+            {
+              msg->msg(Messenger::ERROR,"Simulation timestep has not been defined  Please define them using the \"timestep\" command before adding integrator.");
+              throw std::runtime_error("Timestep not defined.");
+            }
             if (qi::phrase_parse(command_data.attrib_param_complex.begin(), command_data.attrib_param_complex.end(), integrator_parser, qi::space))
             {
               if (qi::phrase_parse(integrator_data.params.begin(), integrator_data.params.end(), param_parser, qi::space, parameter_data))
@@ -865,7 +871,7 @@ int main(int argc, char* argv[])
               }
               // Precompute forces and torques
               if (pot)
-                pot->compute(1e-3);  // Some value to make sure phase in is working.
+                pot->compute(sys->get_integrator_step());  
               if (aligner)
                 aligner->compute();
               int nlist_builds = 0;     // Count how many neighbour list builds we had during this run
@@ -880,8 +886,14 @@ int main(int argc, char* argv[])
                 }
                 for (vector<DumpPtr>::iterator it_d = dump.begin(); it_d != dump.end(); it_d++)
                   (*it_d)->dump(time_step);
-		for (vector<LoggerPtr>::iterator it_l = log.begin(); it_l != log.end(); it_l++)
+		            for (vector<LoggerPtr>::iterator it_l = log.begin(); it_l != log.end(); it_l++)
                   (*it_l)->log();
+                sys->reset_forces();
+                sys->reset_torques();
+                if (pot)
+                  pot->compute(sys->get_integrator_step()); 
+                if (aligner)
+                  aligner->compute();
                 for (std::map<std::string, IntegratorPtr>::iterator it_integ = integrator.begin(); it_integ != integrator.end(); it_integ++)
                   (*it_integ).second->integrate();
                 if (has_population)

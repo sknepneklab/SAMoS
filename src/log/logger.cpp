@@ -61,6 +61,7 @@ Logger::Logger(SystemPtr sys, MessengerPtr msg, PotentialPtr pot, AlignerPtr ali
   m_logger["boundary_bending_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"boundary_bending")); 
   m_logger["boundary_attraction_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"boundary_attraction"));
   m_logger["coulomb_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"coulomb"));
+  m_logger["bare_coulomb_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"bare_coulomb"));
   m_logger["yukawa_energy"] = std::make_shared<LogPairEng>(LogPairEng(sys, msg, pot, align,"yukawa"));
   m_logger["polar_align"] = std::make_shared<LogPairAlign>(LogPairAlign(sys, msg, pot, align,"polar")); 
   m_logger["nematic_align"] = std::make_shared<LogPairAlign>(LogPairAlign(sys, msg, pot, align,"nematic")); 

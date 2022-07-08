@@ -44,11 +44,11 @@ void IntegratorBrownianPos::integrate()
   vector<int> particles = m_system->get_group(m_group_name)->get_particles();
   
   // reset forces 
-  m_system->reset_forces();
+  //m_system->reset_forces();
   
   // compute forces in the current configuration
-  if (m_potential)
-    m_potential->compute(m_dt);
+  //if (m_potential)
+  //  m_potential->compute(m_dt);
   // iterate over all particles 
   for (int i = 0; i < N; i++)
   {
