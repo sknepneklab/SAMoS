@@ -51,6 +51,9 @@ void PairBareCoulombPotential::compute(double dt)
 
     int tid, numth;
 
+    if (m_system->record_force_type())
+        this->reset_force_types("barecoulomb");
+
 #pragma omp parallel 
     {
         #pragma omp master
@@ -152,5 +155,7 @@ void PairBareCoulombPotential::compute(double dt)
         pi.fx += fx[i];
         pi.fy += fy[i];
         pi.fz += fz[i];
+        if (m_system->record_force_type())
+          pi.add_force_type("barecoulomb",fx[i],fy[i],fz[i]);
     }
 }

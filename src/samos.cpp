@@ -884,6 +884,8 @@ int main(int argc, char* argv[])
                   nlist->build();
                   nlist_builds++;
                 }
+                for (int i = 0; i < sys->size(); i++)
+                  constraint->enforce(sys->get_particle(i));
                 for (vector<DumpPtr>::iterator it_d = dump.begin(); it_d != dump.end(); it_d++)
                   (*it_d)->dump(time_step);
 		            for (vector<LoggerPtr>::iterator it_l = log.begin(); it_l != log.end(); it_l++)
