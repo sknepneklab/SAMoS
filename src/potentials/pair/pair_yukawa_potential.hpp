@@ -194,7 +194,7 @@ public:
   }
   
   //! Returns false since Yukawa potential does not need neighbour list
-  bool need_nlist() { return false; }
+  bool need_nlist() { return true; }
   
   //! Computes potentials and forces for all particles
   void compute(double);
