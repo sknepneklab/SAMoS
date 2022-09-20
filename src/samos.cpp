@@ -886,16 +886,16 @@ int main(int argc, char* argv[])
                 }
                 for (int i = 0; i < sys->size(); i++)
                   constraint->enforce(sys->get_particle(i));
-                for (vector<DumpPtr>::iterator it_d = dump.begin(); it_d != dump.end(); it_d++)
-                  (*it_d)->dump(time_step);
-		            for (vector<LoggerPtr>::iterator it_l = log.begin(); it_l != log.end(); it_l++)
-                  (*it_l)->log();
                 sys->reset_forces();
                 sys->reset_torques();
                 if (pot)
                   pot->compute(sys->get_integrator_step()); 
                 if (aligner)
                   aligner->compute();
+                for (vector<DumpPtr>::iterator it_d = dump.begin(); it_d != dump.end(); it_d++)
+                  (*it_d)->dump(time_step);
+	              for (vector<LoggerPtr>::iterator it_l = log.begin(); it_l != log.end(); it_l++)
+                  (*it_l)->log();
                 for (std::map<std::string, IntegratorPtr>::iterator it_integ = integrator.begin(); it_integ != integrator.end(); it_integ++)
                   (*it_integ).second->integrate();
                 if (has_population)

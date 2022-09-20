@@ -597,78 +597,92 @@ void Dump::dump_data()
       m_out << " molecule ";
     m_out << endl;
   }
+  bool skip = false;
   for (int i = 0; i < N; i++)
   {
     Particle& p = m_system->get_particle(particles[i]);
-    if (m_params.find("id") != m_params.end())
-      m_out << format("%5d ") % p.get_id();
-    if (m_params.find("tp") != m_params.end())
-      m_out << format("%2d ") % p.get_type();
-    if (m_params.find("flag") != m_params.end())
-      m_out << format("%5d ") % p.get_flag();
-    if (m_params.find("radius") != m_params.end())
-      m_out << format("%8.5f ") % p.get_radius();
-    if (m_params.find("coordinate") != m_params.end())
+    if (m_params.find("single_particle") != m_params.end())
     {
-      if (m_params.find("unwrap") != m_params.end())
-        m_out << format(" %16.10e  %16.10e  %16.10e") % (p.x + p.ix*Lx) % (p.y + p.iy*Ly) % (p.z + p.iz*Lz);
+      int particle_id = 0;
+      if (m_params.find("particle_id") != m_params.end())
+        particle_id = lexical_cast<int>(m_params["particle_id"]);
+      if (p.get_id() == particle_id)
+        skip = false;
       else
-        m_out << format(" %16.10e  %16.10e  %16.10e") % p.x % p.y % p.z;
+        skip = true;
     }
-    if (m_params.find("velocity") != m_params.end())
-      m_out << format(" %12.7e  %12.7e  %12.7e") % p.vx % p.vy % p.vz;
-    if (m_params.find("force") != m_params.end())
-      m_out << format(" %12.7e  %12.7e  %12.7e") % p.fx % p.fy % p.fz;
-    if (m_params.find("director") != m_params.end())
-      m_out << format(" %10.6f  %10.6f  %10.6f") % p.nx % p.ny % p.nz;
-    if (m_params.find("omega") != m_params.end())
-      m_out << format("%8.5f ") % p.omega;
-    if (m_params.find("image_flags") != m_params.end())
-      m_out << format(" %3d  %3d  %3d ") % p.ix % p.iy % p.iz;
-    if (m_params.find("normal") != m_params.end())
-      m_out << format(" %10.6f  %10.6f  %10.6f") % p.Nx % p.Ny % p.Nz;
-    if (m_params.find("parent") != m_params.end())
-      m_out << format(" %3d ") % p.get_parent();
-    if (m_params.find("area") != m_params.end())
-      m_out << format("%16.6f ") % p.A0;
-    if (m_nlist->has_faces())
+    if (!skip)
     {
-      Vertex& V = mesh.get_vertices()[p.get_id()];
-      if (m_params.find("cell_area") != m_params.end())
+      if (m_params.find("id") != m_params.end())
+        m_out << format("%5d ") % p.get_id();
+      if (m_params.find("tp") != m_params.end())
+        m_out << format("%2d ") % p.get_type();
+      if (m_params.find("flag") != m_params.end())
+        m_out << format("%5d ") % p.get_flag();
+      if (m_params.find("radius") != m_params.end())
+        m_out << format("%8.5f ") % p.get_radius();
+      if (m_params.find("coordinate") != m_params.end())
       {
-        m_out << format("%16.6f ") % V.area;
+        if (m_params.find("unwrap") != m_params.end())
+          m_out << format(" %16.10e  %16.10e  %16.10e") % (p.x + p.ix*Lx) % (p.y + p.iy*Ly) % (p.z + p.iz*Lz);
+        else
+          m_out << format(" %16.10e  %16.10e  %16.10e") % p.x % p.y % p.z;
       }
-      if (m_params.find("cell_perim") != m_params.end())
+      if (m_params.find("velocity") != m_params.end())
+        m_out << format(" %12.7e  %12.7e  %12.7e") % p.vx % p.vy % p.vz;
+      if (m_params.find("force") != m_params.end())
+        m_out << format(" %12.7e  %12.7e  %12.7e") % p.fx % p.fy % p.fz;
+      if (m_params.find("director") != m_params.end())
+        m_out << format(" %10.6f  %10.6f  %10.6f") % p.nx % p.ny % p.nz;
+      if (m_params.find("omega") != m_params.end())
+        m_out << format("%8.5f ") % p.omega;
+      if (m_params.find("image_flags") != m_params.end())
+        m_out << format(" %3d  %3d  %3d ") % p.ix % p.iy % p.iz;
+      if (m_params.find("normal") != m_params.end())
+        m_out << format(" %10.6f  %10.6f  %10.6f") % p.Nx % p.Ny % p.Nz;
+      if (m_params.find("parent") != m_params.end())
+        m_out << format(" %3d ") % p.get_parent();
+      if (m_params.find("area") != m_params.end())
+        m_out << format("%16.6f ") % p.A0;
+      if (m_nlist->has_faces())
       {
-        m_out << format("%16.6f ") % V.perim;
+        Vertex& V = mesh.get_vertices()[p.get_id()];
+        if (m_params.find("cell_area") != m_params.end())
+        {
+          m_out << format("%16.6f ") % V.area;
+        }
+        if (m_params.find("cell_perim") != m_params.end())
+        {
+          m_out << format("%16.6f ") % V.perim;
+        }
+        if (m_params.find("shape_param") != m_params.end())
+        {
+          m_out << format("%10.6f ") % (V.perim/sqrt(V.area));
+        }
       }
-      if (m_params.find("shape_param") != m_params.end())
+      if (m_params.find("cont_num") != m_params.end())
       {
-        m_out << format("%10.6f ") % (V.perim/sqrt(V.area));
+          if (m_nlist->has_contacts())
+            m_out << format("%2d ") % m_nlist->get_contacts(i).size();
       }
+      if (m_params.find("boundary") != m_params.end())
+      {
+        if (p.boundary)
+          m_out << " 1 ";
+        else
+          m_out << " 0 ";
+      }   
+      if (m_params.find("in_tissue") != m_params.end())
+      {
+        if (p.in_tissue)
+          m_out << " 1 ";
+        else
+          m_out << " 0 ";
+      }  
+      if (m_params.find("molecule") != m_params.end())
+        m_out << format("%2d ") % p.molecule;
+      m_out << endl;
     }
-    if (m_params.find("cont_num") != m_params.end())
-    {
-        if (m_nlist->has_contacts())
-          m_out << format("%2d ") % m_nlist->get_contacts(i).size();
-    }
-    if (m_params.find("boundary") != m_params.end())
-    {
-      if (p.boundary)
-        m_out << " 1 ";
-      else
-        m_out << " 0 ";
-    }   
-    if (m_params.find("in_tissue") != m_params.end())
-    {
-      if (p.in_tissue)
-        m_out << " 1 ";
-      else
-        m_out << " 0 ";
-    }  
-    if (m_params.find("molecule") != m_params.end())
-      m_out << format("%2d ") % p.molecule;
-    m_out << endl;
   }
 }
 
