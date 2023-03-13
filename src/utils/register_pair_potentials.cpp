@@ -65,4 +65,6 @@ void register_pair_potentials(PairPotentialMap& pair_potentials)
   pair_potentials["yukawa"] = factory<PairYukawaPotentialPtr>(); 
   // Register bare Coulomb pair potential with the pair potentials class factory
   pair_potentials["bare_coulomb"] = factory<PairBareCoulombPotentialPtr>(); 
+  // Register Coulomb3 pair potential with the pair potentials class factory
+  pair_potentials["coulomb3"] = factory<PairCoulomb3PotentialPtr>(); 
 }
