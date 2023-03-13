@@ -152,6 +152,8 @@
 #include "face.hpp"
 #include "mesh.hpp"
 
+#ifndef __APPLE__
 #include <x86intrin.h> //AVX/SSE Extensions
+#endif
 
 #endif
