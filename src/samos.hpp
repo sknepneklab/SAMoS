@@ -100,6 +100,7 @@
 #include "pair_yukawa_potential.hpp"
 #include "pair_bare_coulomb_potential.hpp"
 #include "pair_coulomb3_potential.hpp"
+#include "pair_abp_actreact_potential.hpp"
 #include "potential.hpp"
 #include "integrator.hpp"
 #include "integrator_brownian.hpp"

@@ -112,6 +112,7 @@ public:
   
   //! Set type parameters for each particle
   virtual void set_type_parameters(pairs_type&) { }  
+  //virtual void set_type_parameters(pairs_type&) = 0;
   
   //! Returns true if the specific pair potential needs neighbour list
   virtual bool need_nlist() = 0;
