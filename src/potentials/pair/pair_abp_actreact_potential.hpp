@@ -111,12 +111,12 @@ public:
     }    
     
     m_particle_params = new ABPActReactParameters[m_ntypes];
-    std::cout << "Initial constructor parameter values:" << endl;
+    //std::cout << "Initial constructor parameter values:" << endl;
     for (int i = 0; i < m_ntypes; i++)
     {
       m_particle_params[i].p = m_p;
       m_particle_params[i].r_int = m_r_int;
-      std::cout << "type " << i << " p " << m_p << " r_int " << m_r_int << endl;
+      //std::cout << "type " << i << " p " << m_p << " r_int " << m_r_int << endl;
     }  
     
   }
@@ -142,7 +142,7 @@ public:
     }
     
     type = lexical_cast<int>(pair_param["type"]);
-    std::cout << "Setting pair parametes of type:" << type << endl;
+    //std::cout << "Setting pair parametes of type:" << type << endl;
         
     if (pair_param.find("p") != pair_param.end())
     {
@@ -170,7 +170,7 @@ public:
         
     m_particle_params[type-1].p = param["p"];
     m_particle_params[type-1].r_int = param["r_int"];
-    std::cout << "type " << type << " p " << param["p"] << " r_int " << param["r_int"] << endl;
+    //std::cout << "type " << type << " p " << param["p"] << " r_int " << param["r_int"] << endl;
         
     m_has_part_params = true;
   }
@@ -178,7 +178,7 @@ public:
   //! Set pair parameters data for pairwise interactions   .. and do nothing. Otherwise the virtual void deities in the base class are unhappy.
   void set_pair_parameters(pairs_type& pair_param)
   {  
-    std::cout << "Going through empty pair parameter setting" << endl;
+    //std::cout << "Going through empty pair parameter setting" << endl;
   }
                                                                                                                 
   

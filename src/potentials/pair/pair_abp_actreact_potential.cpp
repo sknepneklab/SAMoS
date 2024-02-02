@@ -56,7 +56,7 @@ void PairABPActReactPotential::compute(double dt)
   {
     Particle& pi = m_system->get_particle(i);
     // type parameters
-    std::cout << m_has_part_params << "type i " << pi.get_type() << endl;
+    // std::cout << m_has_part_params << "type i " << pi.get_type() << endl;
     if (m_has_part_params)  
     {
       poli = m_particle_params[pi.get_type()-1].p;
@@ -122,10 +122,10 @@ void PairABPActReactPotential::compute(double dt)
       if (r < rintij)
       {
         b = (rintij-r)/rintij;  // force prefactor (positive and between 0 and 1)
-        std::cout << "type j " << pj.get_type() << endl;
-        std::cout << " pol i" << poli << ", rint i " << rinti << std::endl;
-        std::cout << " pol j" << polj << ", rint j " << rintj << std::endl;
-        std::cout << " beta " << b << "alpha " << alpha << std::endl;
+        //std::cout << "type j " << pj.get_type() << endl;
+        //std::cout << " pol i" << poli << ", rint i " << rinti << std::endl;
+        //std::cout << " pol j" << polj << ", rint j " << rintj << std::endl;
+        //std::cout << " beta " << b << "alpha " << alpha << std::endl;
         // action-reaction active force magnitude
         fax = 0.5*(poli*pi.nx-polj*pj.nx);
         fay = 0.5*(poli*pi.ny-polj*pj.ny);
