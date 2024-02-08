@@ -1066,26 +1066,41 @@ void Dump::dump_ajm(int step)
       cells.push_back(std::make_pair("", cell));
     }
     // collect the outer face
-    pt::ptree outer;
-    outer.put("id",pa.sides.size());
-    outer.put("A0", 0.0);
-    outer.put("P0", 0.0);
-    pt::ptree vert;
-    for (unsigned int d = 0; d < pa.boundary_faces.size(); d++)
+    if (m_params.find("outer") != m_params.end())
     {
-      pt::ptree val; 
-      val.put("", pa.boundary_faces[d]);
-      vert.push_back(std::make_pair("", val));
+      pt::ptree outer;
+      outer.put("id",pa.sides.size());
+      outer.put("A0", 0.0);
+      outer.put("P0", 0.0);
+      pt::ptree vert;
+      for (unsigned int d = 0; d < pa.boundary_faces.size(); d++)
+      {
+        pt::ptree val; 
+        val.put("", pa.boundary_faces[d]);
+        vert.push_back(std::make_pair("", val));
+      }
+      outer.add_child("vertices",vert);
+      outer.put("outer", "true");
+      outer.put("type", "passive");
+      outer.put("nsides", pa.boundary_faces.size());
+      cells.push_back(std::make_pair("", outer));
     }
-    outer.add_child("vertices",vert);
-    outer.put("outer", "true");
-    outer.put("type", "passive");
-    outer.put("nsides", pa.boundary_faces.size());
-    cells.push_back(std::make_pair("", outer));
     json.add_child("mesh.faces", cells);
 
     // Write everything to the file
-    pt::write_json(json_file_name, json);
+    //pt::write_json(json_file_name, json);
+    std::ostringstream oss;
+    pt::write_json(oss, json);
+    std::regex reg("\\\"([+-]?(\\d+([.]\\d*)?([eE][+-]?\\d+)?|[.]\\d+([eE][+-]?\\d+)?))\\\"");
+    //std::regex reg("\\\"(\\-{0,1}[0-9]+(\\.[0-9]+){0,1})\\\"");
+    std::regex reg_bool("\\\"(true|false)\\\"");
+    std::string result = std::regex_replace(oss.str(), reg, "$1");
+    result = std::regex_replace(result, reg_bool, "$1");
+
+    std::ofstream file;
+    file.open(json_file_name);
+    file << result;
+    file.close();
   }
 }
 

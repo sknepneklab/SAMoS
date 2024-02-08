@@ -36,6 +36,7 @@
 #include <map>
 #include <list>
 #include <utility>
+#include <regex>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
