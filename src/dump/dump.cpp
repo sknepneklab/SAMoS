@@ -503,6 +503,14 @@ void Dump::dump_xyz()
 //! Dump selected set of data
 void Dump::dump_data()
 {
+  if (m_params.find("rcut") == m_params.end())
+    {
+      m_r_cut = 2.4;
+    }
+    else
+    {
+      m_r_cut = lexical_cast<double>(m_params["rcut"]);
+    }
   double Lx = m_system->get_box()->Lx;
   double Ly = m_system->get_box()->Ly;
   double Lz = m_system->get_box()->Lz;
@@ -669,7 +677,18 @@ void Dump::dump_data()
       if (m_params.find("cont_num") != m_params.end())
       {
           if (m_nlist->has_contacts())
+          {
+            // if this is a mesh based simulation, use that
+            if (m_nlist->has_faces()) {
             m_out << format("%2d ") % m_nlist->get_contacts(i).size();
+            }
+            // otherwise compute using euclidean distances
+            else {
+             //std::cout << " Getting contacts for particle " << i << " cutoff " << m_r_cut << "result " << m_nlist->get_contacts(i,m_r_cut).size() << endl;
+             m_out << format("%2d ") % m_nlist->get_euclidean_contacts(i,m_r_cut).size();
+            }
+          }
+          
       }
       if (m_params.find("boundary") != m_params.end())
       {
@@ -854,22 +873,22 @@ void Dump::dump_contact()
   }
   else
   {
-    double rcut;
+    //double rcut;
     bool include_flag = false;
     if (m_params.find("rcut") == m_params.end())
     {
       m_msg->msg(Messenger::WARNING,"No cutoff distance for the contact network set. Setting it to 1.");
-      rcut = 1.0;
+      m_r_cut = 1.0;
     }
     else
     {
       m_msg->msg(Messenger::INFO,"Cutoff distance for contact network set to "+m_params["rcut"]+".");
-      rcut = lexical_cast<double>(m_params["rcut"]);
+      m_r_cut = lexical_cast<double>(m_params["rcut"]);
     }
-    if (rcut > m_nlist->get_cutoff())
+    if (m_r_cut > m_nlist->get_cutoff())
     {
       m_msg->msg(Messenger::WARNING,"Contact network cutoff distance larger than the neighbour list cutoff. Setting it to that of the neighbour list.");
-      rcut = m_nlist->get_cutoff();
+      m_r_cut = m_nlist->get_cutoff();
     }
     if (m_params.find("include_flag") != m_params.end())
       include_flag = true;
@@ -884,7 +903,7 @@ void Dump::dump_contact()
     int N = m_system->get_group(m_group)->get_size();
     vector<int> particles = m_system->get_group(m_group)->get_particles();
     int contact = 0;
-    double rcut2 = rcut*rcut;
+    double rcut2 = m_r_cut*m_r_cut;
     for (int i = 0; i < N; i++)
     {
       Particle& pi = m_system->get_particle(particles[i]);
@@ -1099,6 +1118,15 @@ void Dump::dump_ajm(int step)
 //! Dump meshes into VTK output 
 void Dump::dump_vtp(int step)
 {
+  if (m_params.find("rcut") == m_params.end())
+    {
+      m_r_cut = 2.4;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Cutoff distance for contact network set to "+m_params["rcut"]+".");
+      m_r_cut = lexical_cast<double>(m_params["rcut"]);
+    }
   vector<pair<int,int> > visited_edges;
   string file_name = m_directory+"/"+m_file_name+"_"+lexical_cast<string>(format("%010d") % step)+"."+m_ext;
   vtkSmartPointer<vtkPolyData> polydata =  vtkSmartPointer<vtkPolyData>::New();
@@ -1195,7 +1223,9 @@ void Dump::dump_vtp(int step)
         num_neigh->InsertNextValue(V.n_edges);
       }
       else
-        num_neigh->InsertNextValue(pi.coordination);
+        // get properly from neighbour list for the no-mesh case where it will not mess things up
+        //num_neigh->InsertNextValue(pi.coordination);
+        num_neigh->InsertNextValue(m_nlist->get_euclidean_contacts(i,m_r_cut).size());
 
     }
     

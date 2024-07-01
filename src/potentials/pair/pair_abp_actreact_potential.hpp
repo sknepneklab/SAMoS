@@ -96,6 +96,16 @@ public:
       m_msg->msg(Messenger::INFO,"Global potential range (r_int) for ABP action reaction pair potential is set to "+param["r_int"]+".");
       m_r_int = lexical_cast<double>(param["r_int"]);
     }
+    if (param.find("torques") == param.end())
+    {
+      m_msg->msg(Messenger::WARNING,"No use of torques specified. Setting torques to False.");
+      m_torques = false;
+    }
+    else
+    {
+      m_msg->msg(Messenger::INFO,"Use of pair interaction torques set to "+param["torques"]+".");
+      m_torques = lexical_cast<double>(param["torques"]);
+    }
     m_msg->write_config("potential.pair.abp_actreact.r_int",lexical_cast<string>(m_r_int));
     if (param.find("use_particle_radii") != param.end())
     {
@@ -195,6 +205,7 @@ private:
   double m_p;                       //!< polarisation force
   double m_r_int;                       //!< potential range
   bool m_has_part_params;           //!< true if type specific particle parameters are given
+  bool m_torques;                   // whether or not to include pair torques from these pair forces
   ABPActReactParameters*  m_particle_params;   //!< type specific particle parameters 
      
 };

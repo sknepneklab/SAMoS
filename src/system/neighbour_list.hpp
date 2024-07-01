@@ -239,7 +239,16 @@ public:
   //! Get contacts for a given particle
   //! \param id Particle id
   //! \return Reference to the particle's contact list
+  //! This is for vertex models only as writen
   vector<int>& get_contacts(int id) { return m_contact_list[id]; }
+
+// When we want this for particles, however, this is for vtp output so let's actually calculate them exactly as we want
+// After the VM fiasco: this needs to be named differently, else this interferes with mesh neighbour lists in nasty ways
+  vector<int>& get_euclidean_contacts(int id, double rcut) {
+    make_euclidean_contacts(rcut);
+    return m_contact_list[id];
+  }
+  void make_euclidean_contacts( double rcut);
   
   //! Check if contact list exists
   bool has_contacts() { return (m_contact_list.size() > 0); }
@@ -291,7 +300,8 @@ private:
   bool m_disable_nlist;            //!< If true, neigbour list is not built (only used for cell simulations)
   bool m_remove_detached;          //!< If true, remove detached particles (vertices) before rebuilding neighbour list (for cell simulations)
   bool m_static_boundary;          //!< If true, treat tissue boundary as static, i.e., do not add new boundary particles 
-  vector<vector<int> >  m_contact_list;    //!< Holds the contact list for each particle
+  vector<vector<int> >  m_contact_list;    //!< Holds the contact list for each particle. Used for mesh based neighbour lists
+  vector<vector<int> >  m_euclidean_contact_list;    //!< Holds the contact list for each particle, optional, computed using euclidean distances.
     
   // Actual neighbour list builds
   void build_nsq(int);    //!< Build with N^2 algorithm

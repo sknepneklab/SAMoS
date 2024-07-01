@@ -677,3 +677,37 @@ void mirror(const Particle& p1, const Particle& p2, const Particle& p3, double& 
    out.close();
  }
 
+ void NeighbourList::make_euclidean_contacts( double rcut)
+ {
+  m_euclidean_contact_list.clear();
+  int N = m_system->size();
+  double rcut2 = rcut*rcut;
+  for (int i = 0; i < N; i++)
+  {
+    // need an empty one first
+    m_euclidean_contact_list.push_back(vector<int>());
+  }
+  for (int i = 0; i < N; i++)
+  {
+    Particle& pi = m_system->get_particle(i);
+    vector<int>& neigh = get_neighbours(pi.get_id());
+    for (unsigned int j = 0; j < neigh.size(); j++)
+      {
+        Particle& pj = m_system->get_particle(neigh[j]);
+        double dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
+        if (m_system->get_periodic())
+          m_system->apply_periodic(dx,dy,dz);
+        double r_sq = dx*dx + dy*dy + dz*dz;
+        if (r_sq <= rcut2)
+        {
+          m_euclidean_contact_list[i].push_back(neigh[j]);
+          // and to j as well
+          //std::cout << "added neighbour " << neigh[j] << " to contact list of particle " << i << endl;
+          m_euclidean_contact_list[neigh[j]].push_back(i);
+          
+        }
+      }
+  }
+
+ }
+

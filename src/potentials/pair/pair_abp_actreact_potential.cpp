@@ -139,14 +139,16 @@ void PairABPActReactPotential::compute(double dt)
         pj.fy -= b*alpha*fay;
         pj.fz -= b*alpha*faz;
         // And belatedly realised that this thing in fact also generates a torque!
-        // handle torques
-        //pi.tau_x += 0.5*b*alpha*(dy*faz-dz*fay);
-        //pi.tau_y += 0.5*b*alpha*(-dx*faz+dz*fax);
-        //pi.tau_z += 0.5*b*alpha*(dx*fay-dy*fax);
-        // and the other direction - carefully: this is the *same* torque, not the opposite sign ...
-        //pj.tau_x += 0.5*b*alpha*(dy*faz-dz*fay);
-        //pj.tau_y += 0.5*b*alpha*(-dx*faz+dz*fax);
-        //pj.tau_z += 0.5*b*alpha*(dx*fay-dy*fax);
+        // handle torques (optional)
+        if (m_torques) {
+          pi.tau_x += 0.5*b*alpha*(dy*faz-dz*fay);
+          pi.tau_y += 0.5*b*alpha*(-dx*faz+dz*fax);
+          pi.tau_z += 0.5*b*alpha*(dx*fay-dy*fax);
+          // and the other direction - carefully: this is the *same* torque, not the opposite sign ...
+          pj.tau_x += 0.5*b*alpha*(dy*faz-dz*fay);
+          pj.tau_y += 0.5*b*alpha*(-dx*faz+dz*fax);
+          pj.tau_z += 0.5*b*alpha*(dx*fay-dy*fax);
+        }
       }
       
     }
