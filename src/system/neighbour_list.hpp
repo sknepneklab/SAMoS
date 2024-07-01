@@ -246,7 +246,7 @@ public:
 // After the VM fiasco: this needs to be named differently, else this interferes with mesh neighbour lists in nasty ways
   vector<int>& get_euclidean_contacts(int id, double rcut) {
     make_euclidean_contacts(rcut);
-    return m_contact_list[id];
+    return m_euclidean_contact_list[id];
   }
   void make_euclidean_contacts( double rcut);
   
