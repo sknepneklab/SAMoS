@@ -67,6 +67,7 @@ public:
   {
     m_known_params.push_back("p");
     m_known_params.push_back("r_int");
+    m_known_params.push_back("torques");
     m_known_params.push_back("use_particle_radii");
     m_known_params.push_back("phase_in");
     string param_test = this->params_ok(param);
@@ -103,8 +104,8 @@ public:
     }
     else
     {
-      m_msg->msg(Messenger::INFO,"Use of pair interaction torques set to "+param["torques"]+".");
-      m_torques = lexical_cast<double>(param["torques"]);
+      m_msg->msg(Messenger::INFO,"Use of pair interaction: torques set to true");
+      m_torques = true;
     }
     m_msg->write_config("potential.pair.abp_actreact.r_int",lexical_cast<string>(m_r_int));
     if (param.find("use_particle_radii") != param.end())
