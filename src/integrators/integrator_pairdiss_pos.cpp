@@ -47,11 +47,16 @@
 // Following the same steps as Yann Keta's vertex model implementation
 // while I cam factor out the \delta_ab part completely, leading to a matrix that's only NxN, not 3N x 3N
 // We never actually construct the full inverse matrix. So need to keep the 3Nx3N approach here
+
+// 25.11.24: This has a bug: if we run this for any subgroup of a system whih is not the whole system, there are interactions between group and non-group
+// particles which can't formulated like this. Hence they crash. Need to always compute with everything, though we can throw away the updates for non-group members
 void IntegratorPairdissPos::integrate()
 {
 
     // number of particles sets size
-    int N = m_system->get_group(m_group_name)->get_size();
+    //int N = m_system->get_group(m_group_name)->get_size();
+    int N = m_system->size();
+
     // Eigen linear algebra components
     // triplet i,j,value of nonzero sparse entries
     vector<Eigen::Triplet<double>> modContactTrip(0);
@@ -66,14 +71,16 @@ void IntegratorPairdissPos::integrate()
     double alpha_i = 1.0;  // phase in factor for particle i
     double alpha_j = 1.0;  // phase in factor for particle j
     double alpha = 1.0; // phase in factor for pair interaction (see below)
-    vector<int> particles = m_system->get_group(m_group_name)->get_particles();
+    //vector<int> particles = m_system->get_group('all')->get_particles();
     vector<double> zpart;
     for (int i = 0; i < N; i++) zpart.push_back(0.0);
     for (int i = 0; i < N; i++)
     {
-        int plab = particles[i];
+        //int plab = particles[i];
 
-        Particle& pi = m_system->get_particle(plab);
+        //Particle& pi = m_system->get_particle(plab);
+        Particle& pi = m_system->get_particle(i);
+
 
         if (m_phase_in) {
             alpha_i = 0.5*(1.0 + std::min(1.0,pi.age/m_tphase));
@@ -144,8 +151,9 @@ void IntegratorPairdissPos::integrate()
     // Set the forces vector
     for (int i = 0; i < N; i++)
     {
-        int pi = particles[i];
-        Particle& p = m_system->get_particle(pi);
+        //int pi = particles[i];
+        //Particle& p = m_system->get_particle(pi);
+        Particle& p = m_system->get_particle(i);
         generalForces[3*i]=p.fx;
         generalForces[3*i+1]=p.fy;
         generalForces[3*i+2]=p.fz;
@@ -186,10 +194,14 @@ void IntegratorPairdissPos::integrate()
         std::cout<<"Warning: Non-FDT compliant thermal fluctuations. Do not use as thermal integrator in current form."<<std::endl;
     }
 
-    // iterate over all particles 
-    for (int i = 0; i < N; i++)
+    // iterate over all particles of only the correct group
+    // Finally check for group and update only if it's the correct one
+    vector<int> particles = m_system->get_group(m_group_name)->get_particles();
+    int Ngroup = m_system->get_group(m_group_name)->get_size(); 
+    for (int i = 0; i < Ngroup; i++)
     {
         int pi = particles[i];
+
         Particle& p = m_system->get_particle(pi);
         // Update velocity
         p.vx = generalVelocities[3*i];
